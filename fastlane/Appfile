@@ -1,0 +1,11 @@
+# Android Configuration
+json_key_file("fastlane/api-key.json") # Path to the service account json for Play Store
+package_name("io.healthplatform.chartcam") # Android Application ID
+
+# iOS Configuration
+app_identifier("io.healthplatform.chartcam") # The bundle identifier of your app
+apple_id("dev@healthplatform.io") # Your Apple email address
+
+# Team Selection
+# team_id("Q2CBPJ58CA") # Developer Portal Team ID
+# itc_team_id("18742801") # App Store Connect Team ID

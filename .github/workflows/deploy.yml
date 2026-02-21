@@ -1,0 +1,102 @@
+name: ChartCam CI/CD
+
+# Triggers the workflow on push to main or pull requests
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # --- Job 1: Check and Test (Fast Linux Runner) ---
+  check_and_test:
+    name: Unit Tests & Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle Cache
+        uses: gradle/actions/setup-gradle@v3
+        
+      - name: Run KMP Tests (Android/JVM/Common)
+        run: ./gradlew test
+
+  # --- Job 2: Deploy Android (Ubuntu) ---
+  deploy_android:
+    name: Deploy Android Internal
+    needs: [check_and_test]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' # Only deploy on main merge
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.0'
+          bundler-cache: true
+
+      - name: Decode Keystore
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_B64" | base64 --decode > composeApp/release.keystore
+
+      - name: Decode Play Store API Key
+        env:
+          PLAY_STORE_JSON_B64: ${{ secrets.PLAY_STORE_JSON_B64 }}
+        run: |
+          mkdir -p fastlane
+          echo "$PLAY_STORE_JSON_B64" | base64 --decode > fastlane/api-key.json
+
+      - name: Fastlane Android Deploy
+        env:
+          ANDROID_STORE_FILE: ../release.keystore
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: bundle exec fastlane android deploy_internal
+
+  # --- Job 3: Deploy iOS (MacOS - Expensive, run sparingly) ---
+  deploy_ios:
+    name: Deploy iOS TestFlight
+    needs: [check_and_test]
+    runs-on: macos-14
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.0'
+          bundler-cache: true
+
+      - name: Fastlane iOS Deploy
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: bundle exec fastlane ios deploy_testflight
