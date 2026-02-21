@@ -1,0 +1,101 @@
+# Fastfile Configuration for ChartCam
+# This file handles building, testing, and deploying for both Android and iOS.
+
+default_platform(:android)
+
+platform :android do
+  
+  desc "Runs all the tests"
+  lane :test do
+    gradle(task: "test")
+  end
+
+  desc "Builds the release bundle"
+  lane :build do
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      project_dir: "composeApp"
+    )
+  end
+
+  desc "Submit a new Internal Build to Play Store"
+  lane :deploy_internal do
+    # 1. Run Tests
+    test
+    
+    # 2. Build Bundle
+    build
+    
+    # 3. Upload to Internal Track
+    upload_to_play_store(
+      track: "internal",
+      aab: "composeApp/build/outputs/bundle/release/composeApp-release.aab",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+end
+
+platform :ios do
+  
+  desc "Runs all the tests"
+  lane :test do
+    scan(
+      scheme: "iosApp",
+      project: "./iosApp/iosApp.xcodeproj"
+    )
+  end
+
+  desc "Builds the app for release"
+  lane :build do
+    # Ensure certificates are installed (Requires 'match' setup separately)
+    # match(type: "appstore", readonly: true)
+    
+    gym(
+      scheme: "iosApp",
+      project: "./iosApp/iosApp.xcodeproj",
+      export_method: "app-store",
+      output_directory: "./build/ios",
+      output_name: "ChartCam.ipa"
+    )
+  end
+
+  desc "Push a new beta build to TestFlight"
+  lane :deploy_testflight do
+    # 1. Increment Build Number
+    increment_build_number(
+      xcodeproj: "./iosApp/iosApp.xcodeproj"
+    )
+    
+    # 2. Build
+    build
+    
+    # 3. Upload to TestFlight
+    upload_to_testflight(
+      ipa: "./build/ios/ChartCam.ipa",
+      skip_waiting_for_build_processing: true
+    )
+  end
+end
+
+# Utility Lane to run both tests
+lane :test_all do
+  test_android = Thread.new { 
+    platform(:android) do
+      test
+    end
+  }
+  
+  # Note: iOS tests require MacOS setup
+  if is_ci? && !is_mac?
+    UI.message("Skipping iOS tests on non-Mac environment")
+  else
+    platform(:ios) do
+      test
+    end
+  end
+  
+  test_android.join
+end

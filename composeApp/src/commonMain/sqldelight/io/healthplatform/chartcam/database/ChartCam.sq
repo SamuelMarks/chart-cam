@@ -1,0 +1,115 @@
+import kotlin.Boolean;
+
+-- Table: Practitioner
+CREATE TABLE PractitionerEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    family TEXT NOT NULL,
+    given TEXT NOT NULL,
+    active INTEGER AS Boolean NOT NULL DEFAULT 1
+);
+
+-- Table: Patient
+CREATE TABLE PatientEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    family TEXT NOT NULL,
+    given TEXT NOT NULL,
+    birthDate TEXT NOT NULL,
+    mrn TEXT NOT NULL,
+    gender TEXT NOT NULL,
+    managingOrganization TEXT
+);
+
+-- Table: Encounter
+CREATE TABLE EncounterEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    patientId TEXT NOT NULL,
+    practitionerId TEXT NOT NULL,
+    date TEXT NOT NULL,
+    status TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'clinical-photography',
+    notes TEXT,
+    FOREIGN KEY(patientId) REFERENCES PatientEntity(id) ON DELETE CASCADE,
+    FOREIGN KEY(practitionerId) REFERENCES PractitionerEntity(id) ON DELETE CASCADE
+);
+
+-- Table: DocumentReference (The Photos)
+-- Links a file path on disk to an Encounter and Patient
+CREATE TABLE DocumentReferenceEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    encounterId TEXT NOT NULL,
+    patientId TEXT NOT NULL,
+    type TEXT NOT NULL, -- e.g., "photo"
+    category TEXT NOT NULL, -- e.g., "clinical-photography"
+    date TEXT NOT NULL,
+    title TEXT, -- e.g., "Front View"
+    filePath TEXT NOT NULL, -- Local URI/Path
+    mimeType TEXT NOT NULL DEFAULT 'image/jpeg',
+    FOREIGN KEY(encounterId) REFERENCES EncounterEntity(id) ON DELETE CASCADE
+);
+
+-- Queries: Practitioner
+insertPractitioner:
+INSERT OR REPLACE INTO PractitionerEntity(id, family, given, active)
+VALUES (?, ?, ?, ?);
+
+getPractitionerById:
+SELECT * FROM PractitionerEntity WHERE id = ?;
+
+getAllPractitioners:
+SELECT * FROM PractitionerEntity;
+
+-- Queries: Patient
+insertPatient:
+INSERT OR REPLACE INTO PatientEntity(id, family, given, birthDate, mrn, gender, managingOrganization)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+getAllPatients:
+SELECT * FROM PatientEntity ORDER BY family ASC;
+
+getPatientById:
+SELECT * FROM PatientEntity WHERE id = ?;
+
+searchPatients:
+SELECT * FROM PatientEntity 
+WHERE family LIKE ('%' || :query || '%') 
+OR given LIKE ('%' || :query || '%') 
+OR mrn LIKE ('%' || :query || '%');
+
+-- Queries: Encounter
+insertEncounter:
+INSERT OR REPLACE INTO EncounterEntity(id, patientId, practitionerId, date, status, notes)
+VALUES (?, ?, ?, ?, ?, ?);
+
+getEncountersForPatient:
+SELECT * FROM EncounterEntity 
+WHERE patientId = ? 
+ORDER BY date DESC;
+
+getEncounterById:
+SELECT * FROM EncounterEntity WHERE id = ?;
+
+getAllEncounters:
+SELECT * FROM EncounterEntity;
+
+updateEncounterNotes:
+UPDATE EncounterEntity
+SET notes = ?
+WHERE id = ?;
+
+-- Queries: DocumentReference
+insertDocumentReference:
+INSERT OR REPLACE INTO DocumentReferenceEntity(id, encounterId, patientId, type, category, date, title, filePath, mimeType)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getPhotosForEncounter:
+SELECT * FROM DocumentReferenceEntity
+WHERE encounterId = ?
+ORDER BY date ASC;
+
+getAllDocumentReferences:
+SELECT * FROM DocumentReferenceEntity;
+
+updateEncounterStatus:
+UPDATE EncounterEntity
+SET status = ?
+WHERE id = ?;

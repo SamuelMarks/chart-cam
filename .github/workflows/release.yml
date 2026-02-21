@@ -1,0 +1,56 @@
+name: Create GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers on any tag starting with 'v', e.g., v1.0.0, v2.1-beta
+
+jobs:
+  build-and-release:
+    name: Build Artifacts & Create Release
+    runs-on: ubuntu-latest
+    
+    # Required to create a GitHub Release
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle Cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build Android APK
+        run: ./gradlew :androidApp:assembleDebug :androidApp:assembleRelease
+
+      - name: Build Desktop JAR
+        # Builds a standalone Uber JAR for desktop
+        run: ./gradlew :composeApp:packageReleaseUberJarForCurrentOS
+
+      - name: Prepare Artifacts
+        run: |
+          mkdir -p release-artifacts
+          # Copy and rename Android APKs
+          cp androidApp/build/outputs/apk/debug/*.apk release-artifacts/ChartCam-Android-Debug.apk || echo "Android Debug APK not found"
+          cp androidApp/build/outputs/apk/release/*-unsigned.apk release-artifacts/ChartCam-Android-Release-Unsigned.apk || echo "Android Release APK not found"
+          
+          # Copy and rename Desktop JAR
+          cp composeApp/build/compose/jars/*.jar release-artifacts/ChartCam-Desktop.jar || echo "Desktop JAR not found"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # Automatically use the tag name for the release name
+          name: Release ${{ github.ref_name }}
+          # You can add generated release notes automatically
+          generate_release_notes: true
+          files: release-artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
