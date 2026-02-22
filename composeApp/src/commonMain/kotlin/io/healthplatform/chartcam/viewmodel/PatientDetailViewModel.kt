@@ -2,8 +2,8 @@ package io.healthplatform.chartcam.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.healthplatform.chartcam.models.Encounter
-import io.healthplatform.chartcam.models.Patient
+import com.google.fhir.model.r4.Encounter
+import com.google.fhir.model.r4.Patient
 import io.healthplatform.chartcam.repository.FhirRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,8 +28,6 @@ class PatientDetailViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val patient = fhirRepository.getPatient(patientId)
-            // To get encounters, we need a method in the repository. Wait, `ChartCam.sq` has `getEncountersForPatient`
-            // Let's add it to `FhirRepository` if it's missing, or we can just call it
             val encounters = fhirRepository.getEncountersForPatient(patientId)
             _uiState.update { it.copy(patient = patient, encounters = encounters, isLoading = false) }
         }

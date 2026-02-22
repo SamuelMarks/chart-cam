@@ -1,13 +1,16 @@
 package io.healthplatform.chartcam.repository
 
-import io.healthplatform.chartcam.models.HumanName
-import io.healthplatform.chartcam.models.Practitioner
+import com.google.fhir.model.r4.Boolean
+import com.google.fhir.model.r4.HumanName
+import com.google.fhir.model.r4.Practitioner
+import com.google.fhir.model.r4.String
 import io.healthplatform.chartcam.models.TokenResponse
 import io.healthplatform.chartcam.storage.SecureStorage
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import okio.ByteString.Companion.encodeUtf8
 
 /**
  * Repository responsible for user authentication and session management.
@@ -36,17 +39,18 @@ class AuthRepository(
     }
 
     /**
-     * Hashes the given string input.
+     * Hashes the given string input using SHA-256 via Okio.
+     * While a proper KDF like Argon2 is ideal for passwords, SHA-256 provides
+     * a secure cryptographic hash baseline for this mock architecture.
      * 
      * @param input The raw password string.
-     * @return A simple hashed string representation.
+     * @return A cryptographically strong hex string representation.
      */
-    private fun hashString(input: String): String {
-        var hash = 0
-        for (i in input.indices) {
-            hash = 31 * hash + input[i].code
-        }
-        return hash.toString()
+    private fun hashString(input: kotlin.String): kotlin.String {
+        // Appending a static salt to avoid basic rainbow tables, 
+        // though per-user salts are recommended in production.
+        val salted = input + "ChartCam_Secure_Salt_2024"
+        return salted.encodeUtf8().sha256().hex()
     }
 
     /**
@@ -56,15 +60,18 @@ class AuthRepository(
      * @param b The second string.
      * @return True if strings are equal, false otherwise.
      */
-    private fun constantTimeEquals(a: String, b: String): Boolean {
-        if (a.length != b.length) {
-            return false
-        }
+    private fun constantTimeEquals(a: kotlin.String, b: kotlin.String): kotlin.Boolean {
         var result = 0
+        // Use a dummy string of same length to prevent timing leakage when lengths differ.
+        // We always iterate over string 'a' to keep the time consistent relative to 'a'.
+        val bSafe = if (a.length == b.length) b else a
+        
         for (i in a.indices) {
-            result = result or (a[i].code xor b[i].code)
+            result = result or (a[i].code xor bSafe[i].code)
         }
-        return result == 0
+        
+        // Return true only if all characters matched AND lengths were identical originally
+        return (result == 0) && (a.length == b.length)
     }
 
     /**
@@ -75,7 +82,7 @@ class AuthRepository(
      * @param password The secret password.
      * @return Result wrapping the Practitioner profile on success.
      */
-    suspend fun login(username: String, password: String): Result<Practitioner> {
+    suspend fun login(username: kotlin.String, password: kotlin.String): Result<Practitioner> {
         return try {
             val hashKey = "hash_$username"
             val storedHash = storage.getString(hashKey)
@@ -102,11 +109,16 @@ class AuthRepository(
             storage.save(KEY_REFRESH_TOKEN, tokenResponse.refreshToken)
             storage.save(KEY_CURRENT_USERNAME, username)
 
-            val practitioner = Practitioner(
-                id = "prac_${username.hashCode()}",
-                active = true,
-                name = listOf(HumanName(family = username, given = listOf("Dr.")))
-            )
+            val practitioner = Practitioner.Builder().apply {
+                id = "prac_${username.hashCode()}"
+                active = Boolean.Builder().apply { value = true }
+                name.add(
+                    HumanName.Builder().apply {
+                        family = String.Builder().apply { value = username }
+                        given.add(String.Builder().apply { value = "Dr." })
+                    }
+                )
+            }.build()
 
             _currentUser.value = practitioner
             Result.success(practitioner)
@@ -121,15 +133,20 @@ class AuthRepository(
      * 
      * @return True if session restored, False otherwise.
      */
-    suspend fun checkSession(): Boolean {
+    suspend fun checkSession(): kotlin.Boolean {
         val token = storage.getString(KEY_ACCESS_TOKEN)
         val username = storage.getString(KEY_CURRENT_USERNAME) ?: "Doe"
         if (!token.isNullOrEmpty()) {
-             _currentUser.value = Practitioner(
-                id = "prac_${username.hashCode()}",
-                active = true,
-                name = listOf(HumanName(family = username, given = listOf("Dr.")))
-            )
+             _currentUser.value = Practitioner.Builder().apply {
+                 id = "prac_${username.hashCode()}"
+                 active = Boolean.Builder().apply { value = true }
+                 name.add(
+                     HumanName.Builder().apply {
+                         family = String.Builder().apply { value = username }
+                         given.add(String.Builder().apply { value = "Dr." })
+                     }
+                 )
+             }.build()
             return true
         }
         return false
@@ -150,7 +167,7 @@ class AuthRepository(
      *
      * @return boolean indicating success.
      */
-    suspend fun refreshToken(): Boolean {
+    suspend fun refreshToken(): kotlin.Boolean {
         val refreshToken = storage.getString(KEY_REFRESH_TOKEN) ?: return false
         
         return try {

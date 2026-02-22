@@ -1,62 +1,98 @@
-
 package io.healthplatform.chartcam.sync
-import app.cash.sqldelight.async.coroutines.await
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import app.cash.sqldelight.async.coroutines.synchronous
 import io.healthplatform.chartcam.database.ChartCamDatabase
-import app.cash.sqldelight.async.coroutines.awaitCreate
-import io.healthplatform.chartcam.models.Encounter
-import io.healthplatform.chartcam.models.HumanName
-import io.healthplatform.chartcam.models.Patient
-import io.healthplatform.chartcam.models.Period
-import io.healthplatform.chartcam.network.NetworkClient
+import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.repository.FhirRepository
+import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.respondOk
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import kotlin.test.Test
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
 import kotlin.test.assertTrue
+import kotlin.test.assertFalse
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SyncManagerTest {
 
+    private lateinit var driver: JdbcSqliteDriver
+    private lateinit var fhirRepository: FhirRepository
+    
+    private val mockFileStorage = object : FileStorage {
+        override fun saveImage(fileName: String, bytes: ByteArray): String = "mock_path.jpg"
+        override fun readImage(path: String): ByteArray = ByteArray(10)
+        override fun clearCache() {}
+    }
+
+    @Before
+    fun setup() {
+        driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        ChartCamDatabase.Schema.synchronous().create(driver)
+        fhirRepository = FhirRepository(driver)
+    }
+
+    @After
+    fun teardown() {
+        driver.close()
+    }
+
     @Test
-    fun testSyncEncounterFlow() = runTest {
-        // 1. Setup DB
-        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        kotlinx.coroutines.runBlocking { ChartCamDatabase.Schema.awaitCreate(driver) }
-        val fhirRepo = FhirRepository(ChartCamDatabase(driver))
-
-        // 2. Setup Network (Always succeeds)
-        val mockEngine = MockEngine { respond("OK") }
-        val client = NetworkClient.create(mockEngine)
-
-        val syncManager = SyncManager(fhirRepo, client)
-
-        // 3. Seed Data
-        val patId = "pat_sync_1"
-        fhirRepo.savePatient(
-            Patient(patId, listOf(HumanName("Test", listOf("Sync"))), kotlinx.datetime.LocalDate(2000,1,1), "m", "123")
-        )
-
-        val encId = "enc_sync_1"
-        fhirRepo.saveEncounter(
-            Encounter(
-                id = encId,
-                status = "finished",
-                subjectReference = patId,
-                participantReference = "prac_1",
-                period = Period(start = kotlin.time.Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())),
-                text = "Sync Test"
+    fun `fetchPatientHistory successfully fetches and saves incoming bundle`() = runTest {
+        val jsonPayload = """
+        {
+          "resourceType": "Bundle",
+          "type": "searchset",
+          "entry": [
+            {
+              "resource": {
+                "resourceType": "Patient",
+                "id": "pat-123",
+                "name": [ { "family": "Smith", "given": ["John"] } ]
+              }
+            }
+          ]
+        }
+        """.trimIndent()
+        
+        val mockEngine = MockEngine { request ->
+            respond(
+                content = jsonPayload,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
             )
-        )
+        }
+        
+        val httpClient = HttpClient(mockEngine)
+        val syncManager = SyncManager(fhirRepository, httpClient, mockFileStorage)
+        
+        val success = syncManager.fetchPatientHistory("pat-123")
+        assertTrue(success)
+        
+        val savedPatient = fhirRepository.getPatient("pat-123")
+        assertTrue(savedPatient != null)
+    }
 
-        // 4. Act
-        val result = syncManager.syncEncounter(encId)
-
-        // 5. Assert
-        assertTrue(result, "Sync should return true when data is valid and network succeeds")
+    @Test
+    fun `fetchPatientHistory returns false on server error`() = runTest {
+        val mockEngine = MockEngine { request ->
+            respond(
+                content = "Internal Server Error",
+                status = HttpStatusCode.InternalServerError
+            )
+        }
+        
+        val httpClient = HttpClient(mockEngine)
+        val syncManager = SyncManager(fhirRepository, httpClient, mockFileStorage)
+        
+        val success = syncManager.fetchPatientHistory("pat-123")
+        assertFalse(success)
     }
 }

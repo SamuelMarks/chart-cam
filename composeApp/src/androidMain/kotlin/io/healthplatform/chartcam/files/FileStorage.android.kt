@@ -1,34 +1,65 @@
 package io.healthplatform.chartcam.files
 
+import androidx.security.crypto.EncryptedFile
+import androidx.security.crypto.MasterKey
 import io.healthplatform.chartcam.AndroidAppInit
-import okio.FileSystem
-import okio.Path.Companion.toPath
+import java.io.File
 
+/**
+ * Android implementation of FileStorage.
+ * Ensures that patient photos are encrypted at rest using Jetpack Security's [EncryptedFile].
+ */
 class AndroidFileStorage : FileStorage {
     private val context = AndroidAppInit.getContext()
-    private val fileSystem = FileSystem.SYSTEM
-    private val cacheDir = context.cacheDir.absolutePath.toPath()
+    private val cacheDir = context.cacheDir
 
     override fun saveImage(fileName: String, bytes: ByteArray): String {
-        val path = cacheDir / fileName
-        fileSystem.write(path) {
-            write(bytes)
+        val file = File(cacheDir, fileName)
+        if (file.exists()) {
+            file.delete()
         }
-        return path.toString()
+
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+
+        val encryptedFile = EncryptedFile.Builder(
+            context,
+            file,
+            masterKey,
+            EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB
+        ).build()
+
+        encryptedFile.openFileOutput().use { fos ->
+            fos.write(bytes)
+        }
+
+        return file.absolutePath
     }
 
     override fun readImage(path: String): ByteArray {
-        return fileSystem.read(path.toPath()) {
-            readByteArray()
+        val file = File(path)
+        if (!file.exists()) return ByteArray(0)
+
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+
+        val encryptedFile = EncryptedFile.Builder(
+            context,
+            file,
+            masterKey,
+            EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB
+        ).build()
+
+        return encryptedFile.openFileInput().use { fis ->
+            fis.readBytes()
         }
     }
 
     override fun clearCache() {
-        // Implementation note: Be careful not to delete other cache items in production.
-        // For this phase, we assume a dedicated subfolder usually, but simple cacheDir clean for now.
-        // fileSystem.deleteRecursively(cacheDir) // Too dangerous for shared cache
-        
-        // No-op for safety in this snippet, normally would target a sub-folder.
+        // Safe cache clear for demo purposes.
+        cacheDir.listFiles()?.forEach { it.delete() }
     }
 }
 

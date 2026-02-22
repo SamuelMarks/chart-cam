@@ -27,6 +27,7 @@ kotlin {
         iosTarget.binaries.framework { 
             baseName = "ComposeApp" 
             isStatic = false
+            freeCompilerArgs += listOf("-Xbinary=bundleId=io.healthplatform.chartcam.ComposeApp")
             linkerOpts("-framework", "Security") 
             linkerOpts("-framework", "AVFoundation") 
             linkerOpts("-framework", "CoreMotion")
@@ -56,6 +57,7 @@ kotlin {
             implementation(libs.ktor.client.android) 
             implementation(libs.androidx.security.crypto) 
             implementation(libs.sqldelight.android) 
+            implementation(libs.sqlcipher.android)
             implementation(libs.androidx.camera.core) 
             implementation(libs.androidx.camera.camera2) 
             implementation(libs.androidx.camera.lifecycle) 
@@ -66,6 +68,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
         }
         commonMain.dependencies { 
+            implementation(libs.google.fhir.model)
             implementation(libs.compose.runtime) 
             implementation(libs.compose.foundation) 
             implementation(libs.compose.material3) 
@@ -122,6 +125,7 @@ kotlin {
             implementation(libs.sqldelight.sqlite)
             implementation("app.cash.sqldelight:async-extensions:2.2.1")
             implementation(libs.ktor.client.java)
+            implementation(libs.slf4j.simple)
         } 
     } 
 } 
@@ -140,7 +144,8 @@ android {
     compileSdk = libs.versions.android.compileSdk.get().toInt() 
 
     defaultConfig { 
-        minSdk = libs.versions.android.minSdk.get().toInt() 
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        vectorDrawables.useSupportLibrary = true 
     } 
     packaging { 
         resources { 
@@ -169,6 +174,15 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb) 
             packageName = "io.healthplatform.chartcam" 
             packageVersion = "1.0.0" 
+            macOS {
+                iconFile.set(project.file("src/jvmMain/resources/icon.icns"))
+            }
+            windows {
+                iconFile.set(project.file("src/jvmMain/resources/icon.ico"))
+            }
+            linux {
+                iconFile.set(project.file("src/jvmMain/resources/icon.png"))
+            }
         } 
     } 
 }

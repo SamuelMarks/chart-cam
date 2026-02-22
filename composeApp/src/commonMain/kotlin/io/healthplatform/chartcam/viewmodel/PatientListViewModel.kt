@@ -2,8 +2,8 @@ package io.healthplatform.chartcam.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.healthplatform.chartcam.models.HumanName
-import io.healthplatform.chartcam.models.Patient
+import com.google.fhir.model.r4.Patient
+import io.healthplatform.chartcam.models.createFhirPatient
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.utils.UUID
@@ -19,7 +19,9 @@ data class PatientListUiState(
     val searchQuery: String = "",
     val isCreatingPatient: Boolean = false,
     val isLoading: Boolean = false,
-    val exportedData: String? = null
+    val exportedData: String? = null,
+    val exportPassword: String? = null,
+    val error: String? = null
 )
 
 class PatientListViewModel(
@@ -65,26 +67,26 @@ class PatientListViewModel(
         onSuccess: (String) -> Unit
     ) {
         viewModelScope.launch {
-            val newPatient = Patient(
+            val newPatient = createFhirPatient(
                 id = UUID.randomUUID(),
-                name = listOf(HumanName(family = lastName, given = listOf(firstName))),
-                birthDate = dob,
-                mrn = mrn,
-                gender = gender,
-                managingOrganization = "Local"
+                firstName = firstName,
+                lastName = lastName,
+                dob = dob,
+                mrnValue = mrn,
+                genderStr = gender
             )
             repository.savePatient(newPatient)
             setCreateDialogVisible(false)
             loadPatients()
-            onSuccess(newPatient.id)
+            onSuccess(newPatient.id ?: "")
         }
     }
 
-    fun exportData() {
+    fun exportData(password: String) {
         viewModelScope.launch {
             try {
-                val data = exportImportService.exportData()
-                _uiState.update { it.copy(exportedData = data) }
+                val data = exportImportService.exportData(password)
+                _uiState.update { it.copy(exportedData = data, exportPassword = password) }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -92,17 +94,24 @@ class PatientListViewModel(
     }
 
     fun clearExportData() {
-        _uiState.update { it.copy(exportedData = null) }
+        _uiState.update { it.copy(exportedData = null, exportPassword = null) }
     }
 
-    fun importData(data: String) {
+    fun importData(data: String, password: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
-                exportImportService.importData(data)
+                exportImportService.importData(data, password)
                 loadPatients()
+                _uiState.update { it.copy(error = null) }
+                onSuccess()
             } catch (e: Exception) {
                 e.printStackTrace()
+                _uiState.update { it.copy(error = "Failed to import. Wrong password or bad data.") }
             }
         }
+    }
+    
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
     }
 }

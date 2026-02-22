@@ -11,11 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -40,14 +36,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ClipboardManager
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.ui.components.CreatePatientDialog
+import io.healthplatform.chartcam.utils.createShareService
 import io.healthplatform.chartcam.viewmodel.PatientListViewModel
+
+import io.healthplatform.chartcam.models.mrn
+import io.healthplatform.chartcam.models.customBirthDate
+import io.healthplatform.chartcam.models.fullName
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,10 +60,16 @@ fun PatientListScreen(
     val viewModel = androidx.lifecycle.viewmodel.compose.viewModel { PatientListViewModel(fhirRepository, exportImportService) }
     val state by viewModel.uiState.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
+    
+    var showExportPasswordDialog by remember { mutableStateOf(false) }
+    var exportPassword by remember { mutableStateOf("") }
+    
     var showImportDialog by remember { mutableStateOf(false) }
     var importText by remember { mutableStateOf("") }
+    var importPassword by remember { mutableStateOf("") }
     
-    val clipboardManager: ClipboardManager = LocalClipboardManager.current
+    val shareService = remember { createShareService() }
+    val fileStorage = remember { createFileStorage() }
 
     Scaffold(
         topBar = {
@@ -80,7 +86,7 @@ fun PatientListScreen(
                         DropdownMenuItem(
                             text = { Text("Export Data") },
                             onClick = {
-                                viewModel.exportData()
+                                showExportPasswordDialog = true
                                 showMenu = false
                             }
                         )
@@ -130,7 +136,7 @@ fun PatientListScreen(
                 items(state.patients) { patient ->
                     PatientListItem(
                         patient = patient,
-                        onClick = { onPatientSelected(patient.id) }
+                        onClick = { onPatientSelected(patient.id ?: "") }
                     )
                     HorizontalDivider()
                 }
@@ -156,17 +162,57 @@ fun PatientListScreen(
         )
     }
 
+    if (showExportPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showExportPasswordDialog = false },
+            title = { Text("Export Password") },
+            text = {
+                TextField(
+                    value = exportPassword,
+                    onValueChange = { exportPassword = it },
+                    label = { Text("Enter a password to encrypt data") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.exportData(exportPassword)
+                    showExportPasswordDialog = false
+                    exportPassword = ""
+                }) {
+                    Text("Export")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExportPasswordDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+    
     if (state.exportedData != null) {
         AlertDialog(
             onDismissRequest = { viewModel.clearExportData() },
             title = { Text("Data Exported") },
-            text = { Text("Data has been generated. Do you want to copy it to the clipboard?") },
+            text = {
+                Column {
+                    Text("Data has been encrypted. Share the file and the password separately.")
+                    TextButton(onClick = {
+                        state.exportPassword?.let { shareService.shareText(it) }
+                    }, modifier = Modifier.padding(top = 16.dp)) {
+                        Text("Share Password")
+                    }
+                }
+            },
             confirmButton = {
                 TextButton(onClick = {
-                    clipboardManager.setText(AnnotatedString(state.exportedData!!))
-                    viewModel.clearExportData()
+                    val bytes = state.exportedData!!.encodeToByteArray()
+                    val path = fileStorage.saveImage("export.enc", bytes)
+                    shareService.shareFile(path)
                 }) {
-                    Text("Copy to Clipboard")
+                    Text("Share File")
                 }
             },
             dismissButton = {
@@ -182,24 +228,41 @@ fun PatientListScreen(
             onDismissRequest = { showImportDialog = false },
             title = { Text("Import Data") },
             text = {
-                TextField(
-                    value = importText,
-                    onValueChange = { importText = it },
-                    label = { Text("Paste JSON here") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Column {
+                    TextField(
+                        value = importText,
+                        onValueChange = { importText = it },
+                        label = { Text("Paste Data Here") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    TextField(
+                        value = importPassword,
+                        onValueChange = { importPassword = it },
+                        label = { Text("Password") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    )
+                    if (state.error != null) {
+                        Text(state.error!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+                    }
+                }
             },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.importData(importText)
-                    showImportDialog = false
-                    importText = ""
+                    viewModel.importData(importText, importPassword) {
+                        showImportDialog = false
+                        importText = ""
+                        importPassword = ""
+                    }
                 }) {
                     Text("Import")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showImportDialog = false }) {
+                TextButton(onClick = { 
+                    showImportDialog = false
+                    viewModel.clearError()
+                }) {
                     Text("Cancel")
                 }
             }
@@ -209,16 +272,13 @@ fun PatientListScreen(
 
 @Composable
 fun PatientListItem(
-    patient: io.healthplatform.chartcam.models.Patient,
+    patient: com.google.fhir.model.r4.Patient,
     onClick: () -> Unit
 ) {
-    val name = patient.name.firstOrNull()
-    val fullName = "${name?.family ?: "Unknown"}, ${name?.given?.joinToString(" ") ?: ""}"
-    
     ListItem(
-        headlineContent = { Text(fullName, style = MaterialTheme.typography.titleMedium) },
+        headlineContent = { Text(patient.fullName, style = MaterialTheme.typography.titleMedium) },
         supportingContent = { 
-            Text("MRN: ${patient.mrn} | DOB: ${patient.birthDate}", style = MaterialTheme.typography.bodyMedium) 
+            Text("MRN: ${patient.mrn} | DOB: ${patient.customBirthDate}", style = MaterialTheme.typography.bodyMedium)
         },
         modifier = Modifier.clickable { onClick() }
     )

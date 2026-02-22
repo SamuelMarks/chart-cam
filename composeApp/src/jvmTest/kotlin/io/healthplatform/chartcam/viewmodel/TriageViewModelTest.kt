@@ -1,4 +1,3 @@
-
 package io.healthplatform.chartcam.viewmodel
 import app.cash.sqldelight.async.coroutines.await
 
@@ -6,6 +5,7 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import app.cash.sqldelight.async.coroutines.awaitCreate
 import io.healthplatform.chartcam.repository.FhirRepository
+import io.healthplatform.chartcam.models.familyName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -53,7 +53,7 @@ class TriageViewModelTest {
         
         // Assert selected
         assertNotNull(vm.uiState.value.selectedPatient)
-        assertEquals("Builder", vm.uiState.value.selectedPatient?.name?.first()?.family)
+        assertEquals("Builder", vm.uiState.value.selectedPatient?.name?.first()?.familyName)
         
         // Assert search finds it
         vm.onSearchQueryChanged("Builder")

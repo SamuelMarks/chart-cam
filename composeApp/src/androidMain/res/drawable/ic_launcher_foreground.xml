@@ -1,0 +1,44 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- 1. Background Layer -->
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M37.5,0h125c20.7,0 37.5,16.8 37.5,37.5v125c0,20.7 -16.8,37.5 -37.5,37.5h-125c-20.7,0 -37.5,-16.8 -37.5,-37.5v-125c0,-20.7 16.8,-37.5 37.5,-37.5z" />
+
+    <!-- 2. Scaled Focus Corners (Viewport Edge Alignment) -->
+    <path
+        android:strokeColor="#CBD5E1"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:pathData="M18.7,42.2V18.7H42.2 M157.8,18.7H181.3V42.2 M181.3,157.8V181.3H157.8 M42.2,181.3H18.7V157.8" />
+
+    <!-- 3. Medical Aperture Cross: Horizontal Bar (Clinical Teal) -->
+    <path
+        android:fillColor="#0D9488"
+        android:pathData="M26.5,80.5h147c4.7,0 4.7,0 4.7,4.7v29.6c0,4.7 0,4.7 -4.7,4.7h-147c-4.7,0 -4.7,0 -4.7,-4.7v-29.6c0,-4.7 0,-4.7 4.7,-4.7z" />
+
+    <!-- 4. Medical Aperture Cross: Vertical Bar (Deep Navy) -->
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M80.5,26.5h39c4.7,0 4.7,0 4.7,4.7v147c0,4.7 0,4.7 -4.7,4.7h-39c-4.7,0 -4.7,0 -4.7,-4.7v-147c0,-4.7 0,-4.7 4.7,-4.7z" />
+
+    <!-- 5. Central Lens (Outer Ring) -->
+    <path
+        android:fillColor="#1E293B"
+        android:strokeColor="#F8FAFC"
+        android:strokeWidth="4.7"
+        android:pathData="M100,100m-25,0a25,25 0,1 1,50 0a25,25 0,1 1,-50 0" />
+
+    <!-- 6. EKG Pulse (Integrated into Lens) -->
+    <path
+        android:strokeColor="#0D9488"
+        android:strokeWidth="3.1"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M82.8,103.1h6.3l4.7,-14.1l7.8,21.9l6.3,-10.9h9.4" />
+
+</vector>

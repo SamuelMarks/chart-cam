@@ -1,7 +1,7 @@
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,130 +11,115 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.healthplatform.chartcam.repository.FhirRepository
-import io.healthplatform.chartcam.viewmodel.TriageViewModel
 import io.healthplatform.chartcam.ui.components.CreatePatientDialog
-import kotlinx.serialization.json.Json
+import io.healthplatform.chartcam.viewmodel.TriageViewModel
 
-/**
- * Screen to assign captured photos to a Patient.
- *
- * @param photosJson JSON String of photos passed from Navigation.
- * @param fhirRepository Repository instance.
- * @param onPatientSelected Callback to navigate to Encounter Detail.
- */
+import io.healthplatform.chartcam.models.mrn
+import io.healthplatform.chartcam.models.customBirthDate
+import io.healthplatform.chartcam.models.fullName
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TriageScreen(
-    photosJson: String,
+    capturedPhotoPaths: Map<String, String>,
     fhirRepository: FhirRepository,
-    onPatientSelected: (String) -> Unit // Patient ID
+    onProceedToEncounter: (String, Map<String, String>) -> Unit
 ) {
-    // Manual VM composition
     val viewModel = androidx.lifecycle.viewmodel.compose.viewModel { TriageViewModel(fhirRepository) }
     val state by viewModel.uiState.collectAsState()
-    val focusManager = LocalFocusManager.current
 
-    // Init data (parse JSON simple map)
-    LaunchedEffect(photosJson) {
-        try {
-            val map = Json.decodeFromString<Map<String, String>>(photosJson)
-            viewModel.setPaths(map)
-        } catch (_: Exception) {
-            // Handle error / empty
-        }
-    }
-    
-    // Logic: If patient is selected, trigger navigation
-    LaunchedEffect(state.selectedPatient) {
-        state.selectedPatient?.let {
-            onPatientSelected(it.id)
-        }
+    LaunchedEffect(capturedPhotoPaths) {
+        viewModel.setPaths(capturedPhotoPaths)
     }
 
     Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = { viewModel.showCreatePatient(true) }) {
-                Icon(Icons.Default.Add, contentDescription = "Create Patient")
-            }
+        topBar = {
+            TopAppBar(
+                title = { Text("Triage: Select Patient") }
+            )
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
-            Text(
-                "Triage Photos",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             
-            Text(
-                "${state.capturedPhotoPaths.size} photos ready to assign.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary
-            )
-            
-            OutlinedTextField(
-                value = state.searchQuery,
-                onValueChange = { viewModel.onSearchQueryChanged(it) },
-                label = { Text("Search by Name or MRN") },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp).onKeyEvent {
-                    if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                        focusManager.clearFocus()
-                        true
-                    } else false
-                },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-                trailingIcon = { Icon(Icons.Default.Person, null) }
-            )
-            
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            state.selectedPatient?.let { patient ->
+                ListItem(
+                    headlineContent = { Text(patient.fullName, style = MaterialTheme.typography.titleMedium) },
+                    supportingContent = { Text("Selected. ${state.capturedPhotoPaths.size} photos ready.") },
+                    trailingContent = {
+                        IconButton(onClick = { onProceedToEncounter(patient.id ?: "", state.capturedPhotoPaths) }) {
+                            Icon(Icons.Default.ArrowForward, contentDescription = "Proceed")
+                        }
+                    },
+                    modifier = Modifier.padding(8.dp)
+                )
+                HorizontalDivider()
+            }
+
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                SearchBar(
+                    query = state.searchQuery,
+                    onQueryChange = { viewModel.onSearchQueryChanged(it) },
+                    onSearch = { },
+                    active = false,
+                    onActiveChange = { },
+                    placeholder = { Text("Search MRN or Name...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    modifier = Modifier.weight(1f)
+                ) {}
+                
+                IconButton(onClick = { viewModel.showCreatePatient(true) }) {
+                    Icon(Icons.Default.Add, contentDescription = "Create Patient")
+                }
+            }
+
+            LazyColumn {
                 items(state.searchResults) { patient ->
                     ListItem(
-                        headlineContent = { 
-                            Text("${patient.name.firstOrNull()?.family}, ${patient.name.firstOrNull()?.given?.firstOrNull()}") 
-                        },
-                        supportingContent = { Text("MRN: ${patient.mrn} | DOB: ${patient.birthDate}") },
+                        headlineContent = { Text(patient.fullName) },
+                        supportingContent = { Text("MRN: ${patient.mrn} | DOB: ${patient.customBirthDate}") },
                         modifier = Modifier.clickable { viewModel.selectPatient(patient) }
                     )
+                    HorizontalDivider()
                 }
                 
-                if (state.searchResults.isEmpty() && state.searchQuery.isNotEmpty()) {
+                if (state.searchResults.isEmpty() && state.searchQuery.isNotBlank()) {
                     item {
-                        Text("No patients found.", modifier = Modifier.padding(top = 16.dp))
+                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                            Text("No patients found.")
+                        }
                     }
                 }
             }
         }
     }
-    
+
     if (state.isCreatingPatient) {
-        // Simple Overlay for creation (Prompt Step 7 details this more, but we wire it here)
         CreatePatientDialog(
             onDismissRequest = { viewModel.showCreatePatient(false) },
-            onConfirm = { f, l, mrn, dob, g -> viewModel.createPatient(f, l, mrn, dob, g) }
+            onConfirm = { f, l, mrn, dob, g ->
+                viewModel.createPatient(f, l, mrn, dob, g)
+            }
         )
     }
 }

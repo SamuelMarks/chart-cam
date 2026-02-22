@@ -1,0 +1,28 @@
+ALTER TABLE PractitionerEntity ADD COLUMN serializedResource TEXT NOT NULL DEFAULT '';
+ALTER TABLE PatientEntity ADD COLUMN serializedResource TEXT NOT NULL DEFAULT '';
+ALTER TABLE EncounterEntity DROP COLUMN notes;
+ALTER TABLE EncounterEntity ADD COLUMN serializedResource TEXT NOT NULL DEFAULT '';
+ALTER TABLE DocumentReferenceEntity ADD COLUMN serializedResource TEXT NOT NULL DEFAULT '';
+
+CREATE TABLE IF NOT EXISTS QuestionnaireResponseEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    encounterId TEXT NOT NULL,
+    patientId TEXT NOT NULL,
+    questionnaireId TEXT NOT NULL,
+    date TEXT NOT NULL,
+    serializedResource TEXT NOT NULL,
+    FOREIGN KEY(encounterId) REFERENCES EncounterEntity(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS DeviceEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    serializedResource TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ProvenanceEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    targetId TEXT NOT NULL,
+    encounterId TEXT,
+    date TEXT NOT NULL,
+    serializedResource TEXT NOT NULL
+);

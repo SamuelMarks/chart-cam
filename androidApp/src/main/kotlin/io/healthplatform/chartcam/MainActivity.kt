@@ -1,6 +1,7 @@
 package io.healthplatform.chartcam.android
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -16,6 +17,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) { 
         enableEdgeToEdge() 
         super.onCreate(savedInstanceState) 
+
+        // Prevent screenshots and screen recording for security/HIPAA compliance
+        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         
         // Initialize the Context holder for KMP Android implementation
         // This object resides in the Shared Library

@@ -2,6 +2,7 @@ package io.healthplatform.chartcam.repository
 
 import io.healthplatform.chartcam.network.NetworkClient
 import io.healthplatform.chartcam.storage.SecureStorage
+import io.healthplatform.chartcam.models.familyName
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -49,7 +50,7 @@ class AuthRepositoryTest {
         // Assert
         assertTrue(result.isSuccess)
         assertNotNull(storage.getString("access_token"))
-        assertEquals("dr_house", repo.currentUser.value?.name?.first()?.family)
+        assertEquals("dr_house", repo.currentUser.value?.name?.first()?.familyName)
     }
 
     @Test
@@ -99,7 +100,7 @@ class AuthRepositoryTest {
 
         repo.login("dr_house", "password123")
         assertTrue(repo.checkSession())
-        assertEquals("dr_house", repo.currentUser.value?.name?.first()?.family)
+        assertEquals("dr_house", repo.currentUser.value?.name?.first()?.familyName)
 
         repo.logout()
         assertFalse(repo.checkSession())
@@ -113,7 +114,7 @@ class AuthRepositoryTest {
         storage.save("access_token", "token")
         
         assertTrue(repo.checkSession())
-        assertEquals("Doe", repo.currentUser.value?.name?.first()?.family)
+        assertEquals("Doe", repo.currentUser.value?.name?.first()?.familyName)
     }
     
     @Test

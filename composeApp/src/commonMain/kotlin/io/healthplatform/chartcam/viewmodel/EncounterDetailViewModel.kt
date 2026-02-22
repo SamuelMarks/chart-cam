@@ -2,13 +2,22 @@ package io.healthplatform.chartcam.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.healthplatform.chartcam.models.Attachment
-import io.healthplatform.chartcam.models.DocumentReference
-import io.healthplatform.chartcam.models.Encounter
-import io.healthplatform.chartcam.models.Patient
-import io.healthplatform.chartcam.models.Period
-import io.healthplatform.chartcam.models.Practitioner
-import io.healthplatform.chartcam.models.Questionnaire
+import com.google.fhir.model.r4.DocumentReference
+import com.google.fhir.model.r4.Encounter
+import com.google.fhir.model.r4.Patient
+import com.google.fhir.model.r4.Practitioner
+import com.google.fhir.model.r4.Questionnaire
+import com.google.fhir.model.r4.QuestionnaireResponse
+
+import com.google.fhir.model.r4.Canonical
+import com.google.fhir.model.r4.Reference
+import com.google.fhir.model.r4.DateTime
+import com.google.fhir.model.r4.FhirDateTime
+import com.google.fhir.model.r4.Enumeration
+import io.healthplatform.chartcam.models.createFhirProvenance
+import io.healthplatform.chartcam.models.createFhirDevice
+import io.healthplatform.chartcam.models.createFhirEncounter
+import io.healthplatform.chartcam.models.createFhirDocumentReference
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
@@ -19,27 +28,40 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 
 /**
  * State for the Encounter Detail Screen.
+ * Contains patient details, captured photos, and the state of the active questionnaire form.
  */
 data class EncounterUiState(
+    /** Indicates if initial data is being loaded. */
     val isLoading: Boolean = true,
+    /** The patient context for this encounter. */
     val patient: Patient? = null,
+    /** The currently authenticated practitioner. */
     val practitioner: Practitioner? = null,
+    /** The FHIR Encounter resource being modified. */
     val encounter: Encounter? = null,
+    /** The captured clinical photos. */
     val photos: List<DocumentReference> = emptyList(),
-    val notes: String = "",
+    /** Deprecated but kept for compatibility. */
+    val notes: String = "", 
+    /** A map of questionnaire linkId to dynamic answer (String, Boolean, etc.). */
+    val answers: Map<String, Any> = emptyMap(),
+    /** The list of available questionnaires. */
     val availableQuestionnaires: List<Questionnaire> = emptyList(),
+    /** The currently selected questionnaire. */
     val selectedQuestionnaire: Questionnaire? = null,
+    /** Indicates if data is currently syncing. */
     val isSyncing: Boolean = false,
+    /** Flag to signal the UI that finalization and syncing is complete. */
     val isFinalized: Boolean = false
 )
 
 /**
  * ViewModel for viewing and finalizing an Encounter.
+ * Handles loading existing encounters, recording form answers dynamically,
+ * taking clinical photos, and persisting responses to FHIR JSON and server.
  */
 class EncounterDetailViewModel(
     private val fhirRepository: FhirRepository,
@@ -49,17 +71,16 @@ class EncounterDetailViewModel(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EncounterUiState())
+    /** Exposes the immutable UI state. */
     val uiState: StateFlow<EncounterUiState> = _uiState.asStateFlow()
 
     /**
-     * Initializes the screen.
-     * If visitId == "new", creates a draft Encounter. Otherwise, loads existing.
-     *
-     * @param patientId The selected patient.
-     * @param visitId The encounter ID or "new".
-     * @param photosMap Map of StepName -> FilePath.
+     * Initializes the view model by creating a new encounter or loading an existing one.
+     * @param patientId ID of the patient.
+     * @param visitId ID of the visit (or "new").
+     * @param photosMap Incoming captured photos.
      */
-    fun initialize(patientId: String, visitId: String, photosMap: Map<String, String>) {
+    fun initialize(patientId: String, visitId: String, photosMap: Map<kotlin.String, kotlin.String>) {
         if (_uiState.value.patient != null) return
 
         viewModelScope.launch {
@@ -71,28 +92,28 @@ class EncounterDetailViewModel(
             
             if (patient != null && practitioner != null) {
                 if (visitId == "new") {
-                    val now = kotlin.time.Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+                    val now = kotlin.time.Clock.System.now()
                     val encounterId = UUID.randomUUID()
                     
-                    val newEncounter = Encounter(
+                    val newEncounter = createFhirEncounter(
                         id = encounterId,
-                        status = "in-progress",
-                        subjectReference = patient.id,
-                        participantReference = practitioner.id,
-                        period = Period(start = now),
-                        text = ""
+                        patientId = patient.id ?: "",
+                        practitionerId = practitioner.id ?: "",
+                        dateStr = now.toString(),
+                        statusStr = "in-progress"
                     )
                     
                     fhirRepository.saveEncounter(newEncounter)
                     
                     val docs = photosMap.map { (stepName, path) ->
-                        DocumentReference(
+                        createFhirDocumentReference(
                             id = UUID.randomUUID(),
-                            subjectReference = patient.id,
-                            contextReference = encounterId,
-                            date = now,
-                            description = stepName,
-                            content = Attachment("image/jpeg", path)
+                            patientId = patient.id ?: "",
+                            encounterId = encounterId,
+                            dateStr = now.toString(),
+                            desc = stepName,
+                            mime = "image/jpeg",
+                            urlPath = path
                         ).also {
                             fhirRepository.saveDocumentReference(it)
                         }
@@ -105,7 +126,7 @@ class EncounterDetailViewModel(
                             practitioner = practitioner,
                             encounter = newEncounter,
                             photos = docs,
-                            notes = "",
+                            answers = emptyMap(),
                             availableQuestionnaires = questionnaires,
                             selectedQuestionnaire = questionnaires.firstOrNull()
                         )
@@ -113,17 +134,48 @@ class EncounterDetailViewModel(
                 } else {
                     val existingEncounter = fhirRepository.getEncounter(visitId)
                     val existingDocs = fhirRepository.getPhotosForEncounter(visitId).toMutableList()
+                    val existingResponses = fhirRepository.getQuestionnaireResponsesForEncounter(visitId)
+                    
+                    var existingAnswers = mutableMapOf<String, Any>()
+                    var existingSelectedQ: Questionnaire? = null
+                    
+                    if (existingResponses.isNotEmpty()) {
+                        val latestQr = existingResponses.first()
+                        existingSelectedQ = questionnaires.find { it.id == latestQr.questionnaire?.value }
+                        
+                        latestQr.item.forEach { item ->
+                            val linkId = item.linkId.value ?: return@forEach
+                            val answer = item.answer.firstOrNull()?.value
+                            if (answer != null) {
+                                when (answer) {
+                                    is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String -> {
+                                        val v = answer.value.value
+                                        if (v != null) existingAnswers[linkId] = v
+                                    }
+                                    is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Boolean -> {
+                                        val v = answer.value.value
+                                        if (v != null) existingAnswers[linkId] = v
+                                    }
+                                    is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Attachment -> {
+                                        // handled in photos
+                                    }
+                                    else -> {}
+                                }
+                            }
+                        }
+                    }
                     
                     if (existingEncounter != null) {
-                        val now = kotlin.time.Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+                        val now = kotlin.time.Clock.System.now()
                         val newDocs = photosMap.map { (stepName, path) ->
-                            DocumentReference(
+                            createFhirDocumentReference(
                                 id = UUID.randomUUID(),
-                                subjectReference = patient.id,
-                                contextReference = existingEncounter.id,
-                                date = now,
-                                description = stepName,
-                                content = Attachment("image/jpeg", path)
+                                patientId = patient.id ?: "",
+                                encounterId = existingEncounter.id ?: "",
+                                dateStr = now.toString(),
+                                desc = stepName,
+                                mime = "image/jpeg",
+                                urlPath = path
                             ).also {
                                 fhirRepository.saveDocumentReference(it)
                             }
@@ -137,9 +189,9 @@ class EncounterDetailViewModel(
                                 practitioner = practitioner,
                                 encounter = existingEncounter,
                                 photos = existingDocs,
-                                notes = existingEncounter.text ?: "",
+                                answers = existingAnswers,
                                 availableQuestionnaires = questionnaires,
-                                selectedQuestionnaire = questionnaires.firstOrNull()
+                                selectedQuestionnaire = existingSelectedQ ?: questionnaires.firstOrNull()
                             )
                         }
                     } else {
@@ -153,33 +205,45 @@ class EncounterDetailViewModel(
     }
 
     /**
-     * Updates local notes state and DB.
-     * @param text The new notes text.
+     * Updates an answer for a specific questionnaire item.
+     * @param linkId The linkId of the question.
+     * @param answer The provided answer value.
      */
-    fun onNotesChanged(text: String) {
-        _uiState.update { it.copy(notes = text) }
-        val enc = _uiState.value.encounter
-        if (enc != null) {
-            viewModelScope.launch {
-                fhirRepository.updateEncounterNotes(enc.id, text)
+    fun onAnswerChanged(linkId: String, answer: Any?) {
+        _uiState.update { 
+            val newAnswers = it.answers.toMutableMap()
+            if (answer == null) {
+                newAnswers.remove(linkId)
+            } else {
+                newAnswers[linkId] = answer
             }
+            it.copy(answers = newAnswers)
         }
     }
 
     /**
-     * Sets the active questionnaire form.
-     * @param q The selected Questionnaire.
+     * Handles changes to the notes field specifically.
+     * @param text The new notes text.
+     */
+    fun onNotesChanged(text: kotlin.String) {
+        onAnswerChanged("notes", text)
+        _uiState.update { it.copy(notes = text) }
+    }
+
+    /**
+     * Changes the selected Questionnaire form.
+     * @param q The newly selected Questionnaire.
      */
     fun selectQuestionnaire(q: Questionnaire) {
         _uiState.update { it.copy(selectedQuestionnaire = q) }
     }
 
     /**
-     * Creates a custom questionnaire and sets it as active.
+     * Creates a new dynamic Questionnaire and selects it.
      * @param title The title of the form.
-     * @param photosCount Number of photos.
+     * @param photosCount The amount of required photos.
      */
-    fun createAndSelectQuestionnaire(title: String, photosCount: Int) {
+    fun createAndSelectQuestionnaire(title: kotlin.String, photosCount: Int) {
         val q = questionnaireRepository.createQuestionnaire(title, photosCount)
         _uiState.update { 
             it.copy(
@@ -190,17 +254,85 @@ class EncounterDetailViewModel(
     }
 
     /**
-     * Finalizes the encounter and triggers Sync.
+     * Saves all dynamic answers and photos into a QuestionnaireResponse,
+     * updates the Encounter status to Finished, and attempts a cloud sync.
      */
     fun finalizeEncounter() {
         val enc = _uiState.value.encounter ?: return
+        val id = enc.id ?: return
+        val q = _uiState.value.selectedQuestionnaire
         
         viewModelScope.launch {
             _uiState.update { it.copy(isSyncing = true) }
             
-            fhirRepository.updateEncounterStatus(enc.id, "finished")
+            // Build and save QuestionnaireResponse
+            if (q != null) {
+                val qrId = UUID.randomUUID()
+                val answers = _uiState.value.answers
+                val qr = QuestionnaireResponse.Builder(Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed)).apply {
+                    this.id = qrId
+                    
+                    val rawSubjectValue = enc.subject?.reference?.value ?: ""
+                    val subjectReference = if (rawSubjectValue.startsWith("Patient/")) rawSubjectValue else "Patient/$rawSubjectValue"
+                    subject = Reference.Builder().apply { reference = com.google.fhir.model.r4.String.Builder().apply { value = subjectReference } }
+                    
+                    val encounterReference = if (id.startsWith("Encounter/")) id else "Encounter/$id"
+                    encounter = Reference.Builder().apply { reference = com.google.fhir.model.r4.String.Builder().apply { value = encounterReference } }
+
+                    questionnaire = Canonical.Builder().apply { value = q.id ?: "" }
+                    try {
+                        authored = DateTime.Builder().apply { value = FhirDateTime.fromString(kotlin.time.Clock.System.now().toString()) }
+                    } catch (e: Exception) {}
+
+                    answers.forEach { (linkId, answer) ->
+                        val itemBuilder = QuestionnaireResponse.Item.Builder(com.google.fhir.model.r4.String.Builder().apply { value = linkId })
+                        
+                        when (answer) {
+                            is String -> {
+                                if (answer.isNotBlank()) {
+                                    itemBuilder.answer.add(QuestionnaireResponse.Item.Answer.Builder().apply {
+                                        value = com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String(com.google.fhir.model.r4.String.Builder().apply { value = answer }.build())
+                                    })
+                                    item.add(itemBuilder)
+                                }
+                            }
+                            is Boolean -> {
+                                itemBuilder.answer.add(QuestionnaireResponse.Item.Answer.Builder().apply {
+                                    value = com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Boolean(com.google.fhir.model.r4.Boolean.Builder().apply { value = answer }.build())
+                                })
+                                item.add(itemBuilder)
+                            }
+                        }
+                    }
+
+                    _uiState.value.photos.forEach { photo ->
+                        val stepName = photo.description?.value ?: return@forEach
+                        val urlPath = photo.content.firstOrNull()?.attachment?.url?.value ?: return@forEach
+
+                        item.add(QuestionnaireResponse.Item.Builder(com.google.fhir.model.r4.String.Builder().apply { value = stepName }).apply {
+                            answer.add(QuestionnaireResponse.Item.Answer.Builder().apply {
+                                value = com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Attachment(
+                                    com.google.fhir.model.r4.Attachment.Builder().apply {
+                                        url = com.google.fhir.model.r4.Url.Builder().apply { value = urlPath }
+                                    }.build()
+                                )
+                            })
+                        })
+                    }
+                }.build()
+                fhirRepository.saveQuestionnaireResponse(qr)
+                val prov = createFhirProvenance(
+                    id = io.healthplatform.chartcam.utils.UUID.randomUUID(),
+                    targetResourceId = qr.id!!,
+                    practitionerId = "Practitioner/${_uiState.value.practitioner?.id}",
+                    dateStr = kotlin.time.Clock.System.now().toString()
+                )
+                fhirRepository.saveProvenance(prov, _uiState.value.encounter?.id)
+            }
             
-            val success = syncManager.syncEncounter(enc.id)
+            fhirRepository.updateEncounterStatus(id, "finished")
+            
+            val success = syncManager.syncEncounter(id)
             
             _uiState.update { 
                 it.copy(
@@ -212,7 +344,7 @@ class EncounterDetailViewModel(
     }
     
     /**
-     * Resets finalized state after navigation.
+     * Resets the finalized flag back to false.
      */
     fun resetFinalized() {
         _uiState.update { it.copy(isFinalized = false) }
