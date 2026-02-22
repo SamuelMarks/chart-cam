@@ -25,8 +25,24 @@ import io.healthplatform.chartcam.ui.PatientListScreen
 import io.healthplatform.chartcam.ui.TriageScreen
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
 import io.healthplatform.chartcam.database.DatabaseDriverFactory
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+
+class PhotoSessionManager {
+    var pendingPhotos: Map<String, String> = emptyMap()
+    
+    fun setPhotos(photos: Map<String, String>) {
+        pendingPhotos = photos
+    }
+    
+    fun getAndClear(): Map<String, String> {
+        val p = pendingPhotos
+        pendingPhotos = emptyMap()
+        return p
+    }
+
+    fun get(): Map<String, String> {
+        return pendingPhotos
+    }
+}
 
 @Composable
 fun AppNavigation() {
@@ -45,7 +61,9 @@ fun AppNavigation() {
     val fileStorage = remember { createFileStorage() }
     val exportImportService = remember { ExportImportService(fhirRepository.database, fileStorage) }
     
-    val syncManager = remember { SyncManager(fhirRepository, client) }
+    val syncManager = remember { SyncManager(fhirRepository, client, fileStorage) }
+
+    val photoSessionManager = remember { PhotoSessionManager() }
 
     val user by authRepository.currentUser.collectAsState()
     
@@ -74,7 +92,10 @@ fun AppNavigation() {
                 questionnaireRepository = questionnaireRepository,
                 onFinished = { outputPathsMap ->
                     if (outputPathsMap.isEmpty()) navController.navigate(Routes.PATIENT_LIST)
-                    else navController.navigate(TriageRoute(Json.encodeToString(outputPathsMap)))
+                    else {
+                        photoSessionManager.setPhotos(outputPathsMap)
+                        navController.navigate(TriageRoute)
+                    }
                 },
                 onCancel = {
                     navController.navigate(Routes.PATIENT_LIST) {
@@ -94,7 +115,8 @@ fun AppNavigation() {
                     if (outputPathsMap.isEmpty()) {
                         navController.popBackStack()
                     } else {
-                        navController.navigate(VisitDetailRoute(patientId, "new", Json.encodeToString(outputPathsMap))) {
+                        photoSessionManager.setPhotos(outputPathsMap)
+                        navController.navigate(VisitDetailRoute(patientId, "new")) {
                             popUpTo(PatientDetailRoute(patientId))
                         }
                     }
@@ -106,13 +128,11 @@ fun AppNavigation() {
         }
 
         composable<TriageRoute> { entry ->
-            val route = entry.toRoute<TriageRoute>()
-            val paths = route.paths
             TriageScreen(
-                photosJson = paths,
+                capturedPhotoPaths = photoSessionManager.get(),
                 fhirRepository = fhirRepository,
-                onPatientSelected = { patientId ->
-                    navController.navigate(VisitDetailRoute(patientId, "new", paths))
+                onProceedToEncounter = { patientId, photos ->
+                    navController.navigate(VisitDetailRoute(patientId, "new"))
                 }
             )
         }
@@ -121,12 +141,11 @@ fun AppNavigation() {
             val route = entry.toRoute<VisitDetailRoute>()
             val patientId = route.patientId
             val visitId = route.visitId
-            val photos = route.photos ?: "{}"
             
             EncounterDetailScreen(
                 patientId = patientId,
                 visitId = visitId,
-                photosJson = photos,
+                photosMap = photoSessionManager.getAndClear(),
                 fhirRepository = fhirRepository,
                 authRepository = authRepository,
                 syncManager = syncManager,

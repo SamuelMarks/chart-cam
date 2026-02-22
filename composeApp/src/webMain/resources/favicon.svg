@@ -1,0 +1,28 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- 1. Background -->
+    <rect width="256" height="256" rx="48" fill="#F8FAFC"/>
+
+    <!-- 2. Scaled Focus Corners (Closer to edges) -->
+    <g stroke="#CBD5E1" stroke-width="10" stroke-linecap="round">
+        <path d="M24 54V24H54"/>
+        <path d="M202 24H232V54"/>
+        <path d="M232 202V232H202"/>
+        <path d="M54 232H24V202"/>
+    </g>
+
+    <!-- 3. Expanded Aperture Medical Cross -->
+    <g id="MedicalAperture">
+        <!-- Horizontal Bar (Clinical Teal) -->
+        <rect x="28" y="103" width="200" height="50" rx="6" fill="#0D9488"/>
+        <!-- Vertical Bar (Deep Navy) -->
+        <rect x="103" y="28" width="50" height="200" rx="6" fill="#1E293B"/>
+    </g>
+
+    <!-- 4. Enriched EKG Pulse & Lens -->
+    <circle cx="128" cy="128" r="32" fill="#1E293B" stroke="#F8FAFC" stroke-width="6"/>
+    <path d="M106 132H114L120 114L130 142L138 128H150"
+        stroke="#0D9488"
+        stroke-width="4"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>

@@ -1,40 +1,41 @@
 import kotlin.Boolean;
 
 -- Table: Practitioner
-CREATE TABLE PractitionerEntity (
+CREATE TABLE IF NOT EXISTS PractitionerEntity (
     id TEXT NOT NULL PRIMARY KEY,
     family TEXT NOT NULL,
     given TEXT NOT NULL,
-    active INTEGER AS Boolean NOT NULL DEFAULT 1
+    active INTEGER AS Boolean NOT NULL DEFAULT 1,
+    serializedResource TEXT NOT NULL
 );
 
 -- Table: Patient
-CREATE TABLE PatientEntity (
+CREATE TABLE IF NOT EXISTS PatientEntity (
     id TEXT NOT NULL PRIMARY KEY,
     family TEXT NOT NULL,
     given TEXT NOT NULL,
     birthDate TEXT NOT NULL,
     mrn TEXT NOT NULL,
     gender TEXT NOT NULL,
-    managingOrganization TEXT
+    managingOrganization TEXT,
+    serializedResource TEXT NOT NULL
 );
 
 -- Table: Encounter
-CREATE TABLE EncounterEntity (
+CREATE TABLE IF NOT EXISTS EncounterEntity (
     id TEXT NOT NULL PRIMARY KEY,
     patientId TEXT NOT NULL,
     practitionerId TEXT NOT NULL,
     date TEXT NOT NULL,
     status TEXT NOT NULL,
     type TEXT NOT NULL DEFAULT 'clinical-photography',
-    notes TEXT,
+    serializedResource TEXT NOT NULL,
     FOREIGN KEY(patientId) REFERENCES PatientEntity(id) ON DELETE CASCADE,
     FOREIGN KEY(practitionerId) REFERENCES PractitionerEntity(id) ON DELETE CASCADE
 );
 
 -- Table: DocumentReference (The Photos)
--- Links a file path on disk to an Encounter and Patient
-CREATE TABLE DocumentReferenceEntity (
+CREATE TABLE IF NOT EXISTS DocumentReferenceEntity (
     id TEXT NOT NULL PRIMARY KEY,
     encounterId TEXT NOT NULL,
     patientId TEXT NOT NULL,
@@ -44,13 +45,25 @@ CREATE TABLE DocumentReferenceEntity (
     title TEXT, -- e.g., "Front View"
     filePath TEXT NOT NULL, -- Local URI/Path
     mimeType TEXT NOT NULL DEFAULT 'image/jpeg',
+    serializedResource TEXT NOT NULL,
+    FOREIGN KEY(encounterId) REFERENCES EncounterEntity(id) ON DELETE CASCADE
+);
+
+-- Table: QuestionnaireResponse (Forms and Notes)
+CREATE TABLE IF NOT EXISTS QuestionnaireResponseEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    encounterId TEXT NOT NULL,
+    patientId TEXT NOT NULL,
+    questionnaireId TEXT NOT NULL,
+    date TEXT NOT NULL,
+    serializedResource TEXT NOT NULL,
     FOREIGN KEY(encounterId) REFERENCES EncounterEntity(id) ON DELETE CASCADE
 );
 
 -- Queries: Practitioner
 insertPractitioner:
-INSERT OR REPLACE INTO PractitionerEntity(id, family, given, active)
-VALUES (?, ?, ?, ?);
+INSERT OR REPLACE INTO PractitionerEntity(id, family, given, active, serializedResource)
+VALUES (?, ?, ?, ?, ?);
 
 getPractitionerById:
 SELECT * FROM PractitionerEntity WHERE id = ?;
@@ -60,8 +73,8 @@ SELECT * FROM PractitionerEntity;
 
 -- Queries: Patient
 insertPatient:
-INSERT OR REPLACE INTO PatientEntity(id, family, given, birthDate, mrn, gender, managingOrganization)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO PatientEntity(id, family, given, birthDate, mrn, gender, managingOrganization, serializedResource)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 getAllPatients:
 SELECT * FROM PatientEntity ORDER BY family ASC;
@@ -77,7 +90,7 @@ OR mrn LIKE ('%' || :query || '%');
 
 -- Queries: Encounter
 insertEncounter:
-INSERT OR REPLACE INTO EncounterEntity(id, patientId, practitionerId, date, status, notes)
+INSERT OR REPLACE INTO EncounterEntity(id, patientId, practitionerId, date, status, serializedResource)
 VALUES (?, ?, ?, ?, ?, ?);
 
 getEncountersForPatient:
@@ -91,15 +104,16 @@ SELECT * FROM EncounterEntity WHERE id = ?;
 getAllEncounters:
 SELECT * FROM EncounterEntity;
 
-updateEncounterNotes:
+
+updateEncounterStatus:
 UPDATE EncounterEntity
-SET notes = ?
+SET status = ?, serializedResource = ?
 WHERE id = ?;
 
 -- Queries: DocumentReference
 insertDocumentReference:
-INSERT OR REPLACE INTO DocumentReferenceEntity(id, encounterId, patientId, type, category, date, title, filePath, mimeType)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO DocumentReferenceEntity(id, encounterId, patientId, type, category, date, title, filePath, mimeType, serializedResource)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 getPhotosForEncounter:
 SELECT * FROM DocumentReferenceEntity
@@ -109,7 +123,52 @@ ORDER BY date ASC;
 getAllDocumentReferences:
 SELECT * FROM DocumentReferenceEntity;
 
-updateEncounterStatus:
-UPDATE EncounterEntity
-SET status = ?
-WHERE id = ?;
+-- Queries: QuestionnaireResponse
+insertQuestionnaireResponse:
+INSERT OR REPLACE INTO QuestionnaireResponseEntity(id, encounterId, patientId, questionnaireId, date, serializedResource)
+VALUES (?, ?, ?, ?, ?, ?);
+
+getQuestionnaireResponsesForEncounter:
+SELECT * FROM QuestionnaireResponseEntity
+WHERE encounterId = ?
+ORDER BY date DESC;
+
+getAllQuestionnaireResponses:
+SELECT * FROM QuestionnaireResponseEntity;
+
+-- Table: Device
+CREATE TABLE IF NOT EXISTS DeviceEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    serializedResource TEXT NOT NULL
+);
+
+-- Table: Provenance
+CREATE TABLE IF NOT EXISTS ProvenanceEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    targetId TEXT NOT NULL,
+    encounterId TEXT,
+    date TEXT NOT NULL,
+    serializedResource TEXT NOT NULL
+);
+
+-- Queries: Device
+insertDevice:
+INSERT OR REPLACE INTO DeviceEntity(id, serializedResource)
+VALUES (?, ?);
+
+getDevice:
+SELECT * FROM DeviceEntity WHERE id = ?;
+
+getAllDevices:
+SELECT * FROM DeviceEntity;
+
+-- Queries: Provenance
+insertProvenance:
+INSERT OR REPLACE INTO ProvenanceEntity(id, targetId, encounterId, date, serializedResource)
+VALUES (?, ?, ?, ?, ?);
+
+getProvenancesForEncounter:
+SELECT * FROM ProvenanceEntity WHERE encounterId = ? ORDER BY date DESC;
+
+getAllProvenances:
+SELECT * FROM ProvenanceEntity;

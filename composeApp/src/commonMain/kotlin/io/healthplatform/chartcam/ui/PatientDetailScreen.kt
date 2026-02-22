@@ -31,6 +31,11 @@ import androidx.compose.ui.unit.dp
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.viewmodel.PatientDetailViewModel
 
+import io.healthplatform.chartcam.models.mrn
+import io.healthplatform.chartcam.models.customBirthDate
+import io.healthplatform.chartcam.models.fullName
+import io.healthplatform.chartcam.models.encounterDate
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PatientDetailScreen(
@@ -68,11 +73,11 @@ fun PatientDetailScreen(
             state.patient?.let { patient ->
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Text(
-                        text = "${patient.name.firstOrNull()?.family}, ${patient.name.firstOrNull()?.given?.firstOrNull()}",
+                        text = patient.fullName,
                         style = MaterialTheme.typography.headlineMedium
                     )
                     Text(
-                        text = "MRN: ${patient.mrn} | DOB: ${patient.birthDate}",
+                        text = "MRN: ${patient.mrn} | DOB: ${patient.customBirthDate}",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.padding(top = 4.dp)
@@ -91,9 +96,9 @@ fun PatientDetailScreen(
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(state.encounters) { encounter ->
                     ListItem(
-                        headlineContent = { Text(encounter.period.start.date.toString()) },
-                        supportingContent = { Text(encounter.text ?: "No notes") },
-                        modifier = Modifier.clickable { onVisitSelected(encounter.id) }
+                        headlineContent = { Text(encounter.encounterDate) },
+                        supportingContent = { Text(encounter.text?.div?.value ?: "No notes") },
+                        modifier = Modifier.clickable { onVisitSelected(encounter.id ?: "") }
                     )
                     HorizontalDivider()
                 }

@@ -3,6 +3,8 @@ ChartCam
 
 ![Doc Coverage](https://img.shields.io/badge/Doc%20Coverage-100.0%25-brightgreen)
 ![Test Coverage](https://img.shields.io/badge/Test%20Coverage-100.0%25-brightgreen)
+[![Coverage Verification](https://github.com/SamuelMarks/chart-cam/actions/workflows/coverage.yml/badge.svg)](https://github.com/SamuelMarks/chart-cam/actions/workflows/coverage.yml)
+[![ChartCam CI/CD](https://github.com/SamuelMarks/chart-cam/actions/workflows/deploy.yml/badge.svg)](https://github.com/SamuelMarks/chart-cam/actions/workflows/deploy.yml)
 
 ChartCam is an enterprise-grade Kotlin Multiplatform (KMP) application engineered for modern healthcare platforms. It provides a secure, efficient, and compliant solution for capturing, managing, and triaging patient clinical photography. Architected specifically for practitioners operating in fast-paced, high-friction environments, ChartCam facilitates rapid clinical documentation while maintaining strict adherence to global data privacy regulations (e.g., HIPAA, GDPR, PIPEDA).
 

@@ -8,8 +8,8 @@ object Routes {
     const val PATIENT_LIST = "/patients"
 }
 
-@Serializable data class TriageRoute(val paths: String)
+@Serializable object TriageRoute
 @Serializable data class PatientDetailRoute(val patientId: String)
 @Serializable data class PatientVisitsRoute(val patientId: String)
 @Serializable data class CaptureForPatientRoute(val patientId: String, val questionnaireId: String? = null)
-@Serializable data class VisitDetailRoute(val patientId: String, val visitId: String, val photos: String? = null)
+@Serializable data class VisitDetailRoute(val patientId: String, val visitId: String)

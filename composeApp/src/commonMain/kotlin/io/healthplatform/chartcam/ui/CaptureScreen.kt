@@ -54,6 +54,7 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import com.google.fhir.model.r4.Questionnaire
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalResourceApi::class)
@@ -107,8 +108,8 @@ fun CaptureScreen(
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
         val q = questionnaireRepository.getQuestionnaire(questionnaireId)
-        val steps = q?.item?.filter { it.type == "attachment" }?.map {
-            PhotoStep(it.linkId, it.text, it.linkId.contains("ruler"))
+        val steps = q?.item?.filter { it.type.value == Questionnaire.QuestionnaireItemType.Attachment }?.map {
+            PhotoStep(it.linkId.value ?: "", it.text?.value ?: "", it.linkId?.value?.contains("ruler") == true)
         } ?: emptyList()
         viewModel.initSteps(steps)
     }

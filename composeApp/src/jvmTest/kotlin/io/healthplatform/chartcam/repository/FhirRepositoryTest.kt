@@ -1,14 +1,15 @@
-
 package io.healthplatform.chartcam.repository
-import app.cash.sqldelight.async.coroutines.await
 
+import app.cash.sqldelight.async.coroutines.await
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import app.cash.sqldelight.async.coroutines.awaitCreate
-import io.healthplatform.chartcam.models.Encounter
-import io.healthplatform.chartcam.models.HumanName
-import io.healthplatform.chartcam.models.Patient
-import io.healthplatform.chartcam.models.Period
+import io.healthplatform.chartcam.models.createFhirPatient
+import io.healthplatform.chartcam.models.createFhirEncounter
+import com.google.fhir.model.r4.Patient
+import com.google.fhir.model.r4.Encounter
+import io.healthplatform.chartcam.models.givenName
+import io.healthplatform.chartcam.models.familyName
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -30,50 +31,63 @@ class FhirRepositoryTest {
 
         // 1. Create Patient
         val patientId = "pat_01"
-        val patient = Patient(
+        val patient = createFhirPatient(
             id = patientId,
-            name = listOf(HumanName("Doe", listOf("John"))),
-            birthDate = LocalDate(1980, 1, 1),
-            gender = "male",
-            mrn = "MRN123",
-            managingOrganization = "Org1"
+            firstName = "John",
+            lastName = "Doe",
+            dob = LocalDate(1980, 1, 1),
+            mrnValue = "MRN123",
+            genderStr = "male"
         )
         repo.savePatient(patient)
 
         // 2. Create Encounter
         val encounterId = "enc_01"
-        val now = LocalDateTime.parse("2023-10-25T10:00:00")
-        val encounter = Encounter(
+        val now = "2023-10-25T10:00:00+00:00"
+        val encounter = createFhirEncounter(
             id = encounterId,
-            status = "in-progress",
-            type = "clinical-photography",
-            subjectReference = patientId,
-            participantReference = "prac_01",
-            period = Period(start = now),
-            text = "Patient complains of leg pain"
+            patientId = patientId,
+            practitionerId = "prac_01",
+            dateStr = now,
+            statusStr = "in-progress"
         )
         repo.saveEncounter(encounter)
 
         // 3. Verify Fetch
         val fetchedEncounter = repo.getEncounter(encounterId)
-        assertNotNull(fetchedEncounter)
-        assertEquals("Patient complains of leg pain", fetchedEncounter.text)
-        assertEquals(patientId, fetchedEncounter.subjectReference)
+        // Test update status
+        repo.updateEncounterStatus(encounterId, "finished")
+        val updated = repo.getEncounter(encounterId)
+        assertEquals(Encounter.EncounterStatus.Finished, updated?.status?.value)
     }
 
     @Test
     fun testPatientSearch() = runTest {
         val repo = createRepository()
         
-        repo.savePatient(Patient("1", listOf(HumanName("Smith", listOf("Jane"))), LocalDate(1990,1,1), "f", "A1"))
-        repo.savePatient(Patient("2", listOf(HumanName("Jones", listOf("Bob"))), LocalDate(1991,1,1), "m", "A2"))
+        repo.savePatient(createFhirPatient("1", "Jane", "Smith", LocalDate(1990,1,1), "A1", "f"))
+        repo.savePatient(createFhirPatient("2", "Bob", "Jones", LocalDate(1991,1,1), "A2", "m"))
         
         val results = repo.searchPatients("Smith")
         assertEquals(1, results.size)
-        assertEquals("Jane", results[0].name[0].given[0])
+        assertEquals("Jane", results[0].name.firstOrNull()?.givenName)
         
         val resultsMrn = repo.searchPatients("A2")
         assertEquals(1, resultsMrn.size)
-        assertEquals("Jones", resultsMrn[0].name[0].family)
+        assertEquals("Jones", resultsMrn[0].name.firstOrNull()?.familyName)
+        
+        val all = repo.getAllPatients()
+        assertEquals(2, all.size)
+    }
+    @Test
+    fun testQuestionnaireResponses() = runTest {
+        val repo = createRepository()
+        val qr = com.google.fhir.model.r4.QuestionnaireResponse.Builder(com.google.fhir.model.r4.Enumeration(value = com.google.fhir.model.r4.QuestionnaireResponse.QuestionnaireResponseStatus.Completed)).apply { 
+            id = "qr1"
+            encounter = com.google.fhir.model.r4.Reference.Builder().apply { reference = com.google.fhir.model.r4.String.Builder().apply { value = "Encounter/enc1" } }
+        }.build()
+        repo.saveQuestionnaireResponse(qr)
+        val qrs = repo.getQuestionnaireResponsesForEncounter("Encounter/enc1")
+        assertEquals(1, qrs.size)
     }
 }

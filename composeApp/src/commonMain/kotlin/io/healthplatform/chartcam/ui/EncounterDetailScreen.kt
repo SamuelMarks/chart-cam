@@ -6,9 +6,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -17,8 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,6 +32,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -41,28 +45,36 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import io.healthplatform.chartcam.models.DocumentReference
-import io.healthplatform.chartcam.models.Questionnaire
+import com.google.fhir.model.r4.DocumentReference
+import com.google.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.sync.SyncManager
 import io.healthplatform.chartcam.viewmodel.EncounterDetailViewModel
 import io.healthplatform.chartcam.files.createFileStorage
-import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
+
+import io.healthplatform.chartcam.models.mrn
+import io.healthplatform.chartcam.models.customBirthDate
+import io.healthplatform.chartcam.models.fullName
+import io.healthplatform.chartcam.models.encounterDate
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalResourceApi::class)
 @Composable
 fun EncounterDetailScreen(
     patientId: String,
     visitId: String,
-    photosJson: String,
+    photosMap: Map<String, String>,
     fhirRepository: FhirRepository,
     authRepository: AuthRepository,
     syncManager: SyncManager,
@@ -77,14 +89,10 @@ fun EncounterDetailScreen(
     
     val state by viewModel.uiState.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(patientId, visitId) {
-        try {
-            val map = Json.decodeFromString<Map<String, String>>(photosJson)
-            viewModel.initialize(patientId, visitId, map)
-        } catch (e: Exception) {
-            viewModel.initialize(patientId, visitId, emptyMap())
-        }
+        viewModel.initialize(patientId, visitId, photosMap)
     }
     
     LaunchedEffect(state.isFinalized) {
@@ -105,13 +113,14 @@ fun EncounterDetailScreen(
                     OutlinedTextField(
                         value = newTitle,
                         onValueChange = { newTitle = it },
-                        label = { Text("Title") }
+                        label = { Text("Title") },
+                        modifier = Modifier.semantics { contentDescription = "Questionnaire Title Input" }
                     )
                     OutlinedTextField(
                         value = newPhotosCount,
                         onValueChange = { newPhotosCount = it.filter { c -> c.isDigit() } },
                         label = { Text("Number of Photos") },
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(top = 8.dp).semantics { contentDescription = "Questionnaire Photos Count Input" }
                     )
                 }
             },
@@ -131,6 +140,7 @@ fun EncounterDetailScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Visit Detail") },
@@ -143,8 +153,10 @@ fun EncounterDetailScreen(
         },
         floatingActionButton = {
             if (!state.isLoading && !state.isSyncing) {
-                FloatingActionButton(onClick = { viewModel.finalizeEncounter() }) {
-                    Icon(Icons.Default.Check, contentDescription = "Finalize")
+                FloatingActionButton(onClick = { 
+                    viewModel.finalizeEncounter() 
+                }) {
+                    Icon(Icons.Default.Check, contentDescription = "Finalize Encounter")
                 }
             }
         }
@@ -162,11 +174,11 @@ fun EncounterDetailScreen(
             Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
                 state.patient?.let { patient ->
                     Text(
-                        text = "${patient.name.firstOrNull()?.family}, ${patient.name.firstOrNull()?.given?.firstOrNull()}",
-                        style = MaterialTheme.typography.headlineSmall
+                        text = patient.fullName,
+                        style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() }
                     )
                     Text(
-                        text = "MRN: ${patient.mrn} | ${state.encounter?.period?.start?.date}",
+                        text = "MRN: ${patient.mrn} | ${state.encounter?.encounterDate}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.secondary
                     )
@@ -174,7 +186,7 @@ fun EncounterDetailScreen(
                 
                 state.practitioner?.let { prac ->
                     Text(
-                        text = "Provider: Dr. ${prac.name.firstOrNull()?.family}",
+                        text = "Provider: Dr. ${prac.fullName}",
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
@@ -185,10 +197,10 @@ fun EncounterDetailScreen(
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = it },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = "Questionnaire Selector" }
                 ) {
                     OutlinedTextField(
-                        value = state.selectedQuestionnaire?.title ?: "Select Questionnaire",
+                        value = state.selectedQuestionnaire?.title?.value ?: "Select Questionnaire",
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Questionnaire") },
@@ -202,7 +214,7 @@ fun EncounterDetailScreen(
                     ) {
                         state.availableQuestionnaires.forEach { q ->
                             DropdownMenuItem(
-                                text = { Text(q.title) },
+                                text = { Text(q.title?.value ?: "") },
                                 onClick = {
                                     viewModel.selectQuestionnaire(q)
                                     expanded = false
@@ -219,17 +231,15 @@ fun EncounterDetailScreen(
                     }
                 }
                 
-                state.selectedQuestionnaire?.item?.find { it.type == "string" }?.let { notesItem ->
-                    OutlinedTextField(
-                        value = state.notes,
-                        onValueChange = { viewModel.onNotesChanged(it) },
-                        label = { Text(notesItem.text) },
-                        modifier = Modifier.fillMaxWidth().height(120.dp).padding(vertical = 8.dp),
-                        maxLines = 5
+                state.selectedQuestionnaire?.let { q ->
+                    DynamicQuestionnaireForm(
+                        questionnaire = q,
+                        answers = state.answers,
+                        onAnswerChanged = { linkId, value -> viewModel.onAnswerChanged(linkId, value) }
                     )
                 }
 
-                val targetPhotosCount = state.selectedQuestionnaire?.item?.count { it.type == "attachment" } ?: 0
+                val targetPhotosCount = state.selectedQuestionnaire?.item?.count { it.type.value == Questionnaire.QuestionnaireItemType.Attachment } ?: 0
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -250,7 +260,7 @@ fun EncounterDetailScreen(
                     columns = GridCells.Fixed(2),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp)
+                    contentPadding = PaddingValues(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp)
                 ) {
                     items(state.photos) { photo ->
                         PhotoGridItem(photo)
@@ -264,21 +274,19 @@ fun EncounterDetailScreen(
 @OptIn(ExperimentalResourceApi::class)
 @Composable
 fun PhotoGridItem(doc: DocumentReference) {
-    Card(
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
+    ElevatedCard {
         Column {
-            val bytes = remember(doc.content.url) {
+            val bytes = remember(doc.content.firstOrNull()?.attachment?.url?.value ?: "") {
                 try {
                     val storage = createFileStorage()
-                    storage.readImage(doc.content.url)
+                    storage.readImage(doc.content.firstOrNull()?.attachment?.url?.value ?: "")
                 } catch (e: Exception) { ByteArray(0) }
             }
             
             if (bytes.isNotEmpty()) {
                 Image(
                     bitmap = bytes.decodeToImageBitmap(),
-                    contentDescription = null,
+                    contentDescription = doc.description?.value ?: "Patient Photo",
                     modifier = Modifier.fillMaxWidth().height(150.dp),
                     contentScale = ContentScale.Crop
                 )
@@ -289,7 +297,7 @@ fun PhotoGridItem(doc: DocumentReference) {
             }
             
             Text(
-                text = doc.description ?: "Photo",
+                text = doc.description?.value ?: "Photo",
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(8.dp)
             )

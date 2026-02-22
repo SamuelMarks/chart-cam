@@ -13,7 +13,6 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
         // Required for JetBrains Compose plugins
-        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     }
 }
 
@@ -28,7 +27,6 @@ dependencyResolutionManagement {
         }
         mavenCentral()
         // Required for JetBrains Compose dependencies
-        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     }
 }
 
