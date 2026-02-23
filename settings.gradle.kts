@@ -1,5 +1,4 @@
 rootProject.name = "ChartCam"
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
     repositories {
@@ -36,4 +35,4 @@ plugins {
 }
 
 include(":androidApp")
-include(":composeApp")
+include(":chartCam")

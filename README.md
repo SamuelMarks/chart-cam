@@ -75,7 +75,7 @@ While the **Business Logic (FHIR, Auth, ViewModels)** and **UI (Compose)** are 1
 
 ## 🏗️ Project Structure
 
-* **/composeApp**: The core KMP module encompassing shared logic (Android, iOS, Desktop, Web) and Android-specific implementations.
+* **/chartCam**: The core KMP module encompassing shared logic (Android, iOS, Desktop, Web) and Android-specific implementations.
     * `commonMain`: Shared business logic, UI (Compose), FHIR models, and ViewModels.
     * `androidMain`: Android-specific platform bindings (CameraX, Sensors, Keystore).
     * `iosMain`: iOS-specific platform bindings (AVFoundation, CoreMotion, Keychain).
@@ -116,10 +116,10 @@ The `fastlane/Fastfile` houses deployment lanes for both Android and iOS. For de
 
 ### Build and Run Android
 
-Launch the application directly from Android Studio by selecting the `androidApp` or `composeApp` run configuration, or compile via the CLI:
+Launch the application directly from Android Studio by selecting the `androidApp` or `chartCam` run configuration, or compile via the CLI:
 
 ```shell
-./gradlew :composeApp:assembleDebug
+./gradlew :chartCam:assembleDebug
 ```
 
 ### Build and Run iOS
@@ -132,7 +132,7 @@ Open `./iosApp/iosApp.xcodeproj` in Xcode and execute the **Run** command (Cmd+R
 To validate the Compose Multiplatform UI across desktop environments:
 
 ```shell
-./gradlew :composeApp:run
+./gradlew :chartCam:run
 ```
 
 ---
@@ -163,13 +163,13 @@ For targeted debugging, execute tests against specific platforms directly via Gr
 | Target           | Command                                       | Description                                          |
 |:-----------------|:----------------------------------------------|:-----------------------------------------------------|
 | **Common Logic** | `./gradlew test`                              | Validates shared business logic (runs on JVM host).  |
-| **Android**      | `./gradlew :composeApp:testDebugUnitTest`     | Executes Android-specific instrumentation and unit tests. |
-| **iOS**          | `./gradlew :composeApp:iosSimulatorArm64Test` | Executes Kotlin/Native tests on the iOS Simulator.   |
-| **Desktop**      | `./gradlew :composeApp:jvmTest`               | Executes Desktop-specific logic tests.               |
+| **Android**      | `./gradlew :chartCam:testDebugUnitTest`     | Executes Android-specific instrumentation and unit tests. |
+| **iOS**          | `./gradlew :chartCam:iosSimulatorArm64Test` | Executes Kotlin/Native tests on the iOS Simulator.   |
+| **Desktop**      | `./gradlew :chartCam:jvmTest`               | Executes Desktop-specific logic tests.               |
 
 **Test Reports Location:**
 Upon completion, comprehensive HTML test coverage and result reports are generated at:
-* `composeApp/build/reports/tests/`
+* `chartCam/build/reports/tests/`
 
 ---
 > **Compliance Note:** ChartCam enforces 100% Documentation and Test Coverage standards. Execute `./gradlew check` to verify compliance prior to submitting any Pull Requests.

@@ -28,6 +28,9 @@ plugins {
 
     // Kover: Test coverage tool
     alias(libs.plugins.kover) apply false
+
+    // Dokka: Documentation generation
+    alias(libs.plugins.dokka) apply false
 } 
 
 /** 

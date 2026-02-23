@@ -26,9 +26,9 @@ The Android release process necessitates compiling a signed Android App Bundle (
 In scenarios requiring manual artifact inspection or offline compilation, the release AAB can be generated directly via Gradle:
 
 ```bash
-./gradlew :composeApp:bundleRelease
+./gradlew :chartCam:bundleRelease
 ```
-Upon successful execution, the optimized App Bundle will be placed in `composeApp/build/outputs/bundle/release/composeApp-release.aab`.
+Upon successful execution, the optimized App Bundle will be placed in `chartCam/build/outputs/bundle/release/chartCam-release.aab`.
 
 ### Automated Deployment Pipeline (Fastlane)
 
@@ -58,7 +58,7 @@ Execute the final deployment to the Production track (typically post-Beta valida
 bundle exec fastlane android deploy_production
 ```
 
-> **Versioning Note:** The Fastlane pipeline is configured to automatically query the Google Play API and increment the `versionCode` relative to the latest published artifact. Developers are responsible for manually updating the semantic `versionName` within `composeApp/build.gradle.kts` prior to initiating a release lane.
+> **Versioning Note:** The Fastlane pipeline is configured to automatically query the Google Play API and increment the `versionCode` relative to the latest published artifact. Developers are responsible for manually updating the semantic `versionName` within `chartCam/build.gradle.kts` prior to initiating a release lane.
 
 ---
 
@@ -126,4 +126,4 @@ Following a successful production release on either platform, the following admi
     git tag -a v1.0.0 -m "Production Release: Version 1.0.0"
     git push origin v1.0.0
     ```
-2.  **Version String Bump**: Increment the semantic version identifiers (`versionName` in `composeApp/build.gradle.kts` and `CFBundleShortVersionString` in `iosApp/Info.plist`) to prepare the codebase for the subsequent development iteration.
+2.  **Version String Bump**: Increment the semantic version identifiers (`versionName` in `chartCam/build.gradle.kts` and `CFBundleShortVersionString` in `iosApp/Info.plist`) to prepare the codebase for the subsequent development iteration.

@@ -1,0 +1,259 @@
+/*
+ * ChartCam Global Theme
+ * Shared across Landing Page, WasmJs App, and API Markdown Docs
+ * Updated with Harvard Medical School Brand Colors
+ */
+
+:root {
+  /* HMS Light Theme Colors */
+  --color-crimson: #A51C30;
+  --color-black: #1E1E1E;
+  --color-parchment: #F3F3F1;
+  --color-mortar: #8C8179;
+  --color-slate: #8996A0;
+  --color-shade: #BAC5C6;
+  --color-indigo: #293352;
+  --color-bluebonnet: #4E84C4;
+
+  /* Abstracted Semantic Colors */
+  --primary-color: var(--color-crimson);
+  --primary-hover: #8C1729; /* Slightly darker crimson for hover */
+  --bg-color: var(--color-parchment);
+  --surface-color: #ffffff;
+  --text-main: var(--color-black);
+  --text-muted: var(--color-mortar);
+  --border-color: var(--color-shade);
+  --link-color: var(--color-bluebonnet);
+
+  /* Typography */
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Spacing & Sizing */
+  --container-max: 800px;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 2rem;
+  --radius: 8px;
+}
+
+/*
+ * No-JS Dark Theme using CSS Media Queries
+ * Inverts the abstracted variables to the HMS Dark scheme
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary-color: #C9364C; /* Lighter crimson for better contrast in dark mode */
+    --primary-hover: #E35267;
+    --bg-color: var(--color-black);
+    --surface-color: #2C2C2C;
+    --text-main: var(--color-parchment);
+    --text-muted: var(--color-shade);
+    --border-color: var(--color-slate);
+    --link-color: var(--color-bluebonnet);
+  }
+}
+
+/* Base Reset & Typography */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Layout */
+.container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+}
+
+header {
+  background-color: var(--surface-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: var(--spacing-lg) 0;
+  text-align: center;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+main {
+  padding: var(--spacing-lg) 0;
+}
+
+footer {
+  text-align: center;
+  padding: var(--spacing-lg) 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  border-top: 1px solid var(--border-color);
+  margin-top: var(--spacing-lg);
+  transition: border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Typography elements */
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+h1 { font-size: 2.5rem; color: var(--primary-color); }
+h2 { font-size: 2rem; margin-top: var(--spacing-lg); border-bottom: 1px solid var(--border-color); padding-bottom: 0.25rem; }
+h3 { font-size: 1.5rem; margin-top: var(--spacing-md); }
+
+p {
+  margin-bottom: var(--spacing-md);
+}
+
+a {
+  color: var(--link-color);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Buttons / Actions */
+.button-group {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: var(--spacing-lg) 0;
+}
+
+.button {
+  display: inline-block;
+  background-color: var(--primary-color);
+  color: #ffffff; /* Explicit white for buttons regardless of theme */
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  border: 2px solid var(--primary-color);
+  cursor: pointer;
+}
+
+.button:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+  text-decoration: none;
+  color: #ffffff;
+}
+
+.button.outline {
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+}
+
+.button.outline:hover {
+  background-color: var(--primary-color);
+  color: #ffffff;
+}
+
+/* Card layout for sections */
+.features {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+}
+
+@media (min-width: 600px) {
+  .features {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.feature-card {
+  background: var(--surface-color);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05); /* Slightly lifted shadow */
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Markdown Specifics (Code, Blockquotes, Tables) */
+code {
+  font-family: var(--font-mono);
+  background-color: var(--border-color);
+  color: var(--text-main);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+pre {
+  background-color: #1a1a1a; /* Explicit dark background for code blocks across themes */
+  color: #f8f8f2;
+  padding: var(--spacing-md);
+  border-radius: var(--radius);
+  overflow-x: auto;
+  margin-bottom: var(--spacing-md);
+  border: 1px solid var(--color-indigo);
+}
+
+pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  border: none;
+}
+
+blockquote {
+  border-left: 4px solid var(--primary-color);
+  padding-left: var(--spacing-md);
+  margin-left: 0;
+  margin-bottom: var(--spacing-md);
+  color: var(--text-muted);
+  font-style: italic;
+  background-color: var(--surface-color);
+  padding: var(--spacing-md);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--spacing-md);
+}
+
+th, td {
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-sm);
+  text-align: left;
+  transition: border-color 0.3s ease;
+}
+
+th {
+  background-color: var(--surface-color);
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  h1 { font-size: 2rem; }
+  .button-group {
+    flex-direction: column;
+  }
+  .button {
+    width: 100%;
+    text-align: center;
+  }
+}

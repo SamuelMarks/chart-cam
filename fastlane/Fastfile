@@ -15,7 +15,7 @@ platform :android do
     gradle(
       task: "bundle",
       build_type: "Release",
-      project_dir: "composeApp"
+      project_dir: "chartCam"
     )
   end
 
@@ -30,7 +30,7 @@ platform :android do
     # 3. Upload to Internal Track
     upload_to_play_store(
       track: "internal",
-      aab: "composeApp/build/outputs/bundle/release/composeApp-release.aab",
+      aab: "chartCam/build/outputs/bundle/release/chartCam-release.aab",
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true
