@@ -22,7 +22,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Run Tests and Generate Kover Report
-        run: ./gradlew :composeApp:koverXmlReport
+        run: ./gradlew :chartCam:koverXmlReport
 
       - name: Check Coverage
         run: python3 scripts/check_coverage.py

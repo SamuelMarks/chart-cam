@@ -54,7 +54,7 @@ jobs:
         env:
           ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
         run: |
-          echo "$ANDROID_KEYSTORE_B64" | base64 --decode > composeApp/release.keystore
+          echo "$ANDROID_KEYSTORE_B64" | base64 --decode > chartCam/release.keystore
 
       - name: Decode Play Store API Key
         env:

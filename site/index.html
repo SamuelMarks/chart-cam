@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ChartCam - Health Platform Application & Documentation">
+    <title>ChartCam</title>
+    <!-- Links to the shared global stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>ChartCam</h1>
+            <p>Your Health Platform Application</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section>
+            <h2>Welcome</h2>
+            <p>
+                ChartCam is a cross-platform application built with Kotlin Multiplatform.
+                Explore our web application or dive into our developer documentation to learn more about the project architecture, APIs, and workflows.
+            </p>
+
+            <div class="button-group">
+                <!-- Adjust this link based on your actual Wasm build output path -->
+                <a href="wasmJs/index.html" class="button">Launch Web App</a>
+                <!-- Adjust this link to point to your rendered markdown index -->
+                <a href="docs/index.html" class="button outline">API Documentation</a>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="feature-card">
+                <h3>Cross Platform</h3>
+                <p>
+                    Built using Kotlin Multiplatform targeting Android, iOS, JVM, and Web (Wasm).
+                    A unified codebase handling the platform's core health functionality seamlessly.
+                </p>
+            </div>
+            <div class="feature-card">
+                <h3>Open Documentation</h3>
+                <p>
+                    All API designs and markdown specifications are deeply integrated.
+                    They share the exact same responsive styling and theme as this landing page.
+                </p>
+            </div>
+            <div class="feature-card">
+                <h3>No-JS Theming</h3>
+                <p>
+                    Lightning fast page load. All theming and responsiveness are implemented with pure HTML5 and modern CSS techniques, utilizing standard CSS variables.
+                </p>
+            </div>
+            <div class="feature-card">
+                <h3>Modern Architecture</h3>
+                <p>
+                    Utilizing SQLDelight for local database persistence across platforms, and Compose Multiplatform for consistent declarative UI.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 ChartCam Health Platform. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -32,7 +32,7 @@ jobs:
 
       - name: Build Desktop JAR
         # Builds a standalone Uber JAR for desktop
-        run: ./gradlew :composeApp:packageReleaseUberJarForCurrentOS
+        run: ./gradlew :chartCam:packageReleaseUberJarForCurrentOS
 
       - name: Prepare Artifacts
         run: |
@@ -42,7 +42,7 @@ jobs:
           cp androidApp/build/outputs/apk/release/*-unsigned.apk release-artifacts/ChartCam-Android-Release-Unsigned.apk || echo "Android Release APK not found"
           
           # Copy and rename Desktop JAR
-          cp composeApp/build/compose/jars/*.jar release-artifacts/ChartCam-Desktop.jar || echo "Desktop JAR not found"
+          cp chartCam/build/compose/jars/*.jar release-artifacts/ChartCam-Desktop.jar || echo "Desktop JAR not found"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

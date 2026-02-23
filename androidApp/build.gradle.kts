@@ -38,7 +38,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":composeApp"))
+    implementation(project(":chartCam"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.compose.uiToolingPreview)
 
