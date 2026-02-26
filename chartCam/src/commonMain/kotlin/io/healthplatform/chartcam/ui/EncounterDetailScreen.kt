@@ -134,6 +134,7 @@ fun EncounterDetailScreen(
     if (showCreateDialog) {
         var newTitle by remember { mutableStateOf("") }
         var newPhotosCount by remember { mutableStateOf("4") }
+        var newLabels by remember { mutableStateOf("0, 1, 2, 3") }
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
             title = { Text("Create Questionnaire") },
@@ -158,7 +159,11 @@ fun EncounterDetailScreen(
                     )
                     OutlinedTextField(
                         value = newPhotosCount,
-                        onValueChange = { newPhotosCount = it.filter { c -> c.isDigit() } },
+                        onValueChange = { 
+                            newPhotosCount = it.filter { c -> c.isDigit() }
+                            val count = newPhotosCount.toIntOrNull() ?: 0
+                            newLabels = (0 until count).joinToString(", ")
+                        },
                         label = { Text("Number of Photos") },
                         singleLine = true,
                         modifier = Modifier.padding(top = 8.dp).semantics { contentDescription = "Questionnaire Photos Count Input" }.onKeyEvent {
@@ -166,10 +171,27 @@ fun EncounterDetailScreen(
                                 focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
                                 true
                             } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+                                focusManager.moveFocus(FocusDirection.Down)
+                                true
+                            } else false
+                        },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+                    )
+                    OutlinedTextField(
+                        value = newLabels,
+                        onValueChange = { newLabels = it },
+                        label = { Text("Labels (comma separated)") },
+                        singleLine = true,
+                        modifier = Modifier.padding(top = 8.dp).semantics { contentDescription = "Questionnaire Labels Input" }.onKeyEvent {
+                            if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                                focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
+                                true
+                            } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
                                 focusManager.clearFocus()
                                 val count = newPhotosCount.toIntOrNull() ?: 0
                                 if (newTitle.isNotBlank() && count > 0) {
-                                    viewModel.createAndSelectQuestionnaire(newTitle, count)
+                                    viewModel.createAndSelectQuestionnaire(newTitle, count, newLabels)
                                 }
                                 showCreateDialog = false
                                 true
@@ -180,7 +202,7 @@ fun EncounterDetailScreen(
                             focusManager.clearFocus()
                             val count = newPhotosCount.toIntOrNull() ?: 0
                             if (newTitle.isNotBlank() && count > 0) {
-                                viewModel.createAndSelectQuestionnaire(newTitle, count)
+                                viewModel.createAndSelectQuestionnaire(newTitle, count, newLabels)
                             }
                             showCreateDialog = false
                         })
@@ -191,7 +213,7 @@ fun EncounterDetailScreen(
                 TextButton(onClick = {
                     val count = newPhotosCount.toIntOrNull() ?: 0
                     if (newTitle.isNotBlank() && count > 0) {
-                        viewModel.createAndSelectQuestionnaire(newTitle, count)
+                        viewModel.createAndSelectQuestionnaire(newTitle, count, newLabels)
                     }
                     showCreateDialog = false
                 }) { Text("Create") }
