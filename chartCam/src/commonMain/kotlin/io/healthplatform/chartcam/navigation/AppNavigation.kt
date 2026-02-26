@@ -25,22 +25,25 @@ import io.healthplatform.chartcam.ui.PatientListScreen
 import io.healthplatform.chartcam.ui.TriageScreen
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
 import io.healthplatform.chartcam.database.DatabaseDriverFactory
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class PhotoSessionManager {
-    var pendingPhotos: Map<String, String> = emptyMap()
+    private val _pendingPhotos = MutableStateFlow<Map<String, String>>(emptyMap())
+    val pendingPhotos = _pendingPhotos.asStateFlow()
     
     fun setPhotos(photos: Map<String, String>) {
-        pendingPhotos = photos
+        _pendingPhotos.value = photos
     }
     
     fun getAndClear(): Map<String, String> {
-        val p = pendingPhotos
-        pendingPhotos = emptyMap()
+        val p = _pendingPhotos.value
+        _pendingPhotos.value = emptyMap()
         return p
     }
 
     fun get(): Map<String, String> {
-        return pendingPhotos
+        return _pendingPhotos.value
     }
 }
 
@@ -116,9 +119,7 @@ fun AppNavigation() {
                         navController.popBackStack()
                     } else {
                         photoSessionManager.setPhotos(outputPathsMap)
-                        navController.navigate(VisitDetailRoute(patientId, "new")) {
-                            popUpTo(PatientDetailRoute(patientId))
-                        }
+                        navController.popBackStack()
                     }
                 },
                 onCancel = {
@@ -132,7 +133,36 @@ fun AppNavigation() {
                 capturedPhotoPaths = photoSessionManager.get(),
                 fhirRepository = fhirRepository,
                 onProceedToEncounter = { patientId, photos ->
-                    navController.navigate(VisitDetailRoute(patientId, "new"))
+                    navController.navigate(NewVisitRoute(patientId))
+                }
+            )
+        }
+        
+        composable<NewVisitRoute> { entry ->
+            val route = entry.toRoute<NewVisitRoute>()
+            val patientId = route.patientId
+            
+            EncounterDetailScreen(
+                patientId = patientId,
+                visitId = "new",
+                photoSessionManager = photoSessionManager,
+                fhirRepository = fhirRepository,
+                authRepository = authRepository,
+                syncManager = syncManager,
+                questionnaireRepository = questionnaireRepository,
+                onBack = { navController.popBackStack() },
+                onTakePhotos = { qId ->
+                    navController.navigate(CaptureForPatientRoute(patientId, qId))
+                },
+                onFinalized = {
+                    navController.navigate(PatientDetailRoute(patientId)) {
+                        popUpTo(PatientDetailRoute(patientId)) { inclusive = true }
+                    }
+                },
+                onVisitCreated = { newId ->
+                    navController.navigate(VisitDetailRoute(patientId, newId)) {
+                        popUpTo<NewVisitRoute> { inclusive = true }
+                    }
                 }
             )
         }
@@ -145,7 +175,7 @@ fun AppNavigation() {
             EncounterDetailScreen(
                 patientId = patientId,
                 visitId = visitId,
-                photosMap = photoSessionManager.getAndClear(),
+                photoSessionManager = photoSessionManager,
                 fhirRepository = fhirRepository,
                 authRepository = authRepository,
                 syncManager = syncManager,
@@ -163,7 +193,7 @@ fun AppNavigation() {
         }
         
         composable(Routes.PATIENT_LIST) {
-            PatientListScreen(
+            PatientListScreen(authRepository = authRepository,
                 fhirRepository = fhirRepository,
                 exportImportService = exportImportService,
                 onPatientSelected = { patientId -> 
@@ -186,7 +216,7 @@ fun AppNavigation() {
                 fhirRepository = fhirRepository,
                 onBack = { navController.popBackStack() },
                 onNewVisit = {
-                    navController.navigate(VisitDetailRoute(patientId, "new"))
+                    navController.navigate(NewVisitRoute(patientId))
                 },
                 onVisitSelected = { visitId ->
                     navController.navigate(VisitDetailRoute(patientId, visitId))
@@ -202,7 +232,7 @@ fun AppNavigation() {
                 fhirRepository = fhirRepository,
                 onBack = { navController.popBackStack() },
                 onNewVisit = {
-                    navController.navigate(VisitDetailRoute(patientId, "new"))
+                    navController.navigate(NewVisitRoute(patientId))
                 },
                 onVisitSelected = { visitId ->
                     navController.navigate(VisitDetailRoute(patientId, visitId))

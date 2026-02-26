@@ -109,7 +109,7 @@ fun CaptureScreen(
         focusRequester.requestFocus()
         val q = questionnaireRepository.getQuestionnaire(questionnaireId)
         val steps = q?.item?.filter { it.type.value == Questionnaire.QuestionnaireItemType.Attachment }?.map {
-            PhotoStep(it.linkId.value ?: "", it.text?.value ?: "", it.linkId?.value?.contains("ruler") == true)
+            PhotoStep(it.linkId.value ?: "", it.text?.value ?: "")
         } ?: emptyList()
         viewModel.initSteps(steps)
     }
@@ -120,13 +120,23 @@ fun CaptureScreen(
         return
     }
 
+    val handleCancel = {
+        val currentResults = viewModel.getResultPaths()
+        if (currentResults.isNotEmpty()) {
+            val output = currentResults.mapKeys { it.key.id }
+            onFinished(output)
+        } else {
+            onCancel()
+        }
+    }
+
     Box(modifier = Modifier
         .fillMaxSize()
-        .background(Color.Black)
+        .background(Color.Transparent)
         .focusRequester(focusRequester)
         .onKeyEvent {
             if (it.key == Key.Escape) {
-                onCancel()
+                handleCancel()
                 true
             } else {
                 false
@@ -153,29 +163,6 @@ fun CaptureScreen(
             )
         }
 
-        state.ghostImageBytes?.let { bytes ->
-            val bitmap = remember(bytes) { bytes.decodeToImageBitmap() }
-            Image(
-                bitmap = bitmap,
-                contentDescription = "Ghost Overlay",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .alpha(0.5f)
-            )
-            
-            Box(Modifier.fillMaxSize().padding(top = 100.dp), contentAlignment = Alignment.TopCenter) {
-                Text(
-                    "Align with previous photo", 
-                    color = Color.White, 
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier
-                        .background(Color.Black.copy(0.5f))
-                        .padding(8.dp)
-                )
-            }
-        }
-
         LevelerOverlay(sensorManager)
 
         if (state.reviewImageBytes != null) {
@@ -193,7 +180,7 @@ fun CaptureScreen(
                 isCapturing = state.isCapturing,
                 onCapture = { viewModel.onCapture() },
                 onToggleLens = { cameraManager.toggleLens() },
-                onCancel = onCancel,
+                onCancel = handleCancel,
                 hasMultipleCameras = cameraManager.hasMultipleCameras
             )
         }

@@ -110,8 +110,13 @@ class FhirRepository(val database: ChartCamDatabase) {
      * Retrieves all FHIR [Patient] resources stored locally.
      * @return A list containing all Patient resources.
      */
-    suspend fun getAllPatients(): List<Patient> {
-        return dbQuery.getAllPatients().awaitAsList().map { entity ->
+    suspend fun getAllPatients(showAll: Boolean = true, practitionerId: String? = null): List<Patient> {
+        val entities = if (showAll || practitionerId == null) {
+            dbQuery.getAllPatients().awaitAsList()
+        } else {
+            dbQuery.getPatientsForPractitioner(practitionerId).awaitAsList()
+        }
+        return entities.map { entity ->
             fhirJson.decodeFromString(entity.serializedResource) as Patient
         }
     }
@@ -122,8 +127,19 @@ class FhirRepository(val database: ChartCamDatabase) {
      * @param query The search query string.
      * @return A list of matching Patient resources.
      */
-    suspend fun searchPatients(query: String): List<Patient> {
-        return dbQuery.searchPatients(query).awaitAsList().map { entity ->
+    suspend fun searchPatients(query: String, showAll: Boolean = true, practitionerId: String? = null): List<Patient> {
+        val allEntities = if (showAll || practitionerId == null) {
+            dbQuery.searchPatients(query).awaitAsList()
+        } else {
+            // Filter search results by practitioner
+            dbQuery.searchPatients(query).awaitAsList().filter { searchRes ->
+                val pId = searchRes.id
+                // Note: a more efficient way is to join in SQL, but this is simple for now
+                val encountersForPrac = dbQuery.getEncountersForPractitioner(practitionerId).awaitAsList()
+                encountersForPrac.any { it.patientId == pId }
+            }
+        }
+        return allEntities.map { entity ->
             fhirJson.decodeFromString(entity.serializedResource) as Patient
         }
     }

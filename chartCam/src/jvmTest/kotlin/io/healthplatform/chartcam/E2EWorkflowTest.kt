@@ -76,7 +76,7 @@ class E2EWorkflowTest {
         assertNotNull(authRepository.currentUser.value, "Current user should be populated")
 
         // 3. Create Patient Workflow
-        val patientListViewModel = PatientListViewModel(fhirRepository, exportImportService)
+        val patientListViewModel = PatientListViewModel(fhirRepository, exportImportService, authRepository)
         testDispatcher.scheduler.advanceUntilIdle() // Wait for initial load
         
         var newPatientId: String? = null

@@ -47,7 +47,6 @@ class CaptureViewModelTest {
         assertEquals(steps.first(), state.currentStep)
         assertFalse(state.isCapturing)
         assertNull(state.reviewImageBytes)
-        assertNull(state.ghostImageBytes)
     }
 
     @Test
@@ -74,9 +73,6 @@ class CaptureViewModelTest {
         val state = viewModel.uiState.value
         assertEquals(steps[1], state.currentStep)
         assertNull(state.reviewImageBytes)
-        
-        // Front -> Front Ruler means ghosting should be active
-        assertNotNull(state.ghostImageBytes)
     }
 
     @Test
