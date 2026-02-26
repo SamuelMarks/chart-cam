@@ -54,9 +54,9 @@ class PatientListViewModelTest {
         val client = io.ktor.client.HttpClient(io.ktor.client.engine.mock.MockEngine { respond("") })
         val mockStorage = object : io.healthplatform.chartcam.storage.SecureStorage {
             private val data = mutableMapOf<String, String>()
-            override suspend fun saveToken(token: String) { data["token"] = token }
-            override suspend fun getToken(): String? = data["token"]
-            override suspend fun clearToken() { data.remove("token") }
+            override fun save(key: String, value: String) { data[key] = value }
+            override fun getString(key: String): String? = data[key]
+            override fun delete(key: String) { data.remove(key) }
         }
         authRepository = AuthRepository(client, mockStorage)
     }

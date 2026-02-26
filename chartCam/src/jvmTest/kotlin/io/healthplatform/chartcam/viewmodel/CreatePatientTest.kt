@@ -8,6 +8,11 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.datetime.LocalDate
+import io.healthplatform.chartcam.repository.AuthRepository
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.healthplatform.chartcam.storage.SecureStorage
 
 class CreatePatientTest {
     @Test
@@ -15,10 +20,21 @@ class CreatePatientTest {
         // We will just test the SQL query execution directly using SQLite in-memory
         val driver = app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver(app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver.IN_MEMORY)
         ChartCamDatabase.Schema.awaitCreate(driver)
-        val repo = FhirRepository(driver)
+        val database = ChartCamDatabase(driver)
+        val repo = FhirRepository(database)
         val fileStorage = io.healthplatform.chartcam.files.createFileStorage()
-        val exportImportService = io.healthplatform.chartcam.repository.ExportImportService(repo.database, fileStorage)
-        val vm = PatientListViewModel(repo, exportImportService)
+        val exportImportService = io.healthplatform.chartcam.repository.ExportImportService(database, fileStorage)
+        
+        val client = io.ktor.client.HttpClient(io.ktor.client.engine.mock.MockEngine { respond("") })
+        val mockStorage = object : io.healthplatform.chartcam.storage.SecureStorage {
+            private val data = mutableMapOf<String, String>()
+            override fun save(key: String, value: String) { data[key] = value }
+            override fun getString(key: String): String? = data[key]
+            override fun delete(key: String) { data.remove(key) }
+        }
+        val authRepository = AuthRepository(client, mockStorage)
+        
+        val vm = PatientListViewModel(repo, exportImportService, authRepository)
         
         var successId: String? = null
         vm.createPatient("John", "Doe", "123", LocalDate.parse("1990-01-01"), "male") {

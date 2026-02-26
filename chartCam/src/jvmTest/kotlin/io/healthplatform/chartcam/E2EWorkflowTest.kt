@@ -77,6 +77,7 @@ class E2EWorkflowTest {
 
         // 3. Create Patient Workflow
         val patientListViewModel = PatientListViewModel(fhirRepository, exportImportService, authRepository)
+        patientListViewModel.setShowAllPatients(true)
         testDispatcher.scheduler.advanceUntilIdle() // Wait for initial load
         
         var newPatientId: String? = null
