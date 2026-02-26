@@ -3,11 +3,14 @@ package io.healthplatform.chartcam.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
@@ -28,6 +31,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.Checkbox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,9 +40,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import io.healthplatform.chartcam.files.createFileStorage
+import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.ui.components.CreatePatientDialog
@@ -54,15 +68,20 @@ import io.healthplatform.chartcam.models.fullName
 fun PatientListScreen(
     fhirRepository: FhirRepository,
     exportImportService: ExportImportService,
+    authRepository: AuthRepository,
     onPatientSelected: (String) -> Unit,
     onLogout: () -> Unit = {}
 ) {
-    val viewModel = androidx.lifecycle.viewmodel.compose.viewModel { PatientListViewModel(fhirRepository, exportImportService) }
+    val viewModel = androidx.lifecycle.viewmodel.compose.viewModel { PatientListViewModel(fhirRepository, exportImportService, authRepository) }
     val state by viewModel.uiState.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        viewModel.loadPatients()
+    }
     var showMenu by remember { mutableStateOf(false) }
     
     var showExportPasswordDialog by remember { mutableStateOf(false) }
     var exportPassword by remember { mutableStateOf("") }
+    var exportAllVisits by remember { mutableStateOf(true) }
     
     var showImportDialog by remember { mutableStateOf(false) }
     var importText by remember { mutableStateOf("") }
@@ -70,6 +89,8 @@ fun PatientListScreen(
     
     val shareService = remember { createShareService() }
     val fileStorage = remember { createFileStorage() }
+
+    val focusManager = LocalFocusManager.current
 
     Scaffold(
         topBar = {
@@ -83,6 +104,13 @@ fun PatientListScreen(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false }
                     ) {
+                        DropdownMenuItem(
+                            text = { Text(if (state.showAllPatients) "Show My Patients Only" else "Show All Patients") },
+                            onClick = {
+                                viewModel.setShowAllPatients(!state.showAllPatients)
+                                showMenu = false
+                            }
+                        )
                         DropdownMenuItem(
                             text = { Text("Export Data") },
                             onClick = {
@@ -167,19 +195,53 @@ fun PatientListScreen(
             onDismissRequest = { showExportPasswordDialog = false },
             title = { Text("Export Password") },
             text = {
-                TextField(
-                    value = exportPassword,
-                    onValueChange = { exportPassword = it },
-                    label = { Text("Enter a password to encrypt data") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Column {
+                    TextField(
+                        value = exportPassword,
+                        onValueChange = { exportPassword = it },
+                        label = { Text("Enter a password to encrypt data") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth().onKeyEvent {
+                            if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                                focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
+                                true
+                            } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+                                focusManager.clearFocus()
+                                viewModel.exportData(exportPassword, exportAllVisits)
+                                showExportPasswordDialog = false
+                                exportPassword = ""
+                                exportAllVisits = true
+                                true
+                            } else false
+                        },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = {
+                            focusManager.clearFocus()
+                            viewModel.exportData(exportPassword, exportAllVisits)
+                            showExportPasswordDialog = false
+                            exportPassword = ""
+                            exportAllVisits = true
+                        }),
+                        singleLine = true
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp).clickable { exportAllVisits = !exportAllVisits },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = exportAllVisits,
+                            onCheckedChange = { exportAllVisits = it }
+                        )
+                        Text("Export all visits of all patients", modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
             },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.exportData(exportPassword)
+                    viewModel.exportData(exportPassword, exportAllVisits)
                     showExportPasswordDialog = false
                     exportPassword = ""
+                    exportAllVisits = true
                 }) {
                     Text("Export")
                 }
@@ -233,14 +295,42 @@ fun PatientListScreen(
                         value = importText,
                         onValueChange = { importText = it },
                         label = { Text("Paste Data Here") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().onKeyEvent {
+                            if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                                focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
+                                true
+                            } else false
+                        }
                     )
                     TextField(
                         value = importPassword,
                         onValueChange = { importPassword = it },
                         label = { Text("Password") },
                         visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp).onKeyEvent {
+                            if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                                focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
+                                true
+                            } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+                                focusManager.clearFocus()
+                                viewModel.importData(importText, importPassword) {
+                                    showImportDialog = false
+                                    importText = ""
+                                    importPassword = ""
+                                }
+                                true
+                            } else false
+                        },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = {
+                            focusManager.clearFocus()
+                            viewModel.importData(importText, importPassword) {
+                                showImportDialog = false
+                                importText = ""
+                                importPassword = ""
+                            }
+                        }),
+                        singleLine = true
                     )
                     if (state.error != null) {
                         Text(state.error!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))

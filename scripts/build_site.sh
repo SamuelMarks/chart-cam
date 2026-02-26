@@ -209,5 +209,5 @@ EOF
 
 echo "=== Build Complete! === "
 echo "Your generated site is located in the '$OUT_DIR/' directory."
-echo "You can test it locally by running:"
-echo "  cd $OUT_DIR && python3 serve.py"
+echo "You can test it locally. E.g., by running:"
+echo "  python3 -m http.server -d $OUT_DIR"

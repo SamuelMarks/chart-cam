@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.fhir.model.r4.Patient
 import io.healthplatform.chartcam.models.createFhirPatient
+import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.utils.UUID
@@ -21,12 +22,14 @@ data class PatientListUiState(
     val isLoading: Boolean = false,
     val exportedData: String? = null,
     val exportPassword: String? = null,
-    val error: String? = null
+    val error: String? = null,
+    val showAllPatients: Boolean = false
 )
 
 class PatientListViewModel(
     private val repository: FhirRepository,
-    private val exportImportService: ExportImportService
+    private val exportImportService: ExportImportService,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PatientListUiState(isLoading = true))
@@ -38,12 +41,15 @@ class PatientListViewModel(
 
     fun loadPatients() {
         val query = _uiState.value.searchQuery
+        val showAll = _uiState.value.showAllPatients
+        val practitionerId = authRepository.currentUser.value?.id
+        
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val results = if (query.isBlank()) {
-                repository.getAllPatients()
+                repository.getAllPatients(showAll = showAll, practitionerId = practitionerId)
             } else {
-                repository.searchPatients(query)
+                repository.searchPatients(query, showAll = showAll, practitionerId = practitionerId)
             }
             _uiState.update { it.copy(patients = results, isLoading = false) }
         }
@@ -51,6 +57,11 @@ class PatientListViewModel(
 
     fun onSearchQueryChanged(newQuery: String) {
         _uiState.update { it.copy(searchQuery = newQuery) }
+        loadPatients()
+    }
+
+    fun setShowAllPatients(showAll: Boolean) {
+        _uiState.update { it.copy(showAllPatients = showAll) }
         loadPatients()
     }
 
@@ -82,10 +93,11 @@ class PatientListViewModel(
         }
     }
 
-    fun exportData(password: String) {
+    fun exportData(password: String, exportAll: Boolean) {
+        val practitionerId = authRepository.currentUser.value?.id
         viewModelScope.launch {
             try {
-                val data = exportImportService.exportData(password)
+                val data = exportImportService.exportData(password, exportAll, practitionerId)
                 _uiState.update { it.copy(exportedData = data, exportPassword = password) }
             } catch (e: Exception) {
                 e.printStackTrace()

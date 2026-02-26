@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 /**
  * ViewModel managing the clinical photography workflow.
- * Handles Camera interaction, ghosting logic, and file persistence based on dynamically provided steps.
+ * Handles Camera interaction and file persistence based on dynamically provided steps.
  *
  * @property cameraManager Wraps hardware camera calls.
  * @property fileStorage Handles IO.
@@ -71,7 +71,7 @@ class CaptureViewModel(
 
     /**
      * Triggered when user confirms the reviewed photo.
-     * Saves file, updates steps, manages ghost reference.
+     * Saves file, updates steps.
      */
     fun onConfirm() {
         val currentState = _uiState.value
@@ -86,19 +86,12 @@ class CaptureViewModel(
         // 2. Calculate Next Step
         val currentIndex = stepsSequence.indexOf(currentStep)
         val nextStep = if (currentIndex + 1 < stepsSequence.size) stepsSequence[currentIndex + 1] else null
-        
-        val nextGhostBytes = if (nextStep != null && nextStep.isRuler) {
-            bytes
-        } else {
-            null
-        }
 
         if (nextStep != null) {
             _uiState.update {
                 it.copy(
                     currentStep = nextStep,
                     reviewImageBytes = null,
-                    ghostImageBytes = nextGhostBytes,
                     capturedCount = filePaths.size
                 )
             }

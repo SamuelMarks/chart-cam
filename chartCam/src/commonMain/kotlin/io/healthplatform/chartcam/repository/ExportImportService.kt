@@ -31,7 +31,7 @@ class ExportImportService(
      * @param password Password to encrypt the bundle.
      * @return Encrypted string.
      */
-    suspend fun exportData(password: kotlin.String): kotlin.String {
+    suspend fun exportData(password: kotlin.String, exportAll: kotlin.Boolean = true, practitionerId: kotlin.String? = null): kotlin.String {
         val queries = database.chartCamQueries
         
         val bundleBuilder = Bundle.Builder(Enumeration(value = Bundle.BundleType.Collection))
@@ -49,19 +49,34 @@ class ExportImportService(
         }
         
         // 3. Patients
-        queries.getAllPatients().awaitAsList().forEach { entity ->
+        val patients = if (exportAll || practitionerId == null) {
+            queries.getAllPatients().awaitAsList()
+        } else {
+            queries.getPatientsForPractitioner(practitionerId).awaitAsList()
+        }
+        patients.forEach { entity ->
             val resource = fhirJson.decodeFromString(entity.serializedResource) as Patient
             bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
         }
         
         // 4. Encounters
-        queries.getAllEncounters().awaitAsList().forEach { entity ->
+        val encounters = if (exportAll || practitionerId == null) {
+            queries.getAllEncounters().awaitAsList()
+        } else {
+            queries.getEncountersForPractitioner(practitionerId).awaitAsList()
+        }
+        encounters.forEach { entity ->
             val resource = fhirJson.decodeFromString(entity.serializedResource) as Encounter
             bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
         }
         
         // 5. DocumentReferences & Binaries
-        queries.getAllDocumentReferences().awaitAsList().forEach { entity ->
+        val documentReferences = if (exportAll || practitionerId == null) {
+            queries.getAllDocumentReferences().awaitAsList()
+        } else {
+            queries.getDocumentReferencesForPractitioner(practitionerId).awaitAsList()
+        }
+        documentReferences.forEach { entity ->
             val docRef = fhirJson.decodeFromString(entity.serializedResource) as DocumentReference
             bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = docRef.toBuilder() })
             
@@ -81,13 +96,23 @@ class ExportImportService(
         }
         
         // 6. Questionnaire Responses
-        queries.getAllQuestionnaireResponses().awaitAsList().forEach { entity ->
+        val questionnaireResponses = if (exportAll || practitionerId == null) {
+            queries.getAllQuestionnaireResponses().awaitAsList()
+        } else {
+            queries.getQuestionnaireResponsesForPractitioner(practitionerId).awaitAsList()
+        }
+        questionnaireResponses.forEach { entity ->
             val resource = fhirJson.decodeFromString(entity.serializedResource) as QuestionnaireResponse
             bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
         }
 
         // 7. Provenances
-        queries.getAllProvenances().awaitAsList().forEach { entity ->
+        val provenances = if (exportAll || practitionerId == null) {
+            queries.getAllProvenances().awaitAsList()
+        } else {
+            queries.getProvenancesForPractitioner(practitionerId).awaitAsList()
+        }
+        provenances.forEach { entity ->
             val resource = fhirJson.decodeFromString(entity.serializedResource) as Provenance
             bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
         }

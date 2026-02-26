@@ -27,12 +27,19 @@ import kotlin.test.assertTrue
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
+import io.healthplatform.chartcam.repository.AuthRepository
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.healthplatform.chartcam.storage.SecureStorage
+
 class PatientListViewModelTest {
     
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var repo: FhirRepository
     private lateinit var fileStorage: io.healthplatform.chartcam.files.FileStorage
     private lateinit var exportImportService: ExportImportService
+    private lateinit var authRepository: AuthRepository
 
     @BeforeTest
     fun setUp() {
@@ -43,6 +50,15 @@ class PatientListViewModelTest {
         repo = FhirRepository(database)
         fileStorage = createFileStorage()
         exportImportService = ExportImportService(database, fileStorage, CryptoService())
+        
+        val client = io.ktor.client.HttpClient(io.ktor.client.engine.mock.MockEngine { respond("") })
+        val mockStorage = object : io.healthplatform.chartcam.storage.SecureStorage {
+            private val data = mutableMapOf<String, String>()
+            override suspend fun saveToken(token: String) { data["token"] = token }
+            override suspend fun getToken(): String? = data["token"]
+            override suspend fun clearToken() { data.remove("token") }
+        }
+        authRepository = AuthRepository(client, mockStorage)
     }
 
     @AfterTest
@@ -55,7 +71,7 @@ class PatientListViewModelTest {
         // Seed
         repo.savePatient(createFhirPatient("1", "John", "Doe", LocalDate(1990,1,1), "123", "male"))
         
-        val vm = PatientListViewModel(repo, exportImportService)
+        val vm = PatientListViewModel(repo, exportImportService, authRepository)
         testDispatcher.scheduler.advanceUntilIdle() // Wait for init load
         
         // Initial check
@@ -74,7 +90,7 @@ class PatientListViewModelTest {
     
     @Test
     fun testPatientCreation() = runTest {
-        val vm = PatientListViewModel(repo, exportImportService)
+        val vm = PatientListViewModel(repo, exportImportService, authRepository)
         testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(0, vm.uiState.value.patients.size)
         
@@ -92,14 +108,14 @@ class PatientListViewModelTest {
 
     @Test
     fun testExportImportFlow() = runTest {
-        val vm = PatientListViewModel(repo, exportImportService)
+        val vm = PatientListViewModel(repo, exportImportService, authRepository)
         testDispatcher.scheduler.advanceUntilIdle()
         
         vm.createPatient("Exp", "Ort", "999", LocalDate(2000,1,1), "male") {}
         testDispatcher.scheduler.advanceUntilIdle()
         
         // Test export
-        vm.exportData("secret")
+        vm.exportData("secret", true)
         testDispatcher.scheduler.advanceUntilIdle()
         
         val exported = vm.uiState.value.exportedData

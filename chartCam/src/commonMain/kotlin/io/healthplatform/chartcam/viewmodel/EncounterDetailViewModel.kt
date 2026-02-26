@@ -361,4 +361,33 @@ class EncounterDetailViewModel(
     fun resetFinalized() {
         _uiState.update { it.copy(isFinalized = false) }
     }
+
+    /**
+     * Adds newly captured photos to the current encounter.
+     */
+    fun addPhotos(photosMap: Map<String, String>) {
+        val enc = _uiState.value.encounter ?: return
+        val patient = _uiState.value.patient ?: return
+        
+        viewModelScope.launch {
+            val now = kotlin.time.Clock.System.now()
+            val newDocs = photosMap.map { (stepName, path) ->
+                createFhirDocumentReference(
+                    id = io.healthplatform.chartcam.utils.UUID.randomUUID(),
+                    patientId = patient.id ?: "",
+                    encounterId = enc.id ?: "",
+                    dateStr = now.toString(),
+                    desc = stepName,
+                    mime = "image/jpeg",
+                    urlPath = path
+                ).also {
+                    fhirRepository.saveDocumentReference(it)
+                }
+            }
+            
+            _uiState.update { 
+                it.copy(photos = it.photos + newDocs)
+            }
+        }
+    }
 }

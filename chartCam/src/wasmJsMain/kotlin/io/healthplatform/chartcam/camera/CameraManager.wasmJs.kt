@@ -6,11 +6,10 @@ import androidx.compose.runtime.DisposableEffect
 import kotlinx.browser.window
 import kotlinx.browser.document
 import org.w3c.dom.HTMLVideoElement
-import org.w3c.dom.HTMLCanvasElement
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
-import kotlin.js.toJsNumber
 import kotlin.js.toJsString
+import okio.ByteString.Companion.decodeBase64
 
 private fun getVideoConstraints(mode: JsAny): org.w3c.dom.mediacapture.MediaStreamConstraints = js("({ video: { facingMode: mode } })")
 
@@ -22,9 +21,19 @@ private fun stopMediaTracks(stream: JsAny?) {
     js("if (stream && stream.getTracks) { stream.getTracks().forEach(t => t.stop()); }")
 }
 
-private fun drawImageToCanvas(ctx: org.w3c.dom.CanvasRenderingContext2D, video: HTMLVideoElement, w: JsAny, h: JsAny) {
-    js("ctx.drawImage(video, 0, 0, w, h)")
-}
+private fun getBase64Image(video: HTMLVideoElement): String = js("""
+    (() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        const base64 = dataUrl.split(',')[1];
+        if (!base64) throw new Error("Could not get base64 data");
+        return base64;
+    })()
+""")
 
 class JsCameraManager : CameraManager {
     val videoElement: HTMLVideoElement = document.createElement("video") as HTMLVideoElement
@@ -32,6 +41,7 @@ class JsCameraManager : CameraManager {
 
     init {
         videoElement.autoplay = true
+        videoElement.muted = true
         videoElement.setAttribute("playsinline", "true")
         
         startCamera()
@@ -43,6 +53,7 @@ class JsCameraManager : CameraManager {
         window.navigator.mediaDevices.getUserMedia(constraints)
             .then { stream ->
                 videoElement.srcObject = stream
+                videoElement.play()
                 null
             }.catch { err ->
                 consoleError("Error accessing camera: ", err)
@@ -52,23 +63,15 @@ class JsCameraManager : CameraManager {
 
     override suspend fun captureImage(): ByteArray? = suspendCoroutine { continuation ->
         try {
-            val canvas = document.createElement("canvas") as HTMLCanvasElement
-            canvas.width = videoElement.videoWidth
-            canvas.height = videoElement.videoHeight
-            val ctx = canvas.getContext("2d") as org.w3c.dom.CanvasRenderingContext2D
-            
-            drawImageToCanvas(ctx, videoElement, canvas.width.toDouble().toJsNumber(), canvas.height.toDouble().toJsNumber())
-
-            val dataUrl = canvas.toDataURL("image/jpeg", 0.9.toJsNumber())
-            val base64 = dataUrl.substringAfter("base64,")
-            
-            val decoded = window.atob(base64)
-            val bytes = ByteArray(decoded.length)
-            for (i in 0 until decoded.length) {
-                bytes[i] = decoded[i].code.toByte()
+            val base64 = getBase64Image(videoElement)
+            val bytes = base64.decodeBase64()?.toByteArray()
+            if (bytes != null) {
+                continuation.resume(bytes)
+            } else {
+                continuation.resume(null)
             }
-            continuation.resume(bytes)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            consoleError("Error capturing image: ", e.message?.toJsString())
             continuation.resume(null)
         }
     }

@@ -172,3 +172,27 @@ SELECT * FROM ProvenanceEntity WHERE encounterId = ? ORDER BY date DESC;
 
 getAllProvenances:
 SELECT * FROM ProvenanceEntity;
+
+getEncountersForPractitioner:
+SELECT * FROM EncounterEntity
+WHERE practitionerId = ?;
+
+getPatientsForPractitioner:
+SELECT DISTINCT p.* FROM PatientEntity p
+INNER JOIN EncounterEntity e ON p.id = e.patientId
+WHERE e.practitionerId = ?;
+
+getDocumentReferencesForPractitioner:
+SELECT d.* FROM DocumentReferenceEntity d
+INNER JOIN EncounterEntity e ON d.encounterId = e.id
+WHERE e.practitionerId = ?;
+
+getQuestionnaireResponsesForPractitioner:
+SELECT q.* FROM QuestionnaireResponseEntity q
+INNER JOIN EncounterEntity e ON q.encounterId = e.id
+WHERE e.practitionerId = ?;
+
+getProvenancesForPractitioner:
+SELECT p.* FROM ProvenanceEntity p
+LEFT JOIN EncounterEntity e ON p.encounterId = e.id
+WHERE e.practitionerId = ? OR p.encounterId IS NULL;

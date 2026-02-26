@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -45,11 +47,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.google.fhir.model.r4.DocumentReference
 import com.google.fhir.model.r4.Questionnaire
@@ -59,6 +69,7 @@ import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.sync.SyncManager
 import io.healthplatform.chartcam.viewmodel.EncounterDetailViewModel
 import io.healthplatform.chartcam.files.createFileStorage
+import io.healthplatform.chartcam.navigation.PhotoSessionManager
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import androidx.compose.material3.AlertDialog
@@ -74,14 +85,15 @@ import io.healthplatform.chartcam.models.encounterDate
 fun EncounterDetailScreen(
     patientId: String,
     visitId: String,
-    photosMap: Map<String, String>,
+    photoSessionManager: PhotoSessionManager,
     fhirRepository: FhirRepository,
     authRepository: AuthRepository,
     syncManager: SyncManager,
     questionnaireRepository: QuestionnaireRepository,
     onBack: () -> Unit,
     onTakePhotos: (String?) -> Unit,
-    onFinalized: () -> Unit
+    onFinalized: () -> Unit,
+    onVisitCreated: ((String) -> Unit)? = null
 ) {
     val viewModel = androidx.lifecycle.viewmodel.compose.viewModel {
         EncounterDetailViewModel(fhirRepository, authRepository, syncManager, questionnaireRepository)
@@ -91,8 +103,25 @@ fun EncounterDetailScreen(
     var showCreateDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val pendingPhotos by photoSessionManager.pendingPhotos.collectAsState()
+    
+    val focusManager = LocalFocusManager.current
+
     LaunchedEffect(patientId, visitId) {
-        viewModel.initialize(patientId, visitId, photosMap)
+        viewModel.initialize(patientId, visitId, photoSessionManager.getAndClear())
+    }
+    
+    LaunchedEffect(pendingPhotos) {
+        if (pendingPhotos.isNotEmpty()) {
+            viewModel.addPhotos(pendingPhotos)
+            photoSessionManager.getAndClear()
+        }
+    }
+    
+    LaunchedEffect(state.encounter?.id) {
+        if (visitId == "new" && state.encounter?.id != null) {
+            onVisitCreated?.invoke(state.encounter?.id!!)
+        }
     }
     
     LaunchedEffect(state.isFinalized) {
@@ -114,13 +143,47 @@ fun EncounterDetailScreen(
                         value = newTitle,
                         onValueChange = { newTitle = it },
                         label = { Text("Title") },
-                        modifier = Modifier.semantics { contentDescription = "Questionnaire Title Input" }
+                        singleLine = true,
+                        modifier = Modifier.semantics { contentDescription = "Questionnaire Title Input" }.onKeyEvent {
+                            if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                                focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
+                                true
+                            } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+                                focusManager.moveFocus(FocusDirection.Down)
+                                true
+                            } else false
+                        },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                     )
                     OutlinedTextField(
                         value = newPhotosCount,
                         onValueChange = { newPhotosCount = it.filter { c -> c.isDigit() } },
                         label = { Text("Number of Photos") },
-                        modifier = Modifier.padding(top = 8.dp).semantics { contentDescription = "Questionnaire Photos Count Input" }
+                        singleLine = true,
+                        modifier = Modifier.padding(top = 8.dp).semantics { contentDescription = "Questionnaire Photos Count Input" }.onKeyEvent {
+                            if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                                focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
+                                true
+                            } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+                                focusManager.clearFocus()
+                                val count = newPhotosCount.toIntOrNull() ?: 0
+                                if (newTitle.isNotBlank() && count > 0) {
+                                    viewModel.createAndSelectQuestionnaire(newTitle, count)
+                                }
+                                showCreateDialog = false
+                                true
+                            } else false
+                        },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = {
+                            focusManager.clearFocus()
+                            val count = newPhotosCount.toIntOrNull() ?: 0
+                            if (newTitle.isNotBlank() && count > 0) {
+                                viewModel.createAndSelectQuestionnaire(newTitle, count)
+                            }
+                            showCreateDialog = false
+                        })
                     )
                 }
             },

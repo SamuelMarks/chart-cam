@@ -5,23 +5,21 @@ package io.healthplatform.chartcam.capture
  * Order matters for the state machine progression.
  *
  * @property title Human readable name.
- * @property isRuler Whether this step requires a ruler overlay (and ghosting).
  */
 data class PhotoStep(
     val id: String,
-    val title: String, 
-    val isRuler: Boolean
+    val title: String
 ) {
     companion object {
         val STANDARD_STEPS = listOf(
-            PhotoStep("front", "Front", false),
-            PhotoStep("front_ruler", "Front + Ruler", true),
-            PhotoStep("right", "Right Side", false),
-            PhotoStep("right_ruler", "Right Side + Ruler", true),
-            PhotoStep("back", "Back", false),
-            PhotoStep("back_ruler", "Back + Ruler", true),
-            PhotoStep("left", "Left Side", false),
-            PhotoStep("left_ruler", "Left Side + Ruler", true)
+            PhotoStep("front", "Front"),
+            PhotoStep("front_ruler", "Front + Ruler"),
+            PhotoStep("right", "Right Side"),
+            PhotoStep("right_ruler", "Right Side + Ruler"),
+            PhotoStep("back", "Back"),
+            PhotoStep("back_ruler", "Back + Ruler"),
+            PhotoStep("left", "Left Side"),
+            PhotoStep("left_ruler", "Left Side + Ruler")
         )
     }
 }
@@ -33,7 +31,6 @@ data class PhotoStep(
  * @property totalSteps Total number of steps in the sequence.
  * @property isCapturing Loading state during IO.
  * @property reviewImageBytes Image data present during the Review phase (after snap, before confirm).
- * @property ghostImageBytes Image data from the previous step used for overlay (only populated if isRuler is true).
  * @property capturedCount Number of photos successfully saved.
  * @property isFinished Whether the sequence is complete.
  */
@@ -42,7 +39,6 @@ data class CaptureUiState(
     val totalSteps: Int = 0,
     val isCapturing: Boolean = false,
     val reviewImageBytes: ByteArray? = null,
-    val ghostImageBytes: ByteArray? = null,
     val capturedCount: Int = 0,
     val isFinished: Boolean = false
 ) {
@@ -59,10 +55,6 @@ data class CaptureUiState(
             if (other.reviewImageBytes == null) return false
             if (!reviewImageBytes.contentEquals(other.reviewImageBytes)) return false
         } else if (other.reviewImageBytes != null) return false
-        if (ghostImageBytes != null) {
-            if (other.ghostImageBytes == null) return false
-            if (!ghostImageBytes.contentEquals(other.ghostImageBytes)) return false
-        } else if (other.ghostImageBytes != null) return false
         if (capturedCount != other.capturedCount) return false
         if (isFinished != other.isFinished) return false
 
@@ -74,7 +66,6 @@ data class CaptureUiState(
         result = 31 * result + totalSteps
         result = 31 * result + isCapturing.hashCode()
         result = 31 * result + (reviewImageBytes?.contentHashCode() ?: 0)
-        result = 31 * result + (ghostImageBytes?.contentHashCode() ?: 0)
         result = 31 * result + capturedCount
         result = 31 * result + isFinished.hashCode()
         return result

@@ -48,7 +48,7 @@ fun PatientDetailScreen(
     val viewModel = androidx.lifecycle.viewmodel.compose.viewModel { PatientDetailViewModel(fhirRepository) }
     val state by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(patientId) {
+    LaunchedEffect(Unit) {
         viewModel.loadPatientData(patientId)
     }
 

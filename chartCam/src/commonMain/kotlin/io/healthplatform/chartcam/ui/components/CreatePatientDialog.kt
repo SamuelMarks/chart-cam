@@ -13,6 +13,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -81,7 +82,10 @@ fun CreatePatientDialog(
                     label = { Text("First Name") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().onKeyEvent { 
-                        if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+                        if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                            focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
+                            true
+                        } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
                             focusManager.moveFocus(FocusDirection.Down)
                             true
                         } else false
@@ -95,7 +99,10 @@ fun CreatePatientDialog(
                     label = { Text("Last Name") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().onKeyEvent { 
-                        if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+                        if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                            focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
+                            true
+                        } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
                             focusManager.moveFocus(FocusDirection.Down)
                             true
                         } else false
@@ -109,7 +116,10 @@ fun CreatePatientDialog(
                     label = { Text("MRN") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().onKeyEvent { 
-                        if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+                        if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                            focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
+                            true
+                        } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
                             focusManager.moveFocus(FocusDirection.Down)
                             true
                         } else false
@@ -128,7 +138,10 @@ fun CreatePatientDialog(
                         submitForm()
                     }),
                     modifier = Modifier.fillMaxWidth().onKeyEvent {
-                        if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+                        if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                            focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
+                            true
+                        } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
                             focusManager.clearFocus()
                             submitForm()
                             true

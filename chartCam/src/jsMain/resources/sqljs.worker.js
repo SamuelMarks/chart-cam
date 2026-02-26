@@ -2181,38 +2181,109 @@
   // node_modules/@cashapp/sqldelight-sqljs-worker/sqljs.worker.js
   var import_sql = __toESM(require_sql_wasm());
   var db = null;
+
+  const DB_NAME = "ChartCamWasmDB";
+  const STORE_NAME = "sqlite";
+  const KEY_NAME = "db_data";
+
+  async function loadFromIndexedDB() {
+    return new Promise((resolve) => {
+      const request = indexedDB.open(DB_NAME, 1);
+      request.onupgradeneeded = (e) => {
+        e.target.result.createObjectStore(STORE_NAME);
+      };
+      request.onsuccess = (e) => {
+        const idb = e.target.result;
+        const tx = idb.transaction(STORE_NAME, "readonly");
+        const store = tx.objectStore(STORE_NAME);
+        const getReq = store.get(KEY_NAME);
+        getReq.onsuccess = () => resolve(getReq.result);
+        getReq.onerror = () => resolve(null);
+      };
+      request.onerror = () => resolve(null);
+    });
+  }
+
+  async function saveToIndexedDB(data) {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, 1);
+      request.onsuccess = (e) => {
+        const idb = e.target.result;
+        const tx = idb.transaction(STORE_NAME, "readwrite");
+        const store = tx.objectStore(STORE_NAME);
+        store.put(data, KEY_NAME);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  let saveTimeout = null;
+  function scheduleSave() {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(async () => {
+      if (!db) return;
+      try {
+        const data = db.export();
+        await saveToIndexedDB(data);
+      } catch (err) {
+        console.error("Failed to save to IndexedDB", err);
+      }
+    }, 500);
+  }
+
   async function createDatabase() {
     let SQL = await (0, import_sql.default)({ locateFile: (file) => "sql-wasm.wasm" });
-    db = new SQL.Database();
+    const savedData = await loadFromIndexedDB();
+    if (savedData && savedData.length > 0) {
+      db = new SQL.Database(savedData);
+    } else {
+      db = new SQL.Database();
+    }
   }
+
   function onModuleReady() {
     const data = this.data;
-    switch (data && data.action) {
-      case "exec":
-        if (!data["sql"]) {
-          throw new Error("exec: Missing query string");
-        }
-        return postMessage({
-          id: data.id,
-          results: db.exec(data.sql, data.params)[0] ?? { values: [] }
-        });
-      case "begin_transaction":
-        return postMessage({
-          id: data.id,
-          results: db.exec("BEGIN TRANSACTION;")
-        });
-      case "end_transaction":
-        return postMessage({
-          id: data.id,
-          results: db.exec("END TRANSACTION;")
-        });
-      case "rollback_transaction":
-        return postMessage({
-          id: data.id,
-          results: db.exec("ROLLBACK TRANSACTION;")
-        });
-      default:
-        throw new Error(`Unsupported action: ${data && data.action}`);
+    let isWrite = false;
+    let results;
+    try {
+      switch (data && data.action) {
+        case "exec":
+          if (!data["sql"]) {
+            throw new Error("exec: Missing query string");
+          }
+          if (data.sql.toUpperCase().match(/^(INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)/)) {
+            isWrite = true;
+          }
+          results = db.exec(data.sql, data.params)[0] ?? { values: [] };
+          if (isWrite) scheduleSave();
+          return postMessage({
+            id: data.id,
+            results: results
+          });
+        case "begin_transaction":
+          return postMessage({
+            id: data.id,
+            results: db.exec("BEGIN TRANSACTION;")
+          });
+        case "end_transaction":
+          results = db.exec("END TRANSACTION;");
+          scheduleSave();
+          return postMessage({
+            id: data.id,
+            results: results
+          });
+        case "rollback_transaction":
+          return postMessage({
+            id: data.id,
+            results: db.exec("ROLLBACK TRANSACTION;")
+          });
+        default:
+          throw new Error(`Unsupported action: ${data && data.action}`);
+      }
+    } catch (e) {
+      throw e;
     }
   }
   function onError(err) {

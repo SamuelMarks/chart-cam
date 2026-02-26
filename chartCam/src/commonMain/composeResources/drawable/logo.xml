@@ -1,0 +1,46 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="256dp"
+    android:height="256dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M 48 0 L 208 0 C 234.5097 0 256 21.4903 256 48 L 256 208 C 256 234.5097 234.5097 256 208 256 L 48 256 C 21.4903 256 0 234.5097 0 208 L 0 48 C 0 21.4903 21.4903 0 48 0 Z" />
+    <path
+        android:strokeColor="#CBD5E1"
+        android:strokeWidth="10"
+        android:strokeLineCap="round"
+        android:pathData="M24 54V24H54" />
+    <path
+        android:strokeColor="#CBD5E1"
+        android:strokeWidth="10"
+        android:strokeLineCap="round"
+        android:pathData="M202 24H232V54" />
+    <path
+        android:strokeColor="#CBD5E1"
+        android:strokeWidth="10"
+        android:strokeLineCap="round"
+        android:pathData="M232 202V232H202" />
+    <path
+        android:strokeColor="#CBD5E1"
+        android:strokeWidth="10"
+        android:strokeLineCap="round"
+        android:pathData="M54 232H24V202" />
+    <path
+        android:fillColor="#0D9488"
+        android:pathData="M 34 103 L 222 103 C 225.3137 103 228 105.6863 228 109 L 228 147 C 228 150.3137 225.3137 153 222 153 L 34 153 C 30.6863 153 28 150.3137 28 147 L 28 109 C 28 105.6863 30.6863 103 34 103 Z" />
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M 109 28 L 147 28 C 150.3137 28 153 30.6863 153 34 L 153 222 C 153 225.3137 150.3137 228 147 228 L 109 228 C 105.6863 228 103 225.3137 103 222 L 103 34 C 103 30.6863 105.6863 28 109 28 Z" />
+    <path
+        android:fillColor="#1E293B"
+        android:strokeColor="#F8FAFC"
+        android:strokeWidth="6"
+        android:pathData="M 128 96 C 145.6731 96 160 110.3269 160 128 C 160 145.6731 145.6731 160 128 160 C 110.3269 160 96 145.6731 96 128 C 96 110.3269 110.3269 96 128 96 Z" />
+    <path
+        android:strokeColor="#0D9488"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M106 132H114L120 114L130 142L138 128H150" />
+</vector>

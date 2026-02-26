@@ -34,9 +34,9 @@ kotlin {
         iosSimulatorArm64() 
     ).forEach { iosTarget ->
         iosTarget.binaries.framework { 
-            baseName = "ChartCam" 
+            baseName = "ChartCamShared" 
             isStatic = false
-            freeCompilerArgs += listOf("-Xbinary=bundleId=io.healthplatform.chartcam.ChartCam")
+            freeCompilerArgs += listOf("-Xbinary=bundleId=io.healthplatform.chartcam.ChartCamShared")
             linkerOpts("-framework", "Security") 
             linkerOpts("-framework", "AVFoundation") 
             linkerOpts("-framework", "CoreMotion")
