@@ -21,6 +21,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import okio.ByteString.Companion.toByteString
 
 /**
  * Handles communication with the remote FHIR server.
@@ -41,12 +42,113 @@ class SyncManager(
      * @return true if the upload was successful.
      */
     suspend fun syncEncounter(encounterId: String): Boolean {
-        // App is currently offline-only, so we just return true.
-        // Data is already saved to the local database via fhirRepository.
         println("=== SYNC START: Encounter $encounterId ===")
-        println("App is offline-only. Skipping server sync.")
-        println("=== SYNC COMPLETE (Success=true) ===")
-        return true
+        val encounter = fhirRepository.getEncounter(encounterId) ?: return false
+        val patientId = encounter.subject?.reference?.value?.substringAfter("/") ?: return false
+        val patient = fhirRepository.getPatient(patientId)
+
+        val bundleBuilder = Bundle.Builder(Enumeration(value = Bundle.BundleType.Transaction))
+
+        if (patient != null) {
+            bundleBuilder.entry.add(
+                Bundle.Entry.Builder().apply {
+                    resource = patient.toBuilder()
+                    request = Bundle.Entry.Request.Builder(
+                        method = Enumeration(value = Bundle.HTTPVerb.Put),
+                        url = Uri.Builder().apply { value = "Patient/${patient.id}" }
+                    )
+                }
+            )
+        }
+
+        bundleBuilder.entry.add(
+            Bundle.Entry.Builder().apply {
+                resource = encounter.toBuilder()
+                request = Bundle.Entry.Request.Builder(
+                    method = Enumeration(value = Bundle.HTTPVerb.Put),
+                    url = Uri.Builder().apply { value = "Encounter/${encounter.id}" }
+                )
+            }
+        )
+
+        val qrs = fhirRepository.getQuestionnaireResponsesForEncounter(encounterId)
+        for (qr in qrs) {
+            bundleBuilder.entry.add(
+                Bundle.Entry.Builder().apply {
+                    resource = qr.toBuilder()
+                    request = Bundle.Entry.Request.Builder(
+                        method = Enumeration(value = Bundle.HTTPVerb.Put),
+                        url = Uri.Builder().apply { value = "QuestionnaireResponse/${qr.id}" }
+                    )
+                }
+            )
+        }
+
+        val docs = fhirRepository.getPhotosForEncounter(encounterId)
+        for (doc in docs) {
+            bundleBuilder.entry.add(
+                Bundle.Entry.Builder().apply {
+                    resource = doc.toBuilder()
+                    request = Bundle.Entry.Request.Builder(
+                        method = Enumeration(value = Bundle.HTTPVerb.Put),
+                        url = Uri.Builder().apply { value = "DocumentReference/${doc.id}" }
+                    )
+                }
+            )
+
+            try {
+                val filePath = doc.content.firstOrNull()?.attachment?.url?.value ?: continue
+                val mimeType = doc.content.firstOrNull()?.attachment?.contentType?.value ?: "image/jpeg"
+                val bytes = fileStorage.readImage(filePath)
+                val base64Data = bytes.toByteString().base64()
+                val fileName = filePath.substringAfterLast("/")
+                val binary = io.healthplatform.chartcam.models.createFhirBinary(
+                    id = fileName,
+                    contentTypeStr = mimeType,
+                    base64Data = base64Data
+                )
+                bundleBuilder.entry.add(
+                    Bundle.Entry.Builder().apply {
+                        resource = binary.toBuilder()
+                        request = Bundle.Entry.Request.Builder(
+                            method = Enumeration(value = Bundle.HTTPVerb.Put),
+                            url = Uri.Builder().apply { value = "Binary/$fileName" }
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                println("Failed to read image for DocumentReference ${doc.id}: ${e.message}")
+            }
+        }
+
+        val provs = fhirRepository.getProvenancesForEncounter(encounterId)
+        for (prov in provs) {
+            bundleBuilder.entry.add(
+                Bundle.Entry.Builder().apply {
+                    resource = prov.toBuilder()
+                    request = Bundle.Entry.Request.Builder(
+                        method = Enumeration(value = Bundle.HTTPVerb.Put),
+                        url = Uri.Builder().apply { value = "Provenance/${prov.id}" }
+                    )
+                }
+            )
+        }
+
+        val transactionBundle = bundleBuilder.build()
+        val jsonPayload = fhirJson.encodeToString(transactionBundle)
+
+        return try {
+            val response = httpClient.post(baseUrl) {
+                contentType(ContentType.Application.Json)
+                setBody(jsonPayload)
+            }
+            val success = response.status.isSuccess()
+            println("=== SYNC COMPLETE (Success=$success) ===")
+            success
+        } catch (e: Exception) {
+            println("=== SYNC FAILED: ${e.message} ===")
+            false
+        }
     }
 
     /**

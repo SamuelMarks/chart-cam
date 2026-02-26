@@ -243,8 +243,8 @@ class EncounterDetailViewModel(
      * @param title The title of the form.
      * @param photosCount The amount of required photos.
      */
-    fun createAndSelectQuestionnaire(title: kotlin.String, photosCount: Int) {
-        val q = questionnaireRepository.createQuestionnaire(title, photosCount)
+    fun createAndSelectQuestionnaire(title: kotlin.String, photosCount: Int, labels: kotlin.String = "") {
+        val q = questionnaireRepository.createQuestionnaire(title, photosCount, labels)
         _uiState.update { 
             it.copy(
                 availableQuestionnaires = questionnaireRepository.getAvailableQuestionnaires(),

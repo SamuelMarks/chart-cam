@@ -113,13 +113,16 @@ class QuestionnaireRepository {
      * Creates a new custom Questionnaire with a specified number of photos.
      * @param title The form title.
      * @param photos Number of photo attachments to require.
+     * @param labels Comma-separated labels for the photos.
      * @return The created Questionnaire.
      */
-    fun createQuestionnaire(title: kotlin.String, photos: Int): Questionnaire {
+    fun createQuestionnaire(title: kotlin.String, photos: Int, labels: kotlin.String = ""): Questionnaire {
         val id = "custom-${title.lowercase().replace(" ", "-")}"
         val items = mutableListOf(createItem("notes", "Clinical Notes", Questionnaire.QuestionnaireItemType.String, required = false))
+        val parsedLabels = labels.split(",").map { it.trim() }.filter { it.isNotEmpty() }
         for (i in 1..photos) {
-            items.add(createItem("photo_$i", "Photo $i", Questionnaire.QuestionnaireItemType.Attachment, required = true))
+            val labelStr = parsedLabels.getOrNull(i - 1) ?: (i - 1).toString()
+            items.add(createItem("photo_$i", labelStr, Questionnaire.QuestionnaireItemType.Attachment, required = true))
         }
         val q = createFhirQuestionnaire(id, title, items)
         inMemoryForms[id] = q
