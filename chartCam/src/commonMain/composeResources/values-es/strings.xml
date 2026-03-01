@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Capture Screen -->
+    <string name="camera_permission_required">Se requiere permiso de cámara</string>
+    <string name="open_settings">Abrir Configuración</string>
+    <string name="cancel">Cancelar</string>
+    <string name="take_photo">Tomar Foto</string>
+    <string name="retake">Volver a Tomar</string>
+    <string name="confirm">Confirmar</string>
+
+    <!-- Triage Screen -->
+    <string name="triage_select_patient">Triaje: Seleccionar Paciente</string>
+    <string name="selected_photos_ready">Seleccionado. %1$d fotos listas.</string>
+    <string name="search_placeholder">Buscar Nombre o N.º de Historia...</string>
+    <string name="mrn_dob_format">N.º: %1$s | Fecha: %2$s</string>
+    <string name="no_patients_found">No se encontraron pacientes.</string>
+
+    <!-- Patient List Screen -->
+    <string name="patient_directory">Directorio de Pacientes</string>
+    <string name="show_my_patients_only">Mostrar Solo Mis Pacientes</string>
+    <string name="show_all_patients">Mostrar Todos Los Pacientes</string>
+    <string name="export_data">Exportar Datos</string>
+    <string name="import_data">Importar Datos</string>
+    <string name="logout">Cerrar Sesión</string>
+    <string name="about">Acerca de</string>
+    <string name="delete_my_account">Eliminar Mi Cuenta</string>
+
+    <string name="export_password_title">Contraseña de Exportación</string>
+    <string name="export_password_label">Ingrese contraseña para encriptar</string>
+    <string name="export_all_patients">Exportar todas las visitas de todos los pacientes</string>
+    <string name="export">Exportar</string>
+
+    <string name="data_exported_title">Datos Exportados</string>
+    <string name="data_exported_message">Los datos han sido encriptados. Comparta el archivo y la contraseña por separado.</string>
+    <string name="share_password">Compartir Contraseña</string>
+    <string name="share_file">Compartir Archivo</string>
+    <string name="close">Cerrar</string>
+
+    <string name="about_title">Acerca de ChartCam</string>
+    <string name="version_text">Versión: %1$s</string>
+    <string name="ok">Aceptar</string>
+
+    <string name="delete_account_title">Eliminar Cuenta</string>
+    <string name="delete_account_message">¿Está seguro de que desea eliminar su cuenta? Esto eliminará permanentemente todos sus pacientes, visitas, fotos y notas. Esto no se puede deshacer.</string>
+    <string name="delete">Eliminar</string>
+
+    <string name="import_title">Importar Datos</string>
+    <string name="paste_data_here">Pegue los Datos Aquí</string>
+    <string name="password">Contraseña</string>
+    <string name="import_action">Importar</string>
+
+    <!-- Login Screen -->
+    <string name="username">Nombre de Usuario</string>
+    <string name="sign_in">Iniciar Sesión</string>
+
+    <!-- Create Patient Dialog -->
+    <string name="new_patient">Nuevo Paciente</string>
+    <string name="first_name">Nombre</string>
+    <string name="last_name">Apellido</string>
+    <string name="mrn">N.º Historia Clínica</string>
+    <string name="dob_label">Fecha Nacimiento (AAAA-MM-DD)</string>
+    <string name="dob_placeholder">1990-01-01</string>
+    <string name="create">Crear</string>
+
+    <!-- Encounter Detail Screen -->
+    <string name="create_questionnaire">Crear Cuestionario</string>
+    <string name="title">Título</string>
+    <string name="number_of_photos">Número de Fotos</string>
+    <string name="labels_comma">Etiquetas (separadas por coma)</string>
+
+    <string name="visit_detail">Detalle de Visita</string>
+    <string name="delete_visit">Eliminar Visita</string>
+    <string name="delete_visit_message">¿Está seguro de que desea eliminar esta visita? Esto eliminará permanentemente sus fotos y notas. Esto no se puede deshacer.</string>
+    <string name="syncing_to_server">Sincronizando al Servidor...</string>
+
+    <string name="questionnaire">Cuestionario</string>
+    <string name="create_new">Crear nuevo...</string>
+    <string name="take_photos">Tomar Fotos</string>
+    <string name="image_load_error">Error de Carga de Imagen</string>
+
+    <!-- Patient Detail Screen -->
+    <string name="patient_detail">Detalle del Paciente</string>
+    <string name="delete_patient">Eliminar Paciente</string>
+    <string name="delete_patient_message">¿Está seguro de que desea eliminar este paciente? Esto eliminará permanentemente todas sus visitas, fotos y notas. Esto no se puede deshacer.</string>
+    <string name="no_visits_found">No se encontraron visitas</string>
+
+    <string name="no_notes">Sin notas</string>
+
+    <!-- Accessibility Labels -->
+    <string name="cd_switch_camera">Cambiar Cámara</string>
+    <string name="cd_review">Revisar</string>
+    <string name="cd_proceed">Proceder</string>
+    <string name="cd_create_patient">Crear Paciente</string>
+    <string name="cd_switch_language">Cambiar Idioma</string>
+    <string name="cd_more">Más opciones</string>
+    <string name="cd_add_patient">Agregar Paciente</string>
+    <string name="cd_chartcam_logo">Logotipo de ChartCam</string>
+    <string name="cd_questionnaire_title_input">Entrada Título del Cuestionario</string>
+    <string name="cd_questionnaire_photos_input">Entrada Cantidad Fotos del Cuestionario</string>
+    <string name="cd_questionnaire_labels_input">Entrada Etiquetas del Cuestionario</string>
+    <string name="cd_back">Atrás</string>
+    <string name="cd_finalize_encounter">Finalizar Visita</string>
+    <string name="cd_questionnaire_selector">Selector de Cuestionario</string>
+    <string name="cd_patient_photo">Foto del Paciente</string>
+    <string name="cd_item">Elemento %1$s</string>
+    <string name="cd_new_visit">Nueva Visita</string>
+
+    <string name="cd_search_icon">Icono de búsqueda</string>
+
+    <string name="feature_capture">Captura</string>
+    <string name="feature_secure">Seguro</string>
+    <string name="feature_sync">Sincroniza</string>
+    <string name="app_name_title">ChartCam</string>
+    <string name="app_slogan">Captura. Registra. Cuida.</string>
+    <string name="offline_mode">Modo sin conexión</string>
+    <string name="step_count_format">%1$s/%2$s</string>
+    <string name="all_fields_required">Todos los campos son obligatorios</string>
+    <string name="invalid_date_format">Formato de fecha inválido. Use AAAA-MM-DD</string>
+    <string name="visit_history">Historial de Visitas</string>
+    <string name="select_an_option">Seleccione una opción</string>
+    <string name="select_questionnaire">Seleccionar Cuestionario</string>
+    <string name="captured_photos_format">Fotos Capturadas (%1$d/%2$d)</string>
+    <string name="provider_format">Proveedor: Dr. %1$s</string>
+</resources>

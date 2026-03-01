@@ -1,5 +1,9 @@
 package io.healthplatform.chartcam.ui
 
+import org.jetbrains.compose.resources.stringResource
+import chartcam.chartcam.generated.resources.*
+
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -132,20 +136,23 @@ fun EncounterDetailScreen(
     }
 
     if (showCreateDialog) {
+        val titleInputCd = stringResource(Res.string.cd_questionnaire_title_input)
+        val photosInputCd = stringResource(Res.string.cd_questionnaire_photos_input)
+        val labelsInputCd = stringResource(Res.string.cd_questionnaire_labels_input)
         var newTitle by remember { mutableStateOf("") }
         var newPhotosCount by remember { mutableStateOf("4") }
         var newLabels by remember { mutableStateOf("0, 1, 2, 3") }
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
-            title = { Text("Create Questionnaire") },
+            title = { Text(stringResource(Res.string.create_questionnaire)) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = newTitle,
                         onValueChange = { newTitle = it },
-                        label = { Text("Title") },
+                        label = { Text(stringResource(Res.string.title)) },
                         singleLine = true,
-                        modifier = Modifier.semantics { contentDescription = "Questionnaire Title Input" }.onKeyEvent {
+                        modifier = Modifier.semantics { contentDescription = titleInputCd }.onKeyEvent {
                             if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
                                 focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
                                 true
@@ -164,9 +171,9 @@ fun EncounterDetailScreen(
                             val count = newPhotosCount.toIntOrNull() ?: 0
                             newLabels = (0 until count).joinToString(", ")
                         },
-                        label = { Text("Number of Photos") },
+                        label = { Text(stringResource(Res.string.number_of_photos)) },
                         singleLine = true,
-                        modifier = Modifier.padding(top = 8.dp).semantics { contentDescription = "Questionnaire Photos Count Input" }.onKeyEvent {
+                        modifier = Modifier.padding(top = 8.dp).semantics { contentDescription = photosInputCd }.onKeyEvent {
                             if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
                                 focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
                                 true
@@ -181,9 +188,9 @@ fun EncounterDetailScreen(
                     OutlinedTextField(
                         value = newLabels,
                         onValueChange = { newLabels = it },
-                        label = { Text("Labels (comma separated)") },
+                        label = { Text(stringResource(Res.string.labels_comma)) },
                         singleLine = true,
-                        modifier = Modifier.padding(top = 8.dp).semantics { contentDescription = "Questionnaire Labels Input" }.onKeyEvent {
+                        modifier = Modifier.padding(top = 8.dp).semantics { contentDescription = labelsInputCd }.onKeyEvent {
                             if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
                                 focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
                                 true
@@ -216,10 +223,10 @@ fun EncounterDetailScreen(
                         viewModel.createAndSelectQuestionnaire(newTitle, count, newLabels)
                     }
                     showCreateDialog = false
-                }) { Text("Create") }
+                }) { Text(stringResource(Res.string.create)) }
             },
             dismissButton = {
-                TextButton(onClick = { showCreateDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showCreateDialog = false }) { Text(stringResource(Res.string.cancel)) }
             }
         )
     }
@@ -228,10 +235,10 @@ fun EncounterDetailScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Visit Detail") },
+                title = { Text(stringResource(Res.string.visit_detail)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.cd_back))
                     }
                 }
             )
@@ -241,7 +248,7 @@ fun EncounterDetailScreen(
                 FloatingActionButton(onClick = { 
                     viewModel.finalizeEncounter() 
                 }) {
-                    Icon(Icons.Default.Check, contentDescription = "Finalize Encounter")
+                    Icon(Icons.Default.Check, contentDescription = stringResource(Res.string.cd_finalize_encounter))
                 }
             }
         }
@@ -279,13 +286,15 @@ fun EncounterDetailScreen(
 
                 // Questionnaire Selection
                 var expanded by remember { mutableStateOf(false) }
+                    val selectorCd = stringResource(Res.string.cd_questionnaire_selector)
+                val cdSelector = selectorCd
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = it },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = "Questionnaire Selector" }
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = selectorCd }
                 ) {
                     OutlinedTextField(
-                        value = state.selectedQuestionnaire?.title?.value ?: "Select Questionnaire",
+                        value = state.selectedQuestionnaire?.title?.value ?: stringResource(Res.string.select_questionnaire),
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Questionnaire") },
@@ -371,7 +380,7 @@ fun PhotoGridItem(doc: DocumentReference) {
             if (bytes.isNotEmpty()) {
                 Image(
                     bitmap = bytes.decodeToImageBitmap(),
-                    contentDescription = doc.description?.value ?: "Patient Photo",
+                    contentDescription = doc.description?.value ?: stringResource(Res.string.cd_patient_photo),
                     modifier = Modifier.fillMaxWidth().height(150.dp),
                     contentScale = ContentScale.Crop
                 )

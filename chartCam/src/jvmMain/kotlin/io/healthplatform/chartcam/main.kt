@@ -7,6 +7,7 @@ import java.awt.Taskbar
 import javax.imageio.ImageIO
 
 fun main() {
+    System.setProperty("apple.awt.application.name", "ChartCam")
     // Set the macOS dock icon when running via gradle run
     try {
         if (System.getProperty("os.name").contains("Mac")) {

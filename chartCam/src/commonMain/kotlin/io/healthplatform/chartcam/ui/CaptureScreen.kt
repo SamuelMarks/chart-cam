@@ -1,5 +1,9 @@
 package io.healthplatform.chartcam.ui
 
+import org.jetbrains.compose.resources.stringResource
+import chartcam.chartcam.generated.resources.*
+
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -79,18 +83,18 @@ fun CaptureScreen(
     if (!permissionGranted) {
         Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Camera permission is required", color = Color.White, modifier = Modifier.padding(16.dp))
+                Text(stringResource(Res.string.camera_permission_required), color = Color.White, modifier = Modifier.padding(16.dp))
                 Button(onClick = { 
                     permissionManager.openSettings()
                 }) {
-                    Text("Open Settings")
+                    Text(stringResource(Res.string.open_settings))
                 }
                 Button(
                     onClick = onCancel,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(Res.string.cancel))
                 }
             }
         }
@@ -214,7 +218,7 @@ fun ControlsLayer(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(stepName, color = Color.White, style = MaterialTheme.typography.titleMedium)
-            Text("$count/$total", color = Color.White, style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(Res.string.step_count_format, count.toString(), total.toString()), color = Color.White, style = MaterialTheme.typography.titleMedium)
         }
 
         Column(
@@ -230,7 +234,7 @@ fun ControlsLayer(
                 if (isCapturing) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                 } else {
-                    Text("Take Photo")
+                    Text(stringResource(Res.string.take_photo))
                 }
             }
             Row(
@@ -242,7 +246,7 @@ fun ControlsLayer(
                     onClick = onCancel,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(Res.string.cancel))
                 }
                 
                 if (hasMultipleCameras) {
@@ -252,7 +256,7 @@ fun ControlsLayer(
                     ) { 
                         Icon(
                             imageVector = Icons.Default.Cameraswitch, 
-                            contentDescription = "Switch Camera", 
+                            contentDescription = stringResource(Res.string.cd_switch_camera), 
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         ) 
                     }
@@ -273,7 +277,7 @@ fun ReviewLayer(
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         Image(
             bitmap = bitmap,
-            contentDescription = "Review",
+            contentDescription = stringResource(Res.string.cd_review),
             contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxSize()
         )
@@ -286,14 +290,14 @@ fun ReviewLayer(
                 onClick = onRetake,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError)
             ) {
-                Text("Retake")
+                Text(stringResource(Res.string.retake))
             }
             
             Button(
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
             ) {
-                Text("Confirm")
+                Text(stringResource(Res.string.confirm))
             }
         }
     }

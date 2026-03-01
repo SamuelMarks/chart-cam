@@ -163,6 +163,15 @@ class AuthRepository(
     }
 
     /**
+     * Deletes the local account credentials.
+     */
+    fun deleteAccount(username: kotlin.String) {
+        val hashKey = "hash_$username"
+        storage.delete(hashKey)
+        logout()
+    }
+
+    /**
      * Refreshes the access token using the stored refresh token.
      *
      * @return boolean indicating success.

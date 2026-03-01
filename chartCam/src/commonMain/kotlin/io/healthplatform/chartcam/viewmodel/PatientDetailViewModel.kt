@@ -32,4 +32,12 @@ class PatientDetailViewModel(
             _uiState.update { it.copy(patient = patient, encounters = encounters, isLoading = false) }
         }
     }
+
+    fun deletePatient(onSuccess: () -> Unit) {
+        val patientId = _uiState.value.patient?.id ?: return
+        viewModelScope.launch {
+            fhirRepository.deletePatient(patientId)
+            onSuccess()
+        }
+    }
 }

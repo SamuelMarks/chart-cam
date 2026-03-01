@@ -71,6 +71,9 @@ SELECT * FROM PractitionerEntity WHERE id = ?;
 getAllPractitioners:
 SELECT * FROM PractitionerEntity;
 
+deletePractitionerById:
+DELETE FROM PractitionerEntity WHERE id = ?;
+
 -- Queries: Patient
 insertPatient:
 INSERT OR REPLACE INTO PatientEntity(id, family, given, birthDate, mrn, gender, managingOrganization, serializedResource)
@@ -88,6 +91,9 @@ WHERE family LIKE ('%' || :query || '%')
 OR given LIKE ('%' || :query || '%') 
 OR mrn LIKE ('%' || :query || '%');
 
+deletePatientById:
+DELETE FROM PatientEntity WHERE id = ?;
+
 -- Queries: Encounter
 insertEncounter:
 INSERT OR REPLACE INTO EncounterEntity(id, patientId, practitionerId, date, status, serializedResource)
@@ -104,11 +110,13 @@ SELECT * FROM EncounterEntity WHERE id = ?;
 getAllEncounters:
 SELECT * FROM EncounterEntity;
 
-
 updateEncounterStatus:
 UPDATE EncounterEntity
 SET status = ?, serializedResource = ?
 WHERE id = ?;
+
+deleteEncounterById:
+DELETE FROM EncounterEntity WHERE id = ?;
 
 -- Queries: DocumentReference
 insertDocumentReference:

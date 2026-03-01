@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Capture Screen -->
+    <string name="camera_permission_required">カメラの権限が必要です</string>
+    <string name="open_settings">設定を開く</string>
+    <string name="cancel">キャンセル</string>
+    <string name="take_photo">写真を撮る</string>
+    <string name="retake">再撮影</string>
+    <string name="confirm">確認</string>
+
+    <!-- Triage Screen -->
+    <string name="triage_select_patient">トリアージ: 患者を選択</string>
+    <string name="selected_photos_ready">選択済み。 %1$d 枚の写真が準備完了。</string>
+    <string name="search_placeholder">名前またはMRNを検索...</string>
+    <string name="mrn_dob_format">MRN: %1$s | 生年月日: %2$s</string>
+    <string name="no_patients_found">患者が見つかりません。</string>
+
+    <!-- Patient List Screen -->
+    <string name="patient_directory">患者リスト</string>
+    <string name="show_my_patients_only">自分の患者のみ表示</string>
+    <string name="show_all_patients">すべての患者を表示</string>
+    <string name="export_data">データのエクスポート</string>
+    <string name="import_data">データのインポート</string>
+    <string name="logout">ログアウト</string>
+    <string name="about">アプリについて</string>
+    <string name="delete_my_account">アカウントを削除</string>
+
+    <string name="export_password_title">エクスポートパスワード</string>
+    <string name="export_password_label">暗号化するパスワードを入力</string>
+    <string name="export_all_patients">すべての患者のすべての訪問をエクスポート</string>
+    <string name="export">エクスポート</string>
+
+    <string name="data_exported_title">データがエクスポートされました</string>
+    <string name="data_exported_message">データは暗号化されました。ファイルとパスワードを別々に共有してください。</string>
+    <string name="share_password">パスワードを共有</string>
+    <string name="share_file">ファイルを共有</string>
+    <string name="close">閉じる</string>
+
+    <string name="about_title">ChartCamについて</string>
+    <string name="version_text">バージョン: %1$s</string>
+    <string name="ok">OK</string>
+
+    <string name="delete_account_title">アカウントの削除</string>
+    <string name="delete_account_message">本当にアカウントを削除しますか？これにより、すべての患者、訪問、写真、メモが完全に削除されます。元に戻すことはできません。</string>
+    <string name="delete">削除</string>
+
+    <string name="import_title">データのインポート</string>
+    <string name="paste_data_here">データをここに貼り付け</string>
+    <string name="password">パスワード</string>
+    <string name="import_action">インポート</string>
+
+    <!-- Login Screen -->
+    <string name="username">ユーザー名</string>
+    <string name="sign_in">サインイン</string>
+
+    <!-- Create Patient Dialog -->
+    <string name="new_patient">新しい患者</string>
+    <string name="first_name">名前</string>
+    <string name="last_name">苗字</string>
+    <string name="mrn">MRN（医療記録番号）</string>
+    <string name="dob_label">生年月日 (YYYY-MM-DD)</string>
+    <string name="dob_placeholder">1990-01-01</string>
+    <string name="create">作成</string>
+
+    <!-- Encounter Detail Screen -->
+    <string name="create_questionnaire">質問票を作成</string>
+    <string name="title">タイトル</string>
+    <string name="number_of_photos">写真の数</string>
+    <string name="labels_comma">ラベル (カンマ区切り)</string>
+
+    <string name="visit_detail">訪問の詳細</string>
+    <string name="delete_visit">訪問を削除</string>
+    <string name="delete_visit_message">本当にこの訪問を削除しますか？写真やメモも完全に削除され、元に戻すことはできません。</string>
+    <string name="syncing_to_server">サーバーに同期中...</string>
+
+    <string name="questionnaire">質問票</string>
+    <string name="create_new">新規作成...</string>
+    <string name="take_photos">写真を撮る</string>
+    <string name="image_load_error">画像読み込みエラー</string>
+
+    <!-- Patient Detail Screen -->
+    <string name="patient_detail">患者の詳細</string>
+    <string name="delete_patient">患者を削除</string>
+    <string name="delete_patient_message">本当にこの患者を削除しますか？すべての訪問、写真、メモが完全に削除され、元に戻すことはできません。</string>
+    <string name="no_visits_found">訪問履歴がありません</string>
+
+    <string name="no_notes">メモがありません</string>
+
+    <!-- Accessibility Labels -->
+    <string name="cd_switch_camera">カメラを切り替え</string>
+    <string name="cd_review">確認</string>
+    <string name="cd_proceed">進む</string>
+    <string name="cd_create_patient">患者を作成</string>
+    <string name="cd_switch_language">言語を切り替え</string>
+    <string name="cd_more">その他のオプション</string>
+    <string name="cd_add_patient">患者を追加</string>
+    <string name="cd_chartcam_logo">ChartCamロゴ</string>
+    <string name="cd_questionnaire_title_input">質問票タイトル入力</string>
+    <string name="cd_questionnaire_photos_input">質問票の写真数入力</string>
+    <string name="cd_questionnaire_labels_input">質問票ラベル入力</string>
+    <string name="cd_back">戻る</string>
+    <string name="cd_finalize_encounter">訪問を完了</string>
+    <string name="cd_questionnaire_selector">質問票を選択</string>
+    <string name="cd_patient_photo">患者の写真</string>
+    <string name="cd_item">アイテム %1$s</string>
+    <string name="cd_new_visit">新しい訪問</string>
+
+    <string name="cd_search_icon">検索アイコン</string>
+
+    <string name="feature_capture">キャプチャ</string>
+    <string name="feature_secure">安全</string>
+    <string name="feature_sync">同期</string>
+    <string name="app_name_title">ChartCam</string>
+    <string name="app_slogan">撮る。記録する。ケアする。</string>
+    <string name="offline_mode">オフラインモード</string>
+    <string name="step_count_format">%1$s/%2$s</string>
+    <string name="all_fields_required">すべての項目は必須です</string>
+    <string name="invalid_date_format">日付の形式が無効です。YYYY-MM-DD を使用してください</string>
+    <string name="visit_history">訪問履歴</string>
+    <string name="select_an_option">オプションを選択</string>
+    <string name="select_questionnaire">質問票を選択</string>
+    <string name="captured_photos_format">撮影した写真 (%1$d/%2$d)</string>
+    <string name="provider_format">担当医: %1$s 医師</string>
+</resources>

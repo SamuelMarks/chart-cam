@@ -1,5 +1,9 @@
 package io.healthplatform.chartcam.ui
 
+import org.jetbrains.compose.resources.stringResource
+import chartcam.chartcam.generated.resources.*
+
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +34,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.ui.components.CreatePatientDialog
@@ -56,7 +62,7 @@ fun TriageScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Triage: Select Patient") }
+                title = { Text(stringResource(Res.string.triage_select_patient)) }
             )
         }
     ) { padding ->
@@ -65,10 +71,10 @@ fun TriageScreen(
             state.selectedPatient?.let { patient ->
                 ListItem(
                     headlineContent = { Text(patient.fullName, style = MaterialTheme.typography.titleMedium) },
-                    supportingContent = { Text("Selected. ${state.capturedPhotoPaths.size} photos ready.") },
+                    supportingContent = { Text(stringResource(Res.string.selected_photos_ready, state.capturedPhotoPaths.size)) },
                     trailingContent = {
                         IconButton(onClick = { onProceedToEncounter(patient.id ?: "", state.capturedPhotoPaths) }) {
-                            Icon(Icons.Default.ArrowForward, contentDescription = "Proceed")
+                            Icon(Icons.Default.ArrowForward, contentDescription = stringResource(Res.string.cd_proceed))
                         }
                     },
                     modifier = Modifier.padding(8.dp)
@@ -83,13 +89,13 @@ fun TriageScreen(
                     onSearch = { },
                     active = false,
                     onActiveChange = { },
-                    placeholder = { Text("Search MRN or Name...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    placeholder = { Text(stringResource(Res.string.search_placeholder)) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.cd_search_icon)) },
                     modifier = Modifier.weight(1f)
                 ) {}
                 
                 IconButton(onClick = { viewModel.showCreatePatient(true) }) {
-                    Icon(Icons.Default.Add, contentDescription = "Create Patient")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.cd_create_patient))
                 }
             }
 
@@ -97,8 +103,8 @@ fun TriageScreen(
                 items(state.searchResults) { patient ->
                     ListItem(
                         headlineContent = { Text(patient.fullName) },
-                        supportingContent = { Text("MRN: ${patient.mrn} | DOB: ${patient.customBirthDate}") },
-                        modifier = Modifier.clickable { viewModel.selectPatient(patient) }
+                        supportingContent = { Text(stringResource(Res.string.mrn_dob_format, patient.mrn ?: "", patient.customBirthDate ?: "")) },
+                        modifier = Modifier.clickable(role = Role.Button) { viewModel.selectPatient(patient) }
                     )
                     HorizontalDivider()
                 }
@@ -106,7 +112,7 @@ fun TriageScreen(
                 if (state.searchResults.isEmpty() && state.searchQuery.isNotBlank()) {
                     item {
                         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            Text("No patients found.")
+                            Text(stringResource(Res.string.no_patients_found))
                         }
                     }
                 }
