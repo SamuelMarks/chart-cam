@@ -1,5 +1,12 @@
 package io.healthplatform.chartcam.ui.components
 
+import org.jetbrains.compose.resources.stringResource
+import chartcam.chartcam.generated.resources.*
+
+import org.jetbrains.compose.resources.stringResource
+import chartcam.chartcam.generated.resources.*
+
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,6 +16,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
@@ -18,6 +26,15 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.SelectableDates
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,6 +53,7 @@ import kotlinx.datetime.LocalDate
  * @param onDismissRequest Callback when dialog is dismissed.
  * @param onConfirm Callback with the new data(firstName, lastName, mrn, dob, gender).
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreatePatientDialog(
     onDismissRequest: () -> Unit,
@@ -51,11 +69,23 @@ fun CreatePatientDialog(
     var gender by remember { mutableStateOf("unknown") }
     var error by remember { mutableStateOf<String?>(null) }
     
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                return utcTimeMillis <= kotlin.time.Clock.System.now().toEpochMilliseconds()
+            }
+        }
+    )
+
+    
     val focusManager = LocalFocusManager.current
+    val errorAllFields = stringResource(Res.string.all_fields_required)
+    val errorInvalidDate = stringResource(Res.string.invalid_date_format)
     
     val submitForm = {
         if (firstName.isBlank() || lastName.isBlank() || mrn.isBlank()) {
-            error = "All fields are required"
+            error = errorAllFields
         } else {
             val dob = try {
                 LocalDate.parse(dobString.trim())
@@ -63,7 +93,7 @@ fun CreatePatientDialog(
                 null
             }
             if (dob == null) {
-                error = "Invalid Date Format. Use YYYY-MM-DD"
+                error = errorInvalidDate
             } else {
                 onConfirm(firstName, lastName, mrn, dob, gender)
             }
@@ -73,71 +103,71 @@ fun CreatePatientDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text("New Patient") },
+        title = { Text(stringResource(Res.string.new_patient)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = firstName,
                     onValueChange = { firstName = it },
-                    label = { Text("First Name") },
+                    label = { Text(stringResource(Res.string.first_name)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth().onKeyEvent { 
+                    modifier = Modifier.fillMaxWidth().onPreviewKeyEvent { 
                         if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
                             focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
                             true
                         } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                            focusManager.moveFocus(FocusDirection.Down)
+                            focusManager.moveFocus(FocusDirection.Next)
                             true
                         } else false
                     },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) })
                 )
                 OutlinedTextField(
                     value = lastName,
                     onValueChange = { lastName = it },
-                    label = { Text("Last Name") },
+                    label = { Text(stringResource(Res.string.last_name)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth().onKeyEvent { 
+                    modifier = Modifier.fillMaxWidth().onPreviewKeyEvent { 
                         if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
                             focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
                             true
                         } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                            focusManager.moveFocus(FocusDirection.Down)
+                            focusManager.moveFocus(FocusDirection.Next)
                             true
                         } else false
                     },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) })
                 )
                 OutlinedTextField(
                     value = mrn,
                     onValueChange = { mrn = it },
-                    label = { Text("MRN") },
+                    label = { Text(stringResource(Res.string.mrn)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth().onKeyEvent { 
+                    modifier = Modifier.fillMaxWidth().onPreviewKeyEvent { 
                         if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
                             focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
                             true
                         } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                            focusManager.moveFocus(FocusDirection.Down)
+                            focusManager.moveFocus(FocusDirection.Next)
                             true
                         } else false
                     },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) })
                 )
                 OutlinedTextField(
                     value = dobString,
                     onValueChange = { dobString = it },
-                    label = { Text("DOB (YYYY-MM-DD)") },
+                    label = { Text(stringResource(Res.string.dob_label)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
                         focusManager.clearFocus()
                         submitForm()
                     }),
-                    modifier = Modifier.fillMaxWidth().onKeyEvent {
+                    modifier = Modifier.fillMaxWidth().onPreviewKeyEvent {
                         if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
                             focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
                             true
@@ -147,7 +177,7 @@ fun CreatePatientDialog(
                             true
                         } else false
                     },
-                    placeholder = { Text("1990-01-01") }
+                    placeholder = { Text(stringResource(Res.string.dob_placeholder)) }
                 )
                 
                 if (error != null) {
@@ -165,12 +195,12 @@ fun CreatePatientDialog(
                     submitForm()
                 }
             ) {
-                Text("Create")
+                Text(stringResource(Res.string.create))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismissRequest) {
-                Text("Cancel")
+                Text(stringResource(Res.string.cancel))
             }
         }
     )

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Capture Screen -->
+    <string name="camera_permission_required">Camera permission is required</string>
+    <string name="open_settings">Open Settings</string>
+    <string name="cancel">Cancel</string>
+    <string name="take_photo">Take Photo</string>
+    <string name="retake">Retake</string>
+    <string name="confirm">Confirm</string>
+
+    <!-- Triage Screen -->
+    <string name="triage_select_patient">Triage: Select Patient</string>
+    <string name="selected_photos_ready">Selected. %1$d photos ready.</string>
+    <string name="search_placeholder">Search Name or MRN...</string>
+    <string name="mrn_dob_format">MRN: %1$s | DOB: %2$s</string>
+    <string name="no_patients_found">No patients found.</string>
+
+    <!-- Patient List Screen -->
+    <string name="patient_directory">Patient Directory</string>
+    <string name="show_my_patients_only">Show My Patients Only</string>
+    <string name="show_all_patients">Show All Patients</string>
+    <string name="export_data">Export Data</string>
+    <string name="import_data">Import Data</string>
+    <string name="logout">Logout</string>
+    <string name="about">About</string>
+    <string name="delete_my_account">Delete My Account</string>
+
+    <string name="export_password_title">Export Password</string>
+    <string name="export_password_label">Enter a password to encrypt data</string>
+    <string name="export_all_patients">Export all visits of all patients</string>
+    <string name="export">Export</string>
+
+    <string name="data_exported_title">Data Exported</string>
+    <string name="data_exported_message">Data has been encrypted. Share the file and the password separately.</string>
+    <string name="share_password">Share Password</string>
+    <string name="share_file">Share File</string>
+    <string name="close">Close</string>
+
+    <string name="about_title">About ChartCam</string>
+    <string name="version_text">Version: %1$s</string>
+    <string name="ok">OK</string>
+
+    <string name="delete_account_title">Delete Account</string>
+    <string name="delete_account_message">Are you sure you want to delete your account? This will permanently delete all your patients, visits, photos, and notes. This cannot be undone.</string>
+    <string name="delete">Delete</string>
+
+    <string name="import_title">Import Data</string>
+    <string name="paste_data_here">Paste Data Here</string>
+    <string name="password">Password</string>
+    <string name="import_action">Import</string>
+
+    <!-- Login Screen -->
+    <string name="username">Username</string>
+    <string name="sign_in">Sign In</string>
+
+    <!-- Create Patient Dialog -->
+    <string name="new_patient">New Patient</string>
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last Name</string>
+    <string name="mrn">MRN</string>
+    <string name="dob_label">DOB (YYYY-MM-DD)</string>
+    <string name="dob_placeholder">1990-01-01</string>
+    <string name="create">Create</string>
+
+    <!-- Encounter Detail Screen -->
+    <string name="create_questionnaire">Create Questionnaire</string>
+    <string name="title">Title</string>
+    <string name="number_of_photos">Number of Photos</string>
+    <string name="labels_comma">Labels (comma separated)</string>
+
+    <string name="visit_detail">Visit Detail</string>
+    <string name="delete_visit">Delete Visit</string>
+    <string name="delete_visit_message">Are you sure you want to delete this visit? This will permanently delete its photos and notes. This cannot be undone.</string>
+    <string name="syncing_to_server">Syncing to Server...</string>
+
+    <string name="questionnaire">Questionnaire</string>
+    <string name="create_new">Create new...</string>
+    <string name="take_photos">Take Photos</string>
+    <string name="image_load_error">Image Load Error</string>
+
+    <!-- Patient Detail Screen -->
+    <string name="patient_detail">Patient Detail</string>
+    <string name="delete_patient">Delete Patient</string>
+    <string name="delete_patient_message">Are you sure you want to delete this patient? This will permanently delete all their visits, photos, and notes. This cannot be undone.</string>
+    <string name="no_visits_found">No visits found</string>
+
+    <string name="no_notes">No notes</string>
+
+    <!-- Accessibility Labels -->
+    <string name="cd_switch_camera">Switch Camera</string>
+    <string name="cd_review">Review</string>
+    <string name="cd_proceed">Proceed</string>
+    <string name="cd_create_patient">Create Patient</string>
+    <string name="cd_switch_language">Switch Language</string>
+    <string name="cd_more">More options</string>
+    <string name="cd_add_patient">Add Patient</string>
+    <string name="cd_chartcam_logo">ChartCam Logo</string>
+    <string name="cd_questionnaire_title_input">Questionnaire Title Input</string>
+    <string name="cd_questionnaire_photos_input">Questionnaire Photos Count Input</string>
+    <string name="cd_questionnaire_labels_input">Questionnaire Labels Input</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_finalize_encounter">Finalize Encounter</string>
+    <string name="cd_questionnaire_selector">Questionnaire Selector</string>
+    <string name="cd_patient_photo">Patient Photo</string>
+    <string name="cd_item">Item %1$s</string>
+    <string name="cd_new_visit">New Visit</string>
+
+    <string name="cd_search_icon">Search icon</string>
+
+    <string name="feature_capture">Capture</string>
+    <string name="feature_secure">Secure</string>
+    <string name="feature_sync">Sync</string>
+    <string name="app_name_title">ChartCam</string>
+    <string name="app_slogan">Capture. Chart. Care.</string>
+    <string name="offline_mode">Offline mode</string>
+    <string name="step_count_format">%1$s/%2$s</string>
+    <string name="all_fields_required">All fields are required</string>
+    <string name="invalid_date_format">Invalid Date Format. Use YYYY-MM-DD</string>
+    <string name="visit_history">Visit History</string>
+    <string name="select_an_option">Select an option</string>
+    <string name="select_questionnaire">Select Questionnaire</string>
+    <string name="captured_photos_format">Captured Photos (%1$d/%2$d)</string>
+    <string name="provider_format">Provider: Dr. %1$s</string>
+</resources>

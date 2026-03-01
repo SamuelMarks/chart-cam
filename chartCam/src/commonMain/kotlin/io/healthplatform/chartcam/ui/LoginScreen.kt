@@ -1,5 +1,9 @@
 package io.healthplatform.chartcam.ui
 
+import org.jetbrains.compose.resources.stringResource
+import chartcam.chartcam.generated.resources.*
+
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -19,12 +23,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -56,6 +65,8 @@ import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.logo
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
 import org.jetbrains.compose.resources.painterResource
+import io.healthplatform.chartcam.ui.setAppLanguage
+import io.healthplatform.chartcam.ui.currentLanguageState
 
 /**
  * Screen enabling Practitioner authentication.
@@ -73,12 +84,42 @@ fun LoginScreen(
         onLoginSuccess()
     }
 
+        val currentLanguage by currentLanguageState.collectAsState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        Column(
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            contentAlignment = Alignment.TopEnd
+        ) {
+            Box {
+                var showLanguageMenu by remember { mutableStateOf(false) }
+                IconButton(onClick = { showLanguageMenu = true }) {
+                    Icon(Icons.Default.Translate, contentDescription = stringResource(Res.string.cd_switch_language))
+                }
+                DropdownMenu(
+                    expanded = showLanguageMenu,
+                    onDismissRequest = { showLanguageMenu = false }
+                ) {
+                DropdownMenuItem(
+                    text = { Text("English") },
+                    onClick = { setAppLanguage("en"); showLanguageMenu = false }
+                )
+                DropdownMenuItem(
+                    text = { Text("Español") },
+                    onClick = { setAppLanguage("es"); showLanguageMenu = false }
+                )
+                DropdownMenuItem(
+                    text = { Text("日本語") },
+                    onClick = { setAppLanguage("ja"); showLanguageMenu = false }
+                )
+            }
+            }
+        }
+             Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(24.dp),
@@ -88,13 +129,13 @@ fun LoginScreen(
             // Logo
             Image(
                 painter = painterResource(Res.drawable.logo),
-                contentDescription = "ChartCam Logo",
+                contentDescription = stringResource(Res.string.cd_chartcam_logo),
                 modifier = Modifier.size(120.dp).padding(bottom = 16.dp)
             )
 
             // Title
             Text(
-                text = "ChartCam",
+                text = stringResource(Res.string.app_name_title),
                 style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -102,7 +143,7 @@ fun LoginScreen(
 
             // Slogan
             Text(
-                text = "Capture. Chart. Care.",
+                text = stringResource(Res.string.app_slogan),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 32.dp)
@@ -125,26 +166,26 @@ fun LoginScreen(
                     OutlinedTextField(
                         value = username,
                         onValueChange = { username = it },
-                        label = { Text("Username") },
+                        label = { Text(stringResource(Res.string.username)) },
                         modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).onKeyEvent {
                             if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
                                 focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
                                 true
                             } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                                focusManager.moveFocus(FocusDirection.Down)
+                                focusManager.moveFocus(FocusDirection.Next)
                                 true
                             } else false
                         },
                         singleLine = true,
                         enabled = !isLoading,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) })
                     )
 
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it },
-                        label = { Text("Password") },
+                        label = { Text(stringResource(Res.string.password)) },
                         modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).onKeyEvent {
                             if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
                                 focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
@@ -178,7 +219,7 @@ fun LoginScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Offline mode",
+                            text = stringResource(Res.string.offline_mode),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -215,7 +256,7 @@ fun LoginScreen(
                             )
                         ) {
                             Text(
-                                text = "Sign In",
+                                text = stringResource(Res.string.sign_in),
                                 style = MaterialTheme.typography.titleMedium
                             )
                         }
@@ -230,9 +271,9 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                FeatureIcon(Icons.Default.CameraAlt, "Capture")
-                FeatureIcon(Icons.Default.Security, "Secure")
-                FeatureIcon(Icons.Default.CloudSync, "Sync")
+                FeatureIcon(Icons.Default.CameraAlt, stringResource(Res.string.feature_capture))
+                FeatureIcon(Icons.Default.Security, stringResource(Res.string.feature_secure))
+                FeatureIcon(Icons.Default.CloudSync, stringResource(Res.string.feature_sync))
             }
         }
     }

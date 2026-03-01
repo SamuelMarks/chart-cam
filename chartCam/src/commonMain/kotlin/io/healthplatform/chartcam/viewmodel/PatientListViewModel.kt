@@ -126,4 +126,26 @@ class PatientListViewModel(
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }
+
+    fun deleteAccount(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            val practitioner = authRepository.currentUser.value
+            if (practitioner != null) {
+                val username = practitioner.name.firstOrNull()?.family?.value ?: ""
+                val id = practitioner.id ?: ""
+                
+                // Delete all patients associated with this practitioner
+                // which will cascade delete their visits, photos, and notes
+                val allPatients = repository.getAllPatients(showAll = false, practitionerId = id)
+                allPatients.forEach { patient -> 
+                    patient.id?.let { repository.deletePatient(it) }
+                }
+                
+                repository.deletePractitioner(id)
+                authRepository.deleteAccount(username)
+                onSuccess()
+            }
+        }
+    }
 }
+

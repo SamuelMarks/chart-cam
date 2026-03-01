@@ -1,5 +1,9 @@
 package io.healthplatform.chartcam.ui
 
+import org.jetbrains.compose.resources.stringResource
+import chartcam.chartcam.generated.resources.*
+
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,10 +51,10 @@ fun DynamicQuestionnaireForm(
     onAnswerChanged: (String, Any?) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
-
     Column {
         questionnaire.item.forEach { item ->
             val linkId = item.linkId.value ?: return@forEach
+            val itemDesc = stringResource(Res.string.cd_item, linkId)
             val type = item.type.value ?: return@forEach
             
             // SDC logic: enableWhen
@@ -65,7 +69,7 @@ fun DynamicQuestionnaireForm(
                             value = text,
                             onValueChange = { onAnswerChanged(linkId, it) },
                             label = { Text(item.text?.value ?: linkId) },
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = "Item $linkId" }.onKeyEvent {
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = itemDesc }.onKeyEvent {
                                 if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
                                     focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
                                     true
@@ -82,7 +86,7 @@ fun DynamicQuestionnaireForm(
                             Checkbox(
                                 checked = checked,
                                 onCheckedChange = { onAnswerChanged(linkId, it) },
-                                modifier = Modifier.semantics { contentDescription = "Item $linkId" }
+                                modifier = Modifier.semantics { contentDescription = itemDesc }
                             )
                             Text(text = item.text?.value ?: linkId, modifier = Modifier.padding(start = 8.dp))
                         }
@@ -96,7 +100,7 @@ fun DynamicQuestionnaireForm(
                             ?.value?.asCodeableConcept()?.value?.coding?.firstOrNull()?.code?.value
                         
                         if (itemControl == "radio-button") {
-                            Column(modifier = Modifier.padding(vertical = 8.dp).semantics { contentDescription = "Item $linkId" }) {
+                            Column(modifier = Modifier.padding(vertical = 8.dp).semantics { contentDescription = itemDesc }) {
                                 Text(item.text?.value ?: linkId, modifier = Modifier.padding(bottom = 4.dp))
                                 options.forEach { option ->
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -112,10 +116,10 @@ fun DynamicQuestionnaireForm(
                             ExposedDropdownMenuBox(
                                 expanded = expanded,
                                 onExpandedChange = { expanded = it },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = "Item $linkId" }
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = itemDesc }
                             ) {
                                 OutlinedTextField(
-                                    value = selectedOption.ifEmpty { "Select an option" },
+                                    value = selectedOption.ifEmpty { stringResource(Res.string.select_an_option) },
                                     onValueChange = {},
                                     readOnly = true,
                                     label = { Text(item.text?.value ?: linkId) },

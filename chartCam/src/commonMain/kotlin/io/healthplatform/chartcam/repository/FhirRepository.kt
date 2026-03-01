@@ -75,6 +75,10 @@ class FhirRepository(val database: ChartCamDatabase) {
         return fhirJson.decodeFromString(entity.serializedResource) as Practitioner
     }
 
+    suspend fun deletePractitioner(id: String) {
+        dbQuery.deletePractitionerById(id)
+    }
+
     // --- Patient ---
 
     /**
@@ -142,6 +146,10 @@ class FhirRepository(val database: ChartCamDatabase) {
         return allEntities.map { entity ->
             fhirJson.decodeFromString(entity.serializedResource) as Patient
         }
+    }
+
+    suspend fun deletePatient(id: String) {
+        dbQuery.deletePatientById(id)
     }
 
     // --- Encounter ---
@@ -218,6 +226,10 @@ class FhirRepository(val database: ChartCamDatabase) {
             val serialized = fhirJson.encodeToString(updatedEncounter)
             dbQuery.updateEncounterStatus(status, serialized, id)
         }
+    }
+
+    suspend fun deleteEncounter(id: String) {
+        dbQuery.deleteEncounterById(id)
     }
 
     // --- DocumentReference (Photos) ---

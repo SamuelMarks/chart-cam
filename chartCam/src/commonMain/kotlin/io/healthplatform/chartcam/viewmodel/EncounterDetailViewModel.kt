@@ -390,4 +390,11 @@ class EncounterDetailViewModel(
             }
         }
     }
+    fun deleteEncounter(onSuccess: () -> Unit) {
+        val encId = _uiState.value.encounter?.id ?: return
+        viewModelScope.launch {
+            fhirRepository.deleteEncounter(encId)
+            onSuccess()
+        }
+    }
 }
