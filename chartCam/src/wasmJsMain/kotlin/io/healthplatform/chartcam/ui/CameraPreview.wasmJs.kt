@@ -8,6 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import org.jetbrains.compose.resources.stringResource
+import chartcam.chartcam.generated.resources.*
 import io.healthplatform.chartcam.camera.CameraManager
 import io.healthplatform.chartcam.camera.JsCameraManager
 import kotlinx.coroutines.delay
@@ -61,7 +63,7 @@ actual fun CameraPreview(modifier: Modifier, cameraManager: CameraManager) {
         if (imageBitmap != null) {
             Image(
                 bitmap = imageBitmap!!,
-                contentDescription = "Camera Preview",
+                contentDescription = stringResource(Res.string.cd_camera_preview),
                 modifier = modifier.background(Color.Black),
                 contentScale = ContentScale.Crop
             )

@@ -124,7 +124,7 @@ class E2EWorkflowTest {
         val testNotes = "Patient presents with dry eyes."
         encounterDetailViewModel.onNotesChanged(testNotes)
         testDispatcher.scheduler.advanceUntilIdle()
-        assertEquals(testNotes, encounterDetailViewModel.uiState.value.notes)
+        assertEquals(testNotes, encounterDetailViewModel.uiState.value.answers["notes"])
 
         // Finalize Encounter
         encounterDetailViewModel.finalizeEncounter()

@@ -2,10 +2,15 @@ package io.healthplatform.chartcam.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.noto_sans_jp
+import org.jetbrains.compose.resources.Font
 
 // Harvard Medical School Brand Colors
 private val HarvardCrimson = Color(0xFFA51C30)
@@ -44,6 +49,29 @@ private val DarkColors = darkColorScheme(
     onSurface = HarvardParchment
 )
 
+@Composable
+fun getTypography(): Typography {
+    val defaultTypography = Typography()
+    val fontFamily = FontFamily(Font(Res.font.noto_sans_jp))
+    return Typography(
+        displayLarge = defaultTypography.displayLarge.copy(fontFamily = fontFamily),
+        displayMedium = defaultTypography.displayMedium.copy(fontFamily = fontFamily),
+        displaySmall = defaultTypography.displaySmall.copy(fontFamily = fontFamily),
+        headlineLarge = defaultTypography.headlineLarge.copy(fontFamily = fontFamily),
+        headlineMedium = defaultTypography.headlineMedium.copy(fontFamily = fontFamily),
+        headlineSmall = defaultTypography.headlineSmall.copy(fontFamily = fontFamily),
+        titleLarge = defaultTypography.titleLarge.copy(fontFamily = fontFamily),
+        titleMedium = defaultTypography.titleMedium.copy(fontFamily = fontFamily),
+        titleSmall = defaultTypography.titleSmall.copy(fontFamily = fontFamily),
+        bodyLarge = defaultTypography.bodyLarge.copy(fontFamily = fontFamily),
+        bodyMedium = defaultTypography.bodyMedium.copy(fontFamily = fontFamily),
+        bodySmall = defaultTypography.bodySmall.copy(fontFamily = fontFamily),
+        labelLarge = defaultTypography.labelLarge.copy(fontFamily = fontFamily),
+        labelMedium = defaultTypography.labelMedium.copy(fontFamily = fontFamily),
+        labelSmall = defaultTypography.labelSmall.copy(fontFamily = fontFamily)
+    )
+}
+
 /**
  * Main application theme defining the colors, typography, and shapes.
  * This ensures consistency with Material Design 3 guidelines.
@@ -60,6 +88,7 @@ fun AppTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
+        typography = getTypography(),
         content = content
     )
 }

@@ -1,129 +1,160 @@
-# ChartCam Release Management Guide
+# 🚀 ChartCam Ultimate Release Guide
 
-This document defines the standardized operational procedures for deploying the ChartCam application to production environments, specifically targeting the **Google Play Store** (Android) and the **Apple App Store** (iOS). To ensure reproducibility, minimize human error, and streamline continuous delivery, ChartCam relies on [Fastlane](https://fastlane.tools/) for automated build, code signing, and release pipelines.
+This document is the authoritative, exhaustive guide for releasing the ChartCam application to the **Google Play Store** (Android) and the **Apple App Store** (iOS).
 
----
-
-## 🤖 Android Deployment (Google Play Console)
-
-The Android release process necessitates compiling a signed Android App Bundle (AAB), managing versioning, and deploying the artifact through the Google Play Console's defined testing and production tracks.
-
-### Prerequisites & Security
-
-1.  **Production Keystore**: Secure access to the authoritative production keystore file (`chartcam-release.keystore`). This artifact is highly sensitive and must be managed according to internal security policies.
-2.  **Keystore Configuration**: The build environment (local or CI runner) must securely inject the necessary keystore credentials. This is typically achieved via `local.properties` or secure environment variables.
-    ```properties
-    # local.properties (Excluded from Version Control)
-    RELEASE_STORE_FILE=chartcam-release.keystore
-    RELEASE_STORE_PASSWORD=<SECURE_STORE_PASSWORD>
-    RELEASE_KEY_ALIAS=<SECURE_KEY_ALIAS>
-    RELEASE_KEY_PASSWORD=<SECURE_KEY_PASSWORD>
-    ```
-3.  **Google Play Service Account**: A valid JSON service account key (`api-key.json`) provisioned with appropriate permissions in the Google Play Developer Console. This file must reside at `fastlane/api-key.json` or be securely injected during CI execution.
-
-### Manual Artifact Generation (Fallback)
-
-In scenarios requiring manual artifact inspection or offline compilation, the release AAB can be generated directly via Gradle:
-
-```bash
-./gradlew :chartCam:bundleRelease
-```
-Upon successful execution, the optimized App Bundle will be placed in `chartCam/build/outputs/bundle/release/chartCam-release.aab`.
-
-### Automated Deployment Pipeline (Fastlane)
-
-Fastlane is the primary, supported mechanism for all ChartCam deployments, handling the complete lifecycle from compilation to store submission.
-
-#### 1. Internal Testing / QA Verification
-
-Deploy an immediate release to the Internal Testing track to distribute the build to designated QA personnel and internal stakeholders:
-
-```bash
-bundle exec fastlane android deploy_internal
-```
-
-#### 2. Beta / Open Testing Promotion
-
-Following successful QA verification, promote the application to the Beta testing track for broader audience validation:
-
-```bash
-bundle exec fastlane android deploy_beta
-```
-
-#### 3. Production Release
-
-Execute the final deployment to the Production track (typically post-Beta validation). This action makes the application publicly available:
-
-```bash
-bundle exec fastlane android deploy_production
-```
-
-> **Versioning Note:** The Fastlane pipeline is configured to automatically query the Google Play API and increment the `versionCode` relative to the latest published artifact. Developers are responsible for manually updating the semantic `versionName` within `chartCam/build.gradle.kts` prior to initiating a release lane.
+Whether you are configuring the project for the first time, automating the pipeline via CI/CD, or manually submitting an update from your IDE, follow these phases strictly to ensure a flawless deployment.
 
 ---
 
-## 🍎 iOS Deployment (App Store Connect & TestFlight)
+## 🛑 Phase 0: Pre-Flight Checklist
 
-The iOS deployment pipeline involves managing provisioning profiles, executing cryptographic code signing, compiling the iOS App Store Package (IPA), and interfacing with Apple's App Store Connect API.
+Before generating any artifacts, ensure the codebase is stable and clean:
+1. **Ensure a clean working tree:** You should be on the `master` or `release` branch with no uncommitted changes. (`git status`)
+2. **Run all tests:** Execute the unit and UI tests to prevent regressions.
+   ```bash
+   ./gradlew test_all  # Or run the fastlane test lane: bundle exec fastlane test_all
+   ```
+3. **Verify Configuration:** Ensure `RELEASE_STORE_FILE` and API keys are properly configured in `local.properties` (Android) and `match` is accessible (iOS).
 
-### Prerequisites & Environment Setup
+---
 
-1.  **macOS Host**: Compilation and signing of iOS artifacts mandates a macOS environment running the latest stable release of Xcode.
-2.  **Apple Developer Program Membership**: Active enrollment and Administrative or App Manager roles within the organizational Apple Developer account.
-3.  **App-Specific Passwords**: Generation of an App-Specific Password via appleid.apple.com to authenticate Fastlane tools (e.g., `pilot`, `deliver`) against Apple's infrastructure.
-4.  **Fastlane Match Configuration**: ChartCam utilizes `match` to enforce deterministic, repository-driven management of code signing certificates and provisioning profiles across the development team and CI runners.
+## 🏗 Phase 1: First-Time Setup (One-Off Tasks)
 
-### Cryptographic Code Signing Initialization
+*If ChartCam is already published and you are just updating it, skip to Phase 2.*
 
-Prior to building, the environment must synchronize the correct production certificates and profiles from the secure, encrypted repository:
-
-```bash
-bundle exec fastlane match appstore
-```
-*(Execution will prompt for the shared match repository decryption passphrase)*
-
-### Manual Artifact Generation (Xcode Fallback)
-
-If manual compilation is necessary:
-1. Open the project workspace: `./iosApp/iosApp.xcodeproj`.
-2. Configure the active scheme destination to **Any iOS Device (arm64)**.
-3. Navigate to `Product > Archive`.
-4. Upon successful archiving, the Organizer window will launch. Select **Distribute App** and proceed through the native App Store Connect upload flow.
-
-### Automated Deployment Pipeline (Fastlane)
-
-#### 1. TestFlight Deployment (Internal/External Beta)
-
-Compile, sign, and upload the artifact to TestFlight for rigorous beta testing:
-
-```bash
-bundle exec fastlane ios deploy_testflight
-```
-This automated lane performs the following operations:
-- Synchronizes provisioning profiles and certificates via `match`.
-- Automatically increments the CFBundleVersion (build number).
-- Compiles the application into a distribution-ready `.ipa` utilizing `gym`.
-- Uploads the artifact and release notes to TestFlight via `pilot`.
-
-#### 2. App Store Submission (Production)
-
-Initiate the final submission process for Apple App Store Review:
-
-```bash
-bundle exec fastlane ios deploy_appstore
-```
-This lane performs the following operations:
-- Verifies cryptographic signing integrity for App Store distribution.
-- Uploads the compiled artifact and associated metadata (screenshots, descriptions) to App Store Connect.
-- Submits the release candidate to the App Store Review queue (subject to Fastfile configuration specifics).
-
-### Post-Release Lifecycle Management
-
-Following a successful production release on either platform, the following administrative tasks must be executed:
-
-1.  **Version Control Tagging**: Create an immutable Git tag corresponding to the released version to ensure historical traceability:
+### 1.1 Google Play Store Initialization
+1.  **Create App:** Log into the [Google Play Console](https://play.google.com/console), click **Create app** (ChartCam, App, Free).
+2.  **Store Presence:** Fill out the Main Store Listing (Description, Icon, Screenshots, Feature Graphic).
+3.  **App Content:** Complete all questionnaires: Privacy Policy, Data Safety, Content Rating, and Target Audience.
+4.  **Generate Keystore:** Create your production signing key (Do NOT lose this, and do NOT commit it to git):
     ```bash
-    git tag -a v1.0.0 -m "Production Release: Version 1.0.0"
-    git push origin v1.0.0
+    keytool -genkey -v -keystore chartcam-release.keystore -alias chartcam -keyalg RSA -keysize 2048 -validity 10000
     ```
-2.  **Version String Bump**: Increment the semantic version identifiers (`versionName` in `chartCam/build.gradle.kts` and `CFBundleShortVersionString` in `iosApp/Info.plist`) to prepare the codebase for the subsequent development iteration.
+5.  **Service Account API Key:** Go to Setup > API Access. Create a Google Cloud Service Account, grant it Admin/Release permissions, download the JSON key, and save it as `fastlane/api-key.json`.
+
+### 1.2 Apple App Store Initialization
+1.  **App ID Setup:** Log into the [Apple Developer Portal](https://developer.apple.com/account/). Under **Identifiers**, register `io.healthplatform.chartcam` (Explicit App ID).
+2.  **App Store Connect:** Log into [App Store Connect](https://appstoreconnect.apple.com/). Click **+ New App**. Select the Bundle ID, name it ChartCam, and fill in initial metadata.
+3.  **Fastlane Match:** Initialize your encrypted certificate repository.
+    ```bash
+    bundle exec fastlane match init
+    bundle exec fastlane match appstore
+    ```
+
+---
+
+## 🏷 Phase 2: Version Bumping
+
+Both App Stores will reject binaries if the version numbers are not strictly incremented from the previous release.
+
+### 2.1 Android (Google Play)
+1. Open `chartCam/build.gradle.kts`.
+2. Increment `versionCode` (Integer used internally by Google Play. Must be +1 of the last release).
+3. Update `versionName` (The semantic public version, e.g., `"1.2.0"`).
+4. Sync the Gradle project.
+
+### 2.2 iOS (App Store)
+1. Open `iosApp/iosApp.xcodeproj` in Xcode.
+2. Select the `iosApp` target in the left navigator.
+3. Under the **General** tab -> **Identity**:
+   * Update **Version** to match the Android `versionName` (e.g., `1.2.0`).
+   * Update **Build** to a unique number (e.g., `42`).
+   
+*Pro-tip: To skip Apple's manual export compliance prompt every time you upload, ensure `ITSAppUsesNonExemptEncryption` is set to `NO` in your `Info.plist` (unless ChartCam uses proprietary encryption).*
+
+---
+
+## 🤖 Phase 3: Android Build & Upload
+
+Choose your preferred approach: CLI/Automated (Recommended) or IDE (Manual).
+
+### Approach A: CLI & Fastlane (Automated / CI)
+*This is the standard approach for our GitHub Actions pipeline.*
+1. Ensure `local.properties` contains your keystore secrets:
+   ```properties
+   RELEASE_STORE_FILE=/path/to/chartcam-release.keystore
+   RELEASE_STORE_PASSWORD=***
+   RELEASE_KEY_ALIAS=chartcam
+   RELEASE_KEY_PASSWORD=***
+   ```
+2. Build and upload directly to the Internal Testing track:
+   ```bash
+   bundle exec fastlane android deploy_internal
+   ```
+3. Check the Fastlane output for a successful upload message.
+
+### Approach B: Android Studio (Manual GUI)
+1. Open Android Studio.
+2. Go to **Build > Generate Signed Bundle / APK...**
+3. Select **Android App Bundle** (AAB) > **Next**.
+4. Provide the path to `chartcam-release.keystore`, alias, and passwords. Click **Next**.
+5. Select the **release** build variant and click **Finish**.
+6. Wait for the compilation. Locate `chartCam-release.aab` in `chartCam/build/outputs/bundle/release/`.
+7. Log into Google Play Console > **Internal testing** > **Create new release**.
+8. Drag and drop the `.aab` file, write release notes, and click **Save** then **Roll out**.
+
+---
+
+## 🍎 Phase 4: iOS Build & Upload
+
+Choose your preferred approach: CLI/Automated (Recommended) or IDE (Manual).
+
+### Approach A: CLI & Fastlane (Automated / CI)
+1. Ensure you have Apple credentials set up (either `FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD` environment variable or an App Store Connect API Key in the Fastfile).
+2. Fetch the latest certificates and provisioning profiles:
+   ```bash
+   bundle exec fastlane match appstore
+   ```
+3. Build the IPA and upload it to TestFlight:
+   ```bash
+   bundle exec fastlane ios deploy_testflight
+   ```
+4. Fastlane will automatically compile via `gym` and upload via `pilot`.
+
+### Approach B: Xcode (Manual GUI)
+1. Open `iosApp/iosApp.xcodeproj` in Xcode.
+2. Select the `iosApp` target > **Signing & Capabilities**. Check **Automatically manage signing** and select your Team.
+3. In the device target dropdown (top center), select **Any iOS Device (arm64)**. *(Important: Archiving will fail if a Simulator is selected).*
+4. In the top menu, go to **Product > Archive**.
+5. Once compiled, the **Organizer** window will open. Select your archive and click **Distribute App**.
+6. Select **TestFlight & App Store** > **Upload**.
+7. Keep default distribution options (Manage Version, Strip Swift Symbols).
+8. Choose **Automatically manage signing**.
+9. Click **Upload** and wait for the green success checkmark.
+
+---
+
+## 🌍 Phase 5: Store Submission & Release Management
+
+Uploading the binary does not immediately publish the app to users. You must promote it.
+
+### Google Play Store
+1. Go to **Releases overview**.
+2. Promote the build from **Internal Testing** to **Closed Testing (Beta)** or directly to **Production**.
+3. Review the rollout screen, address any missing declarations, and click **Start Rollout to Production**.
+4. The app will enter "In Review" status.
+
+### Apple App Store
+1. Go to App Store Connect > **My Apps** > **ChartCam**.
+2. Navigate to the **TestFlight** tab. Wait for the build to finish "Processing".
+3. Once processed, assign groups to begin Beta testing.
+4. To release to the public, go to the **App Store** tab.
+5. Create a new version (e.g., 1.2.0).
+6. Scroll to the **Build** section, click `+`, and select the binary you uploaded.
+7. Fill out the "What's New" release notes.
+8. Click **Add for Review**.
+9. Once approved by Apple, you can manually release it or let it release automatically.
+
+---
+
+## 🧹 Phase 6: Post-Release Cleanup
+
+Always tag the repository at the exact state it was published. This is crucial for debugging production crashes.
+
+```bash
+# Ensure you are on the commit that was just released
+git tag -a v1.2.0 -m "Production Release: Version 1.2.0"
+git push origin v1.2.0
+```
+
+**Final Step:** Monitor Firebase Crashlytics (or your chosen analytics platform) heavily for the first 48 hours after a rollout to catch any critical production-only regressions.

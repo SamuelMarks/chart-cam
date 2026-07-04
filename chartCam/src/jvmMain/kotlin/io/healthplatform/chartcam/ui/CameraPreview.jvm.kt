@@ -17,6 +17,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import org.jetbrains.compose.resources.stringResource
+import chartcam.chartcam.generated.resources.*
 import io.healthplatform.chartcam.camera.CameraManager
 import io.healthplatform.chartcam.camera.JvmCameraManager
 import kotlinx.coroutines.delay
@@ -42,12 +44,12 @@ actual fun CameraPreview(modifier: Modifier, cameraManager: CameraManager) {
         if (imageBitmap != null) {
             Image(
                 bitmap = imageBitmap!!,
-                contentDescription = "Camera Preview",
+                contentDescription = stringResource(Res.string.cd_camera_preview),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
         } else {
-            Text("Initializing Camera...", color = Color.White)
+            Text(stringResource(Res.string.initializing_camera), color = Color.White)
         }
     }
 }

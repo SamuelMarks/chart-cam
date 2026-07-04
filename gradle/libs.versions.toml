@@ -1,41 +1,41 @@
 [versions]
-slf4j = "2.0.17"
-kover = "0.9.7"
-dokka = "2.0.0"
+slf4j = "2.0.18"
+kover = "0.9.8"
+dokka = "2.2.0"
 # Android Gradle Plugin 8.8.0 is the latest stable release (Jan 2025)
-agp = "9.0.1"
+agp = "9.2.1"
 
 android-compileSdk = "36"
 android-minSdk = "24"
 android-targetSdk = "36"
 
-androidx-activity = "1.12.4"
+androidx-activity = "1.13.0"
 androidx-appcompat = "1.7.0"
-androidx-core = "1.17.0"
-androidx-lifecycle = "2.9.6"
+androidx-core = "1.19.0"
+androidx-lifecycle = "2.10.0"
 androidx-security = "1.1.0"
 
-camerax = "1.5.3"
+camerax = "1.6.1"
 
-composeHotReload = "1.0.0"
+composeHotReload = "1.1.1"
 
-composeMultiplatform = "1.10.1"
+composeMultiplatform = "1.11.1"
 # Material3 version for Compose Multiplatform often aligns with Jetpack Compose Material3 versions
 compose-material3 = "1.9.0"
 
 junit = "4.13.2"
 
-kotlin = "2.3.10"
+kotlin = "2.4.0"
 
-ktor = "3.4.0"
+ktor = "3.5.1"
 
-kotlinx-coroutines = "1.10.2"
-kotlinx-serialization = "1.10.0"
-kotlinx-datetime = "0.7.1"
+kotlinx-coroutines = "1.11.0"
+kotlinx-serialization = "1.11.0"
+kotlinx-datetime = "0.8.0"
 
-sqldelight = "2.2.1"
+sqldelight = "2.3.2"
 
-okio = "3.16.4"
+okio = "3.17.0"
 navigationCompose = "2.9.2"
 google-fhir = "1.0.0-beta02"
 
@@ -45,7 +45,7 @@ junit = { module = "junit:junit", version.ref = "junit" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "androidx-security" }
-sqlcipher-android = { module = "net.zetetic:android-database-sqlcipher", version = "4.5.4" }
+sqlcipher-android = { module = "net.zetetic:sqlcipher-android", version = "4.16.0" }
 
 # CameraX
 androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "camerax" }
@@ -101,7 +101,7 @@ slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
-androidLibrary = { id = "com.android.library", version.ref = "agp" }
+androidLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 composeHotReload = { id = "org.jetbrains.compose.hot-reload", version.ref = "composeHotReload" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }

@@ -85,8 +85,10 @@
     <string name="no_visits_found">訪問履歴がありません</string>
 
     <string name="no_notes">メモがありません</string>
+    <string name="initializing_camera">カメラを初期化しています...</string>
 
     <!-- Accessibility Labels -->
+    <string name="cd_camera_preview">カメラのプレビュー</string>
     <string name="cd_switch_camera">カメラを切り替え</string>
     <string name="cd_review">確認</string>
     <string name="cd_proceed">進む</string>

@@ -23,10 +23,13 @@ plugins {
 } 
 
 kotlin { 
-    androidTarget { 
+    android {
         compilerOptions { 
             jvmTarget.set(JvmTarget.JVM_11) 
-        } 
+        }
+        namespace = "io.healthplatform.chartcam" 
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
     } 
     
     listOf( 
@@ -148,53 +151,6 @@ sqldelight {
     } 
 } 
 
-android { 
-    namespace = "io.healthplatform.chartcam" 
-    compileSdk = libs.versions.android.compileSdk.get().toInt() 
-
-    defaultConfig { 
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        vectorDrawables.useSupportLibrary = true 
-    } 
-    packaging { 
-        resources { 
-            excludes += "/META-INF/{AL2.0,LGPL2.1}" 
-        } 
-    } 
-    buildTypes { 
-        getByName("release") { 
-            isMinifyEnabled = false
-        } 
-    } 
-    compileOptions { 
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    } 
-} 
-
-dependencies { 
-    debugImplementation(libs.compose.uiTooling) 
-} 
-
-compose.desktop { 
-    application { 
-        mainClass = "io.healthplatform.chartcam.MainKt" 
-        nativeDistributions { 
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb) 
-            packageName = "io.healthplatform.chartcam" 
-            packageVersion = "1.0.0" 
-            macOS {
-                iconFile.set(project.file("src/jvmMain/resources/icon.icns"))
-            }
-            windows {
-                iconFile.set(project.file("src/jvmMain/resources/icon.ico"))
-            }
-            linux {
-                iconFile.set(project.file("src/jvmMain/resources/icon.png"))
-            }
-        } 
-    } 
-}
 
 kover {
     reports {

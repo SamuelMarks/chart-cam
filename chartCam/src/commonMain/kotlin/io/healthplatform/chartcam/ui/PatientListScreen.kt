@@ -340,7 +340,44 @@ fun PatientListScreen(
         AlertDialog(
             onDismissRequest = { showAboutDialog = false },
             title = { Text(stringResource(Res.string.about_title)) },
-            text = { Text(stringResource(Res.string.version_text, "0.0.1")) },
+            text = { 
+                val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+                val fullText = stringResource(Res.string.version_text, "0.0.1 — https://healthplatform.io")
+                val url = "https://healthplatform.io"
+                val startIndex = fullText.indexOf(url)
+                
+                if (startIndex >= 0) {
+                    val annotatedString = androidx.compose.ui.text.buildAnnotatedString {
+                        append(fullText)
+                        addStyle(
+                            style = androidx.compose.ui.text.SpanStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline
+                            ),
+                            start = startIndex,
+                            end = startIndex + url.length
+                        )
+                        addStringAnnotation(
+                            tag = "URL",
+                            annotation = url,
+                            start = startIndex,
+                            end = startIndex + url.length
+                        )
+                    }
+                    androidx.compose.foundation.text.ClickableText(
+                        text = annotatedString,
+                        style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                        onClick = { offset ->
+                            annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                                .firstOrNull()?.let { annotation ->
+                                    uriHandler.openUri(annotation.item)
+                                }
+                        }
+                    )
+                } else {
+                    Text(fullText)
+                }
+            },
             confirmButton = {
                 TextButton(onClick = { showAboutDialog = false }) {
                     Text(stringResource(Res.string.ok))

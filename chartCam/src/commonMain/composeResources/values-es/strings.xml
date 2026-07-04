@@ -85,8 +85,10 @@
     <string name="no_visits_found">No se encontraron visitas</string>
 
     <string name="no_notes">Sin notas</string>
+    <string name="initializing_camera">Inicializando cámara...</string>
 
     <!-- Accessibility Labels -->
+    <string name="cd_camera_preview">Vista previa de la cámara</string>
     <string name="cd_switch_camera">Cambiar Cámara</string>
     <string name="cd_review">Revisar</string>
     <string name="cd_proceed">Proceder</string>

@@ -44,8 +44,6 @@ data class EncounterUiState(
     val encounter: Encounter? = null,
     /** The captured clinical photos. */
     val photos: List<DocumentReference> = emptyList(),
-    /** Deprecated but kept for compatibility. */
-    val notes: String = "", 
     /** A map of questionnaire linkId to dynamic answer (String, Boolean, etc.). */
     val answers: Map<String, Any> = emptyMap(),
     /** The list of available questionnaires. */
@@ -227,7 +225,6 @@ class EncounterDetailViewModel(
      */
     fun onNotesChanged(text: kotlin.String) {
         onAnswerChanged("notes", text)
-        _uiState.update { it.copy(notes = text) }
     }
 
     /**

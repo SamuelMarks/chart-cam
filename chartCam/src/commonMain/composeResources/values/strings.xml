@@ -13,6 +13,7 @@
     <string name="selected_photos_ready">Selected. %1$d photos ready.</string>
     <string name="search_placeholder">Search Name or MRN...</string>
     <string name="mrn_dob_format">MRN: %1$s | DOB: %2$s</string>
+    <string name="mrn_date_format">MRN: %1$s | %2$s</string>
     <string name="no_patients_found">No patients found.</string>
 
     <!-- Patient List Screen -->
@@ -85,8 +86,10 @@
     <string name="no_visits_found">No visits found</string>
 
     <string name="no_notes">No notes</string>
+    <string name="initializing_camera">Initializing Camera...</string>
 
     <!-- Accessibility Labels -->
+    <string name="cd_camera_preview">Camera Preview</string>
     <string name="cd_switch_camera">Switch Camera</string>
     <string name="cd_review">Review</string>
     <string name="cd_proceed">Proceed</string>

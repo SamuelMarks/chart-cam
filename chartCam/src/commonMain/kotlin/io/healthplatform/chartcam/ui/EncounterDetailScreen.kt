@@ -258,7 +258,7 @@ fun EncounterDetailScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator()
                     if (state.isSyncing) {
-                        Text("Syncing to Server...", modifier = Modifier.padding(top = 16.dp))
+                        Text(stringResource(Res.string.syncing_to_server), modifier = Modifier.padding(top = 16.dp))
                     }
                 }
             }
@@ -270,7 +270,7 @@ fun EncounterDetailScreen(
                         style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() }
                     )
                     Text(
-                        text = "MRN: ${patient.mrn} | ${state.encounter?.encounterDate}",
+                        text = stringResource(Res.string.mrn_date_format, patient.mrn ?: "", state.encounter?.encounterDate ?: ""),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.secondary
                     )
@@ -278,7 +278,7 @@ fun EncounterDetailScreen(
                 
                 state.practitioner?.let { prac ->
                     Text(
-                        text = "Provider: Dr. ${prac.fullName}",
+                        text = stringResource(Res.string.provider_format, prac.fullName),
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
@@ -297,7 +297,7 @@ fun EncounterDetailScreen(
                         value = state.selectedQuestionnaire?.title?.value ?: stringResource(Res.string.select_questionnaire),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Questionnaire") },
+                        label = { Text(stringResource(Res.string.questionnaire)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                         modifier = Modifier.menuAnchor().fillMaxWidth()
@@ -316,7 +316,7 @@ fun EncounterDetailScreen(
                             )
                         }
                         DropdownMenuItem(
-                            text = { Text("Create new...") },
+                            text = { Text(stringResource(Res.string.create_new)) },
                             onClick = {
                                 expanded = false
                                 showCreateDialog = true
@@ -341,12 +341,12 @@ fun EncounterDetailScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Captured Photos (${state.photos.size}/$targetPhotosCount)",
+                        stringResource(Res.string.captured_photos_format, state.photos.size, targetPhotosCount),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     Button(onClick = { onTakePhotos(state.selectedQuestionnaire?.id) }) {
-                        Text("Take Photos")
+                        Text(stringResource(Res.string.take_photos))
                     }
                 }
 
@@ -386,12 +386,12 @@ fun PhotoGridItem(doc: DocumentReference) {
                 )
             } else {
                 Box(Modifier.fillMaxWidth().height(150.dp).padding(16.dp), contentAlignment = Alignment.Center) {
-                    Text("Image Load Error")
+                    Text(stringResource(Res.string.image_load_error))
                 }
             }
             
             Text(
-                text = doc.description?.value ?: "Photo",
+                text = doc.description?.value ?: stringResource(Res.string.cd_patient_photo),
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(8.dp)
             )

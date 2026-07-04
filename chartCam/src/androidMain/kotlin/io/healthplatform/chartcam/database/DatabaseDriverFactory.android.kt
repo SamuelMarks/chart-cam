@@ -7,7 +7,7 @@ import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import io.healthplatform.chartcam.AndroidAppInit
-import net.sqlcipher.database.SupportFactory
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import java.security.SecureRandom
 
 /**
@@ -23,6 +23,8 @@ actual class DatabaseDriverFactory actual constructor() {
      */
     actual fun createDriver(): SqlDriver {
         val context = AndroidAppInit.getContext()
+        
+        System.loadLibrary("sqlcipher")
         
         // Use MasterKey to encrypt SharedPreferences containing our database passphrase
         val masterKey = MasterKey.Builder(context)
@@ -47,7 +49,7 @@ actual class DatabaseDriverFactory actual constructor() {
         }
         
         val passphrase = Base64.decode(encodedPassphrase, Base64.DEFAULT)
-        val factory = SupportFactory(passphrase)
+        val factory = SupportOpenHelperFactory(passphrase)
         
         return AndroidSqliteDriver(
             schema = ChartCamDatabase.Schema.synchronous(),

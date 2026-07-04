@@ -18,15 +18,12 @@ import io.healthplatform.chartcam.ui.theme.AppTheme
 @Composable
 @Preview
 fun App() { 
-    val currentLang by io.healthplatform.chartcam.ui.currentLanguageState.collectAsState()
     AppTheme {
-        androidx.compose.runtime.key(currentLang) {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = Color.Transparent
-            ) {
-                AppNavigation()
-            }
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color.Transparent
+        ) {
+            AppNavigation()
         }
     } 
 }

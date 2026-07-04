@@ -116,7 +116,7 @@ class SyncManager(
                         )
                     }
                 )
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 println("Failed to read image for DocumentReference ${doc.id}: ${e.message}")
             }
         }
@@ -145,7 +145,7 @@ class SyncManager(
             val success = response.status.isSuccess()
             println("=== SYNC COMPLETE (Success=$success) ===")
             success
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             println("=== SYNC FAILED: ${e.message} ===")
             false
         }
@@ -200,7 +200,7 @@ class SyncManager(
                 }
             }
             return true
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             e.printStackTrace()
             return false
         }

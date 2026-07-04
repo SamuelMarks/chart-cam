@@ -1,3 +1,4 @@
+.gradle_home
 site_dist/
 *.db
 *.iml
