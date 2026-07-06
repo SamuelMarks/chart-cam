@@ -1,3 +1,6 @@
+/**
+ * Provides interfaces and data structures for managing device sensors (e.g., orientation).
+ */
 package io.healthplatform.chartcam.sensors
 
 import androidx.compose.runtime.Composable
@@ -11,15 +14,15 @@ import kotlinx.coroutines.flow.Flow
  */
 data class OrientationData(
     val pitch: Double,
-    val roll: Double
+    val roll: Double,
 )
 
 /**
- * Interface for accessing device sensors.
+ * Interface for accessing device sensors and monitoring device orientation.
  */
 interface SensorManager {
     /**
-     * A flow emitting orientation updates.
+     * A flow emitting continuous orientation updates.
      */
     val orientation: Flow<OrientationData>
 
@@ -29,13 +32,15 @@ interface SensorManager {
     fun startListening()
 
     /**
-     * Stops listening to sensor updates.
+     * Stops listening to sensor updates, conserving battery when not in use.
      */
     fun stopListening()
 }
 
 /**
- * Factory to retrieve the sensor manager.
+ * Factory composable to retrieve a platform-specific instance of the [SensorManager].
+ *
+ * @return A [SensorManager] instance.
  */
 @Composable
 expect fun rememberSensorManager(): SensorManager

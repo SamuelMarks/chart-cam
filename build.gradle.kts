@@ -1,9 +1,9 @@
-/** 
- * Root Build Script for ChartCam. 
- * 
- * This file configures the global plugins and build settings for the Kotlin Multiplatform project. 
- */ 
-plugins { 
+/**
+ * Root Build Script for ChartCam.
+ *
+ * This file configures the global plugins and build settings for the Kotlin Multiplatform project.
+ */
+plugins {
     // Android Application Plugin: Required for the Android App target in :androidApp
     alias(libs.plugins.androidApplication) apply false
 
@@ -23,7 +23,7 @@ plugins {
     // Compose Compiler: Connects the Kotlin compiler with Compose runtime
     alias(libs.plugins.composeCompiler) apply false
 
-    // Kotlin Multiplatform: Enables sharing code logic between Android, iOS, JVM, etc. 
+    // Kotlin Multiplatform: Enables sharing code logic between Android, iOS, JVM, etc.
     alias(libs.plugins.kotlinMultiplatform) apply false
 
     // Kover: Test coverage tool
@@ -31,13 +31,13 @@ plugins {
 
     // Dokka: Documentation generation
     alias(libs.plugins.dokka) apply false
-} 
+}
 
-/** 
- * Cleanup task to remove build directories from all subprojects. 
- * Renamed to 'cleanRoot' to avoid conflict with NodeJsRootPlugin which auto-registers 'clean'. 
- * Run `./gradlew cleanRoot` to execute standard cleanup. 
- */ 
-tasks.register("cleanRoot", Delete::class) { 
-    delete(rootProject.layout.buildDirectory) 
+/**
+ * Cleanup task to remove build directories from all subprojects.
+ * Renamed to 'cleanRoot' to avoid conflict with NodeJsRootPlugin which auto-registers 'clean'.
+ * Run `./gradlew cleanRoot` to execute standard cleanup.
+ */
+tasks.register("cleanRoot", Delete::class) {
+    delete(rootProject.layout.buildDirectory)
 }

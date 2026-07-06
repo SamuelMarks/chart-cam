@@ -1,10 +1,25 @@
+/**
+ * Provides tests for Wasm-JavaScript camera capture functionalities.
+ */
 package io.healthplatform.chartcam.camera
 
+import kotlinx.browser.window
 import kotlin.test.Test
 import kotlin.test.assertTrue
-import kotlinx.browser.window
 
+/**
+ * Test class for Wasm-JS specific camera capture utilities.
+ *
+ * Contains tests verifying standard browser APIs like base64 decoding (atob)
+ * that are utilized in camera capture processing flows.
+ */
 class CameraCaptureWasmJsTest {
+    /**
+     * Tests the `window.atob` function to ensure correct base64 decoding.
+     *
+     * Validates that a known base64 encoded string is correctly decoded into
+     * its raw byte array representation and can be restored to the original string.
+     */
     @Test
     fun testAtob() {
         val encoded = "SGVsbG8="

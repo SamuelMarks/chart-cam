@@ -7,6 +7,9 @@ package io.healthplatform.chartcam
  * the [getPlatform] expect/actual mechanism.
  */
 class Greeting {
+    /**
+     * The platform details for the current environment.
+     */
     private val platform: Platform = getPlatform()
 
     /**
@@ -14,7 +17,5 @@ class Greeting {
      *
      * @return A formatted string "Hello, {PlatformName}!".
      */
-    fun greet(): String {
-        return "Hello, ${platform.name}!"
-    }
+    fun greet(): String = "Hello, ${platform.name}!"
 }

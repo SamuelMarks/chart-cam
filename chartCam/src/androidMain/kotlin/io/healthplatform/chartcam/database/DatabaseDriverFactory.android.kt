@@ -1,3 +1,6 @@
+/**
+ * File defining the Android-specific implementation of the [DatabaseDriverFactory].
+ */
 package io.healthplatform.chartcam.database
 
 import android.util.Base64
@@ -20,25 +23,30 @@ actual class DatabaseDriverFactory actual constructor() {
     /**
      * Creates an encrypted AndroidSqliteDriver using the app context and SQLCipher SupportFactory.
      * Requires [AndroidAppInit] to be initialized.
+     *
+     * @return A configured [SqlDriver] suitable for operating on an encrypted SQLite database.
      */
     actual fun createDriver(): SqlDriver {
         val context = AndroidAppInit.getContext()
-        
+
         System.loadLibrary("sqlcipher")
-        
+
         // Use MasterKey to encrypt SharedPreferences containing our database passphrase
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-            
-        val prefs = EncryptedSharedPreferences.create(
-            context,
-            "db_secure_prefs",
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-        
+        val masterKey =
+            MasterKey
+                .Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+
+        val prefs =
+            EncryptedSharedPreferences.create(
+                context,
+                "db_secure_prefs",
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+            )
+
         // Retrieve or generate a 32-byte secure passphrase for SQLCipher
         var encodedPassphrase = prefs.getString("db_passphrase", null)
         if (encodedPassphrase == null) {
@@ -47,15 +55,15 @@ actual class DatabaseDriverFactory actual constructor() {
             encodedPassphrase = Base64.encodeToString(bytes, Base64.DEFAULT)
             prefs.edit().putString("db_passphrase", encodedPassphrase).apply()
         }
-        
+
         val passphrase = Base64.decode(encodedPassphrase, Base64.DEFAULT)
         val factory = SupportOpenHelperFactory(passphrase)
-        
+
         return AndroidSqliteDriver(
             schema = ChartCamDatabase.Schema.synchronous(),
             context = context,
             name = "chartcam_encrypted.db",
-            factory = factory
+            factory = factory,
         )
     }
 }

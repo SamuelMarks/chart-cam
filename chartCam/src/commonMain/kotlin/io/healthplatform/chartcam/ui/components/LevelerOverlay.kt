@@ -1,3 +1,6 @@
+/**
+ * Contains the visual overlay for the camera leveler tool.
+ */
 package io.healthplatform.chartcam.ui.components
 
 import androidx.compose.foundation.Canvas
@@ -17,13 +20,17 @@ import io.healthplatform.chartcam.sensors.SensorManager
 import kotlin.math.abs
 
 /**
- * A UI overlay that draws a crosshair and a bubble level based on sensor data.
- * Turns Green when perfectly level.
+ * A UI overlay that draws a crosshair and a bubble level based on real-time device sensor data.
+ * Turns Green when perfectly level (pitch and roll < 3 degrees).
+ *
+ * @param sensorManager The sensor manager that emits orientation data.
  */
 @Composable
 fun LevelerOverlay(sensorManager: SensorManager) {
     val orientation by sensorManager.orientation.collectAsState(
-        initial = io.healthplatform.chartcam.sensors.OrientationData(0.0, 0.0)
+        initial =
+            io.healthplatform.chartcam.sensors
+                .OrientationData(0.0, 0.0),
     )
 
     // Threshold for "Green" level
@@ -41,7 +48,7 @@ fun LevelerOverlay(sensorManager: SensorManager) {
                 color = color.copy(alpha = 0.5f),
                 start = Offset(center.x - lineLength, center.y),
                 end = Offset(center.x + lineLength, center.y),
-                strokeWidth = 4f
+                strokeWidth = 4f,
             )
 
             // Vertical Line
@@ -49,28 +56,28 @@ fun LevelerOverlay(sensorManager: SensorManager) {
                 color = color.copy(alpha = 0.5f),
                 start = Offset(center.x, center.y - lineLength),
                 end = Offset(center.x, center.y + lineLength),
-                strokeWidth = 4f
+                strokeWidth = 4f,
             )
-            
+
             // Outer Circle
             drawCircle(
                 color = color.copy(alpha = 0.8f),
                 radius = 40.dp.toPx(),
-                style = Stroke(width = 4f)
+                style = Stroke(width = 4f),
             )
 
             // The "Bubble"
             // We map pitch/roll to X/Y offset limited to the circle radius
             val maxDeflection = 20.0 // Degrees that map to edge of circle
             val radiusPx = 40.dp.toPx()
-            
+
             val offsetX = (orientation.roll / maxDeflection).coerceIn(-1.0, 1.0) * radiusPx
             val offsetY = (orientation.pitch / maxDeflection).coerceIn(-1.0, 1.0) * radiusPx
 
             drawCircle(
                 color = color,
                 radius = 10.dp.toPx(),
-                center = Offset(center.x + offsetX.toFloat(), center.y - offsetY.toFloat()) // Subtract pitch for Y because screen coordinates Y goes down
+                center = Offset(center.x + offsetX.toFloat(), center.y - offsetY.toFloat()), // Subtract pitch for Y because screen coordinates Y goes down
             )
         }
     }

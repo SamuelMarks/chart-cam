@@ -1,3 +1,6 @@
+/**
+ * Defines the cross-platform contract for accessing platform-specific information.
+ */
 package io.healthplatform.chartcam
 
 /**
@@ -16,8 +19,8 @@ interface Platform {
 }
 
 /**
- * platform-specific factory function to retrieve the current [Platform] implementation.
+ * Platform-specific factory function to retrieve the current [Platform] implementation.
  *
- * @return The [Platform] instance for the target currently running.
+ * @return The [Platform] instance corresponding to the target platform currently running.
  */
 expect fun getPlatform(): Platform

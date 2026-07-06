@@ -1,3 +1,6 @@
+/**
+ * File defining the Android-specific implementation of the [CameraPreview] composable.
+ */
 package io.healthplatform.chartcam.ui
 
 import androidx.camera.view.PreviewView
@@ -8,10 +11,19 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.healthplatform.chartcam.camera.AndroidCameraManager
 import io.healthplatform.chartcam.camera.CameraManager
 
+/**
+ * A composable function that renders the camera preview for the Android platform.
+ *
+ * It uses a [PreviewView] from the CameraX library embedded inside an [AndroidView],
+ * and binds it to the current lifecycle using the provided [cameraManager].
+ *
+ * @param modifier The modifier to be applied to the camera preview layout.
+ * @param cameraManager The camera manager instance handling the camera lifecycle and operations.
+ */
 @Composable
 actual fun CameraPreview(
     modifier: Modifier,
-    cameraManager: CameraManager
+    cameraManager: CameraManager,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -26,6 +38,6 @@ actual fun CameraPreview(
         update = { view ->
             // Bind the lifecycle when the view is updated/attached
             (cameraManager as? AndroidCameraManager)?.bindToLifecycle(lifecycleOwner, view)
-        }
+        },
     )
 }

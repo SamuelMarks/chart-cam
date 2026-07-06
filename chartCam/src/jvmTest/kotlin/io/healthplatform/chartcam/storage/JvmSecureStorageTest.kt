@@ -1,3 +1,6 @@
+/**
+ * Contains unit tests validating the JVM implementation of [SecureStorage].
+ */
 package io.healthplatform.chartcam.storage
 
 import java.util.prefs.Preferences
@@ -10,16 +13,22 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Validates the JVM implementation of SecureStorage.
+ * Validates the JVM implementation of [SecureStorage].
  * Ensures data is encrypted at rest and behaves identically to other platform implementations.
  */
 class JvmSecureStorageTest {
-
+    /**
+     * The preference node name used specifically for these tests.
+     */
     private val testNode = "io.healthplatform.chartcam.secure.test"
+
+    /**
+     * The [JvmSecureStorage] instance under test.
+     */
     private lateinit var storage: JvmSecureStorage
 
     /**
-     * Initializes a fresh instance of the test storage node.
+     * Initializes a fresh instance of the test storage node and clears any pre-existing data.
      */
     @BeforeTest
     fun setUp() {
@@ -28,7 +37,7 @@ class JvmSecureStorageTest {
     }
 
     /**
-     * Cleans up the test node after each test.
+     * Cleans up the test node after each test by removing all stored data.
      */
     @AfterTest
     fun tearDown() {
@@ -58,11 +67,11 @@ class JvmSecureStorageTest {
         val value = "testValue123"
 
         storage.save(key, value)
-        
+
         // Ensure that what's written to Preferences is actually encrypted
         val rawPrefs = Preferences.userRoot().node(testNode)
         val rawValue = rawPrefs.get(key, null)
-        
+
         assertNotEquals(value, rawValue)
         assertTrue(rawValue != null && rawValue.isNotEmpty())
     }
@@ -82,13 +91,13 @@ class JvmSecureStorageTest {
     }
 
     /**
-     * Tests fetching a non-existent key returns null.
+     * Tests fetching a non-existent key to verify it returns null.
      */
     @Test
     fun testGetNonExistentString() {
         assertNull(storage.getString("nonExistentKey"))
     }
-    
+
     /**
      * Tests that fetching garbage/invalid Base64 data yields null and handles exceptions smoothly.
      */
@@ -98,7 +107,7 @@ class JvmSecureStorageTest {
         val rawPrefs = Preferences.userRoot().node(testNode)
         // Put invalid base64/encrypted data
         rawPrefs.put(key, "InvalidDataNotEncrypted")
-        
+
         // Should return null and not crash
         assertNull(storage.getString(key))
     }

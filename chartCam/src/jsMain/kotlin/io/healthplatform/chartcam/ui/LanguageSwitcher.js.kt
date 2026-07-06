@@ -1,7 +1,16 @@
+/**
+ * Provides JS-specific localization utilities.
+ */
 package io.healthplatform.chartcam.ui
 
+/**
+ * Sets the browser's navigator language using a JS snippet.
+ *
+ * @param language The locale identifier to set (e.g., "en", "es").
+ */
 private fun setNavigatorLanguage(language: String) {
-    js("""
+    js(
+        """
         Object.defineProperty(navigator, 'language', {
             value: language,
             configurable: true
@@ -10,10 +19,16 @@ private fun setNavigatorLanguage(language: String) {
             value: [language],
             configurable: true
         });
-    """)
+    """,
+    )
 }
 
+/**
+ * Changes the application language in the current environment.
+ * In a web browser context, this overwrites the `navigator.language` properties.
+ *
+ * @param language The string identifying the desired locale.
+ */
 actual fun changeAppLanguage(language: String) {
     setNavigatorLanguage(language)
 }
-

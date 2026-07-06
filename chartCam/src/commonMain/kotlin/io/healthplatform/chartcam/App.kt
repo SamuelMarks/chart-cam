@@ -1,10 +1,12 @@
+/**
+ * Contains the root composable for the ChartCam application.
+ * Bootstraps the UI theme and application navigation graph.
+ */
 package io.healthplatform.chartcam
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -13,17 +15,19 @@ import io.healthplatform.chartcam.ui.theme.AppTheme
 
 /**
  * The Root Composable Configurator.
- * Applies the AppTheme for Material Design 3 styling.
+ * Applies the AppTheme for Material Design 3 styling and sets up the primary
+ * surface which fills the entire screen, serving as the container for the
+ * main [AppNavigation] graph.
  */
 @Composable
 @Preview
-fun App() { 
+fun App() {
     AppTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = Color.Transparent
+            color = Color.Transparent,
         ) {
             AppNavigation()
         }
-    } 
+    }
 }

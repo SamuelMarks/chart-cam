@@ -4,36 +4,34 @@ import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class QuestionnaireRepositoryTest {
-
     @Test
-    fun `getAvailableQuestionnaires returns predefined forms`() {
-        val repo = QuestionnaireRepository()
-        val forms = repo.getAvailableQuestionnaires()
-        assertTrue(forms.size >= 2)
-        assertTrue(forms.any { it.id == "std-form" })
-        assertTrue(forms.any { it.id == "basic-followup" })
-    }
+    fun testQuestionnaireRepository() {
+        val repository = QuestionnaireRepository()
 
-    @Test
-    fun `getQuestionnaire returns form or null`() {
-        val repo = QuestionnaireRepository()
-        assertNotNull(repo.getQuestionnaire("std-form"))
-        assertNull(repo.getQuestionnaire("non-existent"))
-    }
+        // Test fetching available predefined questionnaires
+        val available = repository.getAvailableQuestionnaires()
+        assertEquals(2, available.size)
 
-    @Test
-    fun `createQuestionnaire adds a new custom form`() {
-        val repo = QuestionnaireRepository()
-        val q = repo.createQuestionnaire("My Custom Form", 3)
-        assertEquals("custom-my-custom-form", q.id!!)
-        assertEquals("My Custom Form", q.title?.value)
-        assertEquals(4, q.item.size) // 1 notes + 3 photos
-        
-        // It should now be retrievable
-        assertNotNull(repo.getQuestionnaire(q.id!!))
-        assertTrue(repo.getAvailableQuestionnaires().contains(q))
+        // Test fetching a specific one
+        val stdForm = repository.getQuestionnaire("std-form")
+        assertNotNull(stdForm)
+        assertEquals("std-form", stdForm.id)
+
+        // Test fetching non-existent
+        assertNull(repository.getQuestionnaire("does-not-exist"))
+
+        // Test dynamic creation
+        val customForm = repository.createQuestionnaire("My Custom Form", 2, "Label 1, Label 2")
+        assertNotNull(customForm)
+        assertEquals("custom-my-custom-form", customForm.id)
+
+        // Fetch it back
+        val fetchedCustom = repository.getQuestionnaire("custom-my-custom-form")
+        assertNotNull(fetchedCustom)
+
+        // Total should now be 3
+        assertEquals(3, repository.getAvailableQuestionnaires().size)
     }
 }

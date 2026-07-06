@@ -1,38 +1,49 @@
+/**
+ * Contains data structures defining the state and steps for the clinical photo capture workflow.
+ */
 package io.healthplatform.chartcam.capture
 
 /**
- * The specific angle/type of photo required in the clinical sequence.
- * Order matters for the state machine progression.
+ * Represents a specific angle or type of photo required in the clinical sequence.
+ * The order of these steps dictates the state machine progression during capture.
  *
- * @property title Human readable name.
+ * @property id Unique identifier for this step.
+ * @property title Human readable name displayed in the UI.
  */
 data class PhotoStep(
     val id: String,
-    val title: String
+    val title: String,
 ) {
+    /**
+     * Companion object holding predefined constant sequences.
+     */
     companion object {
-        val STANDARD_STEPS = listOf(
-            PhotoStep("front", "Front"),
-            PhotoStep("front_ruler", "Front + Ruler"),
-            PhotoStep("right", "Right Side"),
-            PhotoStep("right_ruler", "Right Side + Ruler"),
-            PhotoStep("back", "Back"),
-            PhotoStep("back_ruler", "Back + Ruler"),
-            PhotoStep("left", "Left Side"),
-            PhotoStep("left_ruler", "Left Side + Ruler")
-        )
+        /**
+         * The standard sequence of steps required for a complete clinical photo series.
+         */
+        val STANDARD_STEPS =
+            listOf(
+                PhotoStep("front", "Front"),
+                PhotoStep("front_ruler", "Front + Ruler"),
+                PhotoStep("right", "Right Side"),
+                PhotoStep("right_ruler", "Right Side + Ruler"),
+                PhotoStep("back", "Back"),
+                PhotoStep("back_ruler", "Back + Ruler"),
+                PhotoStep("left", "Left Side"),
+                PhotoStep("left_ruler", "Left Side + Ruler"),
+            )
     }
 }
 
 /**
- * UI State for the Capture Screen.
+ * Represents the UI state for the Capture Screen workflow.
  *
- * @property currentStep The current photo being requested.
- * @property totalSteps Total number of steps in the sequence.
- * @property isCapturing Loading state during IO.
+ * @property currentStep The current photo step being requested. Null if uninitialized.
+ * @property totalSteps Total number of steps in the active sequence.
+ * @property isCapturing True if the camera is currently capturing and saving an image.
  * @property reviewImageBytes Image data present during the Review phase (after snap, before confirm).
- * @property capturedCount Number of photos successfully saved.
- * @property isFinished Whether the sequence is complete.
+ * @property capturedCount Number of photos successfully captured and saved.
+ * @property isFinished True if the entire capture sequence has been completed.
  */
 data class CaptureUiState(
     val currentStep: PhotoStep? = null,
@@ -40,8 +51,15 @@ data class CaptureUiState(
     val isCapturing: Boolean = false,
     val reviewImageBytes: ByteArray? = null,
     val capturedCount: Int = 0,
-    val isFinished: Boolean = false
+    val isFinished: Boolean = false,
 ) {
+    /**
+     * Compares this CaptureUiState instance to another object for equality.
+     * Array content equality is properly handled for [reviewImageBytes].
+     *
+     * @param other The object to compare with.
+     * @return True if both objects represent identical states.
+     */
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -54,13 +72,21 @@ data class CaptureUiState(
         if (reviewImageBytes != null) {
             if (other.reviewImageBytes == null) return false
             if (!reviewImageBytes.contentEquals(other.reviewImageBytes)) return false
-        } else if (other.reviewImageBytes != null) return false
+        } else if (other.reviewImageBytes != null) {
+            return false
+        }
         if (capturedCount != other.capturedCount) return false
         if (isFinished != other.isFinished) return false
 
         return true
     }
 
+    /**
+     * Generates a hash code for this CaptureUiState instance.
+     * Properly includes the hash of the byte array if present.
+     *
+     * @return The hash code value.
+     */
     override fun hashCode(): Int {
         var result = currentStep?.hashCode() ?: 0
         result = 31 * result + totalSteps

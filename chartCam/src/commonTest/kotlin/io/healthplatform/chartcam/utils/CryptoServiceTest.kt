@@ -1,11 +1,20 @@
+/**
+ * Contains unit tests validating the [CryptoService] functionality.
+ */
 package io.healthplatform.chartcam.utils
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
+/**
+ * Validates the core logic of [CryptoService], including text encryption,
+ * decryption, handling of empty passwords, and invalid Base64 decoding.
+ */
 class CryptoServiceTest {
-
+    /**
+     * Tests that data can be correctly encrypted and then decrypted back to its original value.
+     */
     @Test
     fun testEncryptionAndDecryption() {
         val service = CryptoService()
@@ -19,6 +28,9 @@ class CryptoServiceTest {
         assertEquals(original, decrypted)
     }
 
+    /**
+     * Tests that encryption and decryption handle empty passwords correctly.
+     */
     @Test
     fun testEmptyPassword() {
         val service = CryptoService()
@@ -28,6 +40,9 @@ class CryptoServiceTest {
         assertEquals(original, decrypted)
     }
 
+    /**
+     * Tests that decryption of invalid Base64 data safely returns an empty string without crashing.
+     */
     @Test
     fun testInvalidBase64() {
         val service = CryptoService()

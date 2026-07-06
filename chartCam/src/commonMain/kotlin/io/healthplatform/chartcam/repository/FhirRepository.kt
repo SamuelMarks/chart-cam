@@ -1,21 +1,27 @@
+/**
+ * Repository responsible for CRUD operations on FHIR resources persisted locally.
+ * It manages Practitioner, Patient, Encounter, DocumentReference, and QuestionnaireResponse resources.
+ * Each resource is stored locally inside a SQL database with key fields extracted for searchability
+ * and the entire resource serialized as a JSON string to ensure no data loss.
+ *
+ * This file provides the central data access object for the ChartCam application's FHIR data.
+ */
 package io.healthplatform.chartcam.repository
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.db.SqlDriver
+import com.google.fhir.model.r4.Device
+import com.google.fhir.model.r4.DocumentReference
+import com.google.fhir.model.r4.Encounter
+import com.google.fhir.model.r4.Enumeration
+import com.google.fhir.model.r4.FhirR4Json
+import com.google.fhir.model.r4.Patient
+import com.google.fhir.model.r4.Practitioner
+import com.google.fhir.model.r4.Provenance
+import com.google.fhir.model.r4.QuestionnaireResponse
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.database.DatabaseDriverFactory
-import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
-import app.cash.sqldelight.async.coroutines.awaitAsList
-import com.google.fhir.model.r4.Practitioner
-
-import com.google.fhir.model.r4.Device
-import com.google.fhir.model.r4.Provenance
-
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.Encounter
-import com.google.fhir.model.r4.DocumentReference
-import com.google.fhir.model.r4.QuestionnaireResponse
-import com.google.fhir.model.r4.FhirR4Json
-import com.google.fhir.model.r4.Enumeration
 import io.healthplatform.chartcam.models.familyName
 import io.healthplatform.chartcam.models.givenName
 import io.healthplatform.chartcam.models.mrn
@@ -28,14 +34,18 @@ import io.healthplatform.chartcam.models.mrn
  *
  * @property database The database instance (injected for testing, or created via factory).
  */
-class FhirRepository(val database: ChartCamDatabase) {
-
+class FhirRepository(
+    /**
+     * The database instance used by this repository for executing queries.
+     */
+    val database: ChartCamDatabase,
+) {
     /**
      * Primary constructor for Application usage.
      * @param databaseFactory Factory to create the [SqlDriver] for [ChartCamDatabase].
      */
     constructor(databaseFactory: DatabaseDriverFactory) : this(
-        ChartCamDatabase(databaseFactory.createDriver())
+        ChartCamDatabase(databaseFactory.createDriver()),
     )
 
     /**
@@ -44,14 +54,23 @@ class FhirRepository(val database: ChartCamDatabase) {
      */
     constructor(driver: SqlDriver) : this(ChartCamDatabase(driver))
 
+    /**
+     * Internal reference to the generated SQL queries object for the ChartCam database.
+     */
     private val dbQuery = database.chartCamQueries
+
+    /**
+     * JSON serializer/deserializer configured for FHIR R4 standard.
+     */
     private val fhirJson = FhirR4Json()
 
     // --- Practitioner ---
 
     /**
      * Saves a FHIR [Practitioner] resource into the local database.
-     * @param practitioner The Practitioner resource to persist.
+     * Extracts name and active status to store as relational columns alongside the serialized resource.
+     *
+     * @param practitioner The [Practitioner] resource to persist.
      */
     suspend fun savePractitioner(practitioner: Practitioner) {
         val name = practitioner.name.firstOrNull()
@@ -61,20 +80,26 @@ class FhirRepository(val database: ChartCamDatabase) {
             family = name?.familyName ?: "Unknown",
             given = name?.givenName ?: "Unknown",
             active = practitioner.active?.value ?: true,
-            serializedResource = serialized
+            serializedResource = serialized,
         )
     }
 
     /**
      * Retrieves a FHIR [Practitioner] resource by its ID.
-     * @param id The unique identifier of the Practitioner.
-     * @return The Practitioner resource if found, or null otherwise.
+     *
+     * @param id The unique identifier of the [Practitioner] to retrieve.
+     * @return The [Practitioner] resource if found, or null otherwise.
      */
     suspend fun getPractitioner(id: String): Practitioner? {
         val entity = dbQuery.getPractitionerById(id).awaitAsOneOrNull() ?: return null
         return fhirJson.decodeFromString(entity.serializedResource) as Practitioner
     }
 
+    /**
+     * Deletes a FHIR [Practitioner] resource from the local database by its ID.
+     *
+     * @param id The unique identifier of the [Practitioner] to delete.
+     */
     suspend fun deletePractitioner(id: String) {
         dbQuery.deletePractitionerById(id)
     }
@@ -83,7 +108,9 @@ class FhirRepository(val database: ChartCamDatabase) {
 
     /**
      * Saves a FHIR [Patient] resource into the local database.
-     * @param patient The Patient resource to persist.
+     * Extracts key fields such as name, birth date, MRN, gender, and managing organization for searchability.
+     *
+     * @param patient The [Patient] resource to persist.
      */
     suspend fun savePatient(patient: Patient) {
         val name = patient.name.firstOrNull()
@@ -96,14 +123,15 @@ class FhirRepository(val database: ChartCamDatabase) {
             mrn = patient.mrn,
             gender = patient.gender?.value?.name ?: "unknown",
             managingOrganization = patient.managingOrganization?.reference?.value ?: "",
-            serializedResource = serialized
+            serializedResource = serialized,
         )
     }
 
     /**
      * Retrieves a FHIR [Patient] resource by its ID.
-     * @param id The unique identifier of the Patient.
-     * @return The Patient resource if found, or null otherwise.
+     *
+     * @param id The unique identifier of the [Patient] to retrieve.
+     * @return The [Patient] resource if found, or null otherwise.
      */
     suspend fun getPatient(id: String): Patient? {
         val entity = dbQuery.getPatientById(id).awaitAsOneOrNull() ?: return null
@@ -112,14 +140,22 @@ class FhirRepository(val database: ChartCamDatabase) {
 
     /**
      * Retrieves all FHIR [Patient] resources stored locally.
-     * @return A list containing all Patient resources.
+     * Can optionally filter patients to only those who have encounters with a specific practitioner.
+     *
+     * @param showAll If true, returns all patients regardless of the practitioner. Defaults to true.
+     * @param practitionerId The unique identifier of the Practitioner to filter by, if [showAll] is false.
+     * @return A list containing all matching [Patient] resources.
      */
-    suspend fun getAllPatients(showAll: Boolean = true, practitionerId: String? = null): List<Patient> {
-        val entities = if (showAll || practitionerId == null) {
-            dbQuery.getAllPatients().awaitAsList()
-        } else {
-            dbQuery.getPatientsForPractitioner(practitionerId).awaitAsList()
-        }
+    suspend fun getAllPatients(
+        showAll: Boolean = true,
+        practitionerId: String? = null,
+    ): List<Patient> {
+        val entities =
+            if (showAll || practitionerId == null) {
+                dbQuery.getAllPatients().awaitAsList()
+            } else {
+                dbQuery.getPatientsForPractitioner(practitionerId).awaitAsList()
+            }
         return entities.map { entity ->
             fhirJson.decodeFromString(entity.serializedResource) as Patient
         }
@@ -128,26 +164,40 @@ class FhirRepository(val database: ChartCamDatabase) {
     /**
      * Searches for FHIR [Patient] resources that match the given query string.
      * The search runs against family name, given name, or MRN.
+     * Can optionally filter search results to only those who have encounters with a specific practitioner.
+     *
      * @param query The search query string.
-     * @return A list of matching Patient resources.
+     * @param showAll If true, searches across all patients. Defaults to true.
+     * @param practitionerId The unique identifier of the Practitioner to filter by, if [showAll] is false.
+     * @return A list of matching [Patient] resources.
      */
-    suspend fun searchPatients(query: String, showAll: Boolean = true, practitionerId: String? = null): List<Patient> {
-        val allEntities = if (showAll || practitionerId == null) {
-            dbQuery.searchPatients(query).awaitAsList()
-        } else {
-            // Filter search results by practitioner
-            dbQuery.searchPatients(query).awaitAsList().filter { searchRes ->
-                val pId = searchRes.id
-                // Note: a more efficient way is to join in SQL, but this is simple for now
-                val encountersForPrac = dbQuery.getEncountersForPractitioner(practitionerId).awaitAsList()
-                encountersForPrac.any { it.patientId == pId }
+    suspend fun searchPatients(
+        query: String,
+        showAll: Boolean = true,
+        practitionerId: String? = null,
+    ): List<Patient> {
+        val allEntities =
+            if (showAll || practitionerId == null) {
+                dbQuery.searchPatients(query).awaitAsList()
+            } else {
+                // Filter search results by practitioner
+                dbQuery.searchPatients(query).awaitAsList().filter { searchRes ->
+                    val pId = searchRes.id
+                    // Note: a more efficient way is to join in SQL, but this is simple for now
+                    val encountersForPrac = dbQuery.getEncountersForPractitioner(practitionerId).awaitAsList()
+                    encountersForPrac.any { it.patientId == pId }
+                }
             }
-        }
         return allEntities.map { entity ->
             fhirJson.decodeFromString(entity.serializedResource) as Patient
         }
     }
 
+    /**
+     * Deletes a FHIR [Patient] resource from the local database by its ID.
+     *
+     * @param id The unique identifier of the [Patient] to delete.
+     */
     suspend fun deletePatient(id: String) {
         dbQuery.deletePatientById(id)
     }
@@ -155,26 +205,37 @@ class FhirRepository(val database: ChartCamDatabase) {
     // --- Encounter ---
 
     /**
-     * Saves a FHIR [Encounter] resource into the local database, along with clinical notes.
-     * @param encounter The Encounter resource to persist.
-     * @param notes Optional notes associated with the Encounter.
+     * Saves a FHIR [Encounter] resource into the local database.
+     * Extracts relations such as patient ID and practitioner ID for indexing.
+     *
+     * @param encounter The [Encounter] resource to persist.
      */
     suspend fun saveEncounter(encounter: Encounter) {
         val serialized = fhirJson.encodeToString(encounter)
         dbQuery.insertEncounter(
             id = encounter.id ?: "",
             patientId = encounter.subject?.reference?.value ?: "",
-            practitionerId = encounter.participant.firstOrNull()?.individual?.reference?.value ?: "",
-            date = encounter.period?.start?.value?.toString() ?: "",
+            practitionerId =
+                encounter.participant
+                    .firstOrNull()
+                    ?.individual
+                    ?.reference
+                    ?.value ?: "",
+            date =
+                encounter.period
+                    ?.start
+                    ?.value
+                    ?.toString() ?: "",
             status = encounter.status?.value?.name ?: "in-progress",
-            serializedResource = serialized
+            serializedResource = serialized,
         )
     }
 
     /**
      * Retrieves a FHIR [Encounter] resource by its ID.
-     * @param id The unique identifier of the Encounter.
-     * @return The Encounter resource if found, or null otherwise.
+     *
+     * @param id The unique identifier of the [Encounter] to retrieve.
+     * @return The [Encounter] resource if found, or null otherwise.
      */
     suspend fun getEncounter(id: String): Encounter? {
         val entity = dbQuery.getEncounterById(id).awaitAsOneOrNull() ?: return null
@@ -183,51 +244,66 @@ class FhirRepository(val database: ChartCamDatabase) {
 
     /**
      * Retrieves all FHIR [Encounter] resources associated with a specific Patient ID.
+     *
      * @param patientId The unique identifier of the Patient.
-     * @return A list of Encounter resources for the specified Patient.
+     * @return A list of [Encounter] resources for the specified Patient.
      */
-    suspend fun getEncountersForPatient(patientId: String): List<Encounter> {
-        return dbQuery.getEncountersForPatient(patientId).awaitAsList().map { entity ->
+    suspend fun getEncountersForPatient(patientId: String): List<Encounter> =
+        dbQuery.getEncountersForPatient(patientId).awaitAsList().map { entity ->
             fhirJson.decodeFromString(entity.serializedResource) as Encounter
         }
-    }
 
     /**
-     * Retrieves the clinical notes associated with an Encounter.
-     * @param id The unique identifier of the Encounter.
-     * @return The clinical notes string, or empty string if not found.
-     */
-    /**
+     * Updates the status and optionally the clinical notes of an [Encounter].
+     *
+     * @param id The unique identifier of the [Encounter] to update.
      * @param status The new status (e.g., "finished", "in-progress").
+     * @param notes Optional notes associated with the Encounter, stored as an HTML string in the narrative text.
      */
-    suspend fun updateEncounterStatus(id: String, status: String, notes: String? = null) {
+    suspend fun updateEncounterStatus(
+        id: String,
+        status: String,
+        notes: String? = null,
+    ) {
         val encounter = getEncounter(id)
         if (encounter != null) {
-            val mappedStatus = when (status.lowercase()) {
-                "finished" -> Encounter.EncounterStatus.Finished
-                "in-progress" -> Encounter.EncounterStatus.In_Progress
-                "planned" -> Encounter.EncounterStatus.Planned
-                "arrived" -> Encounter.EncounterStatus.Arrived
-                "triaged" -> Encounter.EncounterStatus.Triaged
-                "onleave" -> Encounter.EncounterStatus.Onleave
-                "cancelled" -> Encounter.EncounterStatus.Cancelled
-                else -> Encounter.EncounterStatus.Unknown
-            }
-            val updatedStatus = Enumeration(value = mappedStatus)
-            val updatedEncounter = encounter.toBuilder().apply {
-                this.status = updatedStatus
-                if (notes != null) {
-                    this.text = com.google.fhir.model.r4.Narrative.Builder(
-                        status = Enumeration(value = com.google.fhir.model.r4.Narrative.NarrativeStatus.Generated),
-                        div = com.google.fhir.model.r4.Xhtml.Builder(value = "<div>$notes</div>")
-                    )
+            val mappedStatus =
+                when (status.lowercase()) {
+                    "finished" -> Encounter.EncounterStatus.Finished
+                    "in-progress" -> Encounter.EncounterStatus.In_Progress
+                    "planned" -> Encounter.EncounterStatus.Planned
+                    "arrived" -> Encounter.EncounterStatus.Arrived
+                    "triaged" -> Encounter.EncounterStatus.Triaged
+                    "onleave" -> Encounter.EncounterStatus.Onleave
+                    "cancelled" -> Encounter.EncounterStatus.Cancelled
+                    else -> Encounter.EncounterStatus.Unknown
                 }
-            }.build()
+            val updatedStatus = Enumeration(value = mappedStatus)
+            val updatedEncounter =
+                encounter
+                    .toBuilder()
+                    .apply {
+                        this.status = updatedStatus
+                        if (notes != null) {
+                            this.text =
+                                com.google.fhir.model.r4.Narrative.Builder(
+                                    status = Enumeration(value = com.google.fhir.model.r4.Narrative.NarrativeStatus.Generated),
+                                    div =
+                                        com.google.fhir.model.r4.Xhtml
+                                            .Builder(value = "<div>$notes</div>"),
+                                )
+                        }
+                    }.build()
             val serialized = fhirJson.encodeToString(updatedEncounter)
             dbQuery.updateEncounterStatus(status, serialized, id)
         }
     }
 
+    /**
+     * Deletes a FHIR [Encounter] resource from the local database by its ID.
+     *
+     * @param id The unique identifier of the [Encounter] to delete.
+     */
     suspend fun deleteEncounter(id: String) {
         dbQuery.deleteEncounterById(id)
     }
@@ -235,41 +311,60 @@ class FhirRepository(val database: ChartCamDatabase) {
     // --- DocumentReference (Photos) ---
 
     /**
-     * Saves a FHIR [DocumentReference] resource (typically a clinical photo) into the local database.
-     * @param doc The DocumentReference resource to persist.
+     * Saves a FHIR [DocumentReference] resource (typically representing a clinical photo) into the local database.
+     * Extracts reference to the Encounter and Patient, along with metadata like date and file path.
+     *
+     * @param doc The [DocumentReference] resource to persist.
      */
     suspend fun saveDocumentReference(doc: DocumentReference) {
         val serialized = fhirJson.encodeToString(doc)
         dbQuery.insertDocumentReference(
             id = doc.id ?: "",
-            encounterId = doc.context?.encounter?.firstOrNull()?.reference?.value ?: "",
+            encounterId =
+                doc.context
+                    ?.encounter
+                    ?.firstOrNull()
+                    ?.reference
+                    ?.value ?: "",
             patientId = doc.subject?.reference?.value ?: "",
             type = "photo",
             category = "clinical-photography",
             date = doc.date?.value?.toString() ?: "",
             title = doc.description?.value ?: "",
-            filePath = doc.content.firstOrNull()?.attachment?.url?.value ?: "",
-            mimeType = doc.content.firstOrNull()?.attachment?.contentType?.value ?: "",
-            serializedResource = serialized
+            filePath =
+                doc.content
+                    .firstOrNull()
+                    ?.attachment
+                    ?.url
+                    ?.value ?: "",
+            mimeType =
+                doc.content
+                    .firstOrNull()
+                    ?.attachment
+                    ?.contentType
+                    ?.value ?: "",
+            serializedResource = serialized,
         )
     }
 
     /**
      * Retrieves all FHIR [DocumentReference] resources (photos) associated with a specific Encounter ID.
+     *
      * @param encounterId The unique identifier of the Encounter.
-     * @return A list of DocumentReference resources.
+     * @return A list of [DocumentReference] resources.
      */
-    suspend fun getPhotosForEncounter(encounterId: String): List<DocumentReference> {
-        return dbQuery.getPhotosForEncounter(encounterId).awaitAsList().map { entity ->
+    suspend fun getPhotosForEncounter(encounterId: String): List<DocumentReference> =
+        dbQuery.getPhotosForEncounter(encounterId).awaitAsList().map { entity ->
             fhirJson.decodeFromString(entity.serializedResource) as DocumentReference
         }
-    }
 
     // --- QuestionnaireResponse (Forms and Notes) ---
 
     /**
      * Saves a FHIR [QuestionnaireResponse] resource into the local database.
-     * @param qr The QuestionnaireResponse resource to persist.
+     * Extacts encounter ID, patient ID, questionnaire ID, and date for querying.
+     *
+     * @param qr The [QuestionnaireResponse] resource to persist.
      */
     suspend fun saveQuestionnaireResponse(qr: QuestionnaireResponse) {
         val serialized = fhirJson.encodeToString(qr)
@@ -279,43 +374,74 @@ class FhirRepository(val database: ChartCamDatabase) {
             patientId = qr.subject?.reference?.value ?: "",
             questionnaireId = qr.questionnaire?.value ?: "",
             date = qr.authored?.value?.toString() ?: "",
-            serializedResource = serialized
+            serializedResource = serialized,
         )
     }
 
     /**
      * Retrieves all FHIR [QuestionnaireResponse] resources associated with a specific Encounter ID.
+     *
      * @param encounterId The unique identifier of the Encounter.
-     * @return A list of QuestionnaireResponse resources.
+     * @return A list of [QuestionnaireResponse] resources.
      */
-    suspend fun getQuestionnaireResponsesForEncounter(encounterId: String): List<QuestionnaireResponse> {
-        return dbQuery.getQuestionnaireResponsesForEncounter(encounterId).awaitAsList().map { entity ->
+    suspend fun getQuestionnaireResponsesForEncounter(encounterId: String): List<QuestionnaireResponse> =
+        dbQuery.getQuestionnaireResponsesForEncounter(encounterId).awaitAsList().map { entity ->
             fhirJson.decodeFromString(entity.serializedResource) as QuestionnaireResponse
         }
-    }
 
     // --- Device ---
+
+    /**
+     * Saves a FHIR [Device] resource into the local database.
+     *
+     * @param device The [Device] resource to persist.
+     */
     suspend fun saveDevice(device: Device) {
         val serialized = fhirJson.encodeToString(device)
         dbQuery.insertDevice(device.id!!, serialized)
     }
 
+    /**
+     * Retrieves a FHIR [Device] resource by its ID.
+     *
+     * @param id The unique identifier of the [Device] to retrieve.
+     * @return The [Device] resource if found, or null otherwise.
+     */
     suspend fun getDevice(id: String): Device? {
         val entity = dbQuery.getDevice(id).awaitAsOneOrNull() ?: return null
         return fhirJson.decodeFromString(entity.serializedResource) as Device
     }
 
     // --- Provenance ---
-    suspend fun saveProvenance(provenance: Provenance, encounterId: String? = null) {
+
+    /**
+     * Saves a FHIR [Provenance] resource into the local database.
+     * Extracts the target reference and optionally an encounter ID for querying.
+     *
+     * @param provenance The [Provenance] resource to persist.
+     * @param encounterId Optional unique identifier of the Encounter associated with this provenance.
+     */
+    suspend fun saveProvenance(
+        provenance: Provenance,
+        encounterId: String? = null,
+    ) {
         val serialized = fhirJson.encodeToString(provenance)
-        val targetId = provenance.target.firstOrNull()?.reference?.value ?: ""
+        val targetId =
+            provenance.target
+                .firstOrNull()
+                ?.reference
+                ?.value ?: ""
         dbQuery.insertProvenance(provenance.id!!, targetId, encounterId, provenance.recorded?.value.toString(), serialized)
     }
 
-    suspend fun getProvenancesForEncounter(encounterId: String): List<Provenance> {
-        return dbQuery.getProvenancesForEncounter(encounterId).awaitAsList().map { entity ->
+    /**
+     * Retrieves all FHIR [Provenance] resources associated with a specific Encounter ID.
+     *
+     * @param encounterId The unique identifier of the Encounter.
+     * @return A list of [Provenance] resources.
+     */
+    suspend fun getProvenancesForEncounter(encounterId: String): List<Provenance> =
+        dbQuery.getProvenancesForEncounter(encounterId).awaitAsList().map { entity ->
             fhirJson.decodeFromString(entity.serializedResource) as Provenance
         }
-    }
-
 }

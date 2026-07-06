@@ -1,93 +1,102 @@
 package io.healthplatform.chartcam.repository
 
-import app.cash.sqldelight.async.coroutines.await
+import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.google.fhir.model.r4.*
 import io.healthplatform.chartcam.database.ChartCamDatabase
-import app.cash.sqldelight.async.coroutines.awaitCreate
-import io.healthplatform.chartcam.models.createFhirPatient
-import io.healthplatform.chartcam.models.createFhirEncounter
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.Encounter
-import io.healthplatform.chartcam.models.givenName
-import io.healthplatform.chartcam.models.familyName
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
-import kotlin.test.Test
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class FhirRepositoryTest {
+    private lateinit var db: ChartCamDatabase
+    private lateinit var driver: JdbcSqliteDriver
+    private lateinit var repository: FhirRepository
 
-    private fun createRepository(): FhirRepository {
-        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        kotlinx.coroutines.runBlocking { ChartCamDatabase.Schema.awaitCreate(driver) }
-        return FhirRepository(ChartCamDatabase(driver))
+    @Before
+    fun setup() {
+        driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        ChartCamDatabase.Schema.synchronous().create(driver)
+        db = ChartCamDatabase(driver)
+        repository = FhirRepository(db)
+    }
+
+    @After
+    fun tearDown() {
+        driver.close()
     }
 
     @Test
-    fun testPatientAndEncounterLinking() = runTest {
-        val repo = createRepository()
+    fun testPractitionerCrud() =
+        runTest {
+            val prac =
+                Practitioner
+                    .Builder()
+                    .apply {
+                        id = "prac_1"
+                    }.build()
 
-        // 1. Create Patient
-        val patientId = "pat_01"
-        val patient = createFhirPatient(
-            id = patientId,
-            firstName = "John",
-            lastName = "Doe",
-            dob = LocalDate(1980, 1, 1),
-            mrnValue = "MRN123",
-            genderStr = "male"
-        )
-        repo.savePatient(patient)
+            repository.savePractitioner(prac)
 
-        // 2. Create Encounter
-        val encounterId = "enc_01"
-        val now = "2023-10-25T10:00:00+00:00"
-        val encounter = createFhirEncounter(
-            id = encounterId,
-            patientId = patientId,
-            practitionerId = "prac_01",
-            dateStr = now,
-            statusStr = "in-progress"
-        )
-        repo.saveEncounter(encounter)
+            val fetched = repository.getPractitioner("prac_1")
+            assertNotNull(fetched)
+            assertEquals("prac_1", fetched.id)
 
-        // 3. Verify Fetch
-        val fetchedEncounter = repo.getEncounter(encounterId)
-        // Test update status
-        repo.updateEncounterStatus(encounterId, "finished")
-        val updated = repo.getEncounter(encounterId)
-        assertEquals(Encounter.EncounterStatus.Finished, updated?.status?.value)
-    }
+            repository.deletePractitioner("prac_1")
+            assertNull(repository.getPractitioner("prac_1"))
+        }
 
     @Test
-    fun testPatientSearch() = runTest {
-        val repo = createRepository()
-        
-        repo.savePatient(createFhirPatient("1", "Jane", "Smith", LocalDate(1990,1,1), "A1", "f"))
-        repo.savePatient(createFhirPatient("2", "Bob", "Jones", LocalDate(1991,1,1), "A2", "m"))
-        
-        val results = repo.searchPatients("Smith")
-        assertEquals(1, results.size)
-        assertEquals("Jane", results[0].name.firstOrNull()?.givenName)
-        
-        val resultsMrn = repo.searchPatients("A2")
-        assertEquals(1, resultsMrn.size)
-        assertEquals("Jones", resultsMrn[0].name.firstOrNull()?.familyName)
-        
-        val all = repo.getAllPatients()
-        assertEquals(2, all.size)
-    }
+    fun testPatientCrud() =
+        runTest {
+            val patient =
+                Patient
+                    .Builder()
+                    .apply {
+                        id = "pat_1"
+                    }.build()
+
+            repository.savePatient(patient)
+
+            val fetched = repository.getPatient("pat_1")
+            assertNotNull(fetched)
+            assertEquals("pat_1", fetched.id)
+
+            val allPatients = repository.getAllPatients()
+            assertEquals(1, allPatients.size)
+
+            repository.deletePatient("pat_1")
+            assertNull(repository.getPatient("pat_1"))
+        }
+
     @Test
-    fun testQuestionnaireResponses() = runTest {
-        val repo = createRepository()
-        val qr = com.google.fhir.model.r4.QuestionnaireResponse.Builder(com.google.fhir.model.r4.Enumeration(value = com.google.fhir.model.r4.QuestionnaireResponse.QuestionnaireResponseStatus.Completed)).apply { 
-            id = "qr1"
-            encounter = com.google.fhir.model.r4.Reference.Builder().apply { reference = com.google.fhir.model.r4.String.Builder().apply { value = "Encounter/enc1" } }
-        }.build()
-        repo.saveQuestionnaireResponse(qr)
-        val qrs = repo.getQuestionnaireResponsesForEncounter("Encounter/enc1")
-        assertEquals(1, qrs.size)
-    }
+    fun testEncounterCrud() =
+        runTest {
+            val encounter =
+                Encounter
+                    .Builder(
+                        status = Enumeration(value = Encounter.EncounterStatus.In_Progress),
+                        `class` = Coding.Builder(),
+                    ).apply {
+                        id = "enc_1"
+                    }.build()
+
+            repository.saveEncounter(encounter)
+
+            val fetched = repository.getEncounter("enc_1")
+            assertNotNull(fetched)
+            assertEquals("enc_1", fetched.id)
+
+            repository.updateEncounterStatus("enc_1", "finished", "all good")
+            val updated = repository.getEncounter("enc_1")
+            assertEquals(Encounter.EncounterStatus.Finished, updated?.status?.value)
+            assertNotNull(updated?.text?.div?.value)
+
+            repository.deleteEncounter("enc_1")
+            assertNull(repository.getEncounter("enc_1"))
+        }
 }

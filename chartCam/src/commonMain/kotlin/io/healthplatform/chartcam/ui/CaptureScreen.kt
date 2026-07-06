@@ -1,8 +1,8 @@
+/**
+ * UI components for capturing photos.
+ * Provides the main screen and overlays for the camera feature.
+ */
 package io.healthplatform.chartcam.ui
-
-import org.jetbrains.compose.resources.stringResource
-import chartcam.chartcam.generated.resources.*
-
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -15,8 +15,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cameraswitch
@@ -28,26 +28,28 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import chartcam.chartcam.generated.resources.*
+import com.google.fhir.model.r4.Questionnaire
+import io.healthplatform.chartcam.camera.PermissionStatus
 import io.healthplatform.chartcam.camera.rememberCameraManager
 import io.healthplatform.chartcam.camera.rememberPermissionManager
-import io.healthplatform.chartcam.camera.PermissionStatus
 import io.healthplatform.chartcam.capture.CaptureViewModel
 import io.healthplatform.chartcam.capture.PhotoStep
 import io.healthplatform.chartcam.files.createFileStorage
@@ -56,22 +58,28 @@ import io.healthplatform.chartcam.sensors.rememberSensorManager
 import io.healthplatform.chartcam.ui.components.LevelerOverlay
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import com.google.fhir.model.r4.Questionnaire
-import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
+/**
+ * Main Composable for the photo capture workflow.
+ * Handles permissions, camera preview, leveler, capturing, and reviewing photos.
+ *
+ * @param questionnaireId The ID of the questionnaire defining the photo steps.
+ * @param questionnaireRepository Repository to fetch the questionnaire details.
+ * @param onFinished Callback invoked when all required photos are captured and confirmed, mapping step linkIds to file paths.
+ * @param onCancel Callback invoked if the user cancels the capture process.
+ */
 @OptIn(ExperimentalResourceApi::class)
 @Composable
 fun CaptureScreen(
     questionnaireId: String,
     questionnaireRepository: QuestionnaireRepository,
     onFinished: (Map<String, String>) -> Unit,
-    onCancel: () -> Unit = {}
+    onCancel: () -> Unit = {},
 ) {
     val permissionManager = rememberPermissionManager()
-    var permissionGranted by remember { 
-        mutableStateOf(permissionManager.getCameraPermissionStatus() == PermissionStatus.GRANTED) 
+    var permissionGranted by remember {
+        mutableStateOf(permissionManager.getCameraPermissionStatus() == PermissionStatus.GRANTED)
     }
 
     LaunchedEffect(Unit) {
@@ -84,15 +92,19 @@ fun CaptureScreen(
         Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(stringResource(Res.string.camera_permission_required), color = Color.White, modifier = Modifier.padding(16.dp))
-                Button(onClick = { 
+                Button(onClick = {
                     permissionManager.openSettings()
                 }) {
                     Text(stringResource(Res.string.open_settings))
                 }
                 Button(
                     onClick = onCancel,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
-                    modifier = Modifier.padding(top = 8.dp)
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                    modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Text(stringResource(Res.string.cancel))
                 }
@@ -112,9 +124,10 @@ fun CaptureScreen(
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
         val q = questionnaireRepository.getQuestionnaire(questionnaireId)
-        val steps = q?.item?.filter { it.type.value == Questionnaire.QuestionnaireItemType.Attachment }?.map {
-            PhotoStep(it.linkId.value ?: "", it.text?.value ?: "")
-        } ?: emptyList()
+        val steps =
+            q?.item?.filter { it.type.value == Questionnaire.QuestionnaireItemType.Attachment }?.map {
+                PhotoStep(it.linkId.value ?: "", it.text?.value ?: "")
+            } ?: emptyList()
         viewModel.initSteps(steps)
     }
 
@@ -134,36 +147,39 @@ fun CaptureScreen(
         }
     }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color.Transparent)
-        .focusRequester(focusRequester)
-        .onKeyEvent {
-            if (it.key == Key.Escape) {
-                handleCancel()
-                true
-            } else {
-                false
-            }
-        }
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(Color.Transparent)
+                .focusRequester(focusRequester)
+                .onKeyEvent {
+                    if (it.key == Key.Escape) {
+                        handleCancel()
+                        true
+                    } else {
+                        false
+                    }
+                },
     ) {
         val interactionSource = remember { MutableInteractionSource() }
-        
+
         CameraPreview(
             modifier = Modifier.fillMaxSize(),
-            cameraManager = cameraManager
+            cameraManager = cameraManager,
         )
 
         if (state.reviewImageBytes == null && !state.isCapturing) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null
-                    ) {
-                        viewModel.onCapture()
-                    }
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                        ) {
+                            viewModel.onCapture()
+                        },
             )
         }
 
@@ -173,7 +189,7 @@ fun CaptureScreen(
             ReviewLayer(
                 bytes = state.reviewImageBytes!!,
                 onRetake = { viewModel.onRetake() },
-                onConfirm = { viewModel.onConfirm() }
+                onConfirm = { viewModel.onConfirm() },
             )
         } else {
             val title = state.currentStep?.title ?: ""
@@ -185,12 +201,24 @@ fun CaptureScreen(
                 onCapture = { viewModel.onCapture() },
                 onToggleLens = { cameraManager.toggleLens() },
                 onCancel = handleCancel,
-                hasMultipleCameras = cameraManager.hasMultipleCameras
+                hasMultipleCameras = cameraManager.hasMultipleCameras,
             )
         }
     }
 }
 
+/**
+ * Overlay layer displaying controls for camera capture.
+ *
+ * @param stepName The name or title of the current capture step.
+ * @param count The number of photos already captured.
+ * @param total The total number of photos needed.
+ * @param isCapturing True if the camera is currently in the process of taking a picture.
+ * @param onCapture Callback triggered when the capture button is clicked.
+ * @param onToggleLens Callback triggered when the switch camera button is clicked.
+ * @param onCancel Callback triggered when the cancel button is clicked.
+ * @param hasMultipleCameras True if the device has multiple cameras (to show/hide the switch button).
+ */
 @Composable
 fun ControlsLayer(
     stepName: String,
@@ -200,36 +228,46 @@ fun ControlsLayer(
     onCapture: () -> Unit,
     onToggleLens: () -> Unit,
     onCancel: () -> Unit,
-    hasMultipleCameras: Boolean = true
+    hasMultipleCameras: Boolean = true,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .safeDrawingPadding()
-            .padding(16.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .padding(16.dp),
         verticalArrangement = Arrangement.SpaceBetween,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                    .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(stepName, color = Color.White, style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(Res.string.step_count_format, count.toString(), total.toString()), color = Color.White, style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(Res.string.step_count_format, count.toString(), total.toString()),
+                color = Color.White,
+                style = MaterialTheme.typography.titleMedium,
+            )
         }
 
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
-            horizontalAlignment = Alignment.Start
+            horizontalAlignment = Alignment.Start,
         ) {
             Button(
                 onClick = onCapture,
                 modifier = Modifier.padding(bottom = 16.dp),
                 enabled = !isCapturing,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
             ) {
                 if (isCapturing) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
@@ -240,25 +278,29 @@ fun ControlsLayer(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Button(
                     onClick = onCancel,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
                 ) {
                     Text(stringResource(Res.string.cancel))
                 }
-                
+
                 if (hasMultipleCameras) {
                     IconButton(
-                        onClick = onToggleLens, 
-                        modifier = Modifier.size(56.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
-                    ) { 
+                        onClick = onToggleLens,
+                        modifier = Modifier.size(56.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.Cameraswitch, 
-                            contentDescription = stringResource(Res.string.cd_switch_camera), 
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        ) 
+                            imageVector = Icons.Default.Cameraswitch,
+                            contentDescription = stringResource(Res.string.cd_switch_camera),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
@@ -266,36 +308,51 @@ fun ControlsLayer(
     }
 }
 
+/**
+ * Overlay layer allowing the user to review a captured photo.
+ *
+ * @param bytes The image data of the captured photo.
+ * @param onRetake Callback triggered when the user rejects the photo.
+ * @param onConfirm Callback triggered when the user accepts the photo.
+ */
 @Composable
 fun ReviewLayer(
     bytes: ByteArray,
     onRetake: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
 ) {
     val bitmap = remember(bytes) { bytes.decodeToImageBitmap() }
-    
+
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         Image(
             bitmap = bitmap,
             contentDescription = stringResource(Res.string.cd_review),
             contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         )
-        
+
         Row(
             modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(32.dp),
-            horizontalArrangement = Arrangement.SpaceAround
+            horizontalArrangement = Arrangement.SpaceAround,
         ) {
             Button(
                 onClick = onRetake,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError)
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
             ) {
                 Text(stringResource(Res.string.retake))
             }
-            
+
             Button(
                 onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
             ) {
                 Text(stringResource(Res.string.confirm))
             }

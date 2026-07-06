@@ -1,3 +1,7 @@
+/**
+ * ViewModel and UI state definition for the Login Screen.
+ * Provides the state and business logic for practitioner authentication.
+ */
 package io.healthplatform.chartcam.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -12,52 +16,61 @@ import kotlinx.coroutines.launch
 /**
  * UI State definition for the Login Screen.
  *
- * @property isLoading Whether a network request is interacting.
- * @property errorMessage Localized error message if login fails.
+ * @property isLoading Whether a network request or login processing is actively occurring.
+ * @property errorMessage Localized error message if login fails, or null if there is no error.
  * @property isLoggedIn Flag indicating successful authentication.
  */
 data class LoginUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val isLoggedIn: Boolean = false
+    val isLoggedIn: Boolean = false,
 )
 
 /**
  * ViewModel handling the business logic for the Login Screen.
  * Bridges the UI events to the [AuthRepository].
  *
- * @property authRepository The source of authentication truth.
+ * @property authRepository The source of authentication truth and login operations.
  */
 class LoginViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
-
+    /**
+     * Internal mutable state flow for the login UI state.
+     */
     private val _uiState = MutableStateFlow(LoginUiState())
+
+    /**
+     * Public immutable state flow for the login UI state.
+     */
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     /**
      * Initiates the login process.
-     * Updates state to Loading -> Success/Error.
+     * Updates state to Loading and then either to Success or Error based on the outcome.
      *
      * @param username Input username.
      * @param password Input password.
      */
-    fun login(username: String, password: String) {
+    fun login(
+        username: String,
+        password: String,
+    ) {
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
         viewModelScope.launch {
             val result = authRepository.login(username, password)
-            
+
             if (result.isSuccess) {
-                _uiState.update { 
-                    it.copy(isLoading = false, isLoggedIn = true) 
+                _uiState.update {
+                    it.copy(isLoading = false, isLoggedIn = true)
                 }
             } else {
-                _uiState.update { 
+                _uiState.update {
                     it.copy(
-                        isLoading = false, 
-                        errorMessage = result.exceptionOrNull()?.message ?: "Unknown Error"
-                    ) 
+                        isLoading = false,
+                        errorMessage = result.exceptionOrNull()?.message ?: "Unknown Error",
+                    )
                 }
             }
         }

@@ -1,8 +1,19 @@
+/**
+ * File defining the Android-specific implementation for changing the application language.
+ */
 package io.healthplatform.chartcam.ui
 
-import java.util.Locale
 import io.healthplatform.chartcam.AndroidAppInit
+import java.util.Locale
 
+/**
+ * Changes the current application language on the Android platform.
+ *
+ * This function updates the default locale, updates the configuration of the current context
+ * retrieved from [AndroidAppInit], and applies the new locale setting to the app's resources.
+ *
+ * @param language The ISO language code (e.g., "en", "es") to set as the new app language.
+ */
 actual fun changeAppLanguage(language: String) {
     val locale = Locale(language)
     Locale.setDefault(locale)

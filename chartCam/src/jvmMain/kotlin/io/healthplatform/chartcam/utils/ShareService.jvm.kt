@@ -1,3 +1,6 @@
+/**
+ * Sharing service implementation for the JVM platform.
+ */
 package io.healthplatform.chartcam.utils
 
 import java.awt.Desktop
@@ -8,8 +11,15 @@ import javax.swing.JOptionPane
 
 /**
  * JVM implementation for sharing files and text.
+ * On Desktop, this typically opens the file location or copies text to the clipboard.
  */
 class JvmShareService : ShareService {
+    /**
+     * Shares a file by opening its parent directory in the native file explorer
+     * and showing a confirmation dialog to the user.
+     *
+     * @param filePath The absolute path of the file to be shared.
+     */
     override fun shareFile(filePath: String) {
         val file = File(filePath)
         if (file.exists() && Desktop.isDesktopSupported()) {
@@ -23,6 +33,12 @@ class JvmShareService : ShareService {
         }
     }
 
+    /**
+     * Shares text by copying it to the system clipboard and showing a
+     * confirmation dialog to the user.
+     *
+     * @param text The text string to be copied to the clipboard.
+     */
     override fun shareText(text: String) {
         val selection = StringSelection(text)
         val clipboard = Toolkit.getDefaultToolkit().systemClipboard
@@ -32,6 +48,8 @@ class JvmShareService : ShareService {
 }
 
 /**
- * Creates the JvmShareService.
+ * Creates and returns a new instance of the [ShareService] for the JVM platform.
+ *
+ * @return A new [JvmShareService] instance.
  */
 actual fun createShareService(): ShareService = JvmShareService()

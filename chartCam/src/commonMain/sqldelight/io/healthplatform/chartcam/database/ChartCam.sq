@@ -1,6 +1,8 @@
 import kotlin.Boolean;
 
--- Table: Practitioner
+/**
+ * Represents a Practitioner (e.g., doctor, nurse) entity.
+ */
 CREATE TABLE IF NOT EXISTS PractitionerEntity (
     id TEXT NOT NULL PRIMARY KEY,
     family TEXT NOT NULL,
@@ -9,7 +11,9 @@ CREATE TABLE IF NOT EXISTS PractitionerEntity (
     serializedResource TEXT NOT NULL
 );
 
--- Table: Patient
+/**
+ * Represents a Patient entity.
+ */
 CREATE TABLE IF NOT EXISTS PatientEntity (
     id TEXT NOT NULL PRIMARY KEY,
     family TEXT NOT NULL,
@@ -21,7 +25,9 @@ CREATE TABLE IF NOT EXISTS PatientEntity (
     serializedResource TEXT NOT NULL
 );
 
--- Table: Encounter
+/**
+ * Represents a clinical Encounter.
+ */
 CREATE TABLE IF NOT EXISTS EncounterEntity (
     id TEXT NOT NULL PRIMARY KEY,
     patientId TEXT NOT NULL,
@@ -34,22 +40,26 @@ CREATE TABLE IF NOT EXISTS EncounterEntity (
     FOREIGN KEY(practitionerId) REFERENCES PractitionerEntity(id) ON DELETE CASCADE
 );
 
--- Table: DocumentReference (The Photos)
+/**
+ * Represents a Document Reference (e.g., Photos).
+ */
 CREATE TABLE IF NOT EXISTS DocumentReferenceEntity (
     id TEXT NOT NULL PRIMARY KEY,
     encounterId TEXT NOT NULL,
     patientId TEXT NOT NULL,
-    type TEXT NOT NULL, -- e.g., "photo"
-    category TEXT NOT NULL, -- e.g., "clinical-photography"
+    type TEXT NOT NULL,
+    category TEXT NOT NULL,
     date TEXT NOT NULL,
-    title TEXT, -- e.g., "Front View"
-    filePath TEXT NOT NULL, -- Local URI/Path
+    title TEXT,
+    filePath TEXT NOT NULL,
     mimeType TEXT NOT NULL DEFAULT 'image/jpeg',
     serializedResource TEXT NOT NULL,
     FOREIGN KEY(encounterId) REFERENCES EncounterEntity(id) ON DELETE CASCADE
 );
 
--- Table: QuestionnaireResponse (Forms and Notes)
+/**
+ * Represents a Questionnaire Response (e.g., Forms and Notes).
+ */
 CREATE TABLE IF NOT EXISTS QuestionnaireResponseEntity (
     id TEXT NOT NULL PRIMARY KEY,
     encounterId TEXT NOT NULL,
@@ -60,97 +70,159 @@ CREATE TABLE IF NOT EXISTS QuestionnaireResponseEntity (
     FOREIGN KEY(encounterId) REFERENCES EncounterEntity(id) ON DELETE CASCADE
 );
 
--- Queries: Practitioner
+/**
+ * Inserts or updates a Practitioner entity.
+ */
 insertPractitioner:
 INSERT OR REPLACE INTO PractitionerEntity(id, family, given, active, serializedResource)
 VALUES (?, ?, ?, ?, ?);
 
+/**
+ * Retrieves a Practitioner by their unique ID.
+ */
 getPractitionerById:
 SELECT * FROM PractitionerEntity WHERE id = ?;
 
+/**
+ * Retrieves all Practitioners.
+ */
 getAllPractitioners:
 SELECT * FROM PractitionerEntity;
 
+/**
+ * Deletes a Practitioner by their unique ID.
+ */
 deletePractitionerById:
 DELETE FROM PractitionerEntity WHERE id = ?;
 
--- Queries: Patient
+/**
+ * Inserts or updates a Patient entity.
+ */
 insertPatient:
 INSERT OR REPLACE INTO PatientEntity(id, family, given, birthDate, mrn, gender, managingOrganization, serializedResource)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
+/**
+ * Retrieves all Patients ordered by family name.
+ */
 getAllPatients:
 SELECT * FROM PatientEntity ORDER BY family ASC;
 
+/**
+ * Retrieves a Patient by their unique ID.
+ */
 getPatientById:
 SELECT * FROM PatientEntity WHERE id = ?;
 
+/**
+ * Searches Patients by matching their family name, given name, or MRN.
+ */
 searchPatients:
 SELECT * FROM PatientEntity 
 WHERE family LIKE ('%' || :query || '%') 
 OR given LIKE ('%' || :query || '%') 
 OR mrn LIKE ('%' || :query || '%');
 
+/**
+ * Deletes a Patient by their unique ID.
+ */
 deletePatientById:
 DELETE FROM PatientEntity WHERE id = ?;
 
--- Queries: Encounter
+/**
+ * Inserts or updates an Encounter entity.
+ */
 insertEncounter:
 INSERT OR REPLACE INTO EncounterEntity(id, patientId, practitionerId, date, status, serializedResource)
 VALUES (?, ?, ?, ?, ?, ?);
 
+/**
+ * Retrieves all Encounters for a specific Patient, ordered descending by date.
+ */
 getEncountersForPatient:
 SELECT * FROM EncounterEntity 
 WHERE patientId = ? 
 ORDER BY date DESC;
 
+/**
+ * Retrieves an Encounter by its unique ID.
+ */
 getEncounterById:
 SELECT * FROM EncounterEntity WHERE id = ?;
 
+/**
+ * Retrieves all Encounters in the database.
+ */
 getAllEncounters:
 SELECT * FROM EncounterEntity;
 
+/**
+ * Updates the status and serialized resource of an Encounter.
+ */
 updateEncounterStatus:
 UPDATE EncounterEntity
 SET status = ?, serializedResource = ?
 WHERE id = ?;
 
+/**
+ * Deletes an Encounter by its unique ID.
+ */
 deleteEncounterById:
 DELETE FROM EncounterEntity WHERE id = ?;
 
--- Queries: DocumentReference
+/**
+ * Inserts or updates a Document Reference entity.
+ */
 insertDocumentReference:
 INSERT OR REPLACE INTO DocumentReferenceEntity(id, encounterId, patientId, type, category, date, title, filePath, mimeType, serializedResource)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+/**
+ * Retrieves all photos (Document References) for a specific Encounter.
+ */
 getPhotosForEncounter:
 SELECT * FROM DocumentReferenceEntity
 WHERE encounterId = ?
 ORDER BY date ASC;
 
+/**
+ * Retrieves all Document References in the database.
+ */
 getAllDocumentReferences:
 SELECT * FROM DocumentReferenceEntity;
 
--- Queries: QuestionnaireResponse
+/**
+ * Inserts or updates a Questionnaire Response entity.
+ */
 insertQuestionnaireResponse:
 INSERT OR REPLACE INTO QuestionnaireResponseEntity(id, encounterId, patientId, questionnaireId, date, serializedResource)
 VALUES (?, ?, ?, ?, ?, ?);
 
+/**
+ * Retrieves all Questionnaire Responses for a specific Encounter.
+ */
 getQuestionnaireResponsesForEncounter:
 SELECT * FROM QuestionnaireResponseEntity
 WHERE encounterId = ?
 ORDER BY date DESC;
 
+/**
+ * Retrieves all Questionnaire Responses in the database.
+ */
 getAllQuestionnaireResponses:
 SELECT * FROM QuestionnaireResponseEntity;
 
--- Table: Device
+/**
+ * Represents a Device entity.
+ */
 CREATE TABLE IF NOT EXISTS DeviceEntity (
     id TEXT NOT NULL PRIMARY KEY,
     serializedResource TEXT NOT NULL
 );
 
--- Table: Provenance
+/**
+ * Represents a Provenance entity for tracking actions.
+ */
 CREATE TABLE IF NOT EXISTS ProvenanceEntity (
     id TEXT NOT NULL PRIMARY KEY,
     targetId TEXT NOT NULL,
@@ -159,47 +231,78 @@ CREATE TABLE IF NOT EXISTS ProvenanceEntity (
     serializedResource TEXT NOT NULL
 );
 
--- Queries: Device
+/**
+ * Inserts or updates a Device entity.
+ */
 insertDevice:
 INSERT OR REPLACE INTO DeviceEntity(id, serializedResource)
 VALUES (?, ?);
 
+/**
+ * Retrieves a Device by its unique ID.
+ */
 getDevice:
 SELECT * FROM DeviceEntity WHERE id = ?;
 
+/**
+ * Retrieves all Devices in the database.
+ */
 getAllDevices:
 SELECT * FROM DeviceEntity;
 
--- Queries: Provenance
+/**
+ * Inserts or updates a Provenance entity.
+ */
 insertProvenance:
 INSERT OR REPLACE INTO ProvenanceEntity(id, targetId, encounterId, date, serializedResource)
 VALUES (?, ?, ?, ?, ?);
 
+/**
+ * Retrieves all Provenances for a specific Encounter.
+ */
 getProvenancesForEncounter:
 SELECT * FROM ProvenanceEntity WHERE encounterId = ? ORDER BY date DESC;
 
+/**
+ * Retrieves all Provenances in the database.
+ */
 getAllProvenances:
 SELECT * FROM ProvenanceEntity;
 
+/**
+ * Retrieves all Encounters associated with a specific Practitioner.
+ */
 getEncountersForPractitioner:
 SELECT * FROM EncounterEntity
 WHERE practitionerId = ?;
 
+/**
+ * Retrieves all distinct Patients associated with a specific Practitioner.
+ */
 getPatientsForPractitioner:
 SELECT DISTINCT p.* FROM PatientEntity p
 INNER JOIN EncounterEntity e ON p.id = e.patientId
 WHERE e.practitionerId = ?;
 
+/**
+ * Retrieves all Document References associated with a specific Practitioner.
+ */
 getDocumentReferencesForPractitioner:
 SELECT d.* FROM DocumentReferenceEntity d
 INNER JOIN EncounterEntity e ON d.encounterId = e.id
 WHERE e.practitionerId = ?;
 
+/**
+ * Retrieves all Questionnaire Responses associated with a specific Practitioner.
+ */
 getQuestionnaireResponsesForPractitioner:
 SELECT q.* FROM QuestionnaireResponseEntity q
 INNER JOIN EncounterEntity e ON q.encounterId = e.id
 WHERE e.practitionerId = ?;
 
+/**
+ * Retrieves all Provenances associated with a specific Practitioner.
+ */
 getProvenancesForPractitioner:
 SELECT p.* FROM ProvenanceEntity p
 LEFT JOIN EncounterEntity e ON p.encounterId = e.id

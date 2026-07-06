@@ -1,3 +1,6 @@
+/**
+ * File defining the Android-specific implementation of [CameraManager] and its composable factory.
+ */
 package io.healthplatform.chartcam.camera
 
 import android.content.Context
@@ -19,22 +22,49 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 /**
- * Android implementation of [CameraManager] using CameraX.
+ * Android implementation of [CameraManager] using the CameraX library.
+ *
+ * @param context The application [Context] used to interact with CameraX and the system.
  */
-class AndroidCameraManager(private val context: Context) : CameraManager {
-
+class AndroidCameraManager(
+    private val context: Context,
+) : CameraManager {
+    /**
+     * CameraX use case for capturing images.
+     */
     private var imageCapture: ImageCapture? = null
+
+    /**
+     * Represents the currently bound camera instance, used for controlling flash and other hardware properties.
+     */
     private var camera: Camera? = null
+
+    /**
+     * Provides access to bind use cases to the lifecycle.
+     */
     private var provider: ProcessCameraProvider? = null
+
+    /**
+     * Main thread executor used for CameraX callbacks.
+     */
     private val executor = ContextCompat.getMainExecutor(context)
-    
+
+    /**
+     * Current lens facing direction (defaults to back camera).
+     */
     private var lensFacing = CameraSelector.LENS_FACING_BACK
 
     /**
-     * Binds the camera to the lifecycle and the provided PreviewView.
+     * Binds the camera to the provided lifecycle and connects the output to the [PreviewView].
      * Called by the Android CameraPreview composable.
+     *
+     * @param lifecycleOwner The lifecycle owner (usually the containing Activity or Fragment) to bind the camera to.
+     * @param view The [PreviewView] surface where the camera preview stream will be rendered.
      */
-    fun bindToLifecycle(lifecycleOwner: LifecycleOwner, view: PreviewView) {
+    fun bindToLifecycle(
+        lifecycleOwner: LifecycleOwner,
+        view: PreviewView,
+    ) {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         cameraProviderFuture.addListener({
             provider = cameraProviderFuture.get()
@@ -42,32 +72,50 @@ class AndroidCameraManager(private val context: Context) : CameraManager {
         }, executor)
     }
 
-    private fun startCamera(lifecycleOwner: LifecycleOwner, view: PreviewView) {
+    /**
+     * Internal method to configure and bind the Preview and ImageCapture use cases to the [ProcessCameraProvider].
+     *
+     * @param lifecycleOwner The lifecycle owner that controls the camera's active state.
+     * @param view The [PreviewView] used to display the stream.
+     */
+    private fun startCamera(
+        lifecycleOwner: LifecycleOwner,
+        view: PreviewView,
+    ) {
         val cameraProvider = provider ?: return
 
-        val preview = Preview.Builder().build().also {
-            it.setSurfaceProvider(view.surfaceProvider)
-        }
+        val preview =
+            Preview.Builder().build().also {
+                it.setSurfaceProvider(view.surfaceProvider)
+            }
 
         imageCapture = ImageCapture.Builder().build()
 
-        val cameraSelector = CameraSelector.Builder()
-            .requireLensFacing(lensFacing)
-            .build()
+        val cameraSelector =
+            CameraSelector
+                .Builder()
+                .requireLensFacing(lensFacing)
+                .build()
 
         try {
             cameraProvider.unbindAll()
-            camera = cameraProvider.bindToLifecycle(
-                lifecycleOwner,
-                cameraSelector,
-                preview,
-                imageCapture
-            )
+            camera =
+                cameraProvider.bindToLifecycle(
+                    lifecycleOwner,
+                    cameraSelector,
+                    preview,
+                    imageCapture,
+                )
         } catch (exc: Exception) {
             // Handle binding errors (logs in real app)
         }
     }
 
+    /**
+     * Captures an image asynchronously using the bound [ImageCapture] use case.
+     *
+     * @return A [ByteArray] containing the JPEG encoded image data, or `null` if the capture failed or no use case is bound.
+     */
     override suspend fun captureImage(): ByteArray? {
         val capture = imageCapture ?: return null
 
@@ -75,6 +123,11 @@ class AndroidCameraManager(private val context: Context) : CameraManager {
             capture.takePicture(
                 executor,
                 object : ImageCapture.OnImageCapturedCallback() {
+                    /**
+                     * Callback when image is successfully captured.
+                     *
+                     * @param image The captured image proxy.
+                     */
                     override fun onCaptureSuccess(image: ImageProxy) {
                         try {
                             val buffer = image.planes[0].buffer
@@ -88,18 +141,32 @@ class AndroidCameraManager(private val context: Context) : CameraManager {
                         }
                     }
 
+                    /**
+                     * Callback when image capture fails.
+                     *
+                     * @param exception The exception describing the capture failure.
+                     */
                     override fun onError(exception: ImageCaptureException) {
                         continuation.resumeWithException(exception)
                     }
-                }
+                },
             )
         }
     }
 
+    /**
+     * Turns the device's camera flash (torch) on or off.
+     *
+     * @param on `true` to enable the torch, `false` to disable it.
+     */
     override fun setFlash(on: Boolean) {
         camera?.cameraControl?.enableTorch(on)
     }
 
+    /**
+     * Toggles between the front and back camera lenses.
+     * Note: Re-binding requires [LifecycleOwner] reference if dynamic toggling is needed outside composition flow.
+     */
     override fun toggleLens() {
         if (lensFacing == CameraSelector.LENS_FACING_BACK) {
             lensFacing = CameraSelector.LENS_FACING_FRONT
@@ -110,11 +177,19 @@ class AndroidCameraManager(private val context: Context) : CameraManager {
         // In simple flow, the View updates on recomposition or we store the lifecycle owner reference.
     }
 
+    /**
+     * Releases camera resources by unbinding all use cases from the [ProcessCameraProvider].
+     */
     override fun release() {
         provider?.unbindAll()
     }
 }
 
+/**
+ * A composable function that remembers an instance of [CameraManager] tailored for the Android platform.
+ *
+ * @return An instance of [CameraManager] (specifically [AndroidCameraManager]).
+ */
 @Composable
 actual fun rememberCameraManager(): CameraManager {
     val context = AndroidAppInit.getContext()

@@ -1,3 +1,6 @@
+/**
+ * iOS implementation of the camera permission manager.
+ */
 package io.healthplatform.chartcam.camera
 
 import androidx.compose.runtime.Composable
@@ -15,8 +18,21 @@ import platform.UIKit.UIApplicationOpenSettingsURLString
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
+/**
+ * iOS-specific implementation of [PermissionManager].
+ *
+ * This class uses the AVFoundation framework to check and request camera permissions,
+ * and UIKit to navigate to the app settings if permissions are denied.
+ */
 class IosPermissionManager : PermissionManager {
-    
+    /**
+     * Retrieves the current camera permission status.
+     *
+     * Queries the system using [AVCaptureDevice.authorizationStatusForMediaType] for video.
+     *
+     * @return The current [PermissionStatus], such as [PermissionStatus.GRANTED],
+     *         [PermissionStatus.DENIED], or [PermissionStatus.NOT_DETERMINED].
+     */
     override fun getCameraPermissionStatus(): PermissionStatus {
         val status = AVCaptureDevice.authorizationStatusForMediaType(AVMediaTypeVideo)
         return when (status) {
@@ -27,11 +43,21 @@ class IosPermissionManager : PermissionManager {
         }
     }
 
+    /**
+     * Requests camera permission from the user if not already granted or denied.
+     *
+     * If the status is undetermined, it prompts the user using
+     * [AVCaptureDevice.requestAccessForMediaType] and suspends until the user responds.
+     *
+     * @return `true` if permission is granted, `false` otherwise. Note that iOS
+     *         does not allow re-prompting once denied, so it will return `false`
+     *         immediately if previously denied.
+     */
     override suspend fun requestCameraPermission(): Boolean {
         val status = getCameraPermissionStatus()
         if (status == PermissionStatus.GRANTED) return true
         if (status == PermissionStatus.DENIED) return false // iOS doesn't allow re-asking easily
-        
+
         return suspendCoroutine { continuation ->
             AVCaptureDevice.requestAccessForMediaType(AVMediaTypeVideo) { granted ->
                 continuation.resume(granted)
@@ -39,6 +65,12 @@ class IosPermissionManager : PermissionManager {
         }
     }
 
+    /**
+     * Opens the iOS application settings.
+     *
+     * This is useful when the user has denied camera access and needs to manually
+     * enable it from the system settings.
+     */
     override fun openSettings() {
         val url = NSURL.URLWithString(UIApplicationOpenSettingsURLString)
         if (url != null) {
@@ -47,7 +79,10 @@ class IosPermissionManager : PermissionManager {
     }
 }
 
+/**
+ * Creates and remembers an iOS-specific [PermissionManager].
+ *
+ * @return An instance of [IosPermissionManager] managed by Compose.
+ */
 @Composable
-actual fun rememberPermissionManager(): PermissionManager {
-    return remember { IosPermissionManager() }
-}
+actual fun rememberPermissionManager(): PermissionManager = remember { IosPermissionManager() }

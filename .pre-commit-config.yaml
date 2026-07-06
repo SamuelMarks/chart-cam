@@ -1,0 +1,31 @@
+repos:
+-   repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+    rev: v2.14.0
+    hooks:
+    -   id: pretty-format-kotlin
+        args: [--autofix]
+-   repo: local
+    hooks:
+    -   id: build
+        name: Build
+        entry: ./gradlew assemble
+        language: system
+        files: \.(kt|kts|java|xml|gradle|toml)$
+        pass_filenames: false
+    -   id: test
+        name: Test
+        entry: ./gradlew allTests
+        language: system
+        files: \.(kt|kts|java|xml|gradle|toml)$
+        pass_filenames: false
+    -   id: lint
+        name: Lint
+        entry: ./gradlew lint
+        language: system
+        files: \.(kt|kts|java|xml|gradle|toml)$
+        pass_filenames: false
+    -   id: doc-test-coverage
+        name: Update Doc and Test Coverage Badges
+        entry: python3 scripts/check_coverage.py
+        language: system
+        pass_filenames: false

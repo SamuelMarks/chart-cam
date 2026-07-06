@@ -1,24 +1,40 @@
+/**
+ * Provides tests for the JavaScript-specific implementation of secure storage.
+ */
 package io.healthplatform.chartcam.storage
 
+import kotlinx.browser.localStorage
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
-import kotlinx.browser.localStorage
 
 /**
  * Validates the JS implementation of SecureStorage using Obfuscation.
+ *
+ * Tests the ability to save, retrieve, obfuscate, and delete strings in
+ * the browser's local storage environment.
  */
 class JsSecureStorageTest {
-
+    /**
+     * The [JsSecureStorage] instance under test.
+     */
     private val storage = JsSecureStorage()
+
+    /**
+     * A constant key used for testing storage operations.
+     */
     private val key = "testKey"
+
+    /**
+     * A constant value used for testing storage operations.
+     */
     private val value = "testValue123"
 
     /**
-     * Clears local storage before each test.
+     * Clears local storage before each test to ensure a clean state.
      */
     @BeforeTest
     fun setUp() {
@@ -26,7 +42,7 @@ class JsSecureStorageTest {
     }
 
     /**
-     * Clears local storage after each test.
+     * Clears local storage after each test to clean up.
      */
     @AfterTest
     fun tearDown() {
@@ -51,10 +67,10 @@ class JsSecureStorageTest {
     @Test
     fun testEncryption() {
         storage.save(key, value)
-        
+
         // Ensure that what's written to localStorage is actually obfuscated
         val rawValue = localStorage.getItem(key)
-        
+
         assertNotEquals(value, rawValue)
         assertEquals(true, rawValue != null && rawValue.isNotEmpty())
     }
@@ -77,15 +93,18 @@ class JsSecureStorageTest {
     fun testGetNonExistentString() {
         assertNull(storage.getString("nonExistentKey"))
     }
-    
+
     /**
-     * Verifies that fallback mechanism handles invalid decoding.
+     * Verifies that the fallback mechanism handles invalid decoding.
+     *
+     * In JS storage, if data cannot be properly decoded, it should fall back
+     * to returning the raw stored string.
      */
     @Test
     fun testInvalidDataDecryption() {
         // Put invalid base64 data directly
         localStorage.setItem(key, "InvalidDataNotBase64!!@@")
-        
+
         // Should return the string itself as fallback
         assertEquals("InvalidDataNotBase64!!@@", storage.getString(key))
     }

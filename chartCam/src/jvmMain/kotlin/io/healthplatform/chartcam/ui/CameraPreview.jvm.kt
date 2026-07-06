@@ -1,3 +1,6 @@
+/**
+ * Camera preview implementation for the JVM platform.
+ */
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.foundation.Image
@@ -17,17 +20,33 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import org.jetbrains.compose.resources.stringResource
 import chartcam.chartcam.generated.resources.*
 import io.healthplatform.chartcam.camera.CameraManager
 import io.healthplatform.chartcam.camera.JvmCameraManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import org.jetbrains.compose.resources.stringResource
 
+/**
+ * A Composable function that displays a live camera preview.
+ *
+ * This function handles fetching preview frames from the provided [CameraManager] and
+ * renders them using a Compose [Image]. If the camera is initializing or frames are not
+ * yet available, it displays a loading message.
+ *
+ * @param modifier The modifier to be applied to the layout.
+ * @param cameraManager The camera manager instance responsible for capturing frames.
+ */
 @Composable
-actual fun CameraPreview(modifier: Modifier, cameraManager: CameraManager) {
+actual fun CameraPreview(
+    modifier: Modifier,
+    cameraManager: CameraManager,
+) {
+    /**
+     * The current frame captured from the camera, converted to an [ImageBitmap].
+     */
     var imageBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
-    
+
     LaunchedEffect(cameraManager) {
         if (cameraManager is JvmCameraManager) {
             while (isActive) {
@@ -46,7 +65,7 @@ actual fun CameraPreview(modifier: Modifier, cameraManager: CameraManager) {
                 bitmap = imageBitmap!!,
                 contentDescription = stringResource(Res.string.cd_camera_preview),
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
             )
         } else {
             Text(stringResource(Res.string.initializing_camera), color = Color.White)

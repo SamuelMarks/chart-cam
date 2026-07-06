@@ -1,8 +1,7 @@
+/**
+ * Provides components for rendering dynamic FHIR Questionnaires as UI forms.
+ */
 package io.healthplatform.chartcam.ui
-
-import org.jetbrains.compose.resources.stringResource
-import chartcam.chartcam.generated.resources.*
-
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,31 +35,38 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import chartcam.chartcam.generated.resources.*
 import com.google.fhir.model.r4.Questionnaire
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Dynamically renders a Questionnaire based on the resource items.
  * Supports String, Boolean, and Choice. Attachment is rendered externally.
  * Follows SDC logic for conditional visibility (enableWhen).
+ *
+ * @param questionnaire The FHIR Questionnaire resource to render.
+ * @param answers A map containing the current answers, keyed by linkId.
+ * @param onAnswerChanged Callback invoked when a user changes an answer. Parameters: linkId (String), value (Any?).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DynamicQuestionnaireForm(
     questionnaire: Questionnaire,
     answers: Map<String, Any>,
-    onAnswerChanged: (String, Any?) -> Unit
+    onAnswerChanged: (String, Any?) -> Unit,
 ) {
+    /** Focus manager used to navigate form inputs. */
     val focusManager = LocalFocusManager.current
     Column {
         questionnaire.item.forEach { item ->
             val linkId = item.linkId.value ?: return@forEach
             val itemDesc = stringResource(Res.string.cd_item, linkId)
             val type = item.type.value ?: return@forEach
-            
+
             // SDC logic: enableWhen
             if (isItemHidden(item)) return@forEach
             val isEnabled = isItemEnabled(item, answers)
-            
+
             if (isEnabled) {
                 when (type) {
                     Questionnaire.QuestionnaireItemType.String -> {
@@ -69,15 +75,18 @@ fun DynamicQuestionnaireForm(
                             value = text,
                             onValueChange = { onAnswerChanged(linkId, it) },
                             label = { Text(item.text?.value ?: linkId) },
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = itemDesc }.onKeyEvent {
-                                if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                    focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
-                                    true
-                                } else false
-                            },
+                            modifier =
+                                Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = itemDesc }.onKeyEvent {
+                                    if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                                        focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) })
+                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
                         )
                     }
                     Questionnaire.QuestionnaireItemType.Boolean -> {
@@ -86,19 +95,35 @@ fun DynamicQuestionnaireForm(
                             Checkbox(
                                 checked = checked,
                                 onCheckedChange = { onAnswerChanged(linkId, it) },
-                                modifier = Modifier.semantics { contentDescription = itemDesc }
+                                modifier = Modifier.semantics { contentDescription = itemDesc },
                             )
                             Text(text = item.text?.value ?: linkId, modifier = Modifier.padding(start = 8.dp))
                         }
                     }
-                                        Questionnaire.QuestionnaireItemType.Choice -> {
+                    Questionnaire.QuestionnaireItemType.Choice -> {
                         val selectedOption = answers[linkId] as? String ?: ""
                         var expanded by remember { mutableStateOf(false) }
-                        val options = item.answerOption.mapNotNull { it.value.asString()?.value?.value }
+                        val options =
+                            item.answerOption.mapNotNull {
+                                it.value
+                                    .asString()
+                                    ?.value
+                                    ?.value
+                            }
 
-                        val itemControl = item.extension.firstOrNull { it.url == "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl" }
-                            ?.value?.asCodeableConcept()?.value?.coding?.firstOrNull()?.code?.value
-                        
+                        val itemControl =
+                            item.extension
+                                .firstOrNull {
+                                    it.url ==
+                                        "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl"
+                                }?.value
+                                ?.asCodeableConcept()
+                                ?.value
+                                ?.coding
+                                ?.firstOrNull()
+                                ?.code
+                                ?.value
+
                         if (itemControl == "radio-button") {
                             Column(modifier = Modifier.padding(vertical = 8.dp).semantics { contentDescription = itemDesc }) {
                                 Text(item.text?.value ?: linkId, modifier = Modifier.padding(bottom = 4.dp))
@@ -106,7 +131,7 @@ fun DynamicQuestionnaireForm(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         androidx.compose.material3.RadioButton(
                                             selected = selectedOption == option,
-                                            onClick = { onAnswerChanged(linkId, option) }
+                                            onClick = { onAnswerChanged(linkId, option) },
                                         )
                                         Text(text = option, modifier = Modifier.padding(start = 8.dp))
                                     }
@@ -116,7 +141,7 @@ fun DynamicQuestionnaireForm(
                             ExposedDropdownMenuBox(
                                 expanded = expanded,
                                 onExpandedChange = { expanded = it },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = itemDesc }
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = itemDesc },
                             ) {
                                 OutlinedTextField(
                                     value = selectedOption.ifEmpty { stringResource(Res.string.select_an_option) },
@@ -125,16 +150,25 @@ fun DynamicQuestionnaireForm(
                                     label = { Text(item.text?.value ?: linkId) },
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                                    modifier = Modifier.menuAnchor().fillMaxWidth().onKeyEvent {
-                                        if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                            focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
-                                            true
-                                        } else false
-                                    }
+                                    modifier =
+                                        Modifier
+                                            .menuAnchor(
+                                                androidx.compose.material3.ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                                            ).fillMaxWidth()
+                                            .onKeyEvent {
+                                                if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                                                    focusManager.moveFocus(
+                                                        if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next,
+                                                    )
+                                                    true
+                                                } else {
+                                                    false
+                                                }
+                                            },
                                 )
                                 ExposedDropdownMenu(
                                     expanded = expanded,
-                                    onDismissRequest = { expanded = false }
+                                    onDismissRequest = { expanded = false },
                                 ) {
                                     options.forEach { option ->
                                         DropdownMenuItem(
@@ -142,7 +176,7 @@ fun DynamicQuestionnaireForm(
                                             onClick = {
                                                 onAnswerChanged(linkId, option)
                                                 expanded = false
-                                            }
+                                            },
                                         )
                                     }
                                 }
@@ -163,42 +197,50 @@ fun DynamicQuestionnaireForm(
 
 /**
  * Evaluates enableWhen conditions for a given item against the current answers.
+ *
+ * @param item The Questionnaire item to evaluate conditions for.
+ * @param answers The map of currently supplied answers.
+ * @return True if the item should be enabled (visible), false otherwise.
  */
-fun isItemEnabled(item: Questionnaire.Item, answers: Map<String, Any>): Boolean {
+fun isItemEnabled(
+    item: Questionnaire.Item,
+    answers: Map<String, Any>,
+): Boolean {
     if (item.enableWhen.isEmpty()) return true
-    
+
     val behavior = item.enableBehavior?.value ?: Questionnaire.EnableWhenBehavior.Any
-    
-    val conditions = item.enableWhen.map { ew ->
-        val targetQuestion = ew.question.value ?: return@map false
-        val operator = ew.operator.value ?: return@map false
-        val targetAnswer = answers[targetQuestion]
-        
-        val ewAnswer = ew.answer
-        
-        when (operator) {
-            Questionnaire.QuestionnaireItemOperator.EqualTo -> {
-                when {
-                    ewAnswer.asString() != null -> targetAnswer == ewAnswer.asString()?.value?.value
-                    ewAnswer.asBoolean() != null -> targetAnswer == ewAnswer.asBoolean()?.value?.value
-                    else -> false
+
+    val conditions =
+        item.enableWhen.map { ew ->
+            val targetQuestion = ew.question.value ?: return@map false
+            val operator = ew.operator.value ?: return@map false
+            val targetAnswer = answers[targetQuestion]
+
+            val ewAnswer = ew.answer
+
+            when (operator) {
+                Questionnaire.QuestionnaireItemOperator.EqualTo -> {
+                    when {
+                        ewAnswer.asString() != null -> targetAnswer == ewAnswer.asString()?.value?.value
+                        ewAnswer.asBoolean() != null -> targetAnswer == ewAnswer.asBoolean()?.value?.value
+                        else -> false
+                    }
                 }
-            }
-            Questionnaire.QuestionnaireItemOperator.NotEqualTo -> {
-                when {
-                    ewAnswer.asString() != null -> targetAnswer != ewAnswer.asString()?.value?.value
-                    ewAnswer.asBoolean() != null -> targetAnswer != ewAnswer.asBoolean()?.value?.value
-                    else -> false
+                Questionnaire.QuestionnaireItemOperator.NotEqualTo -> {
+                    when {
+                        ewAnswer.asString() != null -> targetAnswer != ewAnswer.asString()?.value?.value
+                        ewAnswer.asBoolean() != null -> targetAnswer != ewAnswer.asBoolean()?.value?.value
+                        else -> false
+                    }
                 }
+                Questionnaire.QuestionnaireItemOperator.Exists -> {
+                    val exists = ewAnswer.asBoolean()?.value?.value ?: true
+                    if (exists) targetAnswer != null else targetAnswer == null
+                }
+                else -> false
             }
-            Questionnaire.QuestionnaireItemOperator.Exists -> {
-                val exists = ewAnswer.asBoolean()?.value?.value ?: true
-                if (exists) targetAnswer != null else targetAnswer == null
-            }
-            else -> false
         }
-    }
-    
+
     return if (behavior == Questionnaire.EnableWhenBehavior.All) {
         conditions.all { it }
     } else {
@@ -207,9 +249,16 @@ fun isItemEnabled(item: Questionnaire.Item, answers: Map<String, Any>): Boolean 
 }
 
 /**
- * Evaluates the SDC hidden extension.
+ * Evaluates the SDC hidden extension to determine if an item is explicitly marked as hidden.
+ *
+ * @param item The Questionnaire item to check.
+ * @return True if the hidden extension is present and true, false otherwise.
  */
 fun isItemHidden(item: Questionnaire.Item): Boolean {
     val hiddenExt = item.extension.firstOrNull { it.url == "http://hl7.org/fhir/StructureDefinition/questionnaire-hidden" }
-    return hiddenExt?.value?.asBoolean()?.value?.value == true
+    return hiddenExt
+        ?.value
+        ?.asBoolean()
+        ?.value
+        ?.value == true
 }

@@ -1,3 +1,6 @@
+/**
+ * Defines the main application theme, including colors, typography, and material design shapes.
+ */
 package io.healthplatform.chartcam.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -12,43 +15,62 @@ import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.noto_sans_jp
 import org.jetbrains.compose.resources.Font
 
-// Harvard Medical School Brand Colors
+/** Harvard Crimson brand color used as primary color. */
 private val HarvardCrimson = Color(0xFFA51C30)
+
+/** Harvard Black brand color used for text and dark elements. */
 private val HarvardBlack = Color(0xFF1E1E1E)
+
+/** Harvard Parchment brand color used for backgrounds and light surfaces. */
 private val HarvardParchment = Color(0xFFF3F3F1)
+
+/** Harvard Slate brand color used for secondary elements and borders. */
 private val HarvardSlate = Color(0xFF8996A0)
+
+/** Harvard Shade brand color used as an alternative secondary color. */
 private val HarvardShade = Color(0xFFBAC5C6)
 
-// Accents
+/** Harvard Indigo brand accent color used for tertiary elements. */
 private val HarvardIndigo = Color(0xFF293352)
+
+/** Harvard BlueBonnet brand accent color used for tertiary elements. */
 private val HarvardBlueBonnet = Color(0xFF4E84C4)
 
-private val LightColors = lightColorScheme(
-    primary = HarvardCrimson,
-    onPrimary = Color.White,
-    secondary = HarvardSlate,
-    onSecondary = HarvardBlack,
-    tertiary = HarvardIndigo,
-    onTertiary = Color.White,
-    background = HarvardParchment,
-    onBackground = HarvardBlack,
-    surface = Color.White,
-    onSurface = HarvardBlack
-)
+/** Color scheme applied when the system is in light mode. */
+private val LightColors =
+    lightColorScheme(
+        primary = HarvardCrimson,
+        onPrimary = Color.White,
+        secondary = HarvardSlate,
+        onSecondary = HarvardBlack,
+        tertiary = HarvardIndigo,
+        onTertiary = Color.White,
+        background = HarvardParchment,
+        onBackground = HarvardBlack,
+        surface = Color.White,
+        onSurface = HarvardBlack,
+    )
 
-private val DarkColors = darkColorScheme(
-    primary = Color(0xFFC9364C), // Lighter crimson for better contrast in dark mode
-    onPrimary = Color.White,
-    secondary = HarvardShade,
-    onSecondary = HarvardBlack,
-    tertiary = HarvardBlueBonnet,
-    onTertiary = HarvardBlack,
-    background = HarvardBlack,
-    onBackground = HarvardParchment,
-    surface = Color(0xFF2C2C2C), // Slightly lighter than background for card separation
-    onSurface = HarvardParchment
-)
+/** Color scheme applied when the system is in dark mode. */
+private val DarkColors =
+    darkColorScheme(
+        primary = Color(0xFFC9364C), // Lighter crimson for better contrast in dark mode
+        onPrimary = Color.White,
+        secondary = HarvardShade,
+        onSecondary = HarvardBlack,
+        tertiary = HarvardBlueBonnet,
+        onTertiary = HarvardBlack,
+        background = HarvardBlack,
+        onBackground = HarvardParchment,
+        surface = Color(0xFF2C2C2C), // Slightly lighter than background for card separation
+        onSurface = HarvardParchment,
+    )
 
+/**
+ * Provides the application's customized typography using the Noto Sans JP font.
+ *
+ * @return A customized [Typography] object adhering to Material 3 specifications.
+ */
 @Composable
 fun getTypography(): Typography {
     val defaultTypography = Typography()
@@ -68,27 +90,27 @@ fun getTypography(): Typography {
         bodySmall = defaultTypography.bodySmall.copy(fontFamily = fontFamily),
         labelLarge = defaultTypography.labelLarge.copy(fontFamily = fontFamily),
         labelMedium = defaultTypography.labelMedium.copy(fontFamily = fontFamily),
-        labelSmall = defaultTypography.labelSmall.copy(fontFamily = fontFamily)
+        labelSmall = defaultTypography.labelSmall.copy(fontFamily = fontFamily),
     )
 }
 
 /**
  * Main application theme defining the colors, typography, and shapes.
  * This ensures consistency with Material Design 3 guidelines.
- * 
- * @param darkTheme Whether to use the dark theme (defaults to system setting).
+ *
+ * @param darkTheme Whether to use the dark theme. Defaults to the system setting.
  * @param content The composable content to apply the theme to.
  */
 @Composable
 fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val colorScheme = if (darkTheme) DarkColors else LightColors
 
     MaterialTheme(
         colorScheme = colorScheme,
         typography = getTypography(),
-        content = content
+        content = content,
     )
 }
