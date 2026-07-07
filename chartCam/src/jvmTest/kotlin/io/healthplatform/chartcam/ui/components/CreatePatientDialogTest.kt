@@ -1,8 +1,7 @@
 package io.healthplatform.chartcam.ui.components
 
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.assertExists
-import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.runComposeUiTest
 import kotlin.test.Test
 
@@ -17,7 +16,6 @@ class CreatePatientDialogTest {
                     onConfirm = { _, _, _, _, _ -> },
                 )
             }
-
-            onRoot().assertExists()
+            onNodeWithText("First Name", useUnmergedTree = true).assertExists()
         }
 }

@@ -19,12 +19,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -41,7 +38,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,21 +48,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.isShiftPressed
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import chartcam.chartcam.generated.resources.*
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.captured_photos_format
+import chartcam.chartcam.generated.resources.cd_back
+import chartcam.chartcam.generated.resources.cd_finalize_encounter
+import chartcam.chartcam.generated.resources.cd_patient_photo
+import chartcam.chartcam.generated.resources.cd_questionnaire_selector
+import chartcam.chartcam.generated.resources.create_new
+import chartcam.chartcam.generated.resources.image_load_error
+import chartcam.chartcam.generated.resources.mrn_date_format
+import chartcam.chartcam.generated.resources.provider_format
+import chartcam.chartcam.generated.resources.questionnaire
+import chartcam.chartcam.generated.resources.select_questionnaire
+import chartcam.chartcam.generated.resources.syncing_to_server
+import chartcam.chartcam.generated.resources.take_photos
+import chartcam.chartcam.generated.resources.title
+import chartcam.chartcam.generated.resources.visit_detail
 import com.google.fhir.model.r4.DocumentReference
 import com.google.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.files.createFileStorage
@@ -94,10 +98,13 @@ import org.jetbrains.compose.resources.stringResource
  * @param authRepository Repository handling user authentication.
  * @param syncManager Manager responsible for syncing with remote FHIR servers.
  * @param questionnaireRepository Repository supplying questionnaire forms.
+ * @param newlyCreatedQuestionnaireId The ID of a newly created questionnaire to select automatically.
  * @param onBack Callback invoked when the user navigates back.
  * @param onTakePhotos Callback invoked when the user requests to take clinical photos. Passes the selected questionnaire ID.
+ * @param onCreateNewQuestionnaire Callback invoked to navigate to the questionnaire builder.
  * @param onFinalized Callback invoked when the encounter is finalized.
  * @param onVisitCreated Optional callback invoked with the newly created encounter ID.
+ * @param onNewlyCreatedQuestionnaireHandled Callback invoked after the newly created questionnaire has been handled.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalResourceApi::class)
 @Composable
@@ -109,10 +116,13 @@ fun EncounterDetailScreen(
     authRepository: AuthRepository,
     syncManager: SyncManager,
     questionnaireRepository: QuestionnaireRepository,
+    newlyCreatedQuestionnaireId: String? = null,
     onBack: () -> Unit,
     onTakePhotos: (String?) -> Unit,
+    onCreateNewQuestionnaire: () -> Unit = {},
     onFinalized: () -> Unit,
     onVisitCreated: ((String) -> Unit)? = null,
+    onNewlyCreatedQuestionnaireHandled: () -> Unit = {},
 ) {
     /**
      * The view model handling business logic for the EncounterDetailScreen.
@@ -127,10 +137,12 @@ fun EncounterDetailScreen(
      */
     val state by viewModel.uiState.collectAsState()
 
-    /**
-     * Controls the visibility of the "Create Questionnaire" dialog.
-     */
-    var showCreateDialog by remember { mutableStateOf(false) }
+    LaunchedEffect(newlyCreatedQuestionnaireId) {
+        if (newlyCreatedQuestionnaireId != null) {
+            viewModel.selectQuestionnaireById(newlyCreatedQuestionnaireId)
+            onNewlyCreatedQuestionnaireHandled()
+        }
+    }
 
     /**
      * State managing the display of snackbars.
@@ -169,124 +181,6 @@ fun EncounterDetailScreen(
             onFinalized()
             viewModel.resetFinalized()
         }
-    }
-
-    if (showCreateDialog) {
-        /** Content description string for the custom questionnaire title input. */
-        val titleInputCd = stringResource(Res.string.cd_questionnaire_title_input)
-
-        /** Content description string for the photos count input. */
-        val photosInputCd = stringResource(Res.string.cd_questionnaire_photos_input)
-
-        /** Content description string for the photo labels input. */
-        val labelsInputCd = stringResource(Res.string.cd_questionnaire_labels_input)
-
-        /** State storing the new custom questionnaire title. */
-        var newTitle by remember { mutableStateOf("") }
-
-        /** State storing the requested number of photos. */
-        var newPhotosCount by remember { mutableStateOf("4") }
-
-        /** State storing the labels for each photo separated by commas. */
-        var newLabels by remember { mutableStateOf("0, 1, 2, 3") }
-
-        AlertDialog(
-            onDismissRequest = { showCreateDialog = false },
-            title = { Text(stringResource(Res.string.create_questionnaire)) },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = newTitle,
-                        onValueChange = { newTitle = it },
-                        label = { Text(stringResource(Res.string.title)) },
-                        singleLine = true,
-                        modifier =
-                            Modifier.semantics { contentDescription = titleInputCd }.onKeyEvent {
-                                if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                    focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
-                                    true
-                                } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                                    focusManager.moveFocus(FocusDirection.Down)
-                                    true
-                                } else {
-                                    false
-                                }
-                            },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                    )
-                    OutlinedTextField(
-                        value = newPhotosCount,
-                        onValueChange = {
-                            newPhotosCount = it.filter { c -> c.isDigit() }
-                            val count = newPhotosCount.toIntOrNull() ?: 0
-                            newLabels = (0 until count).joinToString(", ")
-                        },
-                        label = { Text(stringResource(Res.string.number_of_photos)) },
-                        singleLine = true,
-                        modifier =
-                            Modifier.padding(top = 8.dp).semantics { contentDescription = photosInputCd }.onKeyEvent {
-                                if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                    focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
-                                    true
-                                } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                                    focusManager.moveFocus(FocusDirection.Down)
-                                    true
-                                } else {
-                                    false
-                                }
-                            },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                    )
-                    OutlinedTextField(
-                        value = newLabels,
-                        onValueChange = { newLabels = it },
-                        label = { Text(stringResource(Res.string.labels_comma)) },
-                        singleLine = true,
-                        modifier =
-                            Modifier.padding(top = 8.dp).semantics { contentDescription = labelsInputCd }.onKeyEvent {
-                                if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                    focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
-                                    true
-                                } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                                    focusManager.clearFocus()
-                                    val count = newPhotosCount.toIntOrNull() ?: 0
-                                    if (newTitle.isNotBlank() && count > 0) {
-                                        viewModel.createAndSelectQuestionnaire(newTitle, count, newLabels)
-                                    }
-                                    showCreateDialog = false
-                                    true
-                                } else {
-                                    false
-                                }
-                            },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions =
-                            KeyboardActions(onDone = {
-                                focusManager.clearFocus()
-                                val count = newPhotosCount.toIntOrNull() ?: 0
-                                if (newTitle.isNotBlank() && count > 0) {
-                                    viewModel.createAndSelectQuestionnaire(newTitle, count, newLabels)
-                                }
-                                showCreateDialog = false
-                            }),
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val count = newPhotosCount.toIntOrNull() ?: 0
-                    if (newTitle.isNotBlank() && count > 0) {
-                        viewModel.createAndSelectQuestionnaire(newTitle, count, newLabels)
-                    }
-                    showCreateDialog = false
-                }) { Text(stringResource(Res.string.create)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCreateDialog = false }) { Text(stringResource(Res.string.cancel)) }
-            },
-        )
     }
 
     Scaffold(
@@ -329,7 +223,7 @@ fun EncounterDetailScreen(
                         modifier = Modifier.semantics { heading() },
                     )
                     Text(
-                        text = stringResource(Res.string.mrn_date_format, patient.mrn ?: "", state.encounter?.encounterDate ?: ""),
+                        text = stringResource(Res.string.mrn_date_format, patient.mrn, state.encounter?.encounterDate ?: ""),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.secondary,
                     )
@@ -382,7 +276,7 @@ fun EncounterDetailScreen(
                             text = { Text(stringResource(Res.string.create_new)) },
                             onClick = {
                                 expanded = false
-                                showCreateDialog = true
+                                onCreateNewQuestionnaire()
                             },
                         )
                     }

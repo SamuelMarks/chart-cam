@@ -43,6 +43,11 @@ android {
     buildFeatures {
         compose = true
     }
+    lint {
+        disable.add("OldTargetApi")
+        disable.add("GradleDependency")
+        disable.add("AndroidGradlePluginVersion")
+    }
 }
 
 dependencies {

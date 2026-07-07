@@ -213,7 +213,7 @@ class SyncManager(
             val bodyText = response.bodyAsText()
             val bundle = fhirJson.decodeFromString(bodyText) as? Bundle ?: return false
 
-            if (bundle.type?.value != Bundle.BundleType.Searchset && bundle.type?.value != Bundle.BundleType.History) {
+            if (bundle.type.value != Bundle.BundleType.Searchset && bundle.type.value != Bundle.BundleType.History) {
                 return false
             }
 

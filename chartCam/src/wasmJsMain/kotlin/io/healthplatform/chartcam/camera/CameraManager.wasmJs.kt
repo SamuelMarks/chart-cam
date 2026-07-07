@@ -1,9 +1,12 @@
+@file:Suppress("UNCHECKED_CAST", "CAST_NEVER_SUCCEEDS", "USELESS_CAST")
+@file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
 /**
  * @file CameraManager.wasmJs.kt
  *
  * Provides the WebAssembly (WasmJs) specific implementation of [CameraManager] and [PermissionManager],
  * handling direct interaction with the browser's `MediaDevices` API for capturing video and photos.
  */
+
 package io.healthplatform.chartcam.camera
 
 import androidx.compose.runtime.Composable

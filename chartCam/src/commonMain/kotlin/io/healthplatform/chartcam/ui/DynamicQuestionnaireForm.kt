@@ -35,7 +35,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import chartcam.chartcam.generated.resources.*
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.cd_item
+import chartcam.chartcam.generated.resources.select_an_option
 import com.google.fhir.model.r4.Questionnaire
 import org.jetbrains.compose.resources.stringResource
 

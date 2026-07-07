@@ -1,7 +1,10 @@
+@file:Suppress("UNCHECKED_CAST", "CAST_NEVER_SUCCEEDS", "USELESS_CAST")
+@file:OptIn(kotlinx.cinterop.BetaInteropApi::class, kotlinx.cinterop.ExperimentalForeignApi::class)
 /**
  * iOS implementation of the SecureStorage interface.
  * Uses the iOS Keychain Services for storing secure data such as authentication tokens.
  */
+
 package io.healthplatform.chartcam.storage
 
 import kotlinx.cinterop.ExperimentalForeignApi

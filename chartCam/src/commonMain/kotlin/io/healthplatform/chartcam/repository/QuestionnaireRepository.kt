@@ -195,6 +195,19 @@ class QuestionnaireRepository {
         }
         val q = createFhirQuestionnaire(id, title, items)
         inMemoryForms[id] = q
+        inMemoryForms[q.id ?: ""] = q
         return q
+    }
+
+    /**
+     * Saves an externally created Questionnaire to the repository.
+     *
+     * @param questionnaire The Questionnaire to save.
+     */
+    fun saveQuestionnaire(questionnaire: Questionnaire) {
+        val qId = questionnaire.id
+        if (qId != null) {
+            inMemoryForms[qId] = questionnaire
+        }
     }
 }

@@ -24,6 +24,11 @@ object Routes {
      * The route for the patient list screen.
      */
     const val PATIENT_LIST = "/patients"
+
+    /**
+     * The route for the questionnaire list screen.
+     */
+    const val QUESTIONNAIRE_LIST = "/questionnaires"
 }
 
 /**
@@ -112,3 +117,10 @@ data class NewVisitRoute(
      */
     val patientId: String,
 )
+
+/**
+ * Represents the route to build a new questionnaire.
+ */
+@Serializable
+@SerialName("/questionnaires/build")
+object QuestionnaireBuilderRoute

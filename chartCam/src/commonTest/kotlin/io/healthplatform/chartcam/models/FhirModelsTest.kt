@@ -1,8 +1,10 @@
+@file:Suppress("UNNECESSARY_SAFE_CALL")
+
 package io.healthplatform.chartcam.models
 
 import com.google.fhir.model.r4.Patient
 import kotlinx.datetime.LocalDate
-import org.junit.Test
+import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 

@@ -45,7 +45,16 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import chartcam.chartcam.generated.resources.*
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.camera_permission_required
+import chartcam.chartcam.generated.resources.cancel
+import chartcam.chartcam.generated.resources.cd_review
+import chartcam.chartcam.generated.resources.cd_switch_camera
+import chartcam.chartcam.generated.resources.confirm
+import chartcam.chartcam.generated.resources.open_settings
+import chartcam.chartcam.generated.resources.retake
+import chartcam.chartcam.generated.resources.step_count_format
+import chartcam.chartcam.generated.resources.take_photo
 import com.google.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.camera.PermissionStatus
 import io.healthplatform.chartcam.camera.rememberCameraManager

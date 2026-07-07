@@ -7,7 +7,17 @@
 package io.healthplatform.chartcam.repository
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
-import com.google.fhir.model.r4.*
+import com.google.fhir.model.r4.Binary
+import com.google.fhir.model.r4.Bundle
+import com.google.fhir.model.r4.Device
+import com.google.fhir.model.r4.DocumentReference
+import com.google.fhir.model.r4.Encounter
+import com.google.fhir.model.r4.Enumeration
+import com.google.fhir.model.r4.FhirR4Json
+import com.google.fhir.model.r4.Patient
+import com.google.fhir.model.r4.Practitioner
+import com.google.fhir.model.r4.Provenance
+import com.google.fhir.model.r4.QuestionnaireResponse
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.createFhirBinary
@@ -227,7 +237,7 @@ class ExportImportService(
                             ?.start
                             ?.value
                             ?.toString() ?: ""
-                    val status = resource.status?.value?.name ?: ""
+                    val status = resource.status.value?.name ?: ""
                     queries.insertEncounter(resource.id!!, patientId, practitionerId, dateStr, status, serialized)
                 }
                 is DocumentReference -> {
@@ -287,7 +297,7 @@ class ExportImportService(
                             .firstOrNull()
                             ?.reference
                             ?.value ?: ""
-                    val dateStr = resource.recorded?.value?.toString() ?: ""
+                    val dateStr = resource.recorded.value?.toString() ?: ""
                     queries.insertProvenance(resource.id!!, targetId, null, dateStr, serialized)
                 }
                 is Binary -> {

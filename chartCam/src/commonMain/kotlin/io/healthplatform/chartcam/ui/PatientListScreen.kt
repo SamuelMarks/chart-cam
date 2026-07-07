@@ -58,7 +58,41 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import chartcam.chartcam.generated.resources.*
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.about
+import chartcam.chartcam.generated.resources.about_title
+import chartcam.chartcam.generated.resources.cancel
+import chartcam.chartcam.generated.resources.cd_add_patient
+import chartcam.chartcam.generated.resources.cd_more
+import chartcam.chartcam.generated.resources.cd_search_icon
+import chartcam.chartcam.generated.resources.cd_switch_language
+import chartcam.chartcam.generated.resources.close
+import chartcam.chartcam.generated.resources.data_exported_message
+import chartcam.chartcam.generated.resources.data_exported_title
+import chartcam.chartcam.generated.resources.delete
+import chartcam.chartcam.generated.resources.delete_account_message
+import chartcam.chartcam.generated.resources.delete_account_title
+import chartcam.chartcam.generated.resources.delete_my_account
+import chartcam.chartcam.generated.resources.export
+import chartcam.chartcam.generated.resources.export_all_patients
+import chartcam.chartcam.generated.resources.export_data
+import chartcam.chartcam.generated.resources.export_password_label
+import chartcam.chartcam.generated.resources.export_password_title
+import chartcam.chartcam.generated.resources.import_action
+import chartcam.chartcam.generated.resources.import_title
+import chartcam.chartcam.generated.resources.logout
+import chartcam.chartcam.generated.resources.mrn_dob_format
+import chartcam.chartcam.generated.resources.no_patients_found
+import chartcam.chartcam.generated.resources.ok
+import chartcam.chartcam.generated.resources.password
+import chartcam.chartcam.generated.resources.paste_data_here
+import chartcam.chartcam.generated.resources.patient_directory
+import chartcam.chartcam.generated.resources.search_placeholder
+import chartcam.chartcam.generated.resources.share_file
+import chartcam.chartcam.generated.resources.share_password
+import chartcam.chartcam.generated.resources.show_all_patients
+import chartcam.chartcam.generated.resources.show_my_patients_only
+import chartcam.chartcam.generated.resources.version_text
 import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.models.customBirthDate
 import io.healthplatform.chartcam.models.fullName
@@ -80,6 +114,7 @@ import org.jetbrains.compose.resources.stringResource
  * @param exportImportService Service to handle exporting/importing the database.
  * @param authRepository Repository used for practitioner authentication and deletion.
  * @param onPatientSelected Callback triggered when a patient is selected, receiving the patient's ID.
+ * @param onNavigateToQuestionnaires Callback triggered to navigate to the questionnaire list.
  * @param onLogout Callback triggered when the user chooses to log out.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -89,6 +124,7 @@ fun PatientListScreen(
     exportImportService: ExportImportService,
     authRepository: AuthRepository,
     onPatientSelected: (String) -> Unit,
+    onNavigateToQuestionnaires: () -> Unit,
     onLogout: () -> Unit = {},
 ) {
     val viewModel =
@@ -200,6 +236,13 @@ fun PatientListScreen(
                             onClick = {
                                 showMenu = false
                                 onLogout()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Questionnaires") },
+                            onClick = {
+                                showMenu = false
+                                onNavigateToQuestionnaires()
                             },
                         )
                         DropdownMenuItem(
@@ -552,7 +595,7 @@ fun PatientListItem(
         headlineContent = { Text(patient.fullName, style = MaterialTheme.typography.titleMedium) },
         supportingContent = {
             Text(
-                stringResource(Res.string.mrn_dob_format, patient.mrn ?: "", patient.customBirthDate ?: ""),
+                stringResource(Res.string.mrn_dob_format, patient.mrn, patient.customBirthDate),
                 style = MaterialTheme.typography.bodyMedium,
             )
         },

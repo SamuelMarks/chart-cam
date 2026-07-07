@@ -20,7 +20,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import chartcam.chartcam.generated.resources.*
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.cd_camera_preview
+import chartcam.chartcam.generated.resources.initializing_camera
 import io.healthplatform.chartcam.camera.CameraManager
 import io.healthplatform.chartcam.camera.JvmCameraManager
 import kotlinx.coroutines.delay

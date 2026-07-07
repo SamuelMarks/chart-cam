@@ -14,8 +14,9 @@ import java.util.Locale
  *
  * @param language The ISO language code (e.g., "en", "es") to set as the new app language.
  */
+@Suppress("DEPRECATION")
 actual fun changeAppLanguage(language: String) {
-    val locale = Locale(language)
+    val locale = Locale.Builder().setLanguage(language).build()
     Locale.setDefault(locale)
     val context = AndroidAppInit.getContext()
     val config = context.resources.configuration

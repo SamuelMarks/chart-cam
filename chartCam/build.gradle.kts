@@ -1,3 +1,4 @@
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.dokka.base.DokkaBase
 import org.jetbrains.dokka.base.DokkaBaseConfiguration
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
@@ -22,6 +23,9 @@ plugins {
 }
 
 kotlin {
+    compilerOptions {
+        freeCompilerArgs.addAll("-Xexpect-actual-classes")
+    }
     android {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
@@ -74,7 +78,6 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.android)
-            implementation(libs.androidx.security.crypto)
             implementation(libs.sqldelight.android)
             implementation(libs.sqlcipher.android)
             implementation(libs.androidx.camera.core)
@@ -83,10 +86,9 @@ kotlin {
             implementation(libs.androidx.camera.view)
         }
         commonTest.dependencies {
+            implementation(libs.ktor.client.mock)
             implementation(libs.kotlin.test)
-            implementation("org.mockito:mockito-core:5.11.0")
-            implementation("org.robolectric:robolectric:4.14.1")
-            implementation("androidx.lifecycle:lifecycle-runtime-testing:2.6.2")
+
             implementation(libs.kotlinx.coroutines.test)
         }
         commonMain.dependencies {
@@ -94,7 +96,7 @@ kotlin {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
-            implementation(compose.materialIconsExtended)
+            implementation(libs.compose.materialIconsExtended)
 
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
@@ -127,17 +129,16 @@ kotlin {
             implementation(npm("crypto-js", "4.2.0"))
         }
         jvmTest.dependencies {
-            implementation(libs.kotlin.test)
             implementation("org.mockito:mockito-core:5.11.0")
             implementation("org.robolectric:robolectric:4.14.1")
             implementation("androidx.lifecycle:lifecycle-runtime-testing:2.6.2")
+            implementation(libs.kotlin.test)
+
             implementation(libs.junit)
-            @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
-            implementation(compose.desktop.uiTestJUnit4)
-            @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
-            implementation(compose.uiTest)
+            implementation(libs.compose.ui.test.junit4)
+            implementation(libs.compose.ui.test)
             implementation(libs.kotlinx.coroutines.test)
-            implementation(libs.ktor.client.mock)
+
             implementation(libs.sqldelight.sqlite)
             implementation("app.cash.sqldelight:async-extensions:2.2.1")
         }
@@ -159,6 +160,26 @@ sqldelight {
         create("ChartCamDatabase") {
             packageName.set("io.healthplatform.chartcam.database")
             generateAsync.set(true)
+        }
+    }
+}
+
+compose.desktop {
+    application {
+        mainClass = "io.healthplatform.chartcam.MainKt"
+        nativeDistributions {
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            packageName = "io.healthplatform.chartcam"
+            packageVersion = "1.0.0"
+            macOS {
+                iconFile.set(project.file("src/jvmMain/resources/icon.icns"))
+            }
+            windows {
+                iconFile.set(project.file("src/jvmMain/resources/icon.ico"))
+            }
+            linux {
+                iconFile.set(project.file("src/jvmMain/resources/icon.png"))
+            }
         }
     }
 }
@@ -194,7 +215,8 @@ tasks.withType<Test>().configureEach {
     enabled = true
 }
 
-tasks.withType<org.jetbrains.dokka.gradle.DokkaTask>().configureEach {
+@Suppress("DEPRECATION")
+tasks.withType<org.jetbrains.dokka.gradle.AbstractDokkaLeafTask>().configureEach {
     pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
         footerMessage = "© 2026 Samuel Marks"
     }

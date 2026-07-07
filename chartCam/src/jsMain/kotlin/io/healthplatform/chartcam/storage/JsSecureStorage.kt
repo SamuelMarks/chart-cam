@@ -43,6 +43,7 @@ external object CryptoJS {
     /**
      * Encoding module.
      */
+    @Suppress("ktlint:standard:class-naming")
     object enc {
         /**
          * Utf8 encoding format.

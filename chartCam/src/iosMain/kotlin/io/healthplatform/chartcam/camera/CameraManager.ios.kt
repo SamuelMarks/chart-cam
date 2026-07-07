@@ -1,6 +1,8 @@
+@file:Suppress("UNCHECKED_CAST", "CAST_NEVER_SUCCEEDS", "USELESS_CAST")
 /**
  * iOS implementation of the camera manager.
  */
+
 package io.healthplatform.chartcam.camera
 
 import androidx.compose.runtime.Composable

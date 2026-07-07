@@ -12,6 +12,7 @@ import io.healthplatform.chartcam.network.NetworkClient
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
+import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.storage.JvmSecureStorage
 import io.healthplatform.chartcam.storage.createSecureStorage
 import io.healthplatform.chartcam.sync.SyncManager
@@ -207,7 +208,35 @@ class E2EWorkflowTest {
                 "Patient list should not be empty",
             )
 
-            // 8. Logout
+            // 8. Test Questionnaire Management
+            val questionnaireRepository = QuestionnaireRepository()
+            val initialForms = questionnaireRepository.getAvailableQuestionnaires()
+            assertTrue(initialForms.isNotEmpty(), "Should have preloaded standard forms")
+
+            // Simulate user creating a new questionnaire form
+            val newCustomForm =
+                questionnaireRepository.createQuestionnaire(
+                    title = "Diabetic Foot Exam",
+                    photos = 3,
+                    labels = "Sole, Heel, Toes",
+                )
+
+            assertNotNull(newCustomForm, "New form should be created successfully")
+            assertEquals("Diabetic Foot Exam", newCustomForm.title?.value, "Title should match")
+
+            // Verify items include notes and the 3 specified photos
+            val formItems = newCustomForm.item
+            assertEquals(4, formItems.size, "Should have 1 notes field + 3 photos")
+            assertEquals("Clinical Notes", formItems[0].text?.value)
+            assertEquals("Sole", formItems[1].text?.value)
+            assertEquals("Heel", formItems[2].text?.value)
+            assertEquals("Toes", formItems[3].text?.value)
+
+            // Verify new form exists in repository
+            val finalForms = questionnaireRepository.getAvailableQuestionnaires()
+            assertEquals(initialForms.size + 1, finalForms.size, "Repository should contain the new form")
+
+            // 9. Logout
             authRepository.logout()
             testDispatcher.scheduler.advanceUntilIdle()
             assertEquals(null, authRepository.currentUser.value, "User should be logged out")

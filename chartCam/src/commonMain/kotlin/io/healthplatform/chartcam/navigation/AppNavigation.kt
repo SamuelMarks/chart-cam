@@ -23,6 +23,7 @@ import io.healthplatform.chartcam.ui.EncounterDetailScreen
 import io.healthplatform.chartcam.ui.LoginScreen
 import io.healthplatform.chartcam.ui.PatientDetailScreen
 import io.healthplatform.chartcam.ui.PatientListScreen
+import io.healthplatform.chartcam.ui.QuestionnaireListScreen
 import io.healthplatform.chartcam.ui.TriageScreen
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -182,6 +183,7 @@ fun AppNavigation() {
         composable<NewVisitRoute> { entry ->
             val route = entry.toRoute<NewVisitRoute>()
             val patientId = route.patientId
+            val newlyCreatedQuestionnaireId by entry.savedStateHandle.getStateFlow<String?>("createdQuestionnaireId", null).collectAsState()
 
             androidx.compose.runtime.key(currentLang) {
                 EncounterDetailScreen(
@@ -192,9 +194,13 @@ fun AppNavigation() {
                     authRepository = authRepository,
                     syncManager = syncManager,
                     questionnaireRepository = questionnaireRepository,
+                    newlyCreatedQuestionnaireId = newlyCreatedQuestionnaireId,
                     onBack = { navController.popBackStack() },
                     onTakePhotos = { qId ->
                         navController.navigate(CaptureForPatientRoute(patientId, qId))
+                    },
+                    onCreateNewQuestionnaire = {
+                        navController.navigate(io.healthplatform.chartcam.navigation.QuestionnaireBuilderRoute)
                     },
                     onFinalized = {
                         navController.navigate(PatientDetailRoute(patientId)) {
@@ -206,6 +212,9 @@ fun AppNavigation() {
                             popUpTo<NewVisitRoute> { inclusive = true }
                         }
                     },
+                    onNewlyCreatedQuestionnaireHandled = {
+                        entry.savedStateHandle.remove<String>("createdQuestionnaireId")
+                    },
                 )
             }
         }
@@ -214,6 +223,7 @@ fun AppNavigation() {
             val route = entry.toRoute<VisitDetailRoute>()
             val patientId = route.patientId
             val visitId = route.visitId
+            val newlyCreatedQuestionnaireId by entry.savedStateHandle.getStateFlow<String?>("createdQuestionnaireId", null).collectAsState()
 
             androidx.compose.runtime.key(currentLang) {
                 EncounterDetailScreen(
@@ -224,14 +234,21 @@ fun AppNavigation() {
                     authRepository = authRepository,
                     syncManager = syncManager,
                     questionnaireRepository = questionnaireRepository,
+                    newlyCreatedQuestionnaireId = newlyCreatedQuestionnaireId,
                     onBack = { navController.popBackStack() },
                     onTakePhotos = { qId ->
                         navController.navigate(CaptureForPatientRoute(patientId, qId))
+                    },
+                    onCreateNewQuestionnaire = {
+                        navController.navigate(io.healthplatform.chartcam.navigation.QuestionnaireBuilderRoute)
                     },
                     onFinalized = {
                         navController.navigate(PatientDetailRoute(patientId)) {
                             popUpTo(PatientDetailRoute(patientId)) { inclusive = true }
                         }
+                    },
+                    onNewlyCreatedQuestionnaireHandled = {
+                        entry.savedStateHandle.remove<String>("createdQuestionnaireId")
                     },
                 )
             }
@@ -246,12 +263,43 @@ fun AppNavigation() {
                     onPatientSelected = { patientId ->
                         navController.navigate(PatientDetailRoute(patientId))
                     },
+                    onNavigateToQuestionnaires = {
+                        navController.navigate(Routes.QUESTIONNAIRE_LIST)
+                    },
                     onLogout = {
                         authRepository.logout()
                         navController.navigate(Routes.LOGIN) {
                             popUpTo(0) { inclusive = true }
                         }
                     },
+                )
+            }
+        }
+
+        composable<io.healthplatform.chartcam.navigation.QuestionnaireBuilderRoute> {
+            val viewModel =
+                androidx.lifecycle.viewmodel.compose.viewModel {
+                    io.healthplatform.chartcam.viewmodel
+                        .QuestionnaireBuilderViewModel(questionnaireRepository)
+                }
+            androidx.compose.runtime.key(currentLang) {
+                io.healthplatform.chartcam.ui.QuestionnaireBuilderScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
+                    onSaved = { savedId ->
+                        navController.previousBackStackEntry?.savedStateHandle?.set("createdQuestionnaireId", savedId)
+                        navController.popBackStack()
+                    },
+                )
+            }
+        }
+
+        composable(Routes.QUESTIONNAIRE_LIST) {
+            androidx.compose.runtime.key(currentLang) {
+                QuestionnaireListScreen(
+                    questionnaireRepository = questionnaireRepository,
+                    onBack = { navController.popBackStack() },
+                    onNavigateToBuilder = { navController.navigate(io.healthplatform.chartcam.navigation.QuestionnaireBuilderRoute) },
                 )
             }
         }

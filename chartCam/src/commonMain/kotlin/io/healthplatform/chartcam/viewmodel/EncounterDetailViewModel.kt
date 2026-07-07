@@ -264,6 +264,30 @@ class EncounterDetailViewModel(
     }
 
     /**
+     * Selects a questionnaire by its ID from the available ones.
+     *
+     * @param id The ID of the questionnaire to select.
+     */
+    fun selectQuestionnaireById(id: String) {
+        val q = _uiState.value.availableQuestionnaires.find { it.id == id }
+        if (q != null) {
+            _uiState.update { it.copy(selectedQuestionnaire = q) }
+        } else {
+            // Might not be in the current state's list yet if it was just created
+            val freshList = questionnaireRepository.getAvailableQuestionnaires()
+            val freshQ = freshList.find { it.id == id }
+            if (freshQ != null) {
+                _uiState.update {
+                    it.copy(
+                        availableQuestionnaires = freshList,
+                        selectedQuestionnaire = freshQ,
+                    )
+                }
+            }
+        }
+    }
+
+    /**
      * Creates a new dynamic Questionnaire and selects it.
      *
      * @param title The title of the form.

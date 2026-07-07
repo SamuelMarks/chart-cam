@@ -77,7 +77,8 @@ fun LevelerOverlay(sensorManager: SensorManager) {
             drawCircle(
                 color = color,
                 radius = 10.dp.toPx(),
-                center = Offset(center.x + offsetX.toFloat(), center.y - offsetY.toFloat()), // Subtract pitch for Y because screen coordinates Y goes down
+                center = Offset(center.x + offsetX.toFloat(), center.y - offsetY.toFloat()),
+                // Subtract pitch for Y because screen coordinates Y goes down
             )
         }
     }

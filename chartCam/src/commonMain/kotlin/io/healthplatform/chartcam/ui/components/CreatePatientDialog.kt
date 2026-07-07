@@ -8,9 +8,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SelectableDates
@@ -32,10 +38,21 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import chartcam.chartcam.generated.resources.*
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.all_fields_required
+import chartcam.chartcam.generated.resources.cancel
+import chartcam.chartcam.generated.resources.create
+import chartcam.chartcam.generated.resources.dob_label
+import chartcam.chartcam.generated.resources.dob_placeholder
+import chartcam.chartcam.generated.resources.first_name
+import chartcam.chartcam.generated.resources.invalid_date_format
+import chartcam.chartcam.generated.resources.last_name
+import chartcam.chartcam.generated.resources.mrn
+import chartcam.chartcam.generated.resources.new_patient
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -211,30 +228,54 @@ fun CreatePatientDialog(
                 )
                 OutlinedTextField(
                     value = dobString,
-                    onValueChange = { dobString = it },
+                    onValueChange = { },
                     label = { Text(stringResource(Res.string.dob_label)) },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
-                    keyboardActions =
-                        KeyboardActions(onDone = {
-                            focusManager.clearFocus()
-                            submitForm()
-                        }),
+                    readOnly = true,
                     modifier =
                         Modifier.fillMaxWidth().onPreviewKeyEvent {
                             if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
                                 focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
                                 true
                             } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                                focusManager.clearFocus()
-                                submitForm()
+                                showDatePicker = true
                                 true
                             } else {
                                 false
                             }
                         },
                     placeholder = { Text(stringResource(Res.string.dob_placeholder)) },
+                    trailingIcon = {
+                        IconButton(onClick = { showDatePicker = true }) {
+                            Icon(imageVector = Icons.Default.DateRange, contentDescription = "Select Date")
+                        }
+                    },
                 )
+
+                if (showDatePicker) {
+                    DatePickerDialog(
+                        onDismissRequest = { showDatePicker = false },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                showDatePicker = false
+                                datePickerState.selectedDateMillis?.let { millis ->
+                                    val instant = kotlin.time.Instant.fromEpochMilliseconds(millis)
+                                    val date = instant.toLocalDateTime(TimeZone.UTC).date
+                                    dobString = date.toString()
+                                }
+                            }) {
+                                Text("OK")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDatePicker = false }) {
+                                Text(stringResource(Res.string.cancel))
+                            }
+                        },
+                    ) {
+                        DatePicker(state = datePickerState)
+                    }
+                }
 
                 if (error != null) {
                     Text(

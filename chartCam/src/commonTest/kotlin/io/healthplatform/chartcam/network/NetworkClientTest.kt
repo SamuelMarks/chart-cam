@@ -4,7 +4,7 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respondOk
 import io.ktor.client.request.get
 import kotlinx.coroutines.test.runTest
-import org.junit.Test
+import kotlin.test.Test
 import kotlin.test.assertNotNull
 
 class NetworkClientTest {

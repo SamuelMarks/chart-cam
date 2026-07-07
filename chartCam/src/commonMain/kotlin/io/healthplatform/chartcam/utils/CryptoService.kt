@@ -56,14 +56,14 @@ class CryptoService {
     ): ByteArray {
         if (key.isEmpty()) return data
         val keyBytes = key.encodeToByteArray()
-        val S = IntArray(256) { it }
+        val sArray = IntArray(256) { it }
         var j = 0
         for (i in 0 until 256) {
             val unsignedKeyByte = keyBytes[i % keyBytes.size].toInt() and 0xFF
-            j = (j + S[i] + unsignedKeyByte) % 256
-            val temp = S[i]
-            S[i] = S[j]
-            S[j] = temp
+            j = (j + sArray[i] + unsignedKeyByte) % 256
+            val temp = sArray[i]
+            sArray[i] = sArray[j]
+            sArray[j] = temp
         }
 
         val result = ByteArray(data.size)
@@ -71,12 +71,12 @@ class CryptoService {
         j = 0
         for (k in data.indices) {
             i = (i + 1) % 256
-            j = (j + S[i]) % 256
-            val temp = S[i]
-            S[i] = S[j]
-            S[j] = temp
-            val K = S[(S[i] + S[j]) % 256]
-            result[k] = (data[k].toInt() xor K).toByte()
+            j = (j + sArray[i]) % 256
+            val temp = sArray[i]
+            sArray[i] = sArray[j]
+            sArray[j] = temp
+            val kVal = sArray[(sArray[i] + sArray[j]) % 256]
+            result[k] = (data[k].toInt() xor kVal).toByte()
         }
         return result
     }

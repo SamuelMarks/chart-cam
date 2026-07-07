@@ -63,6 +63,7 @@ external interface EncObj : JsAny {
     /**
      * Represents the UTF-8 encoding type.
      */
+    @Suppress("ktlint:standard:property-naming")
     val Utf8: JsAny
 }
 

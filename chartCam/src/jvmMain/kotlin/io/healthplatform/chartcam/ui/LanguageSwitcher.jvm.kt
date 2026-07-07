@@ -11,5 +11,5 @@ import java.util.Locale
  * @param language The ISO 639 language code (e.g., "en", "es", "ja") to switch to.
  */
 actual fun changeAppLanguage(language: String) {
-    Locale.setDefault(Locale(language))
+    Locale.setDefault(Locale.Builder().setLanguage(language).build())
 }

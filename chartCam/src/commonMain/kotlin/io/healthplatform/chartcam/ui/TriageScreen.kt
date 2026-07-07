@@ -36,7 +36,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import chartcam.chartcam.generated.resources.*
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.cd_create_patient
+import chartcam.chartcam.generated.resources.cd_proceed
+import chartcam.chartcam.generated.resources.cd_search_icon
+import chartcam.chartcam.generated.resources.mrn_dob_format
+import chartcam.chartcam.generated.resources.no_patients_found
+import chartcam.chartcam.generated.resources.search_placeholder
+import chartcam.chartcam.generated.resources.selected_photos_ready
+import chartcam.chartcam.generated.resources.triage_select_patient
 import io.healthplatform.chartcam.models.customBirthDate
 import io.healthplatform.chartcam.models.fullName
 import io.healthplatform.chartcam.models.mrn
@@ -125,8 +133,8 @@ fun TriageScreen(
                             Text(
                                 stringResource(
                                     Res.string.mrn_dob_format,
-                                    patient.mrn ?: "",
-                                    patient.customBirthDate ?: "",
+                                    patient.mrn,
+                                    patient.customBirthDate,
                                 ),
                             )
                         },

@@ -2,7 +2,6 @@ package io.healthplatform.chartcam.ui.theme
 
 import androidx.compose.material3.Text
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.runComposeUiTest
 import kotlin.test.Test

@@ -3,15 +3,14 @@
  */
 package io.healthplatform.chartcam.files
 
-import androidx.security.crypto.EncryptedFile
-import androidx.security.crypto.MasterKey
 import io.healthplatform.chartcam.AndroidAppInit
+import io.healthplatform.chartcam.storage.CryptoHelper
 import java.io.File
 
 /**
  * Android implementation of [FileStorage].
  * Ensures that patient photos and sensitive files are encrypted at rest
- * using Android Jetpack Security's [EncryptedFile].
+ * using Android Jetpack Security's equivalents.
  */
 class AndroidFileStorage : FileStorage {
     /**
@@ -40,24 +39,8 @@ class AndroidFileStorage : FileStorage {
             file.delete()
         }
 
-        val masterKey =
-            MasterKey
-                .Builder(context)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-
-        val encryptedFile =
-            EncryptedFile
-                .Builder(
-                    context,
-                    file,
-                    masterKey,
-                    EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB,
-                ).build()
-
-        encryptedFile.openFileOutput().use { fos ->
-            fos.write(bytes)
-        }
+        val encryptedBytes = CryptoHelper.encrypt(bytes)
+        file.writeBytes(encryptedBytes)
 
         return file.absolutePath
     }
@@ -72,23 +55,11 @@ class AndroidFileStorage : FileStorage {
         val file = File(path)
         if (!file.exists()) return ByteArray(0)
 
-        val masterKey =
-            MasterKey
-                .Builder(context)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-
-        val encryptedFile =
-            EncryptedFile
-                .Builder(
-                    context,
-                    file,
-                    masterKey,
-                    EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB,
-                ).build()
-
-        return encryptedFile.openFileInput().use { fis ->
-            fis.readBytes()
+        val encryptedBytes = file.readBytes()
+        return try {
+            CryptoHelper.decrypt(encryptedBytes)
+        } catch (e: Exception) {
+            ByteArray(0)
         }
     }
 

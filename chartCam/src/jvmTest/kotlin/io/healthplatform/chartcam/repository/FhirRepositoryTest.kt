@@ -2,7 +2,10 @@ package io.healthplatform.chartcam.repository
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.google.fhir.model.r4.*
+import com.google.fhir.model.r4.Encounter
+import com.google.fhir.model.r4.Enumeration
+import com.google.fhir.model.r4.Patient
+import com.google.fhir.model.r4.Practitioner
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -80,7 +83,9 @@ class FhirRepositoryTest {
                 Encounter
                     .Builder(
                         status = Enumeration(value = Encounter.EncounterStatus.In_Progress),
-                        `class` = Coding.Builder(),
+                        `class` =
+                            com.google.fhir.model.r4.Coding
+                                .Builder(),
                     ).apply {
                         id = "enc_1"
                     }.build()

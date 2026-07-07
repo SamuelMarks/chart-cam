@@ -226,7 +226,7 @@ class FhirRepository(
                     ?.start
                     ?.value
                     ?.toString() ?: "",
-            status = encounter.status?.value?.name ?: "in-progress",
+            status = encounter.status.value?.name ?: "in-progress",
             serializedResource = serialized,
         )
     }
@@ -431,7 +431,7 @@ class FhirRepository(
                 .firstOrNull()
                 ?.reference
                 ?.value ?: ""
-        dbQuery.insertProvenance(provenance.id!!, targetId, encounterId, provenance.recorded?.value.toString(), serialized)
+        dbQuery.insertProvenance(provenance.id!!, targetId, encounterId, provenance.recorded.value.toString(), serialized)
     }
 
     /**

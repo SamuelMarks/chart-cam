@@ -1,7 +1,6 @@
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.runComposeUiTest
 import io.healthplatform.chartcam.repository.AuthRepository

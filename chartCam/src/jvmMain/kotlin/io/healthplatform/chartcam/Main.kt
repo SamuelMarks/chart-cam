@@ -14,6 +14,7 @@ import javax.imageio.ImageIO
  * It sets up platform-specific configurations like the macOS dock icon
  * and launches the Compose multiplatform application window.
  */
+@Suppress("DEPRECATION")
 fun main() {
     System.setProperty("apple.awt.application.name", "ChartCam")
     // Set the macOS dock icon when running via gradle run

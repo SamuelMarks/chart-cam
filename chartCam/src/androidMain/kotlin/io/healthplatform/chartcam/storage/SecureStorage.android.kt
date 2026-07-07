@@ -3,35 +3,18 @@
  */
 package io.healthplatform.chartcam.storage
 
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
+import android.content.Context
+import android.util.Base64
 import io.healthplatform.chartcam.AndroidAppInit
 
 /**
  * Android implementation of [SecureStorage].
- * Uses Android Jetpack Security's [EncryptedSharedPreferences] to transparently encrypt both keys and values
+ * Uses Android Jetpack Security's equivalents to transparently encrypt both keys and values
  * using AES256 for secure storage of sensitive data.
  */
 class AndroidSecureStorage : SecureStorage {
-    /**
-     * Lazy initialization of [EncryptedSharedPreferences].
-     * Configures AES256_GCM for values and AES256_SIV for keys.
-     */
     private val sharedPreferences by lazy {
-        val context = AndroidAppInit.getContext()
-        val masterKey =
-            MasterKey
-                .Builder(context)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-
-        EncryptedSharedPreferences.create(
-            context,
-            "secure_prefs",
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        )
+        AndroidAppInit.getContext().getSharedPreferences("secure_prefs_v2", Context.MODE_PRIVATE)
     }
 
     /**
@@ -44,7 +27,9 @@ class AndroidSecureStorage : SecureStorage {
         key: String,
         value: String,
     ) {
-        sharedPreferences.edit().putString(key, value).apply()
+        val encrypted = CryptoHelper.encrypt(value.toByteArray(Charsets.UTF_8))
+        val base64 = Base64.encodeToString(encrypted, Base64.DEFAULT)
+        sharedPreferences.edit().putString(key, base64).apply()
     }
 
     /**
@@ -53,7 +38,15 @@ class AndroidSecureStorage : SecureStorage {
      * @param key The key of the value to retrieve.
      * @return The decrypted string value, or `null` if the key does not exist.
      */
-    override fun getString(key: String): String? = sharedPreferences.getString(key, null)
+    override fun getString(key: String): String? {
+        val base64 = sharedPreferences.getString(key, null) ?: return null
+        return try {
+            val encrypted = Base64.decode(base64, Base64.DEFAULT)
+            String(CryptoHelper.decrypt(encrypted), Charsets.UTF_8)
+        } catch (e: Exception) {
+            null
+        }
+    }
 
     /**
      * Deletes the stored value mapped to the given key.

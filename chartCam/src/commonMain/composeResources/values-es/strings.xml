@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <!-- Capture Screen -->
+    
     <string name="camera_permission_required">Se requiere permiso de cámara</string>
     <string name="open_settings">Abrir Configuración</string>
     <string name="cancel">Cancelar</string>
@@ -8,14 +8,14 @@
     <string name="retake">Volver a Tomar</string>
     <string name="confirm">Confirmar</string>
 
-    <!-- Triage Screen -->
+    
     <string name="triage_select_patient">Triaje: Seleccionar Paciente</string>
     <string name="selected_photos_ready">Seleccionado. %1$d fotos listas.</string>
     <string name="search_placeholder">Buscar Nombre o N.º de Historia...</string>
     <string name="mrn_dob_format">N.º: %1$s | Fecha: %2$s</string>
     <string name="no_patients_found">No se encontraron pacientes.</string>
 
-    <!-- Patient List Screen -->
+    
     <string name="patient_directory">Directorio de Pacientes</string>
     <string name="show_my_patients_only">Mostrar Solo Mis Pacientes</string>
     <string name="show_all_patients">Mostrar Todos Los Pacientes</string>
@@ -49,11 +49,11 @@
     <string name="password">Contraseña</string>
     <string name="import_action">Importar</string>
 
-    <!-- Login Screen -->
+    
     <string name="username">Nombre de Usuario</string>
     <string name="sign_in">Iniciar Sesión</string>
 
-    <!-- Create Patient Dialog -->
+    
     <string name="new_patient">Nuevo Paciente</string>
     <string name="first_name">Nombre</string>
     <string name="last_name">Apellido</string>
@@ -62,7 +62,7 @@
     <string name="dob_placeholder">1990-01-01</string>
     <string name="create">Crear</string>
 
-    <!-- Encounter Detail Screen -->
+    
     <string name="create_questionnaire">Crear Cuestionario</string>
     <string name="title">Título</string>
     <string name="number_of_photos">Número de Fotos</string>
@@ -78,7 +78,7 @@
     <string name="take_photos">Tomar Fotos</string>
     <string name="image_load_error">Error de Carga de Imagen</string>
 
-    <!-- Patient Detail Screen -->
+    
     <string name="patient_detail">Detalle del Paciente</string>
     <string name="delete_patient">Eliminar Paciente</string>
     <string name="delete_patient_message">¿Está seguro de que desea eliminar este paciente? Esto eliminará permanentemente todas sus visitas, fotos y notas. Esto no se puede deshacer.</string>
@@ -87,7 +87,7 @@
     <string name="no_notes">Sin notas</string>
     <string name="initializing_camera">Inicializando cámara...</string>
 
-    <!-- Accessibility Labels -->
+    
     <string name="cd_camera_preview">Vista previa de la cámara</string>
     <string name="cd_switch_camera">Cambiar Cámara</string>
     <string name="cd_review">Revisar</string>
@@ -123,4 +123,18 @@
     <string name="select_questionnaire">Seleccionar Cuestionario</string>
     <string name="captured_photos_format">Fotos Capturadas (%1$d/%2$d)</string>
     <string name="provider_format">Proveedor: Dr. %1$s</string>
+<string name="build_questionnaire">Build Questionnaire (es)</string><string name="preview">Preview (es)</string><string name="save">Save (es)</string><string name="preview_mode">Preview Mode (es)</string><string name="questionnaire_title">Questionnaire Title (es)</string><string name="items">Items (es)</string><string name="add_widget">Add Widget (es)</string><string name="add">Add (es)</string><string name="label">Label (es)</string><string name="options_comma_separated">Options (comma-separated) (es)</string><string name="delete_item">Delete Item (es)</string><string name="type_format">Type: %1$s (es)</string><string name="cd_delete_item">Delete Item (es)</string><string name="cd_save">Save (es)</string><string name="cd_preview">Preview (es)</string><string name="cd_add">Add (es)</string>
+    <string name="cd_more_widgets">Más widgets</string>
+    <string name="widget_photo_camera">Cámara de fotos</string>
+    <string name="widget_video_camera">Cámara de video</string>
+    <string name="widget_switch">Interruptor</string>
+    <string name="widget_checkbox">Casilla de verificación</string>
+    <string name="widget_single_select">Selección única</string>
+    <string name="widget_multi_select">Selección múltiple</string>
+    <string name="widget_single_line_text">Texto de una línea</string>
+    <string name="widget_multi_line_text">Texto de varias líneas</string>
+    <string name="widget_date">Fecha</string>
+    <string name="widget_datetime">Fecha y hora</string>
+    <string name="widget_numeric">Numérico</string>
+    <string name="widget_range">Rango</string>
 </resources>

@@ -40,7 +40,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import chartcam.chartcam.generated.resources.*
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.cancel
+import chartcam.chartcam.generated.resources.cd_back
+import chartcam.chartcam.generated.resources.cd_more
+import chartcam.chartcam.generated.resources.cd_new_visit
+import chartcam.chartcam.generated.resources.delete
+import chartcam.chartcam.generated.resources.delete_patient
+import chartcam.chartcam.generated.resources.delete_patient_message
+import chartcam.chartcam.generated.resources.mrn_dob_format
+import chartcam.chartcam.generated.resources.no_notes
+import chartcam.chartcam.generated.resources.no_visits_found
+import chartcam.chartcam.generated.resources.patient_detail
+import chartcam.chartcam.generated.resources.visit_history
 import io.healthplatform.chartcam.models.customBirthDate
 import io.healthplatform.chartcam.models.encounterDate
 import io.healthplatform.chartcam.models.fullName
@@ -150,7 +162,7 @@ fun PatientDetailScreen(
                         style = MaterialTheme.typography.headlineMedium,
                     )
                     Text(
-                        text = stringResource(Res.string.mrn_dob_format, patient.mrn ?: "", patient.customBirthDate ?: ""),
+                        text = stringResource(Res.string.mrn_dob_format, patient.mrn, patient.customBirthDate),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.padding(top = 4.dp),
