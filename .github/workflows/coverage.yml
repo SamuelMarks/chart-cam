@@ -4,6 +4,9 @@ on:
   push:
     branches: [ "master" ]
 
+env:
+  NODE_OPTIONS: "--max-old-space-size=8192"
+
 jobs:
   verify_coverage:
     runs-on: ubuntu-latest

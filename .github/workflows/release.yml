@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*' # Triggers on any tag starting with 'v', e.g., v1.0.0, v2.1-beta
 
+env:
+  NODE_OPTIONS: "--max-old-space-size=8192"
+
 jobs:
   build-and-release:
     name: Build Artifacts & Create Release
@@ -58,7 +61,7 @@ jobs:
   build-ios:
     name: Build iOS & Append to Release
     needs: build-and-release
-    runs-on: macos-14
+    runs-on: macos-15
     
     permissions:
       contents: write
