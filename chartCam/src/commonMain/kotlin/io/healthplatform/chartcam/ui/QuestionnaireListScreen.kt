@@ -37,11 +37,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import chartcam.chartcam.generated.resources.*
 import com.google.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.repository.QuestionnaireSharingService
 import io.healthplatform.chartcam.utils.createShareService
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Screen displaying the list of available questionnaires.
@@ -80,22 +82,22 @@ fun QuestionnaireListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Questionnaires") },
+                title = { Text(stringResource(Res.string.questionnaires)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.cd_back))
                     }
                 },
                 actions = {
                     IconButton(onClick = { showImportOptions = true }) {
-                        Icon(Icons.Default.Download, contentDescription = "Import Questionnaire")
+                        Icon(Icons.Default.Download, contentDescription = stringResource(Res.string.import_questionnaire))
                     }
                 },
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onNavigateToBuilder) {
-                Icon(Icons.Default.Add, contentDescription = "Create Questionnaire")
+                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.create_questionnaire))
             }
         },
     ) { paddingValues ->
@@ -107,7 +109,7 @@ fun QuestionnaireListScreen(
         ) {
             if (importError != null) {
                 Text(
-                    text = "Import Error: $importError",
+                    text = stringResource(Res.string.import_error_format, importError ?: ""),
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(16.dp),
                 )
@@ -115,7 +117,7 @@ fun QuestionnaireListScreen(
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(questionnaires) { q ->
-                    val titleText = q.title?.value ?: q.id ?: "Unknown"
+                    val titleText = q.title?.value ?: q.id ?: stringResource(Res.string.unknown)
                     ListItem(
                         headlineContent = { Text(titleText, style = MaterialTheme.typography.titleMedium) },
                         supportingContent = { Text(q.id ?: "", style = MaterialTheme.typography.bodyMedium) },
@@ -123,7 +125,7 @@ fun QuestionnaireListScreen(
                             IconButton(onClick = {
                                 selectedQuestionnaireForShare = q
                             }) {
-                                Icon(Icons.Default.Share, contentDescription = "Share")
+                                Icon(Icons.Default.Share, contentDescription = stringResource(Res.string.share_questionnaire))
                             }
                         },
                     )
@@ -145,7 +147,7 @@ fun QuestionnaireListScreen(
                         .padding(16.dp),
             ) {
                 Text(
-                    text = "Import Questionnaire",
+                    text = stringResource(Res.string.import_questionnaire),
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(bottom = 16.dp),
                 )
@@ -174,12 +176,12 @@ fun QuestionnaireListScreen(
                     },
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 ) {
-                    Text("Paste from Clipboard")
+                    Text(stringResource(Res.string.paste_from_clipboard))
                 }
 
                 // Placeholder for File Import and QR Code Scanner
                 Text(
-                    text = "File Import and QR Code Scanner coming soon",
+                    text = stringResource(Res.string.file_import_coming_soon),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
@@ -191,12 +193,12 @@ fun QuestionnaireListScreen(
     previewQuestionnaire?.let { q ->
         AlertDialog(
             onDismissRequest = { previewQuestionnaire = null },
-            title = { Text("Import Questionnaire") },
+            title = { Text(stringResource(Res.string.import_questionnaire)) },
             text = {
                 Column {
-                    Text("Title: ${q.title?.value ?: q.id ?: "Unknown"}")
-                    Text("Number of items: ${q.item.size}")
-                    Text("Are you sure you want to import this questionnaire?")
+                    Text("Title: ${q.title?.value ?: q.id ?: stringResource(Res.string.unknown)}")
+                    Text(stringResource(Res.string.number_of_items_format, q.item.size.toString()))
+                    Text(stringResource(Res.string.import_confirmation))
                 }
             },
             confirmButton = {
@@ -205,12 +207,12 @@ fun QuestionnaireListScreen(
                     questionnaires = questionnaireRepository.getAvailableQuestionnaires()
                     previewQuestionnaire = null
                 }) {
-                    Text("Import")
+                    Text(stringResource(Res.string.import_action))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { previewQuestionnaire = null }) {
-                    Text("Cancel")
+                    Text(stringResource(Res.string.cancel))
                 }
             },
         )
@@ -228,7 +230,7 @@ fun QuestionnaireListScreen(
                         .padding(16.dp),
             ) {
                 Text(
-                    text = "Share Questionnaire",
+                    text = stringResource(Res.string.share_questionnaire),
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(bottom = 16.dp),
                 )
@@ -252,7 +254,7 @@ fun QuestionnaireListScreen(
                     },
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 ) {
-                    Text("Copy to Clipboard")
+                    Text(stringResource(Res.string.copy_to_clipboard))
                 }
 
                 Button(
@@ -271,12 +273,12 @@ fun QuestionnaireListScreen(
                     },
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 ) {
-                    Text("Share text/JSON")
+                    Text(stringResource(Res.string.share_text_json))
                 }
 
                 // Placeholder for QR Code and direct file export
                 Text(
-                    text = "QR Code and File Export coming soon",
+                    text = stringResource(Res.string.qr_code_coming_soon),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
@@ -288,26 +290,26 @@ fun QuestionnaireListScreen(
     if (showCreateDialog) {
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
-            title = { Text("Create Questionnaire") },
+            title = { Text(stringResource(Res.string.create_questionnaire)) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = newTitle,
                         onValueChange = { newTitle = it },
-                        label = { Text("Title") },
+                        label = { Text(stringResource(Res.string.title)) },
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                     )
                     OutlinedTextField(
                         value = newPhotosCount,
                         onValueChange = { newPhotosCount = it },
-                        label = { Text("Number of photos") },
+                        label = { Text(stringResource(Res.string.number_of_photos)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                     )
                     OutlinedTextField(
                         value = newLabels,
                         onValueChange = { newLabels = it },
-                        label = { Text("Labels (comma-separated)") },
+                        label = { Text(stringResource(Res.string.labels_comma)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -326,7 +328,7 @@ fun QuestionnaireListScreen(
                     newPhotosCount = ""
                     newLabels = ""
                 }) {
-                    Text("Create")
+                    Text(stringResource(Res.string.create))
                 }
             },
             dismissButton = {
@@ -336,7 +338,7 @@ fun QuestionnaireListScreen(
                     newPhotosCount = ""
                     newLabels = ""
                 }) {
-                    Text("Cancel")
+                    Text(stringResource(Res.string.cancel))
                 }
             },
         )

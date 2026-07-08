@@ -68,10 +68,10 @@ import chartcam.chartcam.generated.resources.cd_switch_language
 import chartcam.chartcam.generated.resources.feature_capture
 import chartcam.chartcam.generated.resources.feature_secure
 import chartcam.chartcam.generated.resources.feature_sync
+import chartcam.chartcam.generated.resources.login_signup
 import chartcam.chartcam.generated.resources.logo
 import chartcam.chartcam.generated.resources.offline_mode
 import chartcam.chartcam.generated.resources.password
-import chartcam.chartcam.generated.resources.sign_in
 import chartcam.chartcam.generated.resources.username
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
 import org.jetbrains.compose.resources.painterResource
@@ -290,7 +290,7 @@ fun LoginScreen(
                                 ),
                         ) {
                             Text(
-                                text = stringResource(Res.string.sign_in),
+                                text = stringResource(Res.string.login_signup),
                                 style = MaterialTheme.typography.titleMedium,
                             )
                         }

@@ -14,7 +14,6 @@ import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.storage.JvmSecureStorage
-import io.healthplatform.chartcam.storage.createSecureStorage
 import io.healthplatform.chartcam.sync.SyncManager
 import io.healthplatform.chartcam.viewmodel.EncounterDetailViewModel
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
@@ -53,7 +52,6 @@ class E2EWorkflowTest {
     @BeforeTest
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        (createSecureStorage() as JvmSecureStorage).clearAll()
     }
 
     /**
@@ -84,7 +82,9 @@ class E2EWorkflowTest {
                 }
             val client = NetworkClient.create(mockEngine)
 
-            val storage = createSecureStorage()
+            val storage =
+                io.healthplatform.chartcam.storage
+                    .JvmSecureStorage("test_e2e_${java.util.UUID.randomUUID()}")
             val authRepository = AuthRepository(client, storage)
             val fileStorage = createFileStorage()
             val exportImportService = ExportImportService(fhirRepository.database, fileStorage)
@@ -119,8 +119,12 @@ class E2EWorkflowTest {
             ) { id ->
                 newPatientId = id
             }
-            testDispatcher.scheduler.advanceUntilIdle()
-
+            var patientRetries = 0
+            while (newPatientId == null && patientRetries < 50) {
+                java.lang.Thread.sleep(100)
+                testDispatcher.scheduler.advanceUntilIdle()
+                patientRetries++
+            }
             assertNotNull(newPatientId, "Patient ID should not be null after creation")
             val patientList = patientListViewModel.uiState.value.patients
             assertTrue(patientList.any { it.id == newPatientId }, "Patient list should contain the new patient")
@@ -170,9 +174,9 @@ class E2EWorkflowTest {
             encounterDetailViewModel.finalizeEncounter()
             var retries = 0
             while (!encounterDetailViewModel.uiState.value.isFinalized &&
-                retries < 200
+                retries < 100
             ) {
-                kotlinx.coroutines.delay(50)
+                java.lang.Thread.sleep(50)
                 testDispatcher.scheduler.advanceUntilIdle()
                 retries++
             }

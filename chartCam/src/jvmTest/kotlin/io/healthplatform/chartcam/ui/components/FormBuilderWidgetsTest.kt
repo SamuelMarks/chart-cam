@@ -43,8 +43,8 @@ class FormBuilderWidgetsTest {
         rule.setContent {
             FormBuilderSwitch(checked = false, onCheckedChange = { result = it }, label = "MySwitch")
         }
-        rule.onNodeWithTag("Toggle MySwitch").assertIsDisplayed()
-        rule.onNodeWithTag("Toggle MySwitch").performClick()
+        rule.onNodeWithTag("Switch MySwitch").assertIsDisplayed()
+        rule.onNodeWithTag("Switch MySwitch").performClick()
         assertTrue(result)
     }
 
@@ -54,8 +54,8 @@ class FormBuilderWidgetsTest {
         rule.setContent {
             FormBuilderCheckbox(checked = false, onCheckedChange = { result = it }, label = "MyCheck")
         }
-        rule.onNodeWithTag("Checkbox MyCheck").assertIsDisplayed()
-        rule.onNodeWithTag("Checkbox MyCheck").performClick()
+        rule.onNodeWithTag("CheckboxRow MyCheck").assertIsDisplayed()
+        rule.onNodeWithTag("CheckboxRow MyCheck").performClick()
         assertTrue(result)
     }
 

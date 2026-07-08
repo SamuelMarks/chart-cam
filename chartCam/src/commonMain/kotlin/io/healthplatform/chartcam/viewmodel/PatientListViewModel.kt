@@ -137,19 +137,23 @@ class PatientListViewModel(
         onSuccess: (String) -> Unit,
     ) {
         viewModelScope.launch {
-            val newPatient =
-                createFhirPatient(
-                    id = UUID.randomUUID(),
-                    firstName = firstName,
-                    lastName = lastName,
-                    dob = dob,
-                    mrnValue = mrn,
-                    genderStr = gender,
-                )
-            repository.savePatient(newPatient)
-            setCreateDialogVisible(false)
-            loadPatients()
-            onSuccess(newPatient.id ?: "")
+            try {
+                val newPatient =
+                    createFhirPatient(
+                        id = UUID.randomUUID(),
+                        firstName = firstName,
+                        lastName = lastName,
+                        dob = dob,
+                        mrnValue = mrn,
+                        genderStr = gender,
+                    )
+                repository.savePatient(newPatient)
+                setCreateDialogVisible(false)
+                loadPatients()
+                onSuccess(newPatient.id ?: "")
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

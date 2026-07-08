@@ -52,7 +52,7 @@
 
     
     <string name="username">Username</string>
-    <string name="sign_in">Sign In</string>
+    <string name="login_signup">Login / signup</string>
 
     
     <string name="new_patient">New Patient</string>
@@ -140,4 +140,16 @@
     <string name="widget_range">Range</string>
     <string name="date_format_label">%1$s (YYYY-MM-DD)</string>
     <string name="datetime_format_label">%1$s (YYYY-MM-DD HH:MM)</string>
+    <string name="questionnaires">Questionnaires</string>
+    <string name="import_questionnaire">Import Questionnaire</string>
+    <string name="import_error_format">Import Error: %1$s</string>
+    <string name="unknown">Unknown</string>
+    <string name="paste_from_clipboard">Paste from Clipboard</string>
+    <string name="file_import_coming_soon">File Import and QR Code Scanner coming soon</string>
+    <string name="number_of_items_format">Number of items: %1$s</string>
+    <string name="import_confirmation">Are you sure you want to import this questionnaire?</string>
+    <string name="share_questionnaire">Share Questionnaire</string>
+    <string name="copy_to_clipboard">Copy to Clipboard</string>
+    <string name="share_text_json">Share text/JSON</string>
+    <string name="qr_code_coming_soon">QR Code and File Export coming soon</string>
 </resources>

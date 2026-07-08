@@ -31,7 +31,7 @@ class QuestionnaireListScreenTest {
         rule
             .onAllNodes(
                 androidx.compose.ui.test
-                    .hasContentDescription("Share"),
+                    .hasContentDescription("Share Questionnaire"),
             )[0]
             .performClick()
 

@@ -192,6 +192,9 @@ compose.desktop {
             linux {
                 iconFile.set(project.file("src/jvmMain/resources/icon.png"))
             }
+            buildTypes.release.proguard {
+                isEnabled.set(false)
+            }
         }
     }
 }
