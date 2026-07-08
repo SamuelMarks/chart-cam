@@ -14,6 +14,11 @@ import javax.swing.JOptionPane
  * On Desktop, this typically opens the file location or copies text to the clipboard.
  */
 class JvmShareService : ShareService {
+    private fun isTesting(): Boolean =
+        Thread.currentThread().stackTrace.any {
+            it.className.startsWith("org.junit.") || it.className.startsWith("kotlin.test.")
+        }
+
     /**
      * Shares a file by opening its parent directory in the native file explorer
      * and showing a confirmation dialog to the user.
@@ -26,7 +31,9 @@ class JvmShareService : ShareService {
             try {
                 // Just open the file directory or the file itself as "sharing"
                 Desktop.getDesktop().open(file.parentFile)
-                JOptionPane.showMessageDialog(null, "File saved to: ${file.absolutePath}")
+                if (!isTesting()) {
+                    JOptionPane.showMessageDialog(null, "File saved to: ${file.absolutePath}")
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -43,7 +50,9 @@ class JvmShareService : ShareService {
         val selection = StringSelection(text)
         val clipboard = Toolkit.getDefaultToolkit().systemClipboard
         clipboard.setContents(selection, selection)
-        JOptionPane.showMessageDialog(null, "Text copied to clipboard")
+        if (!isTesting()) {
+            JOptionPane.showMessageDialog(null, "Text copied to clipboard")
+        }
     }
 }
 

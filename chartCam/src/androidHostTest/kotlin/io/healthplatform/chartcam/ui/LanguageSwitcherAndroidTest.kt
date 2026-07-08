@@ -11,6 +11,7 @@ import org.robolectric.RobolectricTestRunner
 import java.util.Locale
 import kotlin.test.assertEquals
 
+@org.robolectric.annotation.Config(manifest = org.robolectric.annotation.Config.NONE, sdk = [33])
 @RunWith(RobolectricTestRunner::class)
 class LanguageSwitcherAndroidTest {
     @Before

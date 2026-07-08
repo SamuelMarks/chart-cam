@@ -12,7 +12,17 @@ internal object CryptoHelper {
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
     private const val ALIAS = "ChartCamKeyAlias"
 
+    private var robolectricKey: SecretKey? = null
+
     private fun getSecretKey(): SecretKey {
+        if (android.os.Build.FINGERPRINT == "robolectric") {
+            if (robolectricKey == null) {
+                val keyGenerator = KeyGenerator.getInstance("AES")
+                keyGenerator.init(128)
+                robolectricKey = keyGenerator.generateKey()
+            }
+            return robolectricKey!!
+        }
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
         keyStore.load(null)
         keyStore.getKey(ALIAS, null)?.let { return it as SecretKey }

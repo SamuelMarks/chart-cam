@@ -10,6 +10,7 @@ import org.robolectric.RuntimeEnvironment
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@org.robolectric.annotation.Config(manifest = org.robolectric.annotation.Config.NONE, sdk = [33])
 @RunWith(RobolectricTestRunner::class)
 class FileStorageAndroidTest {
     private lateinit var fileStorage: FileStorage

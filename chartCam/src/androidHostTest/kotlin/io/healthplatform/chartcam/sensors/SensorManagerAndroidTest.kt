@@ -7,9 +7,13 @@ import android.hardware.SensorEventListener
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.mockito.Mockito
+import org.robolectric.RobolectricTestRunner
 import kotlin.test.assertEquals
 
+@org.robolectric.annotation.Config(manifest = org.robolectric.annotation.Config.NONE)
+@RunWith(RobolectricTestRunner::class)
 class SensorManagerAndroidTest {
     @Test
     fun testAndroidSensorManager() =
