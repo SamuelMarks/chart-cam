@@ -128,6 +128,18 @@ kotlin {
             implementation(libs.sqldelight.webworker)
             implementation(npm("crypto-js", "4.2.0"))
         }
+        val androidHostTest by getting {
+            dependencies {
+                implementation("org.mockito:mockito-core:5.11.0")
+                implementation("org.robolectric:robolectric:4.14.1")
+                implementation("androidx.lifecycle:lifecycle-runtime-testing:2.6.2")
+                implementation(libs.kotlin.test)
+                implementation(libs.junit)
+                implementation(libs.compose.ui.test.junit4)
+                implementation(libs.compose.ui.test)
+                implementation(libs.kotlinx.coroutines.test)
+            }
+        }
         jvmTest.dependencies {
             implementation("org.mockito:mockito-core:5.11.0")
             implementation("org.robolectric:robolectric:4.14.1")

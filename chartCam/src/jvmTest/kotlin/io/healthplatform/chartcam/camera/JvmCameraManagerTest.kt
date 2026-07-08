@@ -1,7 +1,7 @@
 package io.healthplatform.chartcam.camera
 
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.test.v2.runComposeUiTest
 import com.github.sarxos.webcam.Webcam
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test

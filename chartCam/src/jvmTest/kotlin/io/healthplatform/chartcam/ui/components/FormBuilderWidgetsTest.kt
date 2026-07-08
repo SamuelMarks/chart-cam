@@ -3,7 +3,7 @@ package io.healthplatform.chartcam.ui.components
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import org.junit.Rule
@@ -21,8 +21,8 @@ class FormBuilderWidgetsTest {
         rule.setContent {
             FormBuilderTextInput(value = "", onValueChange = { result = it }, label = "MyText")
         }
-        rule.onNodeWithContentDescription("TextInput MyText").assertIsDisplayed()
-        rule.onNodeWithContentDescription("TextInput MyText").performTextInput("Hello")
+        rule.onNodeWithTag("TextInput MyText").assertIsDisplayed()
+        rule.onNodeWithTag("TextInput MyText").performTextInput("Hello")
         assertEquals("Hello", result)
     }
 
@@ -32,8 +32,8 @@ class FormBuilderWidgetsTest {
         rule.setContent {
             FormBuilderTextArea(value = "", onValueChange = { result = it }, label = "MyArea")
         }
-        rule.onNodeWithContentDescription("TextArea MyArea").assertIsDisplayed()
-        rule.onNodeWithContentDescription("TextArea MyArea").performTextInput("World")
+        rule.onNodeWithTag("TextArea MyArea").assertIsDisplayed()
+        rule.onNodeWithTag("TextArea MyArea").performTextInput("World")
         assertEquals("World", result)
     }
 
@@ -43,8 +43,8 @@ class FormBuilderWidgetsTest {
         rule.setContent {
             FormBuilderSwitch(checked = false, onCheckedChange = { result = it }, label = "MySwitch")
         }
-        rule.onNodeWithContentDescription("Toggle MySwitch").assertIsDisplayed()
-        rule.onNodeWithContentDescription("Toggle MySwitch").performClick()
+        rule.onNodeWithTag("Toggle MySwitch").assertIsDisplayed()
+        rule.onNodeWithTag("Toggle MySwitch").performClick()
         assertTrue(result)
     }
 
@@ -54,8 +54,8 @@ class FormBuilderWidgetsTest {
         rule.setContent {
             FormBuilderCheckbox(checked = false, onCheckedChange = { result = it }, label = "MyCheck")
         }
-        rule.onNodeWithContentDescription("Checkbox MyCheck").assertIsDisplayed()
-        rule.onNodeWithContentDescription("Checkbox MyCheck").performClick()
+        rule.onNodeWithTag("Checkbox MyCheck").assertIsDisplayed()
+        rule.onNodeWithTag("Checkbox MyCheck").performClick()
         assertTrue(result)
     }
 
@@ -65,8 +65,8 @@ class FormBuilderWidgetsTest {
         rule.setContent {
             FormBuilderNumericInput(value = "", onValueChange = { result = it }, label = "MyNum")
         }
-        rule.onNodeWithContentDescription("NumericInput MyNum").assertIsDisplayed()
-        rule.onNodeWithContentDescription("NumericInput MyNum").performTextInput("123.45")
+        rule.onNodeWithTag("NumericInput MyNum").assertIsDisplayed()
+        rule.onNodeWithTag("NumericInput MyNum").performTextInput("123.45")
         assertEquals("123.45", result)
     }
 
@@ -76,7 +76,7 @@ class FormBuilderWidgetsTest {
         rule.setContent {
             FormBuilderRangeSlider(value = 0f, valueRange = 0f..100f, onValueChange = { result = it }, label = "MySlider")
         }
-        rule.onNodeWithContentDescription("SliderControl MySlider").assertIsDisplayed()
+        rule.onNodeWithTag("SliderControl MySlider").assertIsDisplayed()
     }
 
     @Test
@@ -85,7 +85,7 @@ class FormBuilderWidgetsTest {
         rule.setContent {
             FormBuilderDropdown(selectedOption = "A", options = listOf("A", "B"), onOptionSelected = { result = it }, label = "MyDrop")
         }
-        rule.onNodeWithContentDescription("Dropdown MyDrop").assertIsDisplayed()
+        rule.onNodeWithTag("Dropdown MyDrop").assertIsDisplayed()
     }
 
     @Test
@@ -96,7 +96,7 @@ class FormBuilderWidgetsTest {
                 result = it
             }, label = "MyMultiDrop")
         }
-        rule.onNodeWithContentDescription("MultiSelectDropdown MyMultiDrop").assertIsDisplayed()
+        rule.onNodeWithTag("MultiSelectDropdown MyMultiDrop").assertIsDisplayed()
     }
 
     @Test
@@ -105,8 +105,8 @@ class FormBuilderWidgetsTest {
         rule.setContent {
             FormBuilderDatePicker(value = "", onValueChange = { result = it }, label = "MyDate")
         }
-        rule.onNodeWithContentDescription("DatePicker MyDate").assertIsDisplayed()
-        rule.onNodeWithContentDescription("DatePicker MyDate").performTextInput("2024-01-01")
+        rule.onNodeWithTag("DatePicker MyDate").assertIsDisplayed()
+        rule.onNodeWithTag("DatePicker MyDate").performTextInput("2024-01-01")
         assertEquals("2024-01-01", result)
     }
 
@@ -116,8 +116,8 @@ class FormBuilderWidgetsTest {
         rule.setContent {
             FormBuilderDateTimePicker(value = "", onValueChange = { result = it }, label = "MyDT")
         }
-        rule.onNodeWithContentDescription("DateTimePicker MyDT").assertIsDisplayed()
-        rule.onNodeWithContentDescription("DateTimePicker MyDT").performTextInput("2024-01-01 12:00")
+        rule.onNodeWithTag("DateTimePicker MyDT").assertIsDisplayed()
+        rule.onNodeWithTag("DateTimePicker MyDT").performTextInput("2024-01-01 12:00")
         assertEquals("2024-01-01 12:00", result)
     }
 
@@ -131,9 +131,9 @@ class FormBuilderWidgetsTest {
                 FormBuilderVideoCamera(label = "Video", onClick = { videoClicked = true })
             }
         }
-        rule.onNodeWithContentDescription("PhotoCamera Photo").performClick()
+        rule.onNodeWithTag("PhotoCamera Photo").performClick()
         assertTrue(photoClicked)
-        rule.onNodeWithContentDescription("VideoCamera Video").performClick()
+        rule.onNodeWithTag("VideoCamera Video").performClick()
         assertTrue(videoClicked)
     }
 }

@@ -127,7 +127,7 @@ class E2EWorkflowTest {
 
             // 4. Create Visit (Encounter)
             val patientDetailViewModel = PatientDetailViewModel(fhirRepository)
-            patientDetailViewModel.loadPatientData(newPatientId!!)
+            patientDetailViewModel.loadPatientData(newPatientId)
             testDispatcher.scheduler.advanceUntilIdle()
 
             assertEquals(
@@ -150,7 +150,7 @@ class E2EWorkflowTest {
             val mockPhotosMap = mapOf("Left Eye" to "/path/to/left_eye.jpg", "Right Eye" to "/path/to/right_eye.jpg")
 
             encounterDetailViewModel.initialize(
-                patientId = newPatientId!!,
+                patientId = newPatientId,
                 visitId = "new",
                 photosMap = mockPhotosMap,
             )
@@ -177,10 +177,11 @@ class E2EWorkflowTest {
                 retries++
             }
 
+            println("UI State before failure: ${encounterDetailViewModel.uiState.value}")
             assertTrue(encounterDetailViewModel.uiState.value.isFinalized, "Encounter should be finalized")
 
             // 6. Return to list of visits (Patient Detail)
-            patientDetailViewModel.loadPatientData(newPatientId!!)
+            patientDetailViewModel.loadPatientData(newPatientId)
             testDispatcher.scheduler.advanceUntilIdle()
             val encounters = patientDetailViewModel.uiState.value.encounters
             assertEquals(1, encounters.size, "Patient should have 1 encounter")
@@ -197,7 +198,7 @@ class E2EWorkflowTest {
                     ?.value
                     ?.value ?: ""
             assertEquals(testNotes, notes, "Encounter notes should match")
-            assertEquals(Encounter.EncounterStatus.Finished, encounters[0].status?.value, "Encounter should be marked as finished")
+            assertEquals(Encounter.EncounterStatus.Finished, encounters[0].status.value, "Encounter should be marked as finished")
 
             // 7. Return to list of patients
             patientListViewModel.loadPatients()

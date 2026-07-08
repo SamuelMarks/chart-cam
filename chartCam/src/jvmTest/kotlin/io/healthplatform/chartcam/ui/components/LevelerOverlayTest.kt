@@ -2,7 +2,7 @@ package io.healthplatform.chartcam.ui.components
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.test.v2.runComposeUiTest
 import io.healthplatform.chartcam.sensors.OrientationData
 import io.healthplatform.chartcam.sensors.SensorManager
 import kotlinx.coroutines.flow.MutableStateFlow

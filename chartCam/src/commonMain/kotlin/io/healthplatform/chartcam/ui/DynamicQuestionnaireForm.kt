@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
@@ -31,6 +33,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -39,6 +42,12 @@ import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cd_item
 import chartcam.chartcam.generated.resources.select_an_option
 import com.google.fhir.model.r4.Questionnaire
+import io.healthplatform.chartcam.ui.components.FormBuilderDatePicker
+import io.healthplatform.chartcam.ui.components.FormBuilderDateTimePicker
+import io.healthplatform.chartcam.ui.components.FormBuilderMultiSelectDropdown
+import io.healthplatform.chartcam.ui.components.FormBuilderNumericInput
+import io.healthplatform.chartcam.ui.components.FormBuilderRangeSlider
+import io.healthplatform.chartcam.ui.components.FormBuilderTextArea
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -93,17 +102,26 @@ fun DynamicQuestionnaireForm(
                     }
                     Questionnaire.QuestionnaireItemType.Boolean -> {
                         val checked = answers[linkId] as? Boolean ?: false
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .toggleable(
+                                        value = checked,
+                                        onValueChange = { onAnswerChanged(linkId, it) },
+                                        role = Role.Checkbox,
+                                    ).padding(vertical = 8.dp)
+                                    .semantics { contentDescription = itemDesc },
+                        ) {
                             Checkbox(
                                 checked = checked,
-                                onCheckedChange = { onAnswerChanged(linkId, it) },
-                                modifier = Modifier.semantics { contentDescription = itemDesc },
+                                onCheckedChange = null,
                             )
                             Text(text = item.text?.value ?: linkId, modifier = Modifier.padding(start = 8.dp))
                         }
                     }
                     Questionnaire.QuestionnaireItemType.Choice -> {
-                        val selectedOption = answers[linkId] as? String ?: ""
                         var expanded by remember { mutableStateOf(false) }
                         val options =
                             item.answerOption.mapNotNull {
@@ -126,20 +144,43 @@ fun DynamicQuestionnaireForm(
                                 ?.code
                                 ?.value
 
-                        if (itemControl == "radio-button") {
+                        val isMultiSelect = item.repeats?.value == true
+
+                        if (isMultiSelect) {
+                            val selectedOptions = (answers[linkId] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                            FormBuilderMultiSelectDropdown(
+                                selectedOptions = selectedOptions,
+                                options = options,
+                                onSelectionChanged = { onAnswerChanged(linkId, it) },
+                                label = item.text?.value ?: linkId,
+                                modifier = Modifier.semantics { contentDescription = itemDesc },
+                            )
+                        } else if (itemControl == "radio-button") {
+                            val selectedOption = answers[linkId] as? String ?: ""
                             Column(modifier = Modifier.padding(vertical = 8.dp).semantics { contentDescription = itemDesc }) {
                                 Text(item.text?.value ?: linkId, modifier = Modifier.padding(bottom = 4.dp))
                                 options.forEach { option ->
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier =
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .selectable(
+                                                    selected = selectedOption == option,
+                                                    onClick = { onAnswerChanged(linkId, option) },
+                                                    role = Role.RadioButton,
+                                                ).padding(vertical = 4.dp),
+                                    ) {
                                         androidx.compose.material3.RadioButton(
                                             selected = selectedOption == option,
-                                            onClick = { onAnswerChanged(linkId, option) },
+                                            onClick = null,
                                         )
                                         Text(text = option, modifier = Modifier.padding(start = 8.dp))
                                     }
                                 }
                             }
                         } else {
+                            val selectedOption = answers[linkId] as? String ?: ""
                             ExposedDropdownMenuBox(
                                 expanded = expanded,
                                 onExpandedChange = { expanded = it },
@@ -188,9 +229,53 @@ fun DynamicQuestionnaireForm(
                     Questionnaire.QuestionnaireItemType.Attachment -> {
                         // Handled separately by the camera button and photo grid
                     }
-                    else -> {
-                        // Not implemented
+                    Questionnaire.QuestionnaireItemType.Text -> {
+                        val text = answers[linkId] as? String ?: ""
+                        FormBuilderTextArea(
+                            value = text,
+                            onValueChange = { onAnswerChanged(linkId, it) },
+                            label = item.text?.value ?: linkId,
+                            modifier = Modifier.semantics { contentDescription = itemDesc },
+                        )
                     }
+                    Questionnaire.QuestionnaireItemType.Date -> {
+                        val text = answers[linkId] as? String ?: ""
+                        FormBuilderDatePicker(
+                            value = text,
+                            onValueChange = { onAnswerChanged(linkId, it) },
+                            label = item.text?.value ?: linkId,
+                            modifier = Modifier.semantics { contentDescription = itemDesc },
+                        )
+                    }
+                    Questionnaire.QuestionnaireItemType.DateTime -> {
+                        val text = answers[linkId] as? String ?: ""
+                        FormBuilderDateTimePicker(
+                            value = text,
+                            onValueChange = { onAnswerChanged(linkId, it) },
+                            label = item.text?.value ?: linkId,
+                            modifier = Modifier.semantics { contentDescription = itemDesc },
+                        )
+                    }
+                    Questionnaire.QuestionnaireItemType.Decimal -> {
+                        val text = answers[linkId] as? String ?: ""
+                        FormBuilderNumericInput(
+                            value = text,
+                            onValueChange = { onAnswerChanged(linkId, it) },
+                            label = item.text?.value ?: linkId,
+                            modifier = Modifier.semantics { contentDescription = itemDesc },
+                        )
+                    }
+                    Questionnaire.QuestionnaireItemType.Integer -> {
+                        val value = (answers[linkId] as? Float) ?: (answers[linkId] as? String)?.toFloatOrNull() ?: 0f
+                        FormBuilderRangeSlider(
+                            value = value,
+                            valueRange = 0f..100f,
+                            onValueChange = { onAnswerChanged(linkId, it) },
+                            label = item.text?.value ?: linkId,
+                            modifier = Modifier.semantics { contentDescription = itemDesc },
+                        )
+                    }
+                    else -> {}
                 }
             }
         }

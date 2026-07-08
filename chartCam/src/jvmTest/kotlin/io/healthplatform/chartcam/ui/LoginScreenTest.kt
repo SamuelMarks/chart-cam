@@ -2,7 +2,7 @@ package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.test.v2.runComposeUiTest
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
 import org.mockito.Mockito

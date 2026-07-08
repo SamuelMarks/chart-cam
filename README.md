@@ -114,6 +114,21 @@ The `fastlane/Fastfile` houses deployment lanes for both Android and iOS. For de
 
 ## 💻 Development & Building
 
+### Makefile Commands (Recommended)
+
+For convenience, a `Makefile` (and an equivalent `make.bat` for Windows) is provided in the root directory with the following standardized commands for building, testing, and packaging across platforms. Windows users should run `make.bat <command>` instead of `make <command>`.
+
+| Command | Description |
+|:---|:---|
+| `make build` | Assembles all outputs across platforms (without running tests). |
+| `make test` | Runs the tests for all targets and creates an aggregated report. |
+| `make lint` | Runs Android Lint and other static analysis checks. |
+| `make build_release_android` | Assembles the release APK for the Android application. |
+| `make build_release_ios` | Builds the Xcode project for iOS release (requires macOS). |
+| `make build_release_jvm` | Packages the application for Desktop/JVM distribution on the current OS. |
+| `make build_release_js` | Builds the production Web distribution (JavaScript). |
+| `make build_release_wasm` | Builds the production Web distribution (WebAssembly). |
+
 ### Build and Run Android
 
 Launch the application directly from Android Studio by selecting the `androidApp` or `chartCam` run configuration, or compile via the CLI:

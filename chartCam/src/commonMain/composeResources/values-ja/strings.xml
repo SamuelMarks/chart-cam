@@ -137,4 +137,6 @@
     <string name="widget_datetime">日付と時刻</string>
     <string name="widget_numeric">数値</string>
     <string name="widget_range">範囲</string>
+    <string name="date_format_label">%1$s (YYYY-MM-DD)</string>
+    <string name="datetime_format_label">%1$s (YYYY-MM-DD HH:MM)</string>
 </resources>

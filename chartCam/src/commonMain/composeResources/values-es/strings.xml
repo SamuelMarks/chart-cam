@@ -137,4 +137,6 @@
     <string name="widget_datetime">Fecha y hora</string>
     <string name="widget_numeric">Numérico</string>
     <string name="widget_range">Rango</string>
+    <string name="date_format_label">%1$s (AAAA-MM-DD)</string>
+    <string name="datetime_format_label">%1$s (AAAA-MM-DD HH:MM)</string>
 </resources>

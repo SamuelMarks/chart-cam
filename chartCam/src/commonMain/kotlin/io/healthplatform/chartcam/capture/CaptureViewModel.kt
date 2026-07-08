@@ -36,6 +36,9 @@ class CaptureViewModel(
     /** The sequence of photo steps required for the current capture session. */
     private var stepsSequence = emptyList<PhotoStep>()
 
+    /** The current index in the stepsSequence. */
+    private var currentStepIndex = 0
+
     /**
      * Initializes the sequence of photos to be taken for this capture session.
      * Must be called before starting capture.
@@ -45,6 +48,7 @@ class CaptureViewModel(
     fun initSteps(steps: List<PhotoStep>) {
         if (steps.isNotEmpty() && stepsSequence.isEmpty()) {
             stepsSequence = steps
+            currentStepIndex = 0
             _uiState.update {
                 it.copy(
                     currentStep = steps.first(),
@@ -95,8 +99,8 @@ class CaptureViewModel(
         filePaths[currentStep] = path
 
         // 2. Calculate Next Step
-        val currentIndex = stepsSequence.indexOf(currentStep)
-        val nextStep = if (currentIndex + 1 < stepsSequence.size) stepsSequence[currentIndex + 1] else null
+        currentStepIndex++
+        val nextStep = if (currentStepIndex < stepsSequence.size) stepsSequence[currentStepIndex] else null
 
         if (nextStep != null) {
             _uiState.update {

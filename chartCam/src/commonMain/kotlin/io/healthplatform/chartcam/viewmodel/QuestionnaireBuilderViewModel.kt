@@ -67,6 +67,7 @@ class QuestionnaireBuilderViewModel(
     private val repository: QuestionnaireRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(QuestionnaireBuilderState())
+    private var nextItemId = 1
 
     /** The observable state of the builder. */
     val state: StateFlow<QuestionnaireBuilderState> = _state.asStateFlow()
@@ -87,7 +88,7 @@ class QuestionnaireBuilderViewModel(
      */
     fun addItem(widgetType: WidgetType) {
         val currentItems = _state.value.items
-        val newId = "item_${currentItems.size + 1}"
+        val newId = "item_${nextItemId++}"
         val newItem =
             BuilderItem(
                 linkId = newId,

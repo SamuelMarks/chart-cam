@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
@@ -28,10 +29,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.date_format_label
+import chartcam.chartcam.generated.resources.datetime_format_label
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * A Material 3 single-line text input field.
@@ -53,7 +59,7 @@ fun FormBuilderTextInput(
         onValueChange = onValueChange,
         label = { Text(label) },
         singleLine = true,
-        modifier = modifier.fillMaxWidth().semantics { contentDescription = "TextInput $label" },
+        modifier = modifier.fillMaxWidth().testTag("TextInput $label"),
     )
 }
 
@@ -77,7 +83,7 @@ fun FormBuilderTextArea(
         onValueChange = onValueChange,
         label = { Text(label) },
         minLines = 3,
-        modifier = modifier.fillMaxWidth().semantics { contentDescription = "TextArea $label" },
+        modifier = modifier.fillMaxWidth().testTag("TextArea $label"),
     )
 }
 
@@ -98,12 +104,20 @@ fun FormBuilderSwitch(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.padding(vertical = 8.dp).semantics { contentDescription = "Switch $label" },
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = checked,
+                    onValueChange = onCheckedChange,
+                    role = Role.Switch,
+                ).padding(vertical = 8.dp)
+                .testTag("Switch $label"),
     ) {
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange,
-            modifier = Modifier.semantics { contentDescription = "Toggle $label" },
+            onCheckedChange = null,
+            modifier = Modifier.testTag("Toggle $label"),
         )
         Text(text = label, modifier = Modifier.padding(start = 16.dp))
     }
@@ -126,12 +140,20 @@ fun FormBuilderCheckbox(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.padding(vertical = 8.dp).semantics { contentDescription = "CheckboxRow $label" },
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = checked,
+                    onValueChange = onCheckedChange,
+                    role = Role.Checkbox,
+                ).padding(vertical = 8.dp)
+                .testTag("CheckboxRow $label"),
     ) {
         Checkbox(
             checked = checked,
-            onCheckedChange = onCheckedChange,
-            modifier = Modifier.semantics { contentDescription = "Checkbox $label" },
+            onCheckedChange = null,
+            modifier = Modifier.testTag("Checkbox $label"),
         )
         Text(text = label, modifier = Modifier.padding(start = 16.dp))
     }
@@ -162,7 +184,7 @@ fun FormBuilderNumericInput(
         label = { Text(label) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = modifier.fillMaxWidth().semantics { contentDescription = "NumericInput $label" },
+        modifier = modifier.fillMaxWidth().testTag("NumericInput $label"),
     )
 }
 
@@ -183,13 +205,13 @@ fun FormBuilderRangeSlider(
     label: String,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.padding(vertical = 8.dp).semantics { contentDescription = "RangeSlider $label" }) {
+    Column(modifier = modifier.padding(vertical = 8.dp).testTag("RangeSlider $label")) {
         Text(text = label, style = MaterialTheme.typography.bodyMedium)
         Slider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
-            modifier = Modifier.fillMaxWidth().semantics { contentDescription = "SliderControl $label" },
+            modifier = Modifier.fillMaxWidth().testTag("SliderControl $label"),
         )
     }
 }
@@ -217,7 +239,7 @@ fun FormBuilderDropdown(
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it },
-        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = "Dropdown $label" },
+        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("Dropdown $label"),
     ) {
         OutlinedTextField(
             value = selectedOption,
@@ -239,7 +261,7 @@ fun FormBuilderDropdown(
                         onOptionSelected(option)
                         expanded = false
                     },
-                    modifier = Modifier.semantics { contentDescription = "Option $option" },
+                    modifier = Modifier.testTag("Option $option"),
                 )
             }
         }
@@ -270,7 +292,7 @@ fun FormBuilderMultiSelectDropdown(
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it },
-        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = "MultiSelectDropdown $label" },
+        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("MultiSelectDropdown $label"),
     ) {
         OutlinedTextField(
             value = displayValue,
@@ -298,7 +320,7 @@ fun FormBuilderMultiSelectDropdown(
                         val newList = if (isSelected) selectedOptions - option else selectedOptions + option
                         onSelectionChanged(newList)
                     },
-                    modifier = Modifier.semantics { contentDescription = "MultiSelectOption $option" },
+                    modifier = Modifier.testTag("MultiSelectOption $option"),
                 )
             }
         }
@@ -323,10 +345,10 @@ fun FormBuilderDatePicker(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text("$label (YYYY-MM-DD)") },
+        label = { Text(stringResource(Res.string.date_format_label, label)) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = modifier.fillMaxWidth().semantics { contentDescription = "DatePicker $label" },
+        modifier = modifier.fillMaxWidth().testTag("DatePicker $label"),
     )
 }
 
@@ -348,10 +370,10 @@ fun FormBuilderDateTimePicker(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text("$label (YYYY-MM-DD HH:MM)") },
+        label = { Text(stringResource(Res.string.datetime_format_label, label)) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-        modifier = modifier.fillMaxWidth().semantics { contentDescription = "DateTimePicker $label" },
+        modifier = modifier.fillMaxWidth().testTag("DateTimePicker $label"),
     )
 }
 
@@ -370,7 +392,7 @@ fun FormBuilderPhotoCamera(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = "PhotoCamera $label" },
+        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("PhotoCamera $label"),
     ) {
         Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(24.dp))
         Text(text = label, modifier = Modifier.padding(start = 8.dp))
@@ -392,7 +414,7 @@ fun FormBuilderVideoCamera(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = "VideoCamera $label" },
+        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("VideoCamera $label"),
     ) {
         Icon(Icons.Default.Videocam, contentDescription = null, modifier = Modifier.size(24.dp))
         Text(text = label, modifier = Modifier.padding(start = 8.dp))

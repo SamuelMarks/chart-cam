@@ -138,4 +138,6 @@
     <string name="widget_datetime">Date/Time</string>
     <string name="widget_numeric">Numeric</string>
     <string name="widget_range">Range</string>
+    <string name="date_format_label">%1$s (YYYY-MM-DD)</string>
+    <string name="datetime_format_label">%1$s (YYYY-MM-DD HH:MM)</string>
 </resources>
