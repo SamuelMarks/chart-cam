@@ -6,21 +6,39 @@ repos:
         args: [--autofix]
 -   repo: local
     hooks:
-    -   id: build
-        name: Build
-        entry: ./gradlew assemble
+    -   id: build-android
+        name: Build Android
+        entry: env NODE_OPTIONS="--max-old-space-size=8192" ./gradlew assembleDebug assembleRelease --no-daemon
+        language: system
+        files: \.(kt|kts|java|xml|gradle|toml)$
+        pass_filenames: false
+    -   id: build-ios
+        name: Build iOS
+        entry: env NODE_OPTIONS="--max-old-space-size=8192" ./gradlew compileKotlinIosArm64 compileKotlinIosSimulatorArm64 --no-daemon
+        language: system
+        files: \.(kt|kts|java|xml|gradle|toml)$
+        pass_filenames: false
+    -   id: build-jvm
+        name: Build JVM
+        entry: env NODE_OPTIONS="--max-old-space-size=8192" ./gradlew compileKotlinJvm --no-daemon
+        language: system
+        files: \.(kt|kts|java|xml|gradle|toml)$
+        pass_filenames: false
+    -   id: build-web
+        name: Build Web
+        entry: env NODE_OPTIONS="--max-old-space-size=8192" ./gradlew compileKotlinJs compileKotlinWasmJs --no-daemon
         language: system
         files: \.(kt|kts|java|xml|gradle|toml)$
         pass_filenames: false
     -   id: test
         name: Test
-        entry: ./gradlew allTests
+        entry: env NODE_OPTIONS="--max-old-space-size=8192" ./gradlew allTests --no-daemon
         language: system
         files: \.(kt|kts|java|xml|gradle|toml)$
         pass_filenames: false
     -   id: lint
         name: Lint
-        entry: ./gradlew lint
+        entry: env NODE_OPTIONS="--max-old-space-size=8192" ./gradlew lint --no-daemon
         language: system
         files: \.(kt|kts|java|xml|gradle|toml)$
         pass_filenames: false

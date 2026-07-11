@@ -2,8 +2,9 @@ package io.healthplatform.chartcam.ui.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import org.junit.Rule
@@ -106,8 +107,8 @@ class FormBuilderWidgetsTest {
             FormBuilderDatePicker(value = "", onValueChange = { result = it }, label = "MyDate")
         }
         rule.onNodeWithTag("DatePicker MyDate").assertIsDisplayed()
-        rule.onNodeWithTag("DatePicker MyDate").performTextInput("2024-01-01")
-        assertEquals("2024-01-01", result)
+        rule.onNodeWithTag("DatePicker MyDate").performClick()
+        rule.onNodeWithText("OK").assertIsDisplayed()
     }
 
     @Test
@@ -117,8 +118,8 @@ class FormBuilderWidgetsTest {
             FormBuilderDateTimePicker(value = "", onValueChange = { result = it }, label = "MyDT")
         }
         rule.onNodeWithTag("DateTimePicker MyDT").assertIsDisplayed()
-        rule.onNodeWithTag("DateTimePicker MyDT").performTextInput("2024-01-01 12:00")
-        assertEquals("2024-01-01 12:00", result)
+        rule.onNodeWithTag("DateTimePicker MyDT").performClick()
+        rule.onNodeWithText("OK").assertIsDisplayed()
     }
 
     @Test

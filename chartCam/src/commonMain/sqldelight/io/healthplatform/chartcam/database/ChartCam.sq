@@ -1,309 +1,158 @@
 import kotlin.Boolean;
 
 /**
- * Represents a Practitioner (e.g., doctor, nurse) entity.
+ * Generic Resource Entity that mimics the FHIR Engine SDK local database structure.
  */
-CREATE TABLE IF NOT EXISTS PractitionerEntity (
-    id TEXT NOT NULL PRIMARY KEY,
-    family TEXT NOT NULL,
-    given TEXT NOT NULL,
-    active INTEGER AS Boolean NOT NULL DEFAULT 1,
-    serializedResource TEXT NOT NULL
-);
-
-/**
- * Represents a Patient entity.
- */
-CREATE TABLE IF NOT EXISTS PatientEntity (
-    id TEXT NOT NULL PRIMARY KEY,
-    family TEXT NOT NULL,
-    given TEXT NOT NULL,
-    birthDate TEXT NOT NULL,
-    mrn TEXT NOT NULL,
-    gender TEXT NOT NULL,
-    managingOrganization TEXT,
-    serializedResource TEXT NOT NULL
-);
-
-/**
- * Represents a clinical Encounter.
- */
-CREATE TABLE IF NOT EXISTS EncounterEntity (
-    id TEXT NOT NULL PRIMARY KEY,
-    patientId TEXT NOT NULL,
-    practitionerId TEXT NOT NULL,
-    date TEXT NOT NULL,
-    status TEXT NOT NULL,
-    type TEXT NOT NULL DEFAULT 'clinical-photography',
+CREATE TABLE IF NOT EXISTS ResourceEntity (
+    resourceId TEXT NOT NULL,
+    resourceType TEXT NOT NULL,
     serializedResource TEXT NOT NULL,
-    FOREIGN KEY(patientId) REFERENCES PatientEntity(id) ON DELETE CASCADE,
-    FOREIGN KEY(practitionerId) REFERENCES PractitionerEntity(id) ON DELETE CASCADE
+    lastUpdated TEXT NOT NULL,
+    PRIMARY KEY (resourceType, resourceId)
 );
 
 /**
- * Represents a Document Reference (e.g., Photos).
+ * Index table for String SearchParams.
  */
-CREATE TABLE IF NOT EXISTS DocumentReferenceEntity (
-    id TEXT NOT NULL PRIMARY KEY,
-    encounterId TEXT NOT NULL,
-    patientId TEXT NOT NULL,
-    type TEXT NOT NULL,
-    category TEXT NOT NULL,
-    date TEXT NOT NULL,
-    title TEXT,
-    filePath TEXT NOT NULL,
-    mimeType TEXT NOT NULL DEFAULT 'image/jpeg',
-    serializedResource TEXT NOT NULL,
-    FOREIGN KEY(encounterId) REFERENCES EncounterEntity(id) ON DELETE CASCADE
+CREATE TABLE IF NOT EXISTS StringIndexEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    resourceType TEXT NOT NULL,
+    resourceId TEXT NOT NULL,
+    indexName TEXT NOT NULL,
+    indexValue TEXT NOT NULL,
+    FOREIGN KEY(resourceType, resourceId) REFERENCES ResourceEntity(resourceType, resourceId) ON DELETE CASCADE
 );
 
 /**
- * Represents a Questionnaire Response (e.g., Forms and Notes).
+ * Index table for Token SearchParams.
  */
-CREATE TABLE IF NOT EXISTS QuestionnaireResponseEntity (
-    id TEXT NOT NULL PRIMARY KEY,
-    encounterId TEXT NOT NULL,
-    patientId TEXT NOT NULL,
-    questionnaireId TEXT NOT NULL,
-    date TEXT NOT NULL,
-    serializedResource TEXT NOT NULL,
-    FOREIGN KEY(encounterId) REFERENCES EncounterEntity(id) ON DELETE CASCADE
+CREATE TABLE IF NOT EXISTS TokenIndexEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    resourceType TEXT NOT NULL,
+    resourceId TEXT NOT NULL,
+    indexName TEXT NOT NULL,
+    indexSystem TEXT,
+    indexValue TEXT NOT NULL,
+    FOREIGN KEY(resourceType, resourceId) REFERENCES ResourceEntity(resourceType, resourceId) ON DELETE CASCADE
 );
 
 /**
- * Inserts or updates a Practitioner entity.
+ * Index table for Reference SearchParams.
  */
-insertPractitioner:
-INSERT OR REPLACE INTO PractitionerEntity(id, family, given, active, serializedResource)
+CREATE TABLE IF NOT EXISTS ReferenceIndexEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    resourceType TEXT NOT NULL,
+    resourceId TEXT NOT NULL,
+    indexName TEXT NOT NULL,
+    indexValue TEXT NOT NULL,
+    FOREIGN KEY(resourceType, resourceId) REFERENCES ResourceEntity(resourceType, resourceId) ON DELETE CASCADE
+);
+
+/**
+ * Index table for Date SearchParams.
+ */
+CREATE TABLE IF NOT EXISTS DateIndexEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    resourceType TEXT NOT NULL,
+    resourceId TEXT NOT NULL,
+    indexName TEXT NOT NULL,
+    indexValue TEXT NOT NULL,
+    FOREIGN KEY(resourceType, resourceId) REFERENCES ResourceEntity(resourceType, resourceId) ON DELETE CASCADE
+);
+
+insertResource:
+INSERT OR REPLACE INTO ResourceEntity(resourceId, resourceType, serializedResource, lastUpdated)
+VALUES (?, ?, ?, ?);
+
+getResourceById:
+SELECT * FROM ResourceEntity WHERE resourceType = ? AND resourceId = ?;
+
+deleteResourceById:
+DELETE FROM ResourceEntity WHERE resourceType = ? AND resourceId = ?;
+
+getAllResourcesByType:
+SELECT * FROM ResourceEntity WHERE resourceType = ?;
+
+insertStringIndex:
+INSERT INTO StringIndexEntity(resourceType, resourceId, indexName, indexValue)
+VALUES (?, ?, ?, ?);
+
+insertTokenIndex:
+INSERT INTO TokenIndexEntity(resourceType, resourceId, indexName, indexSystem, indexValue)
 VALUES (?, ?, ?, ?, ?);
 
-/**
- * Retrieves a Practitioner by their unique ID.
- */
-getPractitionerById:
-SELECT * FROM PractitionerEntity WHERE id = ?;
+insertReferenceIndex:
+INSERT INTO ReferenceIndexEntity(resourceType, resourceId, indexName, indexValue)
+VALUES (?, ?, ?, ?);
+
+insertDateIndex:
+INSERT INTO DateIndexEntity(resourceType, resourceId, indexName, indexValue)
+VALUES (?, ?, ?, ?);
+
+deleteStringIndices:
+DELETE FROM StringIndexEntity WHERE resourceType = ? AND resourceId = ?;
+
+deleteTokenIndices:
+DELETE FROM TokenIndexEntity WHERE resourceType = ? AND resourceId = ?;
+
+deleteReferenceIndices:
+DELETE FROM ReferenceIndexEntity WHERE resourceType = ? AND resourceId = ?;
+
+deleteDateIndices:
+DELETE FROM DateIndexEntity WHERE resourceType = ? AND resourceId = ?;
+
+searchResourcesByString:
+SELECT r.* FROM ResourceEntity r
+INNER JOIN StringIndexEntity s ON r.resourceType = s.resourceType AND r.resourceId = s.resourceId
+WHERE r.resourceType = ? AND s.indexName = ? AND s.indexValue LIKE ('%' || :query || '%');
+
+searchResourcesByToken:
+SELECT r.* FROM ResourceEntity r
+INNER JOIN TokenIndexEntity t ON r.resourceType = t.resourceType AND r.resourceId = t.resourceId
+WHERE r.resourceType = ? AND t.indexName = ? AND (t.indexSystem = :system OR :system IS NULL) AND t.indexValue = ?;
+
+searchResourcesByReference:
+SELECT r.* FROM ResourceEntity r
+INNER JOIN ReferenceIndexEntity ref ON r.resourceType = ref.resourceType AND r.resourceId = ref.resourceId
+WHERE r.resourceType = ? AND ref.indexName = ? AND ref.indexValue = ?;
+
+searchResourcesByDate:
+SELECT r.* FROM ResourceEntity r
+INNER JOIN DateIndexEntity d ON r.resourceType = d.resourceType AND r.resourceId = d.resourceId
+WHERE r.resourceType = ? AND d.indexName = ? AND d.indexValue = ?;
+
+searchResourcesByReferenceDesc:
+SELECT r.* FROM ResourceEntity r
+INNER JOIN ReferenceIndexEntity ref ON r.resourceType = ref.resourceType AND r.resourceId = ref.resourceId
+WHERE r.resourceType = ? AND ref.indexName = ? AND ref.indexValue = ?
+ORDER BY r.lastUpdated DESC;
+
+getAllResourcesByTypeDesc:
+SELECT * FROM ResourceEntity WHERE resourceType = ? ORDER BY lastUpdated DESC;
+
 
 /**
- * Retrieves all Practitioners.
+ * Table for tracking local changes for Sync Engine
  */
-getAllPractitioners:
-SELECT * FROM PractitionerEntity;
-
-/**
- * Deletes a Practitioner by their unique ID.
- */
-deletePractitionerById:
-DELETE FROM PractitionerEntity WHERE id = ?;
-
-/**
- * Inserts or updates a Patient entity.
- */
-insertPatient:
-INSERT OR REPLACE INTO PatientEntity(id, family, given, birthDate, mrn, gender, managingOrganization, serializedResource)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-
-/**
- * Retrieves all Patients ordered by family name.
- */
-getAllPatients:
-SELECT * FROM PatientEntity ORDER BY family ASC;
-
-/**
- * Retrieves a Patient by their unique ID.
- */
-getPatientById:
-SELECT * FROM PatientEntity WHERE id = ?;
-
-/**
- * Searches Patients by matching their family name, given name, or MRN.
- */
-searchPatients:
-SELECT * FROM PatientEntity 
-WHERE family LIKE ('%' || :query || '%') 
-OR given LIKE ('%' || :query || '%') 
-OR mrn LIKE ('%' || :query || '%');
-
-/**
- * Deletes a Patient by their unique ID.
- */
-deletePatientById:
-DELETE FROM PatientEntity WHERE id = ?;
-
-/**
- * Inserts or updates an Encounter entity.
- */
-insertEncounter:
-INSERT OR REPLACE INTO EncounterEntity(id, patientId, practitionerId, date, status, serializedResource)
-VALUES (?, ?, ?, ?, ?, ?);
-
-/**
- * Retrieves all Encounters for a specific Patient, ordered descending by date.
- */
-getEncountersForPatient:
-SELECT * FROM EncounterEntity 
-WHERE patientId = ? 
-ORDER BY date DESC;
-
-/**
- * Retrieves an Encounter by its unique ID.
- */
-getEncounterById:
-SELECT * FROM EncounterEntity WHERE id = ?;
-
-/**
- * Retrieves all Encounters in the database.
- */
-getAllEncounters:
-SELECT * FROM EncounterEntity;
-
-/**
- * Updates the status and serialized resource of an Encounter.
- */
-updateEncounterStatus:
-UPDATE EncounterEntity
-SET status = ?, serializedResource = ?
-WHERE id = ?;
-
-/**
- * Deletes an Encounter by its unique ID.
- */
-deleteEncounterById:
-DELETE FROM EncounterEntity WHERE id = ?;
-
-/**
- * Inserts or updates a Document Reference entity.
- */
-insertDocumentReference:
-INSERT OR REPLACE INTO DocumentReferenceEntity(id, encounterId, patientId, type, category, date, title, filePath, mimeType, serializedResource)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-
-/**
- * Retrieves all photos (Document References) for a specific Encounter.
- */
-getPhotosForEncounter:
-SELECT * FROM DocumentReferenceEntity
-WHERE encounterId = ?
-ORDER BY date ASC;
-
-/**
- * Retrieves all Document References in the database.
- */
-getAllDocumentReferences:
-SELECT * FROM DocumentReferenceEntity;
-
-/**
- * Inserts or updates a Questionnaire Response entity.
- */
-insertQuestionnaireResponse:
-INSERT OR REPLACE INTO QuestionnaireResponseEntity(id, encounterId, patientId, questionnaireId, date, serializedResource)
-VALUES (?, ?, ?, ?, ?, ?);
-
-/**
- * Retrieves all Questionnaire Responses for a specific Encounter.
- */
-getQuestionnaireResponsesForEncounter:
-SELECT * FROM QuestionnaireResponseEntity
-WHERE encounterId = ?
-ORDER BY date DESC;
-
-/**
- * Retrieves all Questionnaire Responses in the database.
- */
-getAllQuestionnaireResponses:
-SELECT * FROM QuestionnaireResponseEntity;
-
-/**
- * Represents a Device entity.
- */
-CREATE TABLE IF NOT EXISTS DeviceEntity (
-    id TEXT NOT NULL PRIMARY KEY,
-    serializedResource TEXT NOT NULL
+CREATE TABLE IF NOT EXISTS LocalChangeEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    resourceType TEXT NOT NULL,
+    resourceId TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    type TEXT NOT NULL, -- INSERT, UPDATE, DELETE
+    payload TEXT NOT NULL,
+    versionId TEXT -- For ETag tracking
 );
 
-/**
- * Represents a Provenance entity for tracking actions.
- */
-CREATE TABLE IF NOT EXISTS ProvenanceEntity (
-    id TEXT NOT NULL PRIMARY KEY,
-    targetId TEXT NOT NULL,
-    encounterId TEXT,
-    date TEXT NOT NULL,
-    serializedResource TEXT NOT NULL
-);
+insertLocalChange:
+INSERT INTO LocalChangeEntity(resourceType, resourceId, timestamp, type, payload, versionId)
+VALUES (?, ?, ?, ?, ?, ?);
 
-/**
- * Inserts or updates a Device entity.
- */
-insertDevice:
-INSERT OR REPLACE INTO DeviceEntity(id, serializedResource)
-VALUES (?, ?);
+getAllLocalChanges:
+SELECT * FROM LocalChangeEntity ORDER BY id ASC;
 
-/**
- * Retrieves a Device by its unique ID.
- */
-getDevice:
-SELECT * FROM DeviceEntity WHERE id = ?;
+deleteLocalChange:
+DELETE FROM LocalChangeEntity WHERE id = ?;
 
-/**
- * Retrieves all Devices in the database.
- */
-getAllDevices:
-SELECT * FROM DeviceEntity;
-
-/**
- * Inserts or updates a Provenance entity.
- */
-insertProvenance:
-INSERT OR REPLACE INTO ProvenanceEntity(id, targetId, encounterId, date, serializedResource)
-VALUES (?, ?, ?, ?, ?);
-
-/**
- * Retrieves all Provenances for a specific Encounter.
- */
-getProvenancesForEncounter:
-SELECT * FROM ProvenanceEntity WHERE encounterId = ? ORDER BY date DESC;
-
-/**
- * Retrieves all Provenances in the database.
- */
-getAllProvenances:
-SELECT * FROM ProvenanceEntity;
-
-/**
- * Retrieves all Encounters associated with a specific Practitioner.
- */
-getEncountersForPractitioner:
-SELECT * FROM EncounterEntity
-WHERE practitionerId = ?;
-
-/**
- * Retrieves all distinct Patients associated with a specific Practitioner.
- */
-getPatientsForPractitioner:
-SELECT DISTINCT p.* FROM PatientEntity p
-INNER JOIN EncounterEntity e ON p.id = e.patientId
-WHERE e.practitionerId = ?;
-
-/**
- * Retrieves all Document References associated with a specific Practitioner.
- */
-getDocumentReferencesForPractitioner:
-SELECT d.* FROM DocumentReferenceEntity d
-INNER JOIN EncounterEntity e ON d.encounterId = e.id
-WHERE e.practitionerId = ?;
-
-/**
- * Retrieves all Questionnaire Responses associated with a specific Practitioner.
- */
-getQuestionnaireResponsesForPractitioner:
-SELECT q.* FROM QuestionnaireResponseEntity q
-INNER JOIN EncounterEntity e ON q.encounterId = e.id
-WHERE e.practitionerId = ?;
-
-/**
- * Retrieves all Provenances associated with a specific Practitioner.
- */
-getProvenancesForPractitioner:
-SELECT p.* FROM ProvenanceEntity p
-LEFT JOIN EncounterEntity e ON p.encounterId = e.id
-WHERE e.practitionerId = ? OR p.encounterId IS NULL;
+deleteLocalChangesForResource:
+DELETE FROM LocalChangeEntity WHERE resourceType = ? AND resourceId = ?;

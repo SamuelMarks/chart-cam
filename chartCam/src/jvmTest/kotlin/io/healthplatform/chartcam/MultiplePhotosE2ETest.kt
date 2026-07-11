@@ -58,7 +58,7 @@ class MultiplePhotosE2ETest {
             ChartCamDatabase.Schema.synchronous().create(driver)
             val fhirRepository = FhirRepository(ChartCamDatabase(driver))
             val questionnaireRepository = QuestionnaireRepository()
-
+            kotlinx.coroutines.runBlocking { questionnaireRepository.loadDefaultForms() }
             // 1. Create a questionnaire using the Form Builder
             val builderViewModel = QuestionnaireBuilderViewModel(questionnaireRepository)
             builderViewModel.updateTitle("Multi Photo Form")
@@ -71,7 +71,7 @@ class MultiplePhotosE2ETest {
             builderViewModel.addItem(WidgetType.PHOTO_CAMERA)
             builderViewModel.updateItem("item_2", "Photo 2 Label", emptyList())
 
-            val customFormId = builderViewModel.saveQuestionnaire()
+            val customFormId = builderViewModel.saveQuestionnaire()!!
             val q = questionnaireRepository.getQuestionnaire(customFormId)
             assertEquals(2, q?.item?.size)
 

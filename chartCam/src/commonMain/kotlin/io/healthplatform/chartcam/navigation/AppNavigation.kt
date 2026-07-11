@@ -17,7 +17,7 @@ import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.storage.createSecureStorage
-import io.healthplatform.chartcam.sync.SyncManager
+import io.healthplatform.chartcam.sync.SyncWorker
 import io.healthplatform.chartcam.ui.CaptureScreen
 import io.healthplatform.chartcam.ui.EncounterDetailScreen
 import io.healthplatform.chartcam.ui.LoginScreen
@@ -94,7 +94,7 @@ fun AppNavigation() {
     val fileStorage = remember { createFileStorage() }
     val exportImportService = remember { ExportImportService(fhirRepository.database, fileStorage) }
 
-    val syncManager = remember { SyncManager(fhirRepository, client, fileStorage) }
+    val syncWorker = remember { SyncWorker(fhirRepository, client) }
 
     val photoSessionManager = remember { PhotoSessionManager() }
 
@@ -105,6 +105,7 @@ fun AppNavigation() {
     LaunchedEffect(Unit) {
         authRepository.checkSession()
         io.healthplatform.chartcam.initDatabase(driver)
+        questionnaireRepository.loadDefaultForms()
     }
 
     NavHost(navController = navController, startDestination = Routes.LOGIN) {
@@ -192,7 +193,7 @@ fun AppNavigation() {
                     photoSessionManager = photoSessionManager,
                     fhirRepository = fhirRepository,
                     authRepository = authRepository,
-                    syncManager = syncManager,
+                    syncWorker = syncWorker,
                     questionnaireRepository = questionnaireRepository,
                     newlyCreatedQuestionnaireId = newlyCreatedQuestionnaireId,
                     onBack = { navController.popBackStack() },
@@ -232,7 +233,7 @@ fun AppNavigation() {
                     photoSessionManager = photoSessionManager,
                     fhirRepository = fhirRepository,
                     authRepository = authRepository,
-                    syncManager = syncManager,
+                    syncWorker = syncWorker,
                     questionnaireRepository = questionnaireRepository,
                     newlyCreatedQuestionnaireId = newlyCreatedQuestionnaireId,
                     onBack = { navController.popBackStack() },

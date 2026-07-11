@@ -14,7 +14,7 @@ import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.storage.JvmSecureStorage
-import io.healthplatform.chartcam.sync.SyncManager
+import io.healthplatform.chartcam.sync.SyncWorker
 import io.healthplatform.chartcam.viewmodel.EncounterDetailViewModel
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
 import io.healthplatform.chartcam.viewmodel.PatientDetailViewModel
@@ -88,12 +88,10 @@ class E2EWorkflowTest {
             val authRepository = AuthRepository(client, storage)
             val fileStorage = createFileStorage()
             val exportImportService = ExportImportService(fhirRepository.database, fileStorage)
-            val syncManager =
-                SyncManager(
+            val syncWorker =
+                SyncWorker(
                     fhirRepository,
                     client,
-                    io.healthplatform.chartcam.files
-                        .createFileStorage(),
                 )
 
             // 2. Login Workflow
@@ -141,13 +139,16 @@ class E2EWorkflowTest {
             )
 
             // 5. Camera Capture & Note Taking
+            val qRepo =
+                io.healthplatform.chartcam.repository
+                    .QuestionnaireRepository()
+            kotlinx.coroutines.runBlocking { qRepo.loadDefaultForms() }
             val encounterDetailViewModel =
                 EncounterDetailViewModel(
                     fhirRepository,
                     authRepository,
-                    syncManager,
-                    io.healthplatform.chartcam.repository
-                        .QuestionnaireRepository(),
+                    syncWorker,
+                    qRepo,
                 )
 
             // Simulating the user passing photos to the encounter detail after capture
@@ -215,6 +216,7 @@ class E2EWorkflowTest {
 
             // 8. Test Questionnaire Management
             val questionnaireRepository = QuestionnaireRepository()
+            kotlinx.coroutines.runBlocking { questionnaireRepository.loadDefaultForms() }
             val initialForms = questionnaireRepository.getAvailableQuestionnaires()
             assertTrue(initialForms.isNotEmpty(), "Should have preloaded standard forms")
 

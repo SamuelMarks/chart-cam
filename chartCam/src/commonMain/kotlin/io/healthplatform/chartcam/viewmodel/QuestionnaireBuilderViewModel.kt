@@ -32,12 +32,14 @@ data class QuestionnaireBuilderState(
  * @property label The display text (instruction) for the item.
  * @property widgetType The type of Material 3 widget to render.
  * @property options Options for dropdowns, if applicable.
+ * @property isError Whether the item has a validation error (e.g., empty label, missing options).
  */
 data class BuilderItem(
     val linkId: kotlin.String,
     val label: kotlin.String,
     val widgetType: WidgetType,
     val options: List<kotlin.String> = emptyList(),
+    val isError: kotlin.Boolean = false,
 )
 
 /**
@@ -60,6 +62,7 @@ enum class WidgetType {
 
 /**
  * ViewModel for managing the state of the Questionnaire Builder.
+ * This ViewModel directly consumes and emits native FHIR R4 `Resource` models (e.g., `Questionnaire`) without relying on intermediary DTOs.
  *
  * @param repository The repository to save the resulting FHIR Questionnaire.
  */
@@ -94,14 +97,7 @@ class QuestionnaireBuilderViewModel(
                 linkId = newId,
                 label = "New ${widgetType.name} Item",
                 widgetType = widgetType,
-                options =
-                    if (widgetType == WidgetType.SINGLE_SELECT ||
-                        widgetType == WidgetType.MULTI_SELECT
-                    ) {
-                        listOf("Option 1", "Option 2")
-                    } else {
-                        emptyList()
-                    },
+                options = emptyList(),
             )
         _state.update { it.copy(items = currentItems + newItem) }
     }
@@ -123,13 +119,29 @@ class QuestionnaireBuilderViewModel(
                 items =
                     currentState.items.map { item ->
                         if (item.linkId == linkId) {
-                            item.copy(label = newLabel, options = newOptions)
+                            val isError =
+                                newLabel.isBlank() ||
+                                    (
+                                        (item.widgetType == WidgetType.SINGLE_SELECT || item.widgetType == WidgetType.MULTI_SELECT) &&
+                                            newOptions.isEmpty()
+                                    )
+                            item.copy(label = newLabel, options = newOptions, isError = isError)
                         } else {
                             item
                         }
                     },
             )
         }
+    }
+
+    /**
+     * Validates the current builder state.
+     * @return True if valid, false if there are validation errors.
+     */
+    fun validate(): kotlin.Boolean {
+        val questionnaire = buildQuestionnaire()
+        return io.healthplatform.chartcam.validation.FhirValidator
+            .validate(questionnaire)
     }
 
     /**
@@ -144,6 +156,40 @@ class QuestionnaireBuilderViewModel(
     }
 
     /**
+     * Moves an item up in the list.
+     *
+     * @param linkId The ID of the item to move up.
+     */
+    fun moveItemUp(linkId: kotlin.String) {
+        _state.update { currentState ->
+            val items = currentState.items.toMutableList()
+            val index = items.indexOfFirst { it.linkId == linkId }
+            if (index > 0) {
+                val item = items.removeAt(index)
+                items.add(index - 1, item)
+            }
+            currentState.copy(items = items.toList())
+        }
+    }
+
+    /**
+     * Moves an item down in the list.
+     *
+     * @param linkId The ID of the item to move down.
+     */
+    fun moveItemDown(linkId: kotlin.String) {
+        _state.update { currentState ->
+            val items = currentState.items.toMutableList()
+            val index = items.indexOfFirst { it.linkId == linkId }
+            if (index != -1 && index < items.size - 1) {
+                val item = items.removeAt(index)
+                items.add(index + 1, item)
+            }
+            currentState.copy(items = items.toList())
+        }
+    }
+
+    /**
      * Toggles the preview mode of the builder.
      */
     fun togglePreviewMode() {
@@ -151,10 +197,10 @@ class QuestionnaireBuilderViewModel(
     }
 
     /**
-     * Saves the current builder state as a FHIR Questionnaire in the repository.
-     * @return The ID of the newly created Questionnaire.
+     * Builds a FHIR Questionnaire resource from the current state.
+     * @return The built Questionnaire.
      */
-    fun saveQuestionnaire(): kotlin.String {
+    fun buildQuestionnaire(): Questionnaire {
         val currentState = _state.value
         val id = "custom-${currentState.title.lowercase().replace(Regex("[^a-z0-9]+"), "-")}"
 
@@ -188,11 +234,23 @@ class QuestionnaireBuilderViewModel(
                     if (builderItem.widgetType == WidgetType.MULTI_SELECT) {
                         itemBuilder.repeats = Boolean.Builder().apply { value = true }
                     }
-                    builderItem.options.forEach { optionValue ->
+                    builderItem.options.forEachIndexed { index, optionValue ->
                         itemBuilder.answerOption.add(
                             Questionnaire.Item.AnswerOption.Builder(
-                                Questionnaire.Item.AnswerOption.Value.String(
-                                    String.Builder().apply { value = optionValue }.build(),
+                                Questionnaire.Item.AnswerOption.Value.Coding(
+                                    com.google.fhir.model.r4.Coding
+                                        .Builder()
+                                        .apply {
+                                            system =
+                                                com.google.fhir.model.r4.Uri
+                                                    .Builder()
+                                                    .apply { value = "http://chartcam.local/custom-options" }
+                                            code =
+                                                com.google.fhir.model.r4.Code
+                                                    .Builder()
+                                                    .apply { value = "opt-$index" }
+                                            display = String.Builder().apply { value = optionValue }
+                                        }.build(),
                                 ),
                             ),
                         )
@@ -238,16 +296,23 @@ class QuestionnaireBuilderViewModel(
                 itemBuilder
             }
 
-        val questionnaire =
-            Questionnaire
-                .Builder(Enumeration(value = PublicationStatus.Active))
-                .apply {
-                    this.id = id
-                    this.title = String.Builder().apply { value = currentState.title }
-                    this.item.addAll(fhirItems)
-                }.build()
+        return Questionnaire
+            .Builder(Enumeration(value = PublicationStatus.Active))
+            .apply {
+                this.id = id
+                this.title = String.Builder().apply { value = currentState.title }
+                this.item.addAll(fhirItems)
+            }.build()
+    }
 
+    /**
+     * Saves the current builder state as a FHIR Questionnaire in the repository.
+     * @return The ID of the newly created Questionnaire, or null if validation failed.
+     */
+    fun saveQuestionnaire(): kotlin.String? {
+        if (!validate()) return null
+        val questionnaire = buildQuestionnaire()
         repository.saveQuestionnaire(questionnaire)
-        return id
+        return questionnaire.id ?: ""
     }
 }

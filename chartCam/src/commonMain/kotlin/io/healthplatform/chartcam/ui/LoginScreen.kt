@@ -281,7 +281,10 @@ fun LoginScreen(
                                 focusManager.clearFocus()
                                 viewModel.login(username, password)
                             },
-                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding =
+                                androidx.compose.foundation.layout
+                                    .PaddingValues(vertical = 16.dp),
                             shape = RoundedCornerShape(12.dp),
                             enabled = username.isNotBlank() && password.isNotBlank(),
                             colors =

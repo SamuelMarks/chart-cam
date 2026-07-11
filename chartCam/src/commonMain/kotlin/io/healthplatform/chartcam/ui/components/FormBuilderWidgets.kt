@@ -1,27 +1,41 @@
 package io.healthplatform.chartcam.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,8 +49,13 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.cancel
+import chartcam.chartcam.generated.resources.clear
 import chartcam.chartcam.generated.resources.date_format_label
 import chartcam.chartcam.generated.resources.datetime_format_label
+import chartcam.chartcam.generated.resources.ok
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -45,6 +64,9 @@ import org.jetbrains.compose.resources.stringResource
  * @param value The current value of the input.
  * @param onValueChange Callback invoked when the input value changes.
  * @param label The label text displayed for the input field.
+ * @param isRequired Whether the field is required.
+ * @param isError Whether the field is in an error state.
+ * @param errorMessage The error message to display when in an error state.
  * @param modifier The modifier to be applied to the widget.
  */
 @Composable
@@ -52,13 +74,29 @@ fun FormBuilderTextInput(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
+    isRequired: Boolean = false,
+    isError: Boolean = false,
+    errorMessage: String? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     modifier: Modifier = Modifier,
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        label = { FormLabel(label, isRequired) },
+        isError = isError,
+        supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
+        trailingIcon = {
+            if (value.isNotEmpty()) {
+                IconButton(onClick = { onValueChange("") }) {
+                    Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
+                }
+            }
+        },
         singleLine = true,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
         modifier = modifier.fillMaxWidth().testTag("TextInput $label"),
     )
 }
@@ -69,6 +107,9 @@ fun FormBuilderTextInput(
  * @param value The current value of the input.
  * @param onValueChange Callback invoked when the input value changes.
  * @param label The label text displayed for the input field.
+ * @param isRequired Whether the field is required.
+ * @param isError Whether the field is in an error state.
+ * @param errorMessage The error message to display when in an error state.
  * @param modifier The modifier to be applied to the widget.
  */
 @Composable
@@ -76,12 +117,24 @@ fun FormBuilderTextArea(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
+    isRequired: Boolean = false,
+    isError: Boolean = false,
+    errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        label = { FormLabel(label, isRequired) },
+        isError = isError,
+        supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
+        trailingIcon = {
+            if (value.isNotEmpty()) {
+                IconButton(onClick = { onValueChange("") }) {
+                    Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
+                }
+            }
+        },
         minLines = 3,
         modifier = modifier.fillMaxWidth().testTag("TextArea $label"),
     )
@@ -93,6 +146,9 @@ fun FormBuilderTextArea(
  * @param checked The current checked state of the switch.
  * @param onCheckedChange Callback invoked when the state changes.
  * @param label The label text displayed for the switch.
+ * @param isRequired Whether the field is required.
+ * @param isError Whether the field is in an error state.
+ * @param errorMessage The error message to display when in an error state.
  * @param modifier The modifier to be applied to the widget.
  */
 @Composable
@@ -100,6 +156,9 @@ fun FormBuilderSwitch(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     label: String,
+    isRequired: Boolean = false,
+    isError: Boolean = false,
+    errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -129,6 +188,9 @@ fun FormBuilderSwitch(
  * @param checked The current checked state of the checkbox.
  * @param onCheckedChange Callback invoked when the state changes.
  * @param label The label text displayed for the checkbox.
+ * @param isRequired Whether the field is required.
+ * @param isError Whether the field is in an error state.
+ * @param errorMessage The error message to display when in an error state.
  * @param modifier The modifier to be applied to the widget.
  */
 @Composable
@@ -136,6 +198,9 @@ fun FormBuilderCheckbox(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     label: String,
+    isRequired: Boolean = false,
+    isError: Boolean = false,
+    errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -165,6 +230,9 @@ fun FormBuilderCheckbox(
  * @param value The current value of the input.
  * @param onValueChange Callback invoked when the numeric value changes.
  * @param label The label text displayed for the input field.
+ * @param isRequired Whether the field is required.
+ * @param isError Whether the field is in an error state.
+ * @param errorMessage The error message to display when in an error state.
  * @param modifier The modifier to be applied to the widget.
  */
 @Composable
@@ -172,16 +240,28 @@ fun FormBuilderNumericInput(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
+    isRequired: Boolean = false,
+    isError: Boolean = false,
+    errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = { newVal ->
-            if (newVal.isEmpty() || newVal.all { it.isDigit() || it == '.' }) {
+            if (newVal.isEmpty() || newVal.matches(Regex("^\\d*\\.?\\d*$"))) {
                 onValueChange(newVal)
             }
         },
-        label = { Text(label) },
+        label = { FormLabel(label, isRequired) },
+        isError = isError,
+        supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
+        trailingIcon = {
+            if (value.isNotEmpty()) {
+                IconButton(onClick = { onValueChange("") }) {
+                    Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
+                }
+            }
+        },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         modifier = modifier.fillMaxWidth().testTag("NumericInput $label"),
@@ -195,6 +275,9 @@ fun FormBuilderNumericInput(
  * @param valueRange The valid range of values.
  * @param onValueChange Callback invoked when the value changes.
  * @param label The label text displayed for the slider.
+ * @param isRequired Whether the field is required.
+ * @param isError Whether the field is in an error state.
+ * @param errorMessage The error message to display when in an error state.
  * @param modifier The modifier to be applied to the widget.
  */
 @Composable
@@ -203,6 +286,9 @@ fun FormBuilderRangeSlider(
     valueRange: ClosedFloatingPointRange<Float>,
     onValueChange: (Float) -> Unit,
     label: String,
+    isRequired: Boolean = false,
+    isError: Boolean = false,
+    errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.padding(vertical = 8.dp).testTag("RangeSlider $label")) {
@@ -223,6 +309,9 @@ fun FormBuilderRangeSlider(
  * @param options The list of available options.
  * @param onOptionSelected Callback invoked when an option is selected.
  * @param label The label text displayed for the dropdown.
+ * @param isRequired Whether the field is required.
+ * @param isError Whether the field is in an error state.
+ * @param errorMessage The error message to display when in an error state.
  * @param modifier The modifier to be applied to the widget.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -232,6 +321,9 @@ fun FormBuilderDropdown(
     options: List<String>,
     onOptionSelected: (String) -> Unit,
     label: String,
+    isRequired: Boolean = false,
+    isError: Boolean = false,
+    errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -245,7 +337,9 @@ fun FormBuilderDropdown(
             value = selectedOption,
             onValueChange = {},
             readOnly = true,
-            label = { Text(label) },
+            label = { FormLabel(label, isRequired) },
+            isError = isError,
+            supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
             modifier = Modifier.menuAnchor(androidx.compose.material3.ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
@@ -275,51 +369,51 @@ fun FormBuilderDropdown(
  * @param options The list of available options.
  * @param onSelectionChanged Callback invoked when the selection changes.
  * @param label The label text displayed for the dropdown.
+ * @param isRequired Whether the field is required.
+ * @param isError Whether the field is in an error state.
+ * @param errorMessage The error message to display when in an error state.
  * @param modifier The modifier to be applied to the widget.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun FormBuilderMultiSelectDropdown(
     selectedOptions: List<String>,
     options: List<String>,
     onSelectionChanged: (List<String>) -> Unit,
     label: String,
+    isRequired: Boolean = false,
+    isError: Boolean = false,
+    errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    val displayValue = if (selectedOptions.isEmpty()) "" else selectedOptions.joinToString(", ")
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("MultiSelectDropdown $label"),
-    ) {
-        OutlinedTextField(
-            value = displayValue,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-            modifier = Modifier.menuAnchor(androidx.compose.material3.ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-        )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
+    Column(modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("MultiSelectDropdown $label")) {
+        FormLabel(label, isRequired, modifier = Modifier.padding(bottom = 4.dp))
+        if (isError && errorMessage != null) {
+            Text(
+                errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+        }
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                androidx.compose.foundation.layout.Arrangement
+                    .spacedBy(8.dp),
+            verticalArrangement =
+                androidx.compose.foundation.layout.Arrangement
+                    .spacedBy(4.dp),
         ) {
             options.forEach { option ->
                 val isSelected = selectedOptions.contains(option)
-                DropdownMenuItem(
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(checked = isSelected, onCheckedChange = null)
-                            Text(text = option, modifier = Modifier.padding(start = 8.dp))
-                        }
-                    },
+                InputChip(
+                    selected = isSelected,
                     onClick = {
                         val newList = if (isSelected) selectedOptions - option else selectedOptions + option
                         onSelectionChanged(newList)
                     },
+                    label = { Text(option) },
                     modifier = Modifier.testTag("MultiSelectOption $option"),
                 )
             }
@@ -333,23 +427,82 @@ fun FormBuilderMultiSelectDropdown(
  * @param value The current date string.
  * @param onValueChange Callback invoked when the date changes.
  * @param label The label text displayed for the picker.
+ * @param isRequired Whether the field is required.
+ * @param isError Whether the field is in an error state.
+ * @param errorMessage The error message to display when in an error state.
  * @param modifier The modifier to be applied to the widget.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FormBuilderDatePicker(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
+    isRequired: Boolean = false,
+    isError: Boolean = false,
+    errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(stringResource(Res.string.date_format_label, label)) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = modifier.fillMaxWidth().testTag("DatePicker $label"),
-    )
+    var showDialog by remember { mutableStateOf(false) }
+
+    val datePickerState = rememberDatePickerState()
+
+    if (showDialog) {
+        DatePickerDialog(
+            onDismissRequest = { showDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val millis = datePickerState.selectedDateMillis
+                    if (millis != null) {
+                        val instant = kotlinx.datetime.Instant.fromEpochMilliseconds(millis)
+                        val tz = kotlinx.datetime.TimeZone.currentSystemDefault()
+                        val localDate = instant.toLocalDateTime(tz).date
+                        onValueChange(localDate.toString())
+                    }
+                    showDialog = false
+                }) {
+                    Text(stringResource(Res.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text(stringResource(Res.string.cancel))
+                }
+            },
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    androidx.compose.foundation.layout.Box(modifier = modifier.fillMaxWidth().clickable { showDialog = true }) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = { },
+            readOnly = true,
+            enabled = false,
+            label = { FormLabel(stringResource(Res.string.date_format_label, label), isRequired) },
+            isError = isError,
+            supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
+            trailingIcon = {
+                if (value.isNotEmpty()) {
+                    IconButton(onClick = { onValueChange("") }) {
+                        Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
+                    }
+                }
+            },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().testTag("DatePicker $label"),
+            colors =
+                androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+        )
+    }
 }
 
 /**
@@ -358,29 +511,122 @@ fun FormBuilderDatePicker(
  * @param value The current datetime string.
  * @param onValueChange Callback invoked when the datetime changes.
  * @param label The label text displayed for the picker.
+ * @param isRequired Whether the field is required.
+ * @param isError Whether the field is in an error state.
+ * @param errorMessage The error message to display when in an error state.
  * @param modifier The modifier to be applied to the widget.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FormBuilderDateTimePicker(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
+    isRequired: Boolean = false,
+    isError: Boolean = false,
+    errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(stringResource(Res.string.datetime_format_label, label)) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-        modifier = modifier.fillMaxWidth().testTag("DateTimePicker $label"),
-    )
+    var showDateDialog by remember { mutableStateOf(false) }
+    var showTimeDialog by remember { mutableStateOf(false) }
+
+    val datePickerState = rememberDatePickerState()
+    val timePickerState = rememberTimePickerState()
+
+    var selectedDateStr by remember { mutableStateOf<String?>(null) }
+
+    if (showDateDialog) {
+        DatePickerDialog(
+            onDismissRequest = { showDateDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val millis = datePickerState.selectedDateMillis
+                    if (millis != null) {
+                        val instant = kotlinx.datetime.Instant.fromEpochMilliseconds(millis)
+                        val tz = kotlinx.datetime.TimeZone.currentSystemDefault()
+                        val localDate = instant.toLocalDateTime(tz).date
+                        selectedDateStr = localDate.toString()
+                        showDateDialog = false
+                        showTimeDialog = true
+                    }
+                }) {
+                    Text(stringResource(Res.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDateDialog = false }) {
+                    Text(stringResource(Res.string.cancel))
+                }
+            },
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showTimeDialog) {
+        AlertDialog(
+            onDismissRequest = { showTimeDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val hour = timePickerState.hour.toString().padStart(2, '0')
+                    val minute = timePickerState.minute.toString().padStart(2, '0')
+                    if (selectedDateStr != null) {
+                        onValueChange("${selectedDateStr}T$hour:$minute:00Z")
+                    }
+                    showTimeDialog = false
+                }) {
+                    Text(stringResource(Res.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimeDialog = false }) {
+                    Text(stringResource(Res.string.cancel))
+                }
+            },
+            text = {
+                TimePicker(state = timePickerState)
+            },
+        )
+    }
+
+    androidx.compose.foundation.layout.Box(modifier = modifier.fillMaxWidth().clickable { showDateDialog = true }) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = { },
+            readOnly = true,
+            enabled = false,
+            label = { FormLabel(stringResource(Res.string.datetime_format_label, label), isRequired) },
+            isError = isError,
+            supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
+            trailingIcon = {
+                if (value.isNotEmpty()) {
+                    IconButton(onClick = { onValueChange("") }) {
+                        Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
+                    }
+                }
+            },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().testTag("DateTimePicker $label"),
+            colors =
+                androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+        )
+    }
 }
 
 /**
  * A Material 3 Camera widget for Photos.
  *
  * @param label The instructional label for the user (e.g. "Take photo of left ear").
+ * @param isRequired Whether the field is required.
+ * @param isError Whether the field is in an error state.
+ * @param errorMessage The error message to display when in an error state.
  * @param onClick Callback when the camera button is clicked.
  * @param modifier The modifier to be applied to the widget.
  */
@@ -403,6 +649,9 @@ fun FormBuilderPhotoCamera(
  * A Material 3 Camera widget for Videos.
  *
  * @param label The instructional label for the user (e.g. "Take video of face").
+ * @param isRequired Whether the field is required.
+ * @param isError Whether the field is in an error state.
+ * @param errorMessage The error message to display when in an error state.
  * @param onClick Callback when the camera button is clicked.
  * @param modifier The modifier to be applied to the widget.
  */

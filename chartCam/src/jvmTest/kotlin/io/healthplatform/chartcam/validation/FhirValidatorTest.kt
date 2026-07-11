@@ -1,0 +1,81 @@
+package io.healthplatform.chartcam.validation
+
+import com.google.fhir.model.r4.Enumeration
+import com.google.fhir.model.r4.HumanName
+import com.google.fhir.model.r4.Identifier
+import com.google.fhir.model.r4.Patient
+import com.google.fhir.model.r4.Questionnaire
+import com.google.fhir.model.r4.String
+import com.google.fhir.model.r4.terminologies.PublicationStatus
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class FhirValidatorTest {
+    @Test
+    fun testValidPatient() {
+        val patient =
+            Patient
+                .Builder()
+                .apply {
+                    name.add(
+                        HumanName.Builder().apply {
+                            family = String.Builder().apply { value = "Doe" }
+                            given.add(String.Builder().apply { value = "John" })
+                        },
+                    )
+                    identifier.add(
+                        Identifier.Builder().apply {
+                            value = String.Builder().apply { value = "123" }
+                        },
+                    )
+                }.build()
+        assertTrue(FhirValidator.validate(patient))
+    }
+
+    @Test
+    fun testInvalidPatientNoName() {
+        val patient =
+            Patient
+                .Builder()
+                .apply {
+                    identifier.add(
+                        Identifier.Builder().apply {
+                            value = String.Builder().apply { value = "123" }
+                        },
+                    )
+                }.build()
+        assertFalse(FhirValidator.validate(patient))
+    }
+
+    @Test
+    fun testValidQuestionnaire() {
+        val q =
+            Questionnaire
+                .Builder(status = Enumeration(value = PublicationStatus.Active))
+                .apply {
+                    title = String.Builder().apply { value = "Test Q" }
+                    item.add(
+                        Questionnaire.Item
+                            .Builder(
+                                linkId = String.Builder().apply { value = "1" },
+                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            ).apply {
+                                text = String.Builder().apply { value = "Text" }
+                            },
+                    )
+                }.build()
+        assertTrue(FhirValidator.validate(q))
+    }
+
+    @Test
+    fun testInvalidQuestionnaireEmptyItem() {
+        val q =
+            Questionnaire
+                .Builder(status = Enumeration(value = PublicationStatus.Active))
+                .apply {
+                    title = String.Builder().apply { value = "Test Q" }
+                }.build()
+        assertFalse(FhirValidator.validate(q))
+    }
+}

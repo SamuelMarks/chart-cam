@@ -10,6 +10,7 @@ class QuestionnaireBuilderViewModelTest {
     @Test
     fun testInitialState() {
         val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
         val viewModel = QuestionnaireBuilderViewModel(repo)
 
         val state = viewModel.state.value
@@ -21,6 +22,7 @@ class QuestionnaireBuilderViewModelTest {
     @Test
     fun testUpdateTitle() {
         val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
         val viewModel = QuestionnaireBuilderViewModel(repo)
 
         viewModel.updateTitle("New Form")
@@ -30,6 +32,7 @@ class QuestionnaireBuilderViewModelTest {
     @Test
     fun testAddAndRemoveItem() {
         val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
         val viewModel = QuestionnaireBuilderViewModel(repo)
 
         viewModel.addItem(WidgetType.SINGLE_LINE_TEXT)
@@ -51,6 +54,7 @@ class QuestionnaireBuilderViewModelTest {
     @Test
     fun testUpdateItem() {
         val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
         val viewModel = QuestionnaireBuilderViewModel(repo)
 
         viewModel.addItem(WidgetType.MULTI_SELECT)
@@ -69,8 +73,54 @@ class QuestionnaireBuilderViewModelTest {
     }
 
     @Test
+    fun testMoveItemUpAndDown() {
+        val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
+        val viewModel = QuestionnaireBuilderViewModel(repo)
+
+        viewModel.addItem(WidgetType.SINGLE_LINE_TEXT)
+        viewModel.addItem(WidgetType.MULTI_LINE_TEXT)
+        viewModel.addItem(WidgetType.DATE)
+
+        val itemsBefore = viewModel.state.value.items
+        assertEquals(3, itemsBefore.size)
+        val id1 = itemsBefore[0].linkId
+        val id2 = itemsBefore[1].linkId
+        val id3 = itemsBefore[2].linkId
+
+        // Move id2 up
+        viewModel.moveItemUp(id2)
+        var itemsAfter = viewModel.state.value.items
+        assertEquals(id2, itemsAfter[0].linkId)
+        assertEquals(id1, itemsAfter[1].linkId)
+        assertEquals(id3, itemsAfter[2].linkId)
+
+        // Move id2 up again (should be no-op as it's already at top)
+        viewModel.moveItemUp(id2)
+        itemsAfter = viewModel.state.value.items
+        assertEquals(id2, itemsAfter[0].linkId)
+        assertEquals(id1, itemsAfter[1].linkId)
+        assertEquals(id3, itemsAfter[2].linkId)
+
+        // Move id1 down
+        viewModel.moveItemDown(id1)
+        itemsAfter = viewModel.state.value.items
+        assertEquals(id2, itemsAfter[0].linkId)
+        assertEquals(id3, itemsAfter[1].linkId)
+        assertEquals(id1, itemsAfter[2].linkId)
+
+        // Move id1 down again (should be no-op as it's already at bottom)
+        viewModel.moveItemDown(id1)
+        itemsAfter = viewModel.state.value.items
+        assertEquals(id2, itemsAfter[0].linkId)
+        assertEquals(id3, itemsAfter[1].linkId)
+        assertEquals(id1, itemsAfter[2].linkId)
+    }
+
+    @Test
     fun testTogglePreviewMode() {
         val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
         val viewModel = QuestionnaireBuilderViewModel(repo)
 
         assertFalse(viewModel.state.value.isPreviewMode)
@@ -81,6 +131,7 @@ class QuestionnaireBuilderViewModelTest {
     @Test
     fun testSaveQuestionnaire() {
         val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
         val viewModel = QuestionnaireBuilderViewModel(repo)
 
         viewModel.updateTitle("Test Builder Form")

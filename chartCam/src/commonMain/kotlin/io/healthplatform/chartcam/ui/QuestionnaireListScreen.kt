@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cancel
 import chartcam.chartcam.generated.resources.cd_back
+import chartcam.chartcam.generated.resources.clipboard_is_empty
 import chartcam.chartcam.generated.resources.copy_to_clipboard
 import chartcam.chartcam.generated.resources.create
 import chartcam.chartcam.generated.resources.create_questionnaire
@@ -48,6 +49,7 @@ import chartcam.chartcam.generated.resources.import_action
 import chartcam.chartcam.generated.resources.import_confirmation
 import chartcam.chartcam.generated.resources.import_error_format
 import chartcam.chartcam.generated.resources.import_questionnaire
+import chartcam.chartcam.generated.resources.invalid_fhir_format
 import chartcam.chartcam.generated.resources.labels_comma
 import chartcam.chartcam.generated.resources.number_of_items_format
 import chartcam.chartcam.generated.resources.number_of_photos
@@ -57,6 +59,7 @@ import chartcam.chartcam.generated.resources.questionnaires
 import chartcam.chartcam.generated.resources.share_questionnaire
 import chartcam.chartcam.generated.resources.share_text_json
 import chartcam.chartcam.generated.resources.title
+import chartcam.chartcam.generated.resources.title_format
 import chartcam.chartcam.generated.resources.unknown
 import com.google.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
@@ -182,10 +185,14 @@ fun QuestionnaireListScreen(
                                         previewQuestionnaire = questionnaireSharingService.deserializeQuestionnaire(text)
                                         importError = null
                                     } else {
-                                        importError = "Clipboard is empty"
+                                        importError =
+                                            org.jetbrains.compose.resources
+                                                .getString(Res.string.clipboard_is_empty)
                                     }
                                 } catch (e: Exception) {
-                                    importError = e.message
+                                    importError =
+                                        org.jetbrains.compose.resources
+                                            .getString(Res.string.invalid_fhir_format)
                                 }
                                 importBottomSheetState.hide()
                             }.invokeOnCompletion {
@@ -216,7 +223,7 @@ fun QuestionnaireListScreen(
             title = { Text(stringResource(Res.string.import_questionnaire)) },
             text = {
                 Column {
-                    Text("Title: ${q.title?.value ?: q.id ?: stringResource(Res.string.unknown)}")
+                    Text(stringResource(Res.string.title_format, q.title?.value ?: q.id ?: stringResource(Res.string.unknown)))
                     Text(stringResource(Res.string.number_of_items_format, q.item.size.toString()))
                     Text(stringResource(Res.string.import_confirmation))
                 }

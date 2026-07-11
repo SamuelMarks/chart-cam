@@ -17,7 +17,8 @@ class QuestionnaireListScreenTest {
 
     @Test
     fun testShareBottomSheetShowsUp() {
-        val repo = QuestionnaireRepository() // comes with "std-form" and "basic-followup"
+        val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() } // comes with "std-form" and "basic-followup"
 
         rule.setContent {
             QuestionnaireListScreen(
@@ -44,6 +45,7 @@ class QuestionnaireListScreenTest {
     @Test
     fun testImportBottomSheetShowsUp() {
         val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
 
         rule.setContent {
             QuestionnaireListScreen(
@@ -64,10 +66,9 @@ class QuestionnaireListScreenTest {
     @Test
     fun testImportFromClipboard() {
         val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
         val validJson =
-            """{"version":1,"app":"ChartCam","fhirJson":"{\"resourceType\":\"Questionnaire\",""" +
-                """\"id\":\"imported-form\",\"title\":\"Imported Questionnaire\",\"status\":\"active\",""" +
-                """\"item\":[{\"linkId\":\"notes\",\"text\":\"Notes\",\"type\":\"string\"}]}"}"""
+            """{"resourceType":"Questionnaire","id":"imported-form","title":"Imported Questionnaire","status":"active","item":[{"linkId":"notes","text":"Notes","type":"string"}]}"""
 
         val fakeClipboard =
             object : androidx.compose.ui.platform.Clipboard {
@@ -121,7 +122,8 @@ class QuestionnaireListScreenTest {
     @Test
     fun testImportFromClipboardInvalidJson() {
         val repo = QuestionnaireRepository()
-        val invalidJson = """{"version":2,"app":"ChartCam","fhirJson":"{}"}"""
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
+        val invalidJson = """{"resourceType":"NotQuestionnaire"}"""
 
         val fakeClipboard =
             object : androidx.compose.ui.platform.Clipboard {
@@ -158,6 +160,6 @@ class QuestionnaireListScreenTest {
         rule.waitForIdle()
 
         // Validate error message is shown
-        rule.onNodeWithText("Import Error: Unsupported schema version: 2. Please update the app.", substring = true).assertExists()
+        rule.onNodeWithText("Import Error:", substring = true).assertExists()
     }
 }

@@ -19,6 +19,7 @@ class QuestionnaireBuilderScreenTest {
     @Test
     fun testBuilderScreenRendersAndNavigatesBack() {
         val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
         val viewModel = QuestionnaireBuilderViewModel(repo)
         var backPressed = false
 
@@ -38,6 +39,7 @@ class QuestionnaireBuilderScreenTest {
     @Test
     fun testBuilderAddAndPreview() {
         val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
         val viewModel = QuestionnaireBuilderViewModel(repo)
 
         rule.setContent {
@@ -58,12 +60,13 @@ class QuestionnaireBuilderScreenTest {
         rule.onNodeWithText("Preview Mode").assertIsDisplayed()
 
         // We should see the new item listed
-        rule.onNodeWithText("New SINGLE_LINE_TEXT Item (SINGLE_LINE_TEXT)").assertIsDisplayed()
+        rule.onNodeWithText("New SINGLE_LINE_TEXT Item").assertIsDisplayed()
     }
 
     @Test
     fun testBuilderSave() {
         val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
         val viewModel = QuestionnaireBuilderViewModel(repo)
         var savedId: String? = null
 
@@ -76,6 +79,7 @@ class QuestionnaireBuilderScreenTest {
         }
 
         rule.onNodeWithText("Questionnaire Title").performTextInput("Form Save Test")
+        rule.onNodeWithContentDescription("Single Line Text").performClick()
         rule.onNodeWithContentDescription("Save").performClick()
 
         assertTrue(savedId != null)

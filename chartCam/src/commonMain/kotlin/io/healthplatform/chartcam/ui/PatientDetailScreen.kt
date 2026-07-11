@@ -162,7 +162,13 @@ fun PatientDetailScreen(
                         style = MaterialTheme.typography.headlineMedium,
                     )
                     Text(
-                        text = stringResource(Res.string.mrn_dob_format, patient.mrn, patient.customBirthDate),
+                        text =
+                            stringResource(
+                                Res.string.mrn_dob_format,
+                                patient.mrn,
+                                io.healthplatform.chartcam.utils
+                                    .formatLocalizedDate(patient.customBirthDate),
+                            ),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.padding(top = 4.dp),

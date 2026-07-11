@@ -134,7 +134,8 @@ fun TriageScreen(
                                 stringResource(
                                     Res.string.mrn_dob_format,
                                     patient.mrn,
-                                    patient.customBirthDate,
+                                    io.healthplatform.chartcam.utils
+                                        .formatLocalizedDate(patient.customBirthDate),
                                 ),
                             )
                         },

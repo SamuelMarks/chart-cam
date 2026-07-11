@@ -151,4 +151,15 @@
     <string name="copy_to_clipboard">クリップボードにコピー</string>
     <string name="share_text_json">テキスト/JSONを共有</string>
     <string name="qr_code_coming_soon">QRコードは近日公開</string>
+    <string name="recovered_form">復元されたフォーム</string>
+    <string name="yes">はい</string>
+    <string name="no">いいえ</string>
+    <string name="add_option">オプションを追加</string>
+    <string name="cd_delete_option">オプションを削除</string>
+    <string name="clipboard_is_empty">クリップボードは空です</string>
+    <string name="title_format">タイトル： %1$s</string>
+    <string name="attachment_included">添付ファイルが含まれています</string>
+    <string name="cd_unnamed_item">無名の質問</string>
+    <string name="cd_unnamed_group">無名のセクション</string>
+    <string name="error_required_field">この項目は必須です</string>
 </resources>

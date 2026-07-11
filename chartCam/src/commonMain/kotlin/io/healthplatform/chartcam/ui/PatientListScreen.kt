@@ -87,6 +87,7 @@ import chartcam.chartcam.generated.resources.ok
 import chartcam.chartcam.generated.resources.password
 import chartcam.chartcam.generated.resources.paste_data_here
 import chartcam.chartcam.generated.resources.patient_directory
+import chartcam.chartcam.generated.resources.questionnaires
 import chartcam.chartcam.generated.resources.search_placeholder
 import chartcam.chartcam.generated.resources.share_file
 import chartcam.chartcam.generated.resources.share_password
@@ -239,7 +240,7 @@ fun PatientListScreen(
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("Questionnaires") },
+                            text = { Text(stringResource(Res.string.questionnaires)) },
                             onClick = {
                                 showMenu = false
                                 onNavigateToQuestionnaires()
@@ -595,7 +596,12 @@ fun PatientListItem(
         headlineContent = { Text(patient.fullName, style = MaterialTheme.typography.titleMedium) },
         supportingContent = {
             Text(
-                stringResource(Res.string.mrn_dob_format, patient.mrn, patient.customBirthDate),
+                stringResource(
+                    Res.string.mrn_dob_format,
+                    patient.mrn,
+                    io.healthplatform.chartcam.utils
+                        .formatLocalizedDate(patient.customBirthDate),
+                ),
                 style = MaterialTheme.typography.bodyMedium,
             )
         },

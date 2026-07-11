@@ -15,6 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.healthplatform.chartcam.sensors.SensorManager
 import kotlin.math.abs
@@ -37,7 +41,16 @@ fun LevelerOverlay(sensorManager: SensorManager) {
     val isLevel = abs(orientation.pitch) < 3.0 && abs(orientation.roll) < 3.0
     val color = if (isLevel) Color(0xFF52854C) else Color.White
 
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    val statusText = if (isLevel) "Camera is level" else "Camera is tilted"
+
+    Box(
+        modifier =
+            Modifier.fillMaxSize().semantics(mergeDescendants = true) {
+                contentDescription = "Camera Leveler: $statusText"
+                liveRegion = LiveRegionMode.Polite
+            },
+        contentAlignment = Alignment.Center,
+    ) {
         // Crosshair
         Canvas(modifier = Modifier.size(200.dp)) {
             val center = center

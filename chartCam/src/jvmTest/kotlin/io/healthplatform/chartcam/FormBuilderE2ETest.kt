@@ -7,7 +7,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
-import io.healthplatform.chartcam.ui.DynamicQuestionnaireForm
+import io.healthplatform.chartcam.sdc.SdcQuestionnaireForm
 import io.healthplatform.chartcam.ui.QuestionnaireBuilderScreen
 import io.healthplatform.chartcam.viewmodel.QuestionnaireBuilderViewModel
 import org.junit.Rule
@@ -20,6 +20,7 @@ class FormBuilderE2ETest {
     @Test
     fun testFormBuilderJourney() {
         val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
         val viewModel = QuestionnaireBuilderViewModel(repo)
 
         var isSaved = false
@@ -35,10 +36,10 @@ class FormBuilderE2ETest {
                 // Simulate submission phase using the generated form
                 val q = repo.getAvailableQuestionnaires().find { it.title?.value == "My E2E Form" }
                 if (q != null) {
-                    DynamicQuestionnaireForm(
+                    io.healthplatform.chartcam.sdc.SdcQuestionnaireForm(
                         questionnaire = q,
                         answers = emptyMap(),
-                        onAnswerChanged = { _, _ -> },
+                        onFormUpdated = { _, _ -> },
                     )
                 }
             }
@@ -59,7 +60,7 @@ class FormBuilderE2ETest {
         rule.onNodeWithContentDescription("Save").performClick()
 
         // 2. Form Submission Journey
-        // The UI should now render the DynamicQuestionnaireForm
+        // The UI should now render the io.healthplatform.chartcam.sdc.SdcQuestionnaireForm
         // Our added widget is a Single Line Text item with default label "New SINGLE_LINE_TEXT Item"
         rule.onNodeWithText("New SINGLE_LINE_TEXT Item").assertIsDisplayed()
     }

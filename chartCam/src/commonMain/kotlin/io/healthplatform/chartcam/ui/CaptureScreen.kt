@@ -44,10 +44,13 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.camera_permission_required
 import chartcam.chartcam.generated.resources.cancel
+import chartcam.chartcam.generated.resources.cd_camera_preview
 import chartcam.chartcam.generated.resources.cd_review
 import chartcam.chartcam.generated.resources.cd_switch_camera
 import chartcam.chartcam.generated.resources.confirm
@@ -173,8 +176,12 @@ fun CaptureScreen(
     ) {
         val interactionSource = remember { MutableInteractionSource() }
 
+        val cdCameraPreview = stringResource(Res.string.cd_camera_preview)
         CameraPreview(
-            modifier = Modifier.fillMaxSize(),
+            modifier =
+                Modifier.fillMaxSize().semantics {
+                    contentDescription = cdCameraPreview
+                },
             cameraManager = cameraManager,
         )
 

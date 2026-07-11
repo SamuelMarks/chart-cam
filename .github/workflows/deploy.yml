@@ -14,6 +14,7 @@ jobs:
   check_and_test:
     name: Unit Tests & Check
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -35,6 +36,7 @@ jobs:
     name: Deploy Android Internal
     needs: [check_and_test]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     if: github.ref == 'refs/heads/main' # Only deploy on main merge
     
     steps:
@@ -79,6 +81,7 @@ jobs:
     name: Deploy iOS TestFlight
     needs: [check_and_test]
     runs-on: macos-15
+    timeout-minutes: 30
     if: github.ref == 'refs/heads/main'
     
     steps:
@@ -96,6 +99,11 @@ jobs:
         with:
           ruby-version: '3.0'
           bundler-cache: true
+
+      - name: Disable Gradle Daemon
+        run: |
+          mkdir -p ~/.gradle
+          echo "org.gradle.daemon=false" >> ~/.gradle/gradle.properties
 
       - name: Fastlane iOS Deploy
         env:

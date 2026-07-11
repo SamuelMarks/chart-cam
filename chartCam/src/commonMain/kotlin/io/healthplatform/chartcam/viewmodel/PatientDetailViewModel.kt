@@ -31,6 +31,7 @@ data class PatientDetailUiState(
 /**
  * ViewModel handling the business logic for the Patient Detail Screen.
  * Bridges the UI events to the [FhirRepository].
+ * This ViewModel directly consumes and emits native FHIR R4 `Resource` models (e.g., `Patient`, `Encounter`) without relying on intermediary DTOs.
  *
  * @property fhirRepository The repository providing FHIR data access.
  */

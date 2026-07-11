@@ -81,7 +81,7 @@ import io.healthplatform.chartcam.navigation.PhotoSessionManager
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
-import io.healthplatform.chartcam.sync.SyncManager
+import io.healthplatform.chartcam.sync.SyncWorker
 import io.healthplatform.chartcam.viewmodel.EncounterDetailViewModel
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
@@ -96,7 +96,7 @@ import org.jetbrains.compose.resources.stringResource
  * @param photoSessionManager Manager to retrieve captured photos.
  * @param fhirRepository Repository for FHIR operations.
  * @param authRepository Repository handling user authentication.
- * @param syncManager Manager responsible for syncing with remote FHIR servers.
+ * @param syncWorker Worker responsible for syncing with remote FHIR servers.
  * @param questionnaireRepository Repository supplying questionnaire forms.
  * @param newlyCreatedQuestionnaireId The ID of a newly created questionnaire to select automatically.
  * @param onBack Callback invoked when the user navigates back.
@@ -114,7 +114,7 @@ fun EncounterDetailScreen(
     photoSessionManager: PhotoSessionManager,
     fhirRepository: FhirRepository,
     authRepository: AuthRepository,
-    syncManager: SyncManager,
+    syncWorker: SyncWorker,
     questionnaireRepository: QuestionnaireRepository,
     newlyCreatedQuestionnaireId: String? = null,
     onBack: () -> Unit,
@@ -129,7 +129,7 @@ fun EncounterDetailScreen(
      */
     val viewModel =
         androidx.lifecycle.viewmodel.compose.viewModel {
-            EncounterDetailViewModel(fhirRepository, authRepository, syncManager, questionnaireRepository)
+            EncounterDetailViewModel(fhirRepository, authRepository, syncWorker, questionnaireRepository)
         }
 
     /**
@@ -283,10 +283,13 @@ fun EncounterDetailScreen(
                 }
 
                 state.selectedQuestionnaire?.let { q ->
-                    DynamicQuestionnaireForm(
+                    io.healthplatform.chartcam.sdc.SdcQuestionnaireForm(
                         questionnaire = q,
                         answers = state.answers,
-                        onAnswerChanged = { linkId, value -> viewModel.onAnswerChanged(linkId, value) },
+                        onFormUpdated = { newAnswers, newResponse ->
+                            viewModel.onFormUpdated(newAnswers, newResponse)
+                        },
+                        attachments = state.photos,
                     )
                 }
 

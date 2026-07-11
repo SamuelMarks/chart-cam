@@ -18,87 +18,34 @@ class QuestionnaireRepository {
      */
     private val inMemoryForms = mutableMapOf<String, Questionnaire>()
 
-    init {
-        inMemoryForms["std-form"] =
-            createFhirQuestionnaire(
-                id = "std-form",
-                title = "Standard Clinical Photo",
-                items =
-                    listOf(
-                        createItem("notes", "Clinical Notes", Questionnaire.QuestionnaireItemType.String, required = false),
-                        createItem("front", "Front", Questionnaire.QuestionnaireItemType.Attachment, required = true),
-                        createItem("front_ruler", "Front + Ruler", Questionnaire.QuestionnaireItemType.Attachment, required = true),
-                        createItem("right", "Right Side", Questionnaire.QuestionnaireItemType.Attachment, required = true),
-                        createItem("right_ruler", "Right Side + Ruler", Questionnaire.QuestionnaireItemType.Attachment, required = true),
-                        createItem("back", "Back", Questionnaire.QuestionnaireItemType.Attachment, required = true),
-                        createItem("back_ruler", "Back + Ruler", Questionnaire.QuestionnaireItemType.Attachment, required = true),
-                        createItem("left", "Left Side", Questionnaire.QuestionnaireItemType.Attachment, required = true),
-                        createItem("left_ruler", "Left Side + Ruler", Questionnaire.QuestionnaireItemType.Attachment, required = true),
-                    ),
-            )
+    /**
+     * Loads the default questionnaire templates from bundled JSON resources.
+     */
+    suspend fun loadDefaultForms() {
+        if (inMemoryForms.containsKey("std-form")) return
 
-        val choiceItem =
-            createItem("followup_type", "Type of Follow-up", Questionnaire.QuestionnaireItemType.Choice, required = true).apply {
-                answerOption.add(
-                    Questionnaire.Item.AnswerOption.Builder(
-                        Questionnaire.Item.AnswerOption.Value
-                            .String(
-                                com.google.fhir.model.r4.String
-                                    .Builder()
-                                    .apply { value = "Routine" }
-                                    .build(),
-                            ),
-                    ),
-                )
-                answerOption.add(
-                    Questionnaire.Item.AnswerOption.Builder(
-                        Questionnaire.Item.AnswerOption.Value
-                            .String(
-                                com.google.fhir.model.r4.String
-                                    .Builder()
-                                    .apply { value = "Urgent" }
-                                    .build(),
-                            ),
-                    ),
-                )
-            }
+        val fhirJson =
+            com.google.fhir.model.r4
+                .FhirR4Json()
+        try {
+            val stdBytes =
+                chartcam.chartcam.generated.resources.Res
+                    .readBytes("files/default_templates/std-form.json")
+            val stdQ = fhirJson.decodeFromString(stdBytes.decodeToString()) as Questionnaire
+            inMemoryForms["std-form"] = stdQ
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
-        val conditionItem =
-            createItem("urgent_reason", "Reason for Urgency", Questionnaire.QuestionnaireItemType.String, required = true).apply {
-                enableWhen.add(
-                    Questionnaire.Item.EnableWhen.Builder(
-                        com.google.fhir.model.r4.String
-                            .Builder()
-                            .apply { value = "followup_type" },
-                        Enumeration(value = Questionnaire.QuestionnaireItemOperator.EqualTo),
-                        Questionnaire.Item.EnableWhen.Answer.String(
-                            com.google.fhir.model.r4.String
-                                .Builder()
-                                .apply { value = "Urgent" }
-                                .build(),
-                        ),
-                    ),
-                )
-            }
-
-        val booleanItem =
-            createItem("patient_consent", "Patient consented to photos", Questionnaire.QuestionnaireItemType.Boolean, required = true)
-
-        inMemoryForms["basic-followup"] =
-            createFhirQuestionnaire(
-                id = "basic-followup",
-                title = "Basic Follow-up",
-                items =
-                    listOf(
-                        createItem("notes", "Follow-up Notes", Questionnaire.QuestionnaireItemType.String, required = false),
-                        choiceItem,
-                        conditionItem,
-                        booleanItem,
-                        createItem("front", "Front View", Questionnaire.QuestionnaireItemType.Attachment, required = true),
-                        createItem("left", "Left View", Questionnaire.QuestionnaireItemType.Attachment, required = true),
-                        createItem("right", "Right View", Questionnaire.QuestionnaireItemType.Attachment, required = true),
-                    ),
-            )
+        try {
+            val basicBytes =
+                chartcam.chartcam.generated.resources.Res
+                    .readBytes("files/default_templates/basic-followup.json")
+            val basicQ = fhirJson.decodeFromString(basicBytes.decodeToString()) as Questionnaire
+            inMemoryForms["basic-followup"] = basicQ
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     /**

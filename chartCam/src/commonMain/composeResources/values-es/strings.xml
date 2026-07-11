@@ -151,4 +151,15 @@
     <string name="copy_to_clipboard">Copiar al portapapeles</string>
     <string name="share_text_json">Compartir texto/JSON</string>
     <string name="qr_code_coming_soon">Código QR próximamente</string>
+    <string name="recovered_form">Formulario Recuperado</string>
+    <string name="yes">Sí</string>
+    <string name="no">No</string>
+    <string name="add_option">Añadir opción</string>
+    <string name="cd_delete_option">Eliminar opción</string>
+    <string name="clipboard_is_empty">El portapapeles está vacío</string>
+    <string name="title_format">Título: %1$s</string>
+    <string name="attachment_included">Archivo adjunto incluido</string>
+    <string name="cd_unnamed_item">Pregunta sin nombre</string>
+    <string name="cd_unnamed_group">Sección sin nombre</string>
+    <string name="error_required_field">Este campo es obligatorio</string>
 </resources>

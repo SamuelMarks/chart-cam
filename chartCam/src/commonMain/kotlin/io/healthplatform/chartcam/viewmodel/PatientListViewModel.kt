@@ -45,6 +45,7 @@ data class PatientListUiState(
 /**
  * ViewModel handling the business logic for the Patient List Screen.
  * Bridges the UI events to the [FhirRepository] and [ExportImportService].
+ * This ViewModel directly consumes and emits native FHIR R4 `Resource` models (e.g., `Patient`) without relying on intermediary DTOs.
  *
  * @property repository The source of FHIR patient data.
  * @property exportImportService Service to handle exporting and importing of data.

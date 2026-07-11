@@ -298,7 +298,7 @@ fun createFhirClinicalNote(
                 com.google.fhir.model.r4.CodeableConcept.Builder().apply {
                     coding.add(
                         Coding.Builder().apply {
-                            system = Uri.Builder().apply { value = "http://loinc.org" }
+                            system = Uri.Builder().apply { value = io.healthplatform.chartcam.terminology.TerminologyService.loincUri }
                             code = Code.Builder().apply { value = "11488-4" }
                             display = String.Builder().apply { value = "Consultation note" }
                         },

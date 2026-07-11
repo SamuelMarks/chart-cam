@@ -25,29 +25,13 @@ class QuestionnaireSharingServiceTest {
 
         val json = service.serializeQuestionnaire(original)
 
-        // Ensure it's not empty and contains our app signature
-        assertEquals(true, json.contains("ChartCam"))
+        // Ensure it's not empty and contains expected fields
+        assertEquals(true, json.contains("test-form"))
 
         val deserialized = service.deserializeQuestionnaire(json)
 
         assertEquals(original.id, deserialized.id)
         assertEquals(original.title?.value, deserialized.title?.value)
-    }
-
-    @Test
-    fun testDeserializeInvalidAppFails() {
-        val invalidJson = """{"version": 1, "app": "OtherApp", "fhirJson": "{}"}"""
-        assertFailsWith<IllegalArgumentException> {
-            service.deserializeQuestionnaire(invalidJson)
-        }
-    }
-
-    @Test
-    fun testDeserializeUnsupportedVersionFails() {
-        val invalidJson = """{"version": 2, "app": "ChartCam", "fhirJson": "{}"}"""
-        assertFailsWith<IllegalArgumentException> {
-            service.deserializeQuestionnaire(invalidJson)
-        }
     }
 
     @Test
