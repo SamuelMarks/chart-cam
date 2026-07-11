@@ -9,12 +9,11 @@ env:
   NODE_OPTIONS: "--max-old-space-size=8192"
 
 jobs:
-  build-and-release:
-    name: Build Artifacts & Create Release
+  build-android:
+    name: Build Android & Create Release
     runs-on: ubuntu-latest
     timeout-minutes: 30
     
-    # Required to create a GitHub Release
     permissions:
       contents: write
 
@@ -34,34 +33,71 @@ jobs:
       - name: Build Android APK
         run: ./gradlew :androidApp:assembleDebug :androidApp:assembleRelease
 
-      - name: Build Desktop JAR
-        # Builds a standalone Uber JAR for desktop
-        run: ./gradlew :chartCam:packageReleaseUberJarForCurrentOS
-
       - name: Prepare Artifacts
         run: |
           mkdir -p release-artifacts
-          # Copy and rename Android APKs
           cp androidApp/build/outputs/apk/debug/*.apk release-artifacts/ChartCam-Android-Debug.apk || echo "Android Debug APK not found"
           cp androidApp/build/outputs/apk/release/*-unsigned.apk release-artifacts/ChartCam-Android-Release-Unsigned.apk || echo "Android Release APK not found"
-          
-          # Copy and rename Desktop JAR
-          cp chartCam/build/compose/jars/*.jar release-artifacts/ChartCam-Desktop.jar || echo "Desktop JAR not found"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          # Automatically use the tag name for the release name
           name: Release ${{ github.ref_name }}
-          # You can add generated release notes automatically
           generate_release_notes: true
+          files: release-artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-desktop:
+    name: Build Desktop JARs
+    needs: build-android
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            suffix: Linux
+          - os: macos-latest
+            suffix: macOS
+          - os: windows-latest
+            suffix: Windows
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle Cache
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Build Desktop JAR
+        run: ./gradlew :chartCam:packageReleaseUberJarForCurrentOS
+
+      - name: Prepare Artifacts
+        shell: bash
+        run: |
+          mkdir -p release-artifacts
+          cp chartCam/build/compose/jars/*.jar release-artifacts/ChartCam-Desktop-${{ matrix.suffix }}.jar || echo "Desktop JAR not found"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
           files: release-artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-ios:
     name: Build iOS & Append to Release
-    needs: build-and-release
+    needs: build-android
     runs-on: macos-15
     timeout-minutes: 30
     
@@ -89,13 +125,11 @@ jobs:
       - name: Build iOS App (Unsigned)
         run: |
           cd iosApp
-          # Compile the app without code signing for sideloading/GH Release
           set -o pipefail
-          xcodebuild -scheme iosApp -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | xcbeautify
+          xcodebuild -scheme iosApp -configuration Release -sdk iphoneos -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | xcbeautify
           
-          # Package the .app into a standard .ipa
           mkdir -p Payload
-          cp -r build/Release-iphoneos/iosApp.app Payload/
+          cp -r build/Build/Products/Release-iphoneos/iosApp.app Payload/
           zip -r ../ChartCam-iOS-Unsigned.ipa Payload
 
       - name: Publish iOS Artifact to Release
