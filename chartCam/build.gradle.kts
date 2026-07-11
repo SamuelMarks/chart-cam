@@ -50,7 +50,11 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "ChartCamShared"
             isStatic = false
-            freeCompilerArgs += listOf("-Xbinary=bundleId=io.healthplatform.chartcam.ChartCamShared")
+            freeCompilerArgs +=
+                listOf(
+                    "-Xbinary=bundleId=io.healthplatform.chartcam.ChartCamShared",
+                    "-Xdisable-phases=DevirtualizationAnalysis,RemoveRedundantCallsToStaticInitializersPhase",
+                )
             linkerOpts("-framework", "Security")
             linkerOpts("-framework", "AVFoundation")
             linkerOpts("-framework", "CoreMotion")
