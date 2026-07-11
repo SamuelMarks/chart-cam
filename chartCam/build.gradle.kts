@@ -50,11 +50,16 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "ChartCamShared"
             isStatic = false
-            freeCompilerArgs +=
-                listOf(
-                    "-Xbinary=bundleId=io.healthplatform.chartcam.ChartCamShared",
-                    "-Xdisable-phases=DevirtualizationAnalysis,RemoveRedundantCallsToStaticInitializersPhase",
-                )
+
+            val isGitHubActions = System.getenv("GITHUB_ACTIONS") == "true"
+            val compilerArgs = mutableListOf("-Xbinary=bundleId=io.healthplatform.chartcam.ChartCamShared")
+
+            if (isGitHubActions) {
+                compilerArgs.add("-Xdisable-phases=DevirtualizationAnalysis,RemoveRedundantCallsToStaticInitializersPhase")
+            }
+
+            freeCompilerArgs += compilerArgs
+
             linkerOpts("-framework", "Security")
             linkerOpts("-framework", "AVFoundation")
             linkerOpts("-framework", "CoreMotion")
