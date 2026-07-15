@@ -1,3 +1,7 @@
+/**
+ * @file Greeting.kt
+ * Contains declarations for Greeting.kt.
+ */
 package io.healthplatform.chartcam
 
 /**

@@ -3,16 +3,22 @@
  */
 package io.healthplatform.chartcam.repository
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import com.google.fhir.model.r4.Boolean
 import com.google.fhir.model.r4.Enumeration
 import com.google.fhir.model.r4.Questionnaire
 import com.google.fhir.model.r4.terminologies.PublicationStatus
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * Repository to manage Questionnaire forms available for clinical encounters.
  * Currently stores forms in memory and provides both predefined templates and the ability to generate custom forms.
  */
-class QuestionnaireRepository {
+class QuestionnaireRepository(
+    private val fhirRepository: FhirRepository? = null,
+) {
     /**
      * In-memory storage mapping questionnaire IDs to their respective FHIR Questionnaire resources.
      */
@@ -22,27 +28,47 @@ class QuestionnaireRepository {
      * Loads the default questionnaire templates from bundled JSON resources.
      */
     suspend fun loadDefaultForms() {
-        if (inMemoryForms.containsKey("std-form")) return
-
         val fhirJson =
             com.google.fhir.model.r4
                 .FhirR4Json()
-        try {
-            val stdBytes =
-                chartcam.chartcam.generated.resources.Res
-                    .readBytes("files/default_templates/std-form.json")
-            val stdQ = fhirJson.decodeFromString(stdBytes.decodeToString()) as Questionnaire
-            inMemoryForms["std-form"] = stdQ
-        } catch (e: Exception) {
-            e.printStackTrace()
+
+        if (!inMemoryForms.containsKey("std-form")) {
+            try {
+                val stdBytes =
+                    chartcam.chartcam.generated.resources.Res
+                        .readBytes("files/default_templates/std-form.json")
+                val stdQ = fhirJson.decodeFromString(stdBytes.decodeToString()) as Questionnaire
+                inMemoryForms["std-form"] = stdQ
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            try {
+                val basicBytes =
+                    chartcam.chartcam.generated.resources.Res
+                        .readBytes("files/default_templates/basic-followup.json")
+                val basicQ = fhirJson.decodeFromString(basicBytes.decodeToString()) as Questionnaire
+                inMemoryForms["basic-followup"] = basicQ
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
         try {
-            val basicBytes =
-                chartcam.chartcam.generated.resources.Res
-                    .readBytes("files/default_templates/basic-followup.json")
-            val basicQ = fhirJson.decodeFromString(basicBytes.decodeToString()) as Questionnaire
-            inMemoryForms["basic-followup"] = basicQ
+            fhirRepository?.let { repo ->
+                val entities =
+                    repo.database.chartCamQueries
+                        .getAllResourcesByType("Questionnaire")
+                        .awaitAsList()
+                for (entity in entities) {
+                    try {
+                        val q = fhirJson.decodeFromString(entity.serializedResource) as Questionnaire
+                        q.id?.let { inMemoryForms[it] = q }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -141,8 +167,7 @@ class QuestionnaireRepository {
             items.add(createItem("photo_$i", labelStr, Questionnaire.QuestionnaireItemType.Attachment, required = true))
         }
         val q = createFhirQuestionnaire(id, title, items)
-        inMemoryForms[id] = q
-        inMemoryForms[q.id ?: ""] = q
+        saveQuestionnaire(q)
         return q
     }
 
@@ -155,6 +180,25 @@ class QuestionnaireRepository {
         val qId = questionnaire.id
         if (qId != null) {
             inMemoryForms[qId] = questionnaire
+            fhirRepository?.let { repo ->
+                CoroutineScope(Dispatchers.Default).launch {
+                    repo.saveResource("Questionnaire", qId, questionnaire)
+                }
+            }
+        }
+    }
+
+    /**
+     * Deletes a Questionnaire from the repository.
+     *
+     * @param id The ID of the Questionnaire to delete.
+     */
+    fun deleteQuestionnaire(id: kotlin.String) {
+        inMemoryForms.remove(id)
+        fhirRepository?.let { repo ->
+            CoroutineScope(Dispatchers.Default).launch {
+                repo.deleteResource("Questionnaire", id)
+            }
         }
     }
 }

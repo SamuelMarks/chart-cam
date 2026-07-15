@@ -1,3 +1,7 @@
+/**
+ * @file DateFormatter.kt
+ * Contains declarations for DateFormatter.kt.
+ */
 package io.healthplatform.chartcam.utils
 
 /**

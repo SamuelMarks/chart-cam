@@ -1,3 +1,7 @@
+/**
+ * @file FileStorage.kt
+ * Contains declarations for FileStorage.kt.
+ */
 package io.healthplatform.chartcam.files
 
 /**

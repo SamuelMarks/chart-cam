@@ -1,4 +1,5 @@
 /**
+ * @file LanguageSwitcher.jvm.kt
  * Language switching utility for the JVM platform.
  */
 package io.healthplatform.chartcam.ui

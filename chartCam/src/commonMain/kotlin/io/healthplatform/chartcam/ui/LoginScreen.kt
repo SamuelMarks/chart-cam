@@ -54,6 +54,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -65,9 +66,12 @@ import chartcam.chartcam.generated.resources.app_name_title
 import chartcam.chartcam.generated.resources.app_slogan
 import chartcam.chartcam.generated.resources.cd_chartcam_logo
 import chartcam.chartcam.generated.resources.cd_switch_language
+import chartcam.chartcam.generated.resources.english
+import chartcam.chartcam.generated.resources.espanol
 import chartcam.chartcam.generated.resources.feature_capture
 import chartcam.chartcam.generated.resources.feature_secure
 import chartcam.chartcam.generated.resources.feature_sync
+import chartcam.chartcam.generated.resources.japanese
 import chartcam.chartcam.generated.resources.login_signup
 import chartcam.chartcam.generated.resources.logo
 import chartcam.chartcam.generated.resources.offline_mode
@@ -81,6 +85,9 @@ import org.jetbrains.compose.resources.stringResource
  * Screen enabling Practitioner authentication.
  * Displays the app branding, handles login credentials input,
  * and allows language switching.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param viewModel The ViewModel handling login business logic.
  * @param onLoginSuccess Callback triggered when the authentication is successful.
@@ -120,21 +127,21 @@ fun LoginScreen(
                     onDismissRequest = { showLanguageMenu = false },
                 ) {
                     DropdownMenuItem(
-                        text = { Text("English") },
+                        text = { Text(stringResource(Res.string.english)) },
                         onClick = {
                             setAppLanguage("en")
                             showLanguageMenu = false
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text("Español") },
+                        text = { Text(stringResource(Res.string.espanol)) },
                         onClick = {
                             setAppLanguage("es")
                             showLanguageMenu = false
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text("日本語") },
+                        text = { Text(stringResource(Res.string.japanese)) },
                         onClick = {
                             setAppLanguage("ja")
                             showLanguageMenu = false
@@ -319,6 +326,9 @@ fun LoginScreen(
 /**
  * Renders a small feature highlight icon and label.
  *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  * @param icon The icon to display.
  * @param label The text describing the feature.
  */
@@ -327,7 +337,7 @@ fun FeatureIcon(
     icon: ImageVector,
     label: String,
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.semantics(mergeDescendants = true) {}) {
         Icon(
             imageVector = icon,
             contentDescription = label,

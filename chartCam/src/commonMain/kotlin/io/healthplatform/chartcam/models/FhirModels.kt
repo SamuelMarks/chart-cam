@@ -225,6 +225,7 @@ fun createFhirDocumentReference(
     desc: kotlin.String?,
     mime: kotlin.String,
     urlPath: kotlin.String,
+    answerCode: kotlin.String? = null,
 ): DocumentReference =
     DocumentReference
         .Builder(
@@ -245,6 +246,16 @@ fun createFhirDocumentReference(
             context =
                 DocumentReference.Context.Builder().apply {
                     encounter.add(Reference.Builder().apply { reference = String.Builder().apply { value = encounterId } })
+                    if (answerCode != null) {
+                        related.add(
+                            Reference.Builder().apply {
+                                identifier =
+                                    Identifier.Builder().apply {
+                                        value = String.Builder().apply { value = answerCode }
+                                    }
+                            },
+                        )
+                    }
                 }
             try {
                 // we ignore the date parse error just in case dateStr is wrong format

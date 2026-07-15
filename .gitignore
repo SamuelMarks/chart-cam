@@ -22,3 +22,15 @@ captures
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
 .vscode
+
+# Scratch and output files
+*.log
+*.pid
+*_output.txt
+*.orig
+*.patch
+patch.kt
+TestCam.kt
+test_*.kt
+test_*.js
+test_*.gradle.kts

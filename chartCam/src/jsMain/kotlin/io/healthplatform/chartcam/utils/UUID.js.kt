@@ -1,4 +1,5 @@
 /**
+ * @file UUID.js.kt
  * UUID generation utilities for JS platform.
  */
 package io.healthplatform.chartcam.utils

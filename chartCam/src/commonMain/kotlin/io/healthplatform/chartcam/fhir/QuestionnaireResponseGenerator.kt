@@ -1,3 +1,7 @@
+/**
+ * @file QuestionnaireResponseGenerator.kt
+ * Contains declarations for QuestionnaireResponseGenerator.kt.
+ */
 package io.healthplatform.chartcam.fhir
 
 import com.google.fhir.model.r4.Boolean

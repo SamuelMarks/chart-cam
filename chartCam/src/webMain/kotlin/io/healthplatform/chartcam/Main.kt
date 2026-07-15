@@ -1,4 +1,5 @@
 /**
+ * @file Main.kt
  * Contains the main entry point for the web (Wasm/JS) target of the ChartCam application.
  */
 package io.healthplatform.chartcam

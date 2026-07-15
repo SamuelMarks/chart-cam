@@ -69,6 +69,9 @@ private val DarkColors =
 /**
  * Provides the application's customized typography using the Noto Sans JP font.
  *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  * @return A customized [Typography] object adhering to Material 3 specifications.
  */
 @Composable
@@ -97,6 +100,9 @@ fun getTypography(): Typography {
 /**
  * Main application theme defining the colors, typography, and shapes.
  * This ensures consistency with Material Design 3 guidelines.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param darkTheme Whether to use the dark theme. Defaults to the system setting.
  * @param content The composable content to apply the theme to.

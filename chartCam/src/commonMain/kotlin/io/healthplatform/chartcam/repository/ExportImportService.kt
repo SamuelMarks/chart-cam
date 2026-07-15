@@ -1,3 +1,7 @@
+/**
+ * @file ExportImportService.kt
+ * Contains declarations for ExportImportService.kt.
+ */
 package io.healthplatform.chartcam.repository
 
 import com.google.fhir.model.r4.Binary
@@ -19,6 +23,13 @@ import kotlinx.serialization.encodeToString
 import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
 
+/**
+ * Service responsible for exporting and importing ChartCam data as a secure, encrypted FHIR Bundle.
+ *
+ * @param database The ChartCam database containing the local resources.
+ * @param fileStorage Storage mechanism used for reading and writing binary data (like images).
+ * @param cryptoService Service used to encrypt and decrypt the FHIR bundle JSON string.
+ */
 class ExportImportService(
     val database: ChartCamDatabase,
     private val fileStorage: FileStorage,
@@ -27,6 +38,14 @@ class ExportImportService(
     private val fhirJson = FhirR4Json()
     private val fhirRepo = FhirRepository(database)
 
+    /**
+     * Exports local FHIR data into an encrypted FHIR Bundle.
+     *
+     * @param password The password used to encrypt the resulting string.
+     * @param exportAll Whether to export all data, or limit it to the data associated with [practitionerId].
+     * @param practitionerId An optional practitioner ID to filter the exported data.
+     * @return A password-encrypted JSON string representing the exported FHIR Bundle.
+     */
     suspend fun exportData(
         password: String,
         exportAll: Boolean = true,
@@ -128,6 +147,21 @@ class ExportImportService(
         return cryptoService.encrypt(jsonData, password)
     }
 
+    /**
+     * Imports FHIR data from an encrypted JSON string and saves the resources to the local database.
+     *
+     * Expected Schema:
+     * The decrypted string MUST be a valid FHIR R4 `Bundle` JSON object of type `collection` (or similar).
+     * The `entry` array should contain `resource` objects. Supported resources for import are:
+     * `Device`, `Practitioner`, `Patient`, `Encounter`, `DocumentReference`, `QuestionnaireResponse`,
+     * `Provenance`, and `Binary`.
+     * `Binary` resources are specifically used to carry raw image bytes (Base64 encoded) and will be
+     * decoded and written to the local [FileStorage].
+     *
+     * @param encryptedData The password-encrypted JSON string representing a FHIR Bundle.
+     * @param password The password used to decrypt the data.
+     * @throws IllegalArgumentException if the decryption fails, the JSON is malformed, or it is not a valid FHIR Bundle.
+     */
     suspend fun importData(
         encryptedData: String,
         password: String,

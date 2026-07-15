@@ -1,4 +1,5 @@
 /**
+ * @file LanguageSwitcher.js.kt
  * Provides JS-specific localization utilities.
  */
 package io.healthplatform.chartcam.ui

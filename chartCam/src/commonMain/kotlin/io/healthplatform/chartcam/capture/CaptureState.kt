@@ -6,12 +6,11 @@ package io.healthplatform.chartcam.capture
 /**
  * Represents a specific angle or type of photo required in the clinical sequence.
  * The order of these steps dictates the state machine progression during capture.
- *
- * @property id Unique identifier for this step.
- * @property title Human readable name displayed in the UI.
  */
 data class PhotoStep(
+    /** Unique identifier for this step. */
     val id: String,
+    /** Human readable name displayed in the UI. */
     val title: String,
 ) {
     /**
@@ -37,20 +36,19 @@ data class PhotoStep(
 
 /**
  * Represents the UI state for the Capture Screen workflow.
- *
- * @property currentStep The current photo step being requested. Null if uninitialized.
- * @property totalSteps Total number of steps in the active sequence.
- * @property isCapturing True if the camera is currently capturing and saving an image.
- * @property reviewImageBytes Image data present during the Review phase (after snap, before confirm).
- * @property capturedCount Number of photos successfully captured and saved.
- * @property isFinished True if the entire capture sequence has been completed.
  */
 data class CaptureUiState(
+    /** The current photo step being requested. Null if uninitialized. */
     val currentStep: PhotoStep? = null,
+    /** Total number of steps in the active sequence. */
     val totalSteps: Int = 0,
+    /** True if the camera is currently capturing and saving an image. */
     val isCapturing: Boolean = false,
+    /** Image data present during the Review phase (after snap, before confirm). */
     val reviewImageBytes: ByteArray? = null,
+    /** Number of photos successfully captured and saved. */
     val capturedCount: Int = 0,
+    /** True if the entire capture sequence has been completed. */
     val isFinished: Boolean = false,
 ) {
     /**

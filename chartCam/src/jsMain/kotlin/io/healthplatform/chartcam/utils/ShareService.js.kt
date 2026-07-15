@@ -1,4 +1,5 @@
 /**
+ * @file ShareService.js.kt
  * Sharing capabilities for the JS platform.
  */
 package io.healthplatform.chartcam.utils

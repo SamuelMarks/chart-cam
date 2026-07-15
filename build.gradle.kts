@@ -31,6 +31,7 @@ plugins {
 
     // Dokka: Documentation generation
     alias(libs.plugins.dokka) apply false
+    alias(libs.plugins.detekt) apply false
 }
 
 /**

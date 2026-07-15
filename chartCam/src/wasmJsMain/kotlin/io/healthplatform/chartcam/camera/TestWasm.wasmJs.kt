@@ -1,4 +1,5 @@
 /**
+ * @file TestWasm.wasmJs.kt
  * Contains WasmJs-specific test stubs and utilities related to camera initialization and configuration.
  */
 package io.healthplatform.chartcam.camera

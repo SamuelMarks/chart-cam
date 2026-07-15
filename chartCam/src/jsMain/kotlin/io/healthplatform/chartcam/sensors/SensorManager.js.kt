@@ -1,4 +1,5 @@
 /**
+ * @file SensorManager.js.kt
  * Sensor management classes and functions for the JS platform.
  */
 package io.healthplatform.chartcam.sensors

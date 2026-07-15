@@ -1,5 +1,6 @@
 /**
  * @file ShareService.wasmJs.kt
+ * @file ShareService.wasmJs.kt
  *
  * Provides the WebAssembly (WasmJs) specific implementation of [ShareService],
  * enabling file saving notifications and text clipboard sharing via browser APIs.

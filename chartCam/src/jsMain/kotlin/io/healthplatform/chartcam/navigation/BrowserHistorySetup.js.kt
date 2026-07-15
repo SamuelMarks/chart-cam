@@ -1,4 +1,5 @@
 /**
+ * @file BrowserHistorySetup.js.kt
  * Navigation utility for browser history integration.
  */
 package io.healthplatform.chartcam.navigation

@@ -1,5 +1,6 @@
 /**
  * @file UUID.wasmJs.kt
+ * @file UUID.wasmJs.kt
  *
  * Provides the WebAssembly (WasmJs) specific implementation for generating Universally Unique Identifiers (UUIDs).
  */

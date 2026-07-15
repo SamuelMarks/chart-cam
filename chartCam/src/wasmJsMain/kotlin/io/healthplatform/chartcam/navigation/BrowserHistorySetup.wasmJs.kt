@@ -1,5 +1,6 @@
 /**
  * @file BrowserHistorySetup.wasmJs.kt
+ * @file BrowserHistorySetup.wasmJs.kt
  *
  * Provides WebAssembly (WasmJs) specific functionality for integrating Compose Multiplatform
  * navigation with the browser's history API.

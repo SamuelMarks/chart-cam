@@ -1,4 +1,5 @@
 /**
+ * @file SecureStorage.jvm.kt
  * Secure storage implementation for the JVM platform.
  */
 package io.healthplatform.chartcam.storage

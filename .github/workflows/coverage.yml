@@ -3,6 +3,8 @@ name: Coverage Verification
 on:
   push:
     branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
 
 env:
   NODE_OPTIONS: "--max-old-space-size=8192"
@@ -25,8 +27,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Run Tests and Generate Kover Report
-        run: ./gradlew :chartCam:koverXmlReport
+      - name: Run Tests, Check Coverage, and Lint
+        run: ./gradlew check :chartCam:koverVerify detekt
 
-      - name: Check Coverage
+      - name: Run Python Coverage Check
         run: python3 scripts/check_coverage.py

@@ -1,5 +1,6 @@
 /**
  * @file Platform.wasmJs.kt
+ * @file Platform.wasmJs.kt
  *
  * Provides the WebAssembly (WasmJs) specific implementation of the [Platform] interface.
  */

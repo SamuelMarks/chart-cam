@@ -76,7 +76,11 @@ import org.jetbrains.compose.resources.stringResource
  * Main Composable for the photo capture workflow.
  * Handles permissions, camera preview, leveler, capturing, and reviewing photos.
  *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  * @param questionnaireId The ID of the questionnaire defining the photo steps.
+ * @param linkId An optional linkId within the questionnaire to target a specific capture sequence.
  * @param questionnaireRepository Repository to fetch the questionnaire details.
  * @param onFinished Callback invoked when all required photos are captured and confirmed, mapping step linkIds to file paths.
  * @param onCancel Callback invoked if the user cancels the capture process.
@@ -85,6 +89,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun CaptureScreen(
     questionnaireId: String,
+    linkId: String? = null,
     questionnaireRepository: QuestionnaireRepository,
     onFinished: (Map<String, String>) -> Unit,
     onCancel: () -> Unit = {},
@@ -136,10 +141,27 @@ fun CaptureScreen(
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
         val q = questionnaireRepository.getQuestionnaire(questionnaireId)
-        val steps =
-            q?.item?.filter { it.type.value == Questionnaire.QuestionnaireItemType.Attachment }?.map {
-                PhotoStep(it.linkId.value ?: "", it.text?.value ?: "")
-            } ?: emptyList()
+
+        /**
+         * Extracts a flattened list of [PhotoStep]s from a list of Questionnaire items.
+         * Handles nested groups and choice options.
+         * @param items Parameter items
+         */
+        fun extractSteps(items: List<com.google.fhir.model.r4.Questionnaire.Item>): List<PhotoStep> {
+            val result = mutableListOf<PhotoStep>()
+            for (item in items) {
+                if (item.type.value == com.google.fhir.model.r4.Questionnaire.QuestionnaireItemType.Attachment) {
+                    result.add(PhotoStep(item.linkId.value ?: "", item.text?.value ?: ""))
+                }
+                if (item.item.isNotEmpty()) {
+                    result.addAll(extractSteps(item.item))
+                }
+            }
+            return result
+        }
+
+        val allSteps = q?.item?.let { extractSteps(it) } ?: emptyList()
+        val steps = if (linkId != null) allSteps.filter { it.id == linkId } else allSteps
         viewModel.initSteps(steps)
     }
 
@@ -225,6 +247,9 @@ fun CaptureScreen(
 
 /**
  * Overlay layer displaying controls for camera capture.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param stepName The name or title of the current capture step.
  * @param count The number of photos already captured.
@@ -326,6 +351,9 @@ fun ControlsLayer(
 
 /**
  * Overlay layer allowing the user to review a captured photo.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param bytes The image data of the captured photo.
  * @param onRetake Callback triggered when the user rejects the photo.

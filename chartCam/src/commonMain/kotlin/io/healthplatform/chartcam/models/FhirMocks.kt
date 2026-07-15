@@ -1,3 +1,7 @@
+/**
+ * @file FhirMocks.kt
+ * Contains declarations for FhirMocks.kt.
+ */
 package io.healthplatform.chartcam.models
 
 import com.google.fhir.model.r4.Enumeration
@@ -10,6 +14,13 @@ import com.google.fhir.model.r4.terminologies.PublicationStatus
  * Robust mock factories for FHIR resources to simplify Compose Previews and UI testing.
  */
 object FhirMocks {
+    /**
+     * Creates a mock FHIR Questionnaire resource for testing.
+     *
+     * @param idStr The string representation of the Questionnaire's logical ID.
+     * @param titleStr The title of the Questionnaire.
+     * @return A constructed FHIR [Questionnaire] object.
+     */
     fun createMockQuestionnaire(
         idStr: kotlin.String = "mock-questionnaire-1",
         titleStr: kotlin.String = "Mock Questionnaire",
@@ -30,6 +41,13 @@ object FhirMocks {
                 )
             }.build()
 
+    /**
+     * Creates a mock FHIR QuestionnaireResponse resource for testing.
+     *
+     * @param idStr The string representation of the QuestionnaireResponse's logical ID.
+     * @param questionnaireUrl The canonical URL of the Questionnaire this response is based on.
+     * @return A constructed FHIR [QuestionnaireResponse] object.
+     */
     fun createMockQuestionnaireResponse(
         idStr: kotlin.String = "mock-response-1",
         questionnaireUrl: kotlin.String = "Questionnaire/mock-questionnaire-1",

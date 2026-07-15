@@ -40,6 +40,9 @@ interface SensorManager {
 /**
  * Factory composable to retrieve a platform-specific instance of the [SensorManager].
  *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  * @return A [SensorManager] instance.
  */
 @Composable

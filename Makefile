@@ -1,4 +1,7 @@
-.PHONY: build test lint build_release_android build_release_ios build_release_jvm build_release_js build_release_wasm run_android run_ios run_jvm
+.PHONY: clean build test lint build_release_android build_release_ios build_release_jvm build_release_js build_release_wasm run_android run_ios run_jvm
+
+clean:
+	./gradlew --console=plain clean
 
 build:
 	./gradlew --console=plain assemble

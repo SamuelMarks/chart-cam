@@ -1,4 +1,5 @@
 /**
+ * @file CameraManager.jvm.kt
  * Camera management and capture implementation for the JVM platform.
  */
 package io.healthplatform.chartcam.camera
@@ -24,10 +25,13 @@ class JvmCameraManager : CameraManager {
      */
     companion object {
         init {
-            try {
-                Webcam.setDriver(NativeDriver())
-            } catch (e: Exception) {
-                // Driver might already be set or failed to initialize
+            if (System.getProperty("io.healthplatform.chartcam.camera.nativedriver.initialized") != "true") {
+                try {
+                    Webcam.setDriver(NativeDriver())
+                    System.setProperty("io.healthplatform.chartcam.camera.nativedriver.initialized", "true")
+                } catch (t: Throwable) {
+                    // Driver might already be set or failed to initialize
+                }
             }
         }
     }
@@ -39,16 +43,20 @@ class JvmCameraManager : CameraManager {
 
     /**
      * Initializes the webcam instance securely off the main thread.
+     * We catch `Throwable` rather than just `Exception` because the native JNA driver
+     * can throw fatal errors (like `java.lang.Error` or `java.lang.UnsatisfiedLinkError`)
+     * on macOS ARM64 when camera permissions (FaceTime HD) are denied or missing.
      *
-     * @return The initialized [Webcam] instance, or null if no webcam could be found.
+     * @return The initialized [Webcam] instance, or null if no webcam could be found or permitted.
      */
     private suspend fun getWebcam(): Webcam? =
         withContext(Dispatchers.IO) {
             if (webcam == null) {
                 try {
                     webcam = Webcam.getDefault()
-                } catch (e: Exception) {
-                    // Return null if webcam lookup fails
+                } catch (t: Throwable) {
+                    // Return null safely if webcam lookup or native driver loading fails
+                    webcam = null
                 }
             }
             webcam

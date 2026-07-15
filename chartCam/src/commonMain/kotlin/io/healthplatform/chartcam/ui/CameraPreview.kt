@@ -13,6 +13,9 @@ import io.healthplatform.chartcam.camera.CameraManager
  * It manages the underlying native View (AndroidView using PreviewView,
  * or UIKitView using AVCaptureVideoPreviewLayer).
  *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  * @param modifier Layout modifiers to apply to the camera preview.
  * @param cameraManager The manager instance controlling the camera session and settings.
  */

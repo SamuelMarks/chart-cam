@@ -1,3 +1,7 @@
+/**
+ * @file QuestionnaireSharingService.kt
+ * Contains declarations for QuestionnaireSharingService.kt.
+ */
 package io.healthplatform.chartcam.repository
 
 import com.google.fhir.model.r4.FhirR4Json
@@ -29,6 +33,6 @@ class QuestionnaireSharingService {
         try {
             fhirJson.decodeFromString(jsonString) as Questionnaire
         } catch (e: Exception) {
-            throw IllegalArgumentException("Invalid format: JSON is not a valid FHIR Questionnaire.", e)
+            throw IllegalArgumentException("Invalid FHIR JSON format", e)
         }
 }

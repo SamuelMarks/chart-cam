@@ -83,6 +83,10 @@ data class CaptureForPatientRoute(
      * An optional identifier for a specific questionnaire to fill.
      */
     val questionnaireId: String? = null,
+    /**
+     * An optional specific item linkId to capture photos for.
+     */
+    val linkId: String? = null,
 )
 
 /**
@@ -120,7 +124,14 @@ data class NewVisitRoute(
 
 /**
  * Represents the route to build a new questionnaire.
+ *
+ * @property duplicateFromId Optional ID of an existing questionnaire to use as a starting point.
  */
 @Serializable
 @SerialName("/questionnaires/build")
-object QuestionnaireBuilderRoute
+data class QuestionnaireBuilderRoute(
+    /**
+     * Optional ID of an existing questionnaire to duplicate fields from.
+     */
+    val duplicateFromId: String? = null,
+)

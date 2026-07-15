@@ -1,3 +1,7 @@
+/**
+ * @file FormBuilderWidgets.kt
+ * Contains declarations for FormBuilderWidgets.kt.
+ */
 package io.healthplatform.chartcam.ui.components
 
 import androidx.compose.foundation.clickable
@@ -46,6 +50,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
@@ -54,12 +61,17 @@ import chartcam.chartcam.generated.resources.clear
 import chartcam.chartcam.generated.resources.date_format_label
 import chartcam.chartcam.generated.resources.datetime_format_label
 import chartcam.chartcam.generated.resources.ok
+import chartcam.chartcam.generated.resources.widget_photo_camera
+import chartcam.chartcam.generated.resources.widget_video_camera
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 
 /**
  * A Material 3 single-line text input field.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param value The current value of the input.
  * @param onValueChange Callback invoked when the input value changes.
@@ -97,12 +109,22 @@ fun FormBuilderTextInput(
         singleLine = true,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
-        modifier = modifier.fillMaxWidth().testTag("TextInput $label"),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .semantics {
+                    if (isError && errorMessage != null) {
+                        error(errorMessage)
+                    }
+                }.testTag("TextInput $label"),
     )
 }
 
 /**
  * A Material 3 multi-line text input field.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param value The current value of the input.
  * @param onValueChange Callback invoked when the input value changes.
@@ -136,12 +158,22 @@ fun FormBuilderTextArea(
             }
         },
         minLines = 3,
-        modifier = modifier.fillMaxWidth().testTag("TextArea $label"),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .semantics {
+                    if (isError && errorMessage != null) {
+                        error(errorMessage)
+                    }
+                }.testTag("TextArea $label"),
     )
 }
 
 /**
  * A Material 3 switch (toggle) widget.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param checked The current checked state of the switch.
  * @param onCheckedChange Callback invoked when the state changes.
@@ -166,7 +198,12 @@ fun FormBuilderSwitch(
         modifier =
             modifier
                 .fillMaxWidth()
-                .toggleable(
+                .semantics {
+                    stateDescription = if (checked) "Selected" else "Unselected"
+                    if (isError && errorMessage != null) {
+                        error(errorMessage)
+                    }
+                }.toggleable(
                     value = checked,
                     onValueChange = onCheckedChange,
                     role = Role.Switch,
@@ -184,6 +221,9 @@ fun FormBuilderSwitch(
 
 /**
  * A Material 3 checkbox widget.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param checked The current checked state of the checkbox.
  * @param onCheckedChange Callback invoked when the state changes.
@@ -208,7 +248,12 @@ fun FormBuilderCheckbox(
         modifier =
             modifier
                 .fillMaxWidth()
-                .toggleable(
+                .semantics {
+                    stateDescription = if (checked) "Selected" else "Unselected"
+                    if (isError && errorMessage != null) {
+                        error(errorMessage)
+                    }
+                }.toggleable(
                     value = checked,
                     onValueChange = onCheckedChange,
                     role = Role.Checkbox,
@@ -226,6 +271,9 @@ fun FormBuilderCheckbox(
 
 /**
  * A Material 3 numeric input field.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param value The current value of the input.
  * @param onValueChange Callback invoked when the numeric value changes.
@@ -264,12 +312,22 @@ fun FormBuilderNumericInput(
         },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = modifier.fillMaxWidth().testTag("NumericInput $label"),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .semantics {
+                    if (isError && errorMessage != null) {
+                        error(errorMessage)
+                    }
+                }.testTag("NumericInput $label"),
     )
 }
 
 /**
  * A Material 3 range slider widget.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param value The current value of the slider.
  * @param valueRange The valid range of values.
@@ -304,6 +362,9 @@ fun FormBuilderRangeSlider(
 
 /**
  * A Material 3 single-select dropdown widget.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param selectedOption The currently selected option.
  * @param options The list of available options.
@@ -365,6 +426,9 @@ fun FormBuilderDropdown(
 /**
  * A Material 3 multi-select dropdown widget.
  *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  * @param selectedOptions The list of currently selected options.
  * @param options The list of available options.
  * @param onSelectionChanged Callback invoked when the selection changes.
@@ -423,6 +487,9 @@ fun FormBuilderMultiSelectDropdown(
 
 /**
  * A Material 3 Date Picker widget mock.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param value The current date string.
  * @param onValueChange Callback invoked when the date changes.
@@ -507,6 +574,9 @@ fun FormBuilderDatePicker(
 
 /**
  * A Material 3 DateTime Picker widget mock.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param value The current datetime string.
  * @param onValueChange Callback invoked when the datetime changes.
@@ -623,6 +693,9 @@ fun FormBuilderDateTimePicker(
 /**
  * A Material 3 Camera widget for Photos.
  *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  * @param label The instructional label for the user (e.g. "Take photo of left ear").
  * @param isRequired Whether the field is required.
  * @param isError Whether the field is in an error state.
@@ -640,13 +713,16 @@ fun FormBuilderPhotoCamera(
         onClick = onClick,
         modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("PhotoCamera $label"),
     ) {
-        Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(24.dp))
+        Icon(Icons.Default.CameraAlt, contentDescription = stringResource(Res.string.widget_photo_camera), modifier = Modifier.size(24.dp))
         Text(text = label, modifier = Modifier.padding(start = 8.dp))
     }
 }
 
 /**
  * A Material 3 Camera widget for Videos.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param label The instructional label for the user (e.g. "Take video of face").
  * @param isRequired Whether the field is required.
@@ -665,7 +741,7 @@ fun FormBuilderVideoCamera(
         onClick = onClick,
         modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("VideoCamera $label"),
     ) {
-        Icon(Icons.Default.Videocam, contentDescription = null, modifier = Modifier.size(24.dp))
+        Icon(Icons.Default.Videocam, contentDescription = stringResource(Res.string.widget_video_camera), modifier = Modifier.size(24.dp))
         Text(text = label, modifier = Modifier.padding(start = 8.dp))
     }
 }

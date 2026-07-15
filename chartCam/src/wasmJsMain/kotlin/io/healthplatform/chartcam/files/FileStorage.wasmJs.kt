@@ -1,5 +1,6 @@
 /**
  * @file FileStorage.wasmJs.kt
+ * @file FileStorage.wasmJs.kt
  *
  * Provides the WebAssembly (WasmJs) specific implementation of [FileStorage],
  * utilizing the browser's `localStorage` to simulate a file system by storing Base64-encoded strings.

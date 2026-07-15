@@ -75,7 +75,9 @@
     <string name="syncing_to_server">Syncing to Server...</string>
 
     <string name="questionnaire">Questionnaire</string>
-    <string name="create_new">Create new...</string>
+    <string name="create_new">Create New</string>
+    <string name="edit_visit">Edit visit</string>
+    <string name="finalize_visit">Finalize Visit</string>
     <string name="take_photos">Take Photos</string>
     <string name="image_load_error">Image Load Error</string>
 
@@ -175,4 +177,24 @@
     <string name="not_answered">Not answered</string>
     <string name="unknown_error">Unknown error</string>
     <string name="invalid_fhir_format">Invalid format: JSON is not a valid FHIR Questionnaire.</string>
+    <string name="cd_more_options">More options</string>
+    <string name="delete_visit_title">Delete Visit</string>
+    <string name="english">English</string>
+    <string name="espanol">Español</string>
+    <string name="japanese">日本語</string>
+    <string name="cd_select_date">Select Date</string>
+    <string name="error">Error</string>
+    <string name="camera_unavailable">Camera unavailable or permission denied.</string>
+    <string name="cd_duplicate">Duplicate</string>
+    <string name="cd_delete">Delete</string>
+    <string name="decryption_failed">Decryption failed or data is empty.</string>
+    <string name="invalid_fhir_json_format">Invalid FHIR JSON format</string>
+    <string name="failed_to_load_patients">Failed to load patients</string>
+    <string name="failed_to_import">Failed to import. Wrong password or bad data.</string>
+    <string name="error_duplicate_id">A questionnaire with this generated ID already exists. Please change the title to make it unique.</string>
+    
+    <string name="level_status_level">Camera is level</string>
+    <string name="level_status_tilted">Camera is tilted</string>
+    <string name="cd_leveler_status">Camera Leveler: %1$s</string>
 </resources>
+

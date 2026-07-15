@@ -18,6 +18,9 @@ import io.healthplatform.chartcam.ui.theme.AppTheme
  * Applies the AppTheme for Material Design 3 styling and sets up the primary
  * surface which fills the entire screen, serving as the container for the
  * main [AppNavigation] graph.
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  */
 @Composable
 @Preview

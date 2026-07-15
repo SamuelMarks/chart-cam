@@ -1,4 +1,5 @@
 /**
+ * @file UUID.jvm.kt
  * UUID generation utility for the JVM platform.
  */
 package io.healthplatform.chartcam.utils

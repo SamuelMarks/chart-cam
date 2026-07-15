@@ -1,4 +1,5 @@
 /**
+ * @file CameraPreview.js.kt
  * JS-specific UI components for the ChartCam application.
  */
 package io.healthplatform.chartcam.ui

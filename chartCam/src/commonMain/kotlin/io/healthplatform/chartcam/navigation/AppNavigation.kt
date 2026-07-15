@@ -1,3 +1,8 @@
+/**
+ * Configures the primary navigation graph and dependency injection points for the ChartCam application.
+ * This file maps semantic routes to Compose Multiplatform screens and handles session state
+ * such as the [PhotoSessionManager].
+ */
 package io.healthplatform.chartcam.navigation
 
 import androidx.compose.runtime.Composable
@@ -76,6 +81,9 @@ class PhotoSessionManager {
  *
  * This composable sets up the [NavHost], instantiates necessary dependencies,
  * and defines the navigation routes and their corresponding composable screens.
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  */
 @Composable
 fun AppNavigation() {
@@ -89,7 +97,7 @@ fun AppNavigation() {
     val dbFactory = remember { DatabaseDriverFactory() }
     val driver = remember { dbFactory.createDriver() }
     val fhirRepository = remember { FhirRepository(driver) }
-    val questionnaireRepository = remember { QuestionnaireRepository() }
+    val questionnaireRepository = remember { QuestionnaireRepository(fhirRepository) }
 
     val fileStorage = remember { createFileStorage() }
     val exportImportService = remember { ExportImportService(fhirRepository.database, fileStorage) }
@@ -153,6 +161,7 @@ fun AppNavigation() {
             androidx.compose.runtime.key(currentLang) {
                 CaptureScreen(
                     questionnaireId = route.questionnaireId ?: "std-form",
+                    linkId = route.linkId,
                     questionnaireRepository = questionnaireRepository,
                     onFinished = { outputPathsMap ->
                         if (outputPathsMap.isEmpty()) {
@@ -197,11 +206,14 @@ fun AppNavigation() {
                     questionnaireRepository = questionnaireRepository,
                     newlyCreatedQuestionnaireId = newlyCreatedQuestionnaireId,
                     onBack = { navController.popBackStack() },
-                    onTakePhotos = { qId ->
-                        navController.navigate(CaptureForPatientRoute(patientId, qId))
+                    onTakePhotos = { qId, linkId ->
+                        navController.navigate(CaptureForPatientRoute(patientId, qId, linkId))
                     },
                     onCreateNewQuestionnaire = {
-                        navController.navigate(io.healthplatform.chartcam.navigation.QuestionnaireBuilderRoute)
+                        navController.navigate(
+                            io.healthplatform.chartcam.navigation
+                                .QuestionnaireBuilderRoute(),
+                        )
                     },
                     onFinalized = {
                         navController.navigate(PatientDetailRoute(patientId)) {
@@ -237,11 +249,14 @@ fun AppNavigation() {
                     questionnaireRepository = questionnaireRepository,
                     newlyCreatedQuestionnaireId = newlyCreatedQuestionnaireId,
                     onBack = { navController.popBackStack() },
-                    onTakePhotos = { qId ->
-                        navController.navigate(CaptureForPatientRoute(patientId, qId))
+                    onTakePhotos = { qId, linkId ->
+                        navController.navigate(CaptureForPatientRoute(patientId, qId, linkId))
                     },
                     onCreateNewQuestionnaire = {
-                        navController.navigate(io.healthplatform.chartcam.navigation.QuestionnaireBuilderRoute)
+                        navController.navigate(
+                            io.healthplatform.chartcam.navigation
+                                .QuestionnaireBuilderRoute(),
+                        )
                     },
                     onFinalized = {
                         navController.navigate(PatientDetailRoute(patientId)) {
@@ -277,11 +292,12 @@ fun AppNavigation() {
             }
         }
 
-        composable<io.healthplatform.chartcam.navigation.QuestionnaireBuilderRoute> {
+        composable<io.healthplatform.chartcam.navigation.QuestionnaireBuilderRoute> { backStackEntry ->
+            val route = backStackEntry.toRoute<io.healthplatform.chartcam.navigation.QuestionnaireBuilderRoute>()
             val viewModel =
-                androidx.lifecycle.viewmodel.compose.viewModel {
+                androidx.lifecycle.viewmodel.compose.viewModel(key = route.duplicateFromId ?: "new") {
                     io.healthplatform.chartcam.viewmodel
-                        .QuestionnaireBuilderViewModel(questionnaireRepository)
+                        .QuestionnaireBuilderViewModel(questionnaireRepository, route.duplicateFromId)
                 }
             androidx.compose.runtime.key(currentLang) {
                 io.healthplatform.chartcam.ui.QuestionnaireBuilderScreen(
@@ -300,7 +316,12 @@ fun AppNavigation() {
                 QuestionnaireListScreen(
                     questionnaireRepository = questionnaireRepository,
                     onBack = { navController.popBackStack() },
-                    onNavigateToBuilder = { navController.navigate(io.healthplatform.chartcam.navigation.QuestionnaireBuilderRoute) },
+                    onNavigateToBuilder = { duplicateId ->
+                        navController.navigate(
+                            io.healthplatform.chartcam.navigation
+                                .QuestionnaireBuilderRoute(duplicateFromId = duplicateId),
+                        )
+                    },
                 )
             }
         }

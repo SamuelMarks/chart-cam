@@ -1,0 +1,16 @@
+headers = argon2.h
+compilerOpts = -Isrc/nativeInterop/cinterop/argon2 -DARGON2_NO_THREADS
+linkerOpts = -framework Security -framework CoreFoundation
+
+---
+#include <CommonCrypto/CommonCryptor.h>
+
+#ifndef kCCModeGCM
+#define kCCModeGCM 11
+#endif
+
+extern CCCryptorStatus CCCryptorGCMAddIV(CCCryptorRef cryptor, const void *iv, size_t ivLen);
+extern CCCryptorStatus CCCryptorGCMaddAAD(CCCryptorRef cryptor, const void *aad, size_t aadLen);
+extern CCCryptorStatus CCCryptorGCMFinal(CCCryptorRef cryptor, void *tag, size_t *tagLength);
+extern CCCryptorStatus CCCryptorGCMReset(CCCryptorRef cryptor);
+

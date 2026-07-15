@@ -79,14 +79,18 @@ class PatientListViewModel(
         val practitionerId = authRepository.currentUser.value?.id
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            val results =
-                if (query.isBlank()) {
-                    repository.getAllPatients(showAll = showAll, practitionerId = practitionerId)
-                } else {
-                    repository.searchPatients(query, showAll = showAll, practitionerId = practitionerId)
-                }
-            _uiState.update { it.copy(patients = results, isLoading = false) }
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val results =
+                    if (query.isBlank()) {
+                        repository.getAllPatients(showAll = showAll, practitionerId = practitionerId)
+                    } else {
+                        repository.searchPatients(query, showAll = showAll, practitionerId = practitionerId)
+                    }
+                _uiState.update { it.copy(patients = results, isLoading = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = "Failed to load patients") }
+            }
         }
     }
 
@@ -153,6 +157,7 @@ class PatientListViewModel(
                 loadPatients()
                 onSuccess(newPatient.id ?: "")
             } catch (e: Exception) {
+                println("EXPORT/IMPORT DATA ERROR: ${e.message}")
                 e.printStackTrace()
             }
         }
@@ -174,6 +179,7 @@ class PatientListViewModel(
                 val data = exportImportService.exportData(password, exportAll, practitionerId)
                 _uiState.update { it.copy(exportedData = data, exportPassword = password) }
             } catch (e: Exception) {
+                println("EXPORT/IMPORT DATA ERROR: ${e.message}")
                 e.printStackTrace()
             }
         }

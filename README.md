@@ -75,11 +75,14 @@ While the **Business Logic (FHIR, Auth, ViewModels)** and **UI (Compose)** are 1
 
 ## 🏗️ Project Structure
 
-* **/chartCam**: The core KMP module encompassing shared logic (Android, iOS, Desktop, Web) and Android-specific implementations.
-    * `commonMain`: Shared business logic, UI (Compose), FHIR models, and ViewModels.
-    * `androidMain`: Android-specific platform bindings (CameraX, Sensors, Keystore).
-    * `iosMain`: iOS-specific platform bindings (AVFoundation, CoreMotion, Keychain).
-    * `jvmMain` / `wasmJsMain`: Desktop and Web hardware stubs and fallbacks.
+ChartCam is designed as a Kotlin Multiplatform (KMP) project targeting Android, iOS, Desktop (JVM), and Web (JS & Wasm).
+
+* **/chartCam**: The core KMP module encompassing all shared logic and platform-specific implementations.
+    * `commonMain`: The unified source of truth containing shared business logic, 100% shared UI (Compose Multiplatform), FHIR models, repository interfaces, and ViewModels.
+    * `androidMain`: Android-specific platform bindings (CameraX for camera, SensorManager for leveling, EncryptedSharedPreferences for storage).
+    * `iosMain`: iOS-specific platform bindings (AVFoundation for camera, CoreMotion for leveling, Keychain for secure storage).
+    * `jvmMain`: Desktop environment hardware stubs and fallback integrations (e.g., Sarxos Webcam).
+    * `jsMain` / `wasmJsMain`: Browser implementations leveraging HTML5 canvas for camera, local storage for persistence, and Kotlin/Wasm for high-performance execution.
 * **/androidApp**: A thin execution wrapper providing the `MainActivity` and `AndroidManifest.xml` for the Android application context.
 * **/iosApp**: The iOS entry point (Xcode project) that integrates and consumes the shared KMP framework.
 * **/fastlane**: CI/CD automation configuration for testing, code signing, and store deployments.

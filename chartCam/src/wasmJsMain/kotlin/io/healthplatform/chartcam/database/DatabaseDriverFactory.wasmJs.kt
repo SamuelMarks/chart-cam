@@ -1,5 +1,6 @@
 /**
  * @file DatabaseDriverFactory.wasmJs.kt
+ * @file DatabaseDriverFactory.wasmJs.kt
  *
  * Provides the WebAssembly (WasmJs) specific implementation of [DatabaseDriverFactory],
  * responsible for creating an [SqlDriver] for SQLDelight using a web worker.

@@ -55,11 +55,17 @@ import org.jetbrains.compose.resources.stringResource
 
 /**
  * Screen designed to associate recently taken photos with a patient.
- * The user can search existing patients or create a new one.
+ * The user can search existing patients or create a new one. State is hoisted from the
+ * [TriageViewModel] which manages the active search query, search results, and patient selection.
  *
- * @param capturedPhotoPaths Map of step name to photo file path.
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
+ * @param capturedPhotoPaths Map of step name to photo file path. These paths are carried forward
+ *        to the encounter creation phase.
  * @param fhirRepository Repository used to search or create patients.
- * @param onProceedToEncounter Callback invoked with the selected patient ID and the photo paths to move to the encounter screen.
+ * @param onProceedToEncounter Callback invoked with the selected patient ID and the `capturedPhotoPaths`
+ *        map to initiate or append to a clinical encounter.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -4,3 +4,6 @@ ktlint_function_naming_ignore_when_annotated_with = Composable
 
 [chartCam/src/iosMain/kotlin/io/healthplatform/chartcam/camera/CameraManager.ios.kt]
 ktlint_standard_no-wildcard-imports = disabled
+
+[chartCam/src/iosMain/kotlin/io/healthplatform/chartcam/utils/CryptoService.ios.kt]
+ktlint_standard_no-wildcard-imports = disabled

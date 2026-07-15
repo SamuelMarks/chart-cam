@@ -1,5 +1,6 @@
 /**
  * @file SensorManager.wasmJs.kt
+ * @file SensorManager.wasmJs.kt
  *
  * Provides the WebAssembly (WasmJs) specific implementation of [SensorManager],
  * offering stubbed sensor functionality since direct hardware sensor access

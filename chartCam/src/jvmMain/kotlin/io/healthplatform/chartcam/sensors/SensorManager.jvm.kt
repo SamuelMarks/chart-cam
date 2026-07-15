@@ -1,4 +1,5 @@
 /**
+ * @file SensorManager.jvm.kt
  * JVM (Desktop) implementation of sensor management.
  */
 package io.healthplatform.chartcam.sensors

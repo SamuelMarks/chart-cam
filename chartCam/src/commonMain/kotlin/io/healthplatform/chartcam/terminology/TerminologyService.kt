@@ -1,3 +1,7 @@
+/**
+ * @file TerminologyService.kt
+ * Contains declarations for TerminologyService.kt.
+ */
 package io.healthplatform.chartcam.terminology
 
 import com.google.fhir.model.r4.Code
@@ -8,10 +12,22 @@ import com.google.fhir.model.r4.String
 import com.google.fhir.model.r4.Uri
 import com.google.fhir.model.r4.terminologies.PublicationStatus
 
+/**
+ * Service that provides standard clinical terminology resources (e.g. LOINC, SNOMED)
+ * required for standardizing FHIR Observations and Questionnaires.
+ */
 object TerminologyService {
+    /** The canonical URI for the LOINC code system. */
     val loincUri: kotlin.String = "http://loinc.org"
+
+    /** The canonical URI for the SNOMED CT code system. */
     val snomedUri: kotlin.String = "http://snomed.info/sct"
 
+    /**
+     * Retrieves the basic [CodeSystem] resource definition for LOINC.
+     *
+     * @return A constructed FHIR [CodeSystem] representing LOINC.
+     */
     fun getLoincCodeSystem(): CodeSystem =
         CodeSystem
             .Builder(
@@ -23,6 +39,11 @@ object TerminologyService {
                 title = String.Builder().apply { value = "Logical Observation Identifiers Names and Codes" }
             }.build()
 
+    /**
+     * Retrieves the basic [CodeSystem] resource definition for SNOMED CT.
+     *
+     * @return A constructed FHIR [CodeSystem] representing SNOMED CT.
+     */
     fun getSnomedCodeSystem(): CodeSystem =
         CodeSystem
             .Builder(
@@ -34,6 +55,13 @@ object TerminologyService {
                 title = String.Builder().apply { value = "Systematized Nomenclature of Medicine Clinical Terms" }
             }.build()
 
+    /**
+     * Constructs a LOINC [Coding] element for use in FHIR resources.
+     *
+     * @param codeVal The specific LOINC code string (e.g., "85353-1").
+     * @param displayVal An optional human-readable display string for the code.
+     * @return A FHIR [Coding] object populated with the LOINC system and provided code.
+     */
     fun getLoincCoding(
         codeVal: kotlin.String,
         displayVal: kotlin.String? = null,

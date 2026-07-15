@@ -55,6 +55,7 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -73,6 +74,8 @@ import chartcam.chartcam.generated.resources.delete
 import chartcam.chartcam.generated.resources.delete_account_message
 import chartcam.chartcam.generated.resources.delete_account_title
 import chartcam.chartcam.generated.resources.delete_my_account
+import chartcam.chartcam.generated.resources.english
+import chartcam.chartcam.generated.resources.espanol
 import chartcam.chartcam.generated.resources.export
 import chartcam.chartcam.generated.resources.export_all_patients
 import chartcam.chartcam.generated.resources.export_data
@@ -80,6 +83,7 @@ import chartcam.chartcam.generated.resources.export_password_label
 import chartcam.chartcam.generated.resources.export_password_title
 import chartcam.chartcam.generated.resources.import_action
 import chartcam.chartcam.generated.resources.import_title
+import chartcam.chartcam.generated.resources.japanese
 import chartcam.chartcam.generated.resources.logout
 import chartcam.chartcam.generated.resources.mrn_dob_format
 import chartcam.chartcam.generated.resources.no_patients_found
@@ -110,6 +114,9 @@ import org.jetbrains.compose.resources.stringResource
  * Screen displaying the list of patients.
  * Provides functionality to search patients, add a new patient,
  * export/import database data, change language, and logout.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param fhirRepository Repository used to access patient data.
  * @param exportImportService Service to handle exporting/importing the database.
@@ -172,21 +179,21 @@ fun PatientListScreen(
                             onDismissRequest = { showLanguageMenu = false },
                         ) {
                             DropdownMenuItem(
-                                text = { Text("English") },
+                                text = { Text(stringResource(Res.string.english)) },
                                 onClick = {
                                     setAppLanguage("en")
                                     showLanguageMenu = false
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Español") },
+                                text = { Text(stringResource(Res.string.espanol)) },
                                 onClick = {
                                     setAppLanguage("es")
                                     showLanguageMenu = false
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("日本語") },
+                                text = { Text(stringResource(Res.string.japanese)) },
                                 onClick = {
                                     setAppLanguage("ja")
                                     showLanguageMenu = false
@@ -584,6 +591,9 @@ fun PatientListScreen(
 /**
  * A composable function that renders a single list item representing a FHIR Patient.
  *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  * @param patient The FHIR Patient object to display.
  * @param onClick The callback triggered when the item is clicked.
  */
@@ -605,6 +615,9 @@ fun PatientListItem(
                 style = MaterialTheme.typography.bodyMedium,
             )
         },
-        modifier = Modifier.clickable(role = Role.Button) { onClick() },
+        modifier =
+            Modifier
+                .semantics(mergeDescendants = true) {}
+                .clickable(role = Role.Button) { onClick() },
     )
 }

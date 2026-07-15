@@ -1,4 +1,5 @@
 /**
+ * @file Platform.js.kt
  * Platform identification for the JS platform.
  */
 package io.healthplatform.chartcam

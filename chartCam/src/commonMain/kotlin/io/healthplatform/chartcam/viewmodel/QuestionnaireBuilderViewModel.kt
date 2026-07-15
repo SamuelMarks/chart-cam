@@ -1,3 +1,7 @@
+/**
+ * @file QuestionnaireBuilderViewModel.kt
+ * Contains declarations for QuestionnaireBuilderViewModel.kt.
+ */
 package io.healthplatform.chartcam.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -6,6 +10,7 @@ import com.google.fhir.model.r4.Enumeration
 import com.google.fhir.model.r4.Questionnaire
 import com.google.fhir.model.r4.String
 import com.google.fhir.model.r4.terminologies.PublicationStatus
+import io.healthplatform.chartcam.fhir.getItemControl
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +28,7 @@ data class QuestionnaireBuilderState(
     val title: kotlin.String = "",
     val items: List<BuilderItem> = emptyList(),
     val isPreviewMode: kotlin.Boolean = false,
+    val isDuplicateNameError: kotlin.Boolean = false,
 )
 
 /**
@@ -68,6 +74,7 @@ enum class WidgetType {
  */
 class QuestionnaireBuilderViewModel(
     private val repository: QuestionnaireRepository,
+    private val duplicateFromId: kotlin.String? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(QuestionnaireBuilderState())
     private var nextItemId = 1
@@ -75,13 +82,82 @@ class QuestionnaireBuilderViewModel(
     /** The observable state of the builder. */
     val state: StateFlow<QuestionnaireBuilderState> = _state.asStateFlow()
 
+    init {
+        if (duplicateFromId != null) {
+            repository.getQuestionnaire(duplicateFromId)?.let { source ->
+                _state.update {
+                    it.copy(
+                        title = "${source.title?.value ?: "Unknown"} (Copy)",
+                        items =
+                            source.item.map { fhirItem ->
+                                val widgetType =
+                                    when (val itemControl = fhirItem.getItemControl()) {
+                                        "photo" -> WidgetType.PHOTO_CAMERA
+                                        "video" -> WidgetType.VIDEO_CAMERA
+                                        "switch" -> WidgetType.SWITCH
+                                        "slider" -> WidgetType.RANGE
+                                        "check-box" ->
+                                            if (fhirItem.repeats?.value ==
+                                                true
+                                            ) {
+                                                WidgetType.MULTI_SELECT
+                                            } else {
+                                                WidgetType.SINGLE_SELECT
+                                            }
+                                        else ->
+                                            when (fhirItem.type?.value) {
+                                                Questionnaire.QuestionnaireItemType.Attachment -> WidgetType.PHOTO_CAMERA
+                                                Questionnaire.QuestionnaireItemType.Boolean -> WidgetType.SWITCH
+                                                Questionnaire.QuestionnaireItemType.Choice ->
+                                                    if (fhirItem.repeats?.value ==
+                                                        true
+                                                    ) {
+                                                        WidgetType.MULTI_SELECT
+                                                    } else {
+                                                        WidgetType.SINGLE_SELECT
+                                                    }
+                                                Questionnaire.QuestionnaireItemType.String -> WidgetType.SINGLE_LINE_TEXT
+                                                Questionnaire.QuestionnaireItemType.Text -> WidgetType.MULTI_LINE_TEXT
+                                                Questionnaire.QuestionnaireItemType.Date -> WidgetType.DATE
+                                                Questionnaire.QuestionnaireItemType.DateTime -> WidgetType.DATETIME
+                                                Questionnaire.QuestionnaireItemType.Decimal -> WidgetType.NUMERIC
+                                                Questionnaire.QuestionnaireItemType.Integer -> WidgetType.RANGE
+                                                else -> WidgetType.SINGLE_LINE_TEXT
+                                            }
+                                    }
+
+                                val options: List<kotlin.String> =
+                                    fhirItem.answerOption.mapNotNull { opt ->
+                                        val codingValue = opt.value as? Questionnaire.Item.AnswerOption.Value.Coding
+                                        codingValue?.value?.display?.value
+                                    }
+
+                                BuilderItem(
+                                    linkId = fhirItem.linkId?.value ?: "item_${nextItemId++}",
+                                    label = fhirItem.text?.value ?: "New Item",
+                                    widgetType = widgetType,
+                                    options = options,
+                                    isError = false,
+                                )
+                            },
+                    )
+                }
+                nextItemId = (
+                    _state.value.items.maxOfOrNull {
+                        it.linkId.removePrefix("item_").toIntOrNull() ?: 0
+                    } ?: 0
+                ) + 1
+            }
+        }
+    }
+
     /**
      * Updates the title of the questionnaire.
      *
      * @param newTitle The new title.
      */
     fun updateTitle(newTitle: kotlin.String) {
-        _state.update { it.copy(title = newTitle) }
+        _state.update { it.copy(title = newTitle, isDuplicateNameError = false) }
     }
 
     /**
@@ -92,12 +168,14 @@ class QuestionnaireBuilderViewModel(
     fun addItem(widgetType: WidgetType) {
         val currentItems = _state.value.items
         val newId = "item_${nextItemId++}"
+        val isError = (widgetType == WidgetType.SINGLE_SELECT || widgetType == WidgetType.MULTI_SELECT)
         val newItem =
             BuilderItem(
                 linkId = newId,
                 label = "New ${widgetType.name} Item",
                 widgetType = widgetType,
                 options = emptyList(),
+                isError = isError,
             )
         _state.update { it.copy(items = currentItems + newItem) }
     }
@@ -136,9 +214,15 @@ class QuestionnaireBuilderViewModel(
 
     /**
      * Validates the current builder state.
+     * This checks if the questionnaire title is present and valid,
+     * and relies on [io.healthplatform.chartcam.validation.FhirValidator]
+     * for strict FHIR structural validation (such as ensuring Choice items have options).
+     * Additionally, it checks the UI builder state to ensure no items are currently flagged with an error.
+     *
      * @return True if valid, false if there are validation errors.
      */
     fun validate(): kotlin.Boolean {
+        if (_state.value.items.any { it.isError }) return false
         val questionnaire = buildQuestionnaire()
         return io.healthplatform.chartcam.validation.FhirValidator
             .validate(questionnaire)
@@ -265,6 +349,8 @@ class QuestionnaireBuilderViewModel(
                         WidgetType.PHOTO_CAMERA -> "photo"
                         WidgetType.SWITCH -> "switch"
                         WidgetType.RANGE -> "slider"
+                        WidgetType.SINGLE_SELECT -> "check-box" // Use check-box for single select as requested
+                        WidgetType.MULTI_SELECT -> "check-box"
                         else -> null
                     }
 
@@ -311,7 +397,22 @@ class QuestionnaireBuilderViewModel(
      */
     fun saveQuestionnaire(): kotlin.String? {
         if (!validate()) return null
+
         val questionnaire = buildQuestionnaire()
+        val currentId = questionnaire.id
+
+        // Ensure uniqueness
+        if (currentId != null) {
+            val existing = repository.getQuestionnaire(currentId)
+            // If we are creating a new one or duplicating, we shouldn't overwrite existing ones
+            // Since we don't have a specific "isEditing" flag, we consider it a duplicate error
+            // if an existing questionnaire has this ID.
+            if (existing != null) {
+                _state.update { it.copy(isDuplicateNameError = true) }
+                return null
+            }
+        }
+
         repository.saveQuestionnaire(questionnaire)
         return questionnaire.id ?: ""
     }

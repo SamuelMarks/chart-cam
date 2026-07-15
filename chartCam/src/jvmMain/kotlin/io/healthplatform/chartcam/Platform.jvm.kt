@@ -1,4 +1,5 @@
 /**
+ * @file Platform.jvm.kt
  * Platform identification utility for the JVM target.
  */
 package io.healthplatform.chartcam

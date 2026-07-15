@@ -1,5 +1,6 @@
 /**
  * @file WasmSecureStorage.kt
+ * @file WasmSecureStorage.kt
  *
  * Provides the WebAssembly (WasmJs) implementation of [SecureStorage].
  * Uses browser `localStorage` in combination with AES encryption from the `crypto-js` library.

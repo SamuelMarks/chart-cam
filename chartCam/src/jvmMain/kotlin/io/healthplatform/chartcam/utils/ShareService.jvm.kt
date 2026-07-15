@@ -1,4 +1,5 @@
 /**
+ * @file ShareService.jvm.kt
  * Sharing service implementation for the JVM platform.
  */
 package io.healthplatform.chartcam.utils

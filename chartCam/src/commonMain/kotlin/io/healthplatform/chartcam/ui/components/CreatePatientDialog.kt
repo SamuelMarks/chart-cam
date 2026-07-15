@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.all_fields_required
 import chartcam.chartcam.generated.resources.cancel
+import chartcam.chartcam.generated.resources.cd_select_date
 import chartcam.chartcam.generated.resources.create
 import chartcam.chartcam.generated.resources.dob_label
 import chartcam.chartcam.generated.resources.dob_placeholder
@@ -50,6 +51,7 @@ import chartcam.chartcam.generated.resources.invalid_date_format
 import chartcam.chartcam.generated.resources.last_name
 import chartcam.chartcam.generated.resources.mrn
 import chartcam.chartcam.generated.resources.new_patient
+import chartcam.chartcam.generated.resources.ok
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -59,6 +61,10 @@ import org.jetbrains.compose.resources.stringResource
  * Dialog for creating a new Patient.
  * Collects first name, last name, MRN, Date of Birth, and gender.
  * Provides validation for all fields and date format.
+ *
+ * **State & Side Effects:**
+ * Maintains internal form state (firstName, lastName, mrn, dob, gender, and errors).
+ * Validates date parsing directly in the dialog logic. No explicit Modifier is exposed as this represents a top-level Dialog.
  *
  * @param onDismissRequest Callback invoked when the user dismisses the dialog without saving.
  * @param onConfirm Callback invoked when the user successfully saves the new patient data. It provides the following parameters: first name, last name, MRN, date of birth, and gender.
@@ -247,7 +253,7 @@ fun CreatePatientDialog(
                     placeholder = { Text(stringResource(Res.string.dob_placeholder)) },
                     trailingIcon = {
                         IconButton(onClick = { showDatePicker = true }) {
-                            Icon(imageVector = Icons.Default.DateRange, contentDescription = "Select Date")
+                            Icon(imageVector = Icons.Default.DateRange, contentDescription = stringResource(Res.string.cd_select_date))
                         }
                     },
                 )
@@ -264,7 +270,7 @@ fun CreatePatientDialog(
                                     dobString = date.toString()
                                 }
                             }) {
-                                Text("OK")
+                                Text(stringResource(Res.string.ok))
                             }
                         },
                         dismissButton = {

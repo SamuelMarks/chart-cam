@@ -1,3 +1,7 @@
+/**
+ * @file CameraManager.wasmJs.kt
+ * Contains declarations for CameraManager.wasmJs.kt.
+ */
 @file:Suppress("UNCHECKED_CAST", "CAST_NEVER_SUCCEEDS", "USELESS_CAST")
 @file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
 /**

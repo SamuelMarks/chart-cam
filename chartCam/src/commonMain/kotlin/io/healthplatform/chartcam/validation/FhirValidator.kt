@@ -1,3 +1,7 @@
+/**
+ * @file FhirValidator.kt
+ * Contains declarations for FhirValidator.kt.
+ */
 package io.healthplatform.chartcam.validation
 
 import com.google.fhir.model.r4.Patient
@@ -32,12 +36,32 @@ object FhirValidator {
         return hasGiven && hasFamily && hasIdentifier
     }
 
+    /**
+     * Validates a Questionnaire against structural rules.
+     * Enforces that the title is present, there is at least one item,
+     * no duplicate linkIds exist, and that Choice items have at least one answer option.
+     *
+     * @param questionnaire The Questionnaire to validate.
+     * @return True if valid, false otherwise.
+     */
     private fun validateQuestionnaire(questionnaire: Questionnaire): Boolean {
         if (questionnaire.title?.value?.isEmpty() != false) return false
         if (questionnaire.item.isEmpty()) return false
+
+        val linkIds = mutableSetOf<String>()
+
         return questionnaire.item.all { item ->
-            item.linkId?.value?.isNotEmpty() == true &&
-                item.text?.value?.isNotEmpty() == true
+            val id = item.linkId?.value
+            val hasValidLinkAndText =
+                id?.isNotEmpty() == true &&
+                    item.text?.value?.isNotEmpty() == true
+
+            if (id != null && !linkIds.add(id)) return@all false
+
+            val isChoice = item.type.value == Questionnaire.QuestionnaireItemType.Choice
+            val hasValidOptions = if (isChoice) item.answerOption.isNotEmpty() else true
+
+            hasValidLinkAndText && hasValidOptions
         }
     }
 }

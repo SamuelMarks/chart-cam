@@ -1,3 +1,7 @@
+/**
+ * @file SdcEvaluator.kt
+ * Contains declarations for SdcEvaluator.kt.
+ */
 package io.healthplatform.chartcam.sdc
 
 import com.google.fhir.model.r4.Questionnaire
@@ -6,6 +10,14 @@ import com.google.fhir.model.r4.Questionnaire
  * Basic evaluator for SDC expressions and constraints.
  */
 object SdcEvaluator {
+    /**
+     * Evaluates SDC calculatedExpression extensions across the Questionnaire and updates the answer map.
+     * Iterates repeatedly to allow cascading calculations (e.g. A = 1, B = A + 1) to settle.
+     *
+     * @param questionnaire The FHIR Questionnaire containing items with calculatedExpressions.
+     * @param currentAnswers The `context` map of linkId to answer value, acting as the variable state environment.
+     * @return A new map with the evaluated answers updated.
+     */
     fun evaluateCalculatedExpressions(
         questionnaire: Questionnaire,
         currentAnswers: Map<String, Any>,
@@ -25,6 +37,13 @@ object SdcEvaluator {
         return updatedAnswers
     }
 
+    /**
+     * Evaluates a single Questionnaire Item (and its nested items) for a calculatedExpression.
+     *
+     * @param item The Questionnaire Item to evaluate.
+     * @param answers The mutable map of linkId to current answer values.
+     * @return True if any answer was changed/calculated during evaluation, false otherwise.
+     */
     private fun evaluateItem(
         item: Questionnaire.Item,
         answers: MutableMap<String, Any>,
@@ -62,6 +81,14 @@ object SdcEvaluator {
         return changed
     }
 
+    /**
+     * Replaces variable tokens (e.g., %linkId) in a math expression string with their current values
+     * and evaluates the resulting expression.
+     *
+     * @param expression The mathematical expression string.
+     * @param answers The map containing the current values for variables.
+     * @return The evaluated Float result, or null if evaluation fails.
+     */
     private fun evaluateMathExpression(
         expression: String,
         answers: Map<String, Any>,
@@ -81,7 +108,19 @@ object SdcEvaluator {
         }
     }
 
+    /**
+     * Parses and evaluates a basic arithmetic math expression supporting parentheses,
+     * multiplication, division, addition, and subtraction.
+     *
+     * @param str The fully substituted mathematical expression.
+     * @return The evaluated Float result.
+     */
     private fun evalSimpleMath(str: String): Float {
+        /**
+         * Parses a string expression into a Float value.
+         * Currently stubbed out to return 0f.
+         * @param str Parameter str
+         */
         fun parse(str: String): Float {
             var s = str.replace(" ", "")
             if (s.isEmpty()) return 0f

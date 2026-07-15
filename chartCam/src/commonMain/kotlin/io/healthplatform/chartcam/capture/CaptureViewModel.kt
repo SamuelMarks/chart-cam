@@ -70,15 +70,20 @@ class CaptureViewModel(
         _uiState.update { it.copy(isCapturing = true) }
 
         viewModelScope.launch {
-            val bytes = cameraManager.captureImage()
-            if (bytes != null) {
-                _uiState.update {
-                    it.copy(
-                        isCapturing = false,
-                        reviewImageBytes = bytes,
-                    )
+            try {
+                val bytes = cameraManager.captureImage()
+                if (bytes != null) {
+                    _uiState.update {
+                        it.copy(
+                            isCapturing = false,
+                            reviewImageBytes = bytes,
+                        )
+                    }
+                } else {
+                    _uiState.update { it.copy(isCapturing = false) }
                 }
-            } else {
+            } catch (e: Exception) {
+                // E.g. permission permanently denied
                 _uiState.update { it.copy(isCapturing = false) }
             }
         }
@@ -93,31 +98,37 @@ class CaptureViewModel(
         val bytes = currentState.reviewImageBytes ?: return
         val currentStep = currentState.currentStep ?: return
 
-        // 1. Save File
-        val fileName = "capture_${currentStep.id}.jpg"
-        val path = fileStorage.saveImage(fileName, bytes)
-        filePaths[currentStep] = path
+        try {
+            // 1. Save File
+            val fileName = "capture_${currentStep.id}.jpg"
+            val path = fileStorage.saveImage(fileName, bytes)
+            filePaths[currentStep] = path
 
-        // 2. Calculate Next Step
-        currentStepIndex++
-        val nextStep = if (currentStepIndex < stepsSequence.size) stepsSequence[currentStepIndex] else null
+            // 2. Calculate Next Step
+            currentStepIndex++
+            val nextStep = if (currentStepIndex < stepsSequence.size) stepsSequence[currentStepIndex] else null
 
-        if (nextStep != null) {
-            _uiState.update {
-                it.copy(
-                    currentStep = nextStep,
-                    reviewImageBytes = null,
-                    capturedCount = filePaths.size,
-                )
+            if (nextStep != null) {
+                _uiState.update {
+                    it.copy(
+                        currentStep = nextStep,
+                        reviewImageBytes = null,
+                        capturedCount = filePaths.size,
+                    )
+                }
+            } else {
+                _uiState.update {
+                    it.copy(
+                        reviewImageBytes = null,
+                        isFinished = true,
+                        capturedCount = filePaths.size,
+                    )
+                }
             }
-        } else {
-            _uiState.update {
-                it.copy(
-                    reviewImageBytes = null,
-                    isFinished = true,
-                    capturedCount = filePaths.size,
-                )
-            }
+        } catch (e: Exception) {
+            // E.g. file storage full
+            // Do not advance step, clear review bytes so they can retry
+            _uiState.update { it.copy(reviewImageBytes = null) }
         }
     }
 

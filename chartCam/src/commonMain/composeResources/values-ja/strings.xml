@@ -123,7 +123,22 @@
     <string name="select_questionnaire">質問票を選択</string>
     <string name="captured_photos_format">撮影した写真 (%1$d/%2$d)</string>
     <string name="provider_format">担当医: %1$s 医師</string>
-<string name="build_questionnaire">Build Questionnaire (ja)</string><string name="preview">Preview (ja)</string><string name="save">Save (ja)</string><string name="preview_mode">Preview Mode (ja)</string><string name="questionnaire_title">Questionnaire Title (ja)</string><string name="items">Items (ja)</string><string name="add_widget">Add Widget (ja)</string><string name="add">Add (ja)</string><string name="label">Label (ja)</string><string name="options_comma_separated">Options (comma-separated) (ja)</string><string name="delete_item">Delete Item (ja)</string><string name="type_format">Type: %1$s (ja)</string><string name="cd_delete_item">Delete Item (ja)</string><string name="cd_save">Save (ja)</string><string name="cd_preview">Preview (ja)</string><string name="cd_add">Add (ja)</string>
+    <string name="build_questionnaire">質問票の作成</string>
+    <string name="preview">プレビュー</string>
+    <string name="save">保存</string>
+    <string name="preview_mode">プレビューモード</string>
+    <string name="questionnaire_title">質問票のタイトル</string>
+    <string name="items">アイテム</string>
+    <string name="add_widget">ウィジェットを追加</string>
+    <string name="add">追加</string>
+    <string name="label">ラベル</string>
+    <string name="options_comma_separated">オプション (カンマ区切り)</string>
+    <string name="delete_item">アイテムを削除</string>
+    <string name="type_format">タイプ: %1$s</string>
+    <string name="cd_delete_item">アイテムを削除</string>
+    <string name="cd_save">保存</string>
+    <string name="cd_preview">プレビュー</string>
+    <string name="cd_add">追加</string>
     <string name="cd_more_widgets">その他のウィジェット</string>
     <string name="widget_photo_camera">写真カメラ</string>
     <string name="widget_video_camera">ビデオカメラ</string>

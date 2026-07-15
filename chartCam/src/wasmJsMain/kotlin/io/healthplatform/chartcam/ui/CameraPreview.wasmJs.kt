@@ -1,5 +1,6 @@
 /**
  * @file CameraPreview.wasmJs.kt
+ * @file CameraPreview.wasmJs.kt
  *
  * Provides the WebAssembly (WasmJs) specific implementation of the [CameraPreview] composable,
  * designed to integrate with browser-based video elements and capture frames as [ImageBitmap]s.

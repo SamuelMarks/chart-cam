@@ -1,3 +1,7 @@
+/**
+ * @file QuestionnaireBuilderScreen.kt
+ * Contains declarations for QuestionnaireBuilderScreen.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.foundation.layout.Arrangement
@@ -56,12 +60,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.add_option
@@ -83,6 +92,7 @@ import chartcam.chartcam.generated.resources.confirm_delete_item_title
 import chartcam.chartcam.generated.resources.confirm_delete_option_message
 import chartcam.chartcam.generated.resources.confirm_delete_option_title
 import chartcam.chartcam.generated.resources.delete
+import chartcam.chartcam.generated.resources.error_duplicate_id
 import chartcam.chartcam.generated.resources.error_required_field
 import chartcam.chartcam.generated.resources.items
 import chartcam.chartcam.generated.resources.label
@@ -107,12 +117,14 @@ import io.healthplatform.chartcam.viewmodel.WidgetType
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Maps a [WidgetType] to its corresponding [ImageVector] icon for display in the builder UI.
+ * Translates a [WidgetType] to its localized string representation for UI display.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param type The type of the widget.
- * @return The material icon representing the widget type.
+ * @return The localized string name for the widget.
  */
-
 @Composable
 fun getWidgetNameString(type: WidgetType): String {
     val res =
@@ -133,7 +145,14 @@ fun getWidgetNameString(type: WidgetType): String {
     return stringResource(res)
 }
 
+/**
+ * Maps a [WidgetType] to its corresponding [ImageVector] icon for display in the builder UI.
+ *
+ * @param type The type of the widget.
+ * @return The material icon representing the widget type.
+ */
 fun getWidgetIcon(type: WidgetType): ImageVector =
+
     when (type) {
         WidgetType.PHOTO_CAMERA -> Icons.Default.PhotoCamera
         WidgetType.VIDEO_CAMERA -> Icons.Default.Videocam
@@ -152,6 +171,9 @@ fun getWidgetIcon(type: WidgetType): ImageVector =
 /**
  * Displays a row for selecting a widget type to add to the questionnaire.
  * Shows primary widgets as icons and a dropdown for secondary widgets.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param onWidgetSelected Callback invoked when a widget type is selected.
  * @param modifier The modifier to apply to this row.
@@ -211,7 +233,7 @@ fun WidgetSelectionRow(
                     secondaryWidgets.forEach { widget ->
                         DropdownMenuItem(
                             text = { Text(getWidgetNameString(widget)) },
-                            leadingIcon = { Icon(getWidgetIcon(widget), contentDescription = null) },
+                            leadingIcon = { Icon(getWidgetIcon(widget), contentDescription = getWidgetNameString(widget)) },
                             onClick = {
                                 onWidgetSelected(widget)
                                 showDropdown = false
@@ -226,6 +248,9 @@ fun WidgetSelectionRow(
 
 /**
  * Screen that allows users to build a dynamic FHIR Questionnaire.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param viewModel The view model managing the builder state.
  * @param onBack Callback when the back button is pressed.
@@ -297,6 +322,13 @@ fun QuestionnaireBuilderScreen(
                     }
                 }
             } else {
+                if (state.isDuplicateNameError) {
+                    Text(
+                        text = stringResource(Res.string.error_duplicate_id),
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
                 val titleError = state.title.isBlank()
                 OutlinedTextField(
                     value = state.title,
@@ -304,6 +336,8 @@ fun QuestionnaireBuilderScreen(
                     label = { Text(stringResource(Res.string.questionnaire_title)) },
                     isError = titleError,
                     supportingText = { if (titleError) Text(stringResource(Res.string.error_required_field)) },
+                    singleLine = true,
+                    maxLines = 1,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                 )
 
@@ -311,6 +345,8 @@ fun QuestionnaireBuilderScreen(
                     onWidgetSelected = { viewModel.addItem(it) },
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
+
+                val focusRequesters = remember(state.items.size) { List(state.items.size) { FocusRequester() } }
 
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(state.items.size) { index ->
@@ -323,6 +359,12 @@ fun QuestionnaireBuilderScreen(
                             onDelete = { viewModel.removeItem(item.linkId) },
                             onMoveUp = { viewModel.moveItemUp(item.linkId) },
                             onMoveDown = { viewModel.moveItemDown(item.linkId) },
+                            modifier =
+                                Modifier
+                                    .focusProperties {
+                                        next = if (index < state.items.size - 1) focusRequesters[index + 1] else FocusRequester.Default
+                                        previous = if (index > 0) focusRequesters[index - 1] else FocusRequester.Default
+                                    }.focusRequester(focusRequesters[index]),
                         )
                     }
                 }
@@ -334,6 +376,9 @@ fun QuestionnaireBuilderScreen(
 /**
  * Composable for displaying a single builder item row.
  *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  * @param item The builder item to display.
  * @param canMoveUp Whether the item can be moved up.
  * @param canMoveDown Whether the item can be moved down.
@@ -341,9 +386,10 @@ fun QuestionnaireBuilderScreen(
  * @param onDelete Callback to delete the item.
  * @param onMoveUp Callback to move the item up.
  * @param onMoveDown Callback to move the item down.
+ * @param modifier The modifier to be applied to this item row.
  */
 @Composable
-private fun BuilderItemRow(
+fun BuilderItemRow(
     item: BuilderItem,
     canMoveUp: Boolean,
     canMoveDown: Boolean,
@@ -351,6 +397,7 @@ private fun BuilderItemRow(
     onDelete: () -> Unit,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var optionToDeleteIndex by remember { mutableStateOf<Int?>(null) }
@@ -401,8 +448,18 @@ private fun BuilderItemRow(
         )
     }
 
+    val focusRequester = remember { FocusRequester() }
+
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+                .semantics {
+                    if (item.isError) {
+                        error("Validation error in item")
+                    }
+                },
         border = if (item.isError) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error) else null,
     ) {
         Row(
@@ -421,7 +478,7 @@ private fun BuilderItemRow(
                     label = { Text(stringResource(Res.string.label)) },
                     isError = item.isError && item.label.isBlank(),
                     supportingText = { if (item.isError && item.label.isBlank()) Text(stringResource(Res.string.error_required_field)) },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp).focusRequester(focusRequester),
                 )
 
                 if (item.widgetType == WidgetType.SINGLE_SELECT || item.widgetType == WidgetType.MULTI_SELECT) {

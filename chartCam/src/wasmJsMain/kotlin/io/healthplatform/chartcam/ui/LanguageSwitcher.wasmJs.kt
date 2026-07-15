@@ -1,5 +1,6 @@
 /**
  * @file LanguageSwitcher.wasmJs.kt
+ * @file LanguageSwitcher.wasmJs.kt
  *
  * Provides the WebAssembly (WasmJs) implementation for dynamically changing the application's language
  * by modifying the browser's `navigator` language properties via JavaScript interoperability.

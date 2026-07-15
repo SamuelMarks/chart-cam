@@ -1,16 +1,25 @@
+/**
+ * @file QuestionnaireListScreen.kt
+ * Contains declarations for QuestionnaireListScreen.kt.
+ */
 package io.healthplatform.chartcam.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.FileCopy
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -35,11 +44,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cancel
 import chartcam.chartcam.generated.resources.cd_back
+import chartcam.chartcam.generated.resources.cd_delete
+import chartcam.chartcam.generated.resources.cd_duplicate
 import chartcam.chartcam.generated.resources.clipboard_is_empty
 import chartcam.chartcam.generated.resources.copy_to_clipboard
 import chartcam.chartcam.generated.resources.create
@@ -72,6 +84,9 @@ import org.jetbrains.compose.resources.stringResource
  * Screen displaying the list of available questionnaires.
  * Allows viewing existing questionnaires and creating new ones.
  *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  * @param questionnaireRepository The repository for fetching and creating questionnaires.
  * @param onBack Callback invoked when the back button is pressed.
  */
@@ -80,7 +95,7 @@ import org.jetbrains.compose.resources.stringResource
 fun QuestionnaireListScreen(
     questionnaireRepository: QuestionnaireRepository,
     onBack: () -> Unit,
-    onNavigateToBuilder: () -> Unit = {},
+    onNavigateToBuilder: (String?) -> Unit = {},
 ) {
     var questionnaires by remember { mutableStateOf(questionnaireRepository.getAvailableQuestionnaires()) }
     var showCreateDialog by remember { mutableStateOf(false) }
@@ -95,6 +110,7 @@ fun QuestionnaireListScreen(
     val coroutineScope = rememberCoroutineScope()
 
     var selectedQuestionnaireForShare by remember { mutableStateOf<Questionnaire?>(null) }
+    var selectedQuestionnaireForView by remember { mutableStateOf<Questionnaire?>(null) }
     var showImportOptions by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
     var previewQuestionnaire by remember { mutableStateOf<Questionnaire?>(null) }
@@ -119,7 +135,7 @@ fun QuestionnaireListScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onNavigateToBuilder) {
+            FloatingActionButton(onClick = { onNavigateToBuilder(null) }) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.create_questionnaire))
             }
         },
@@ -142,6 +158,7 @@ fun QuestionnaireListScreen(
                 items(questionnaires) { q ->
                     val titleText = q.title?.value ?: q.id ?: stringResource(Res.string.unknown)
                     ListItem(
+                        modifier = Modifier.clickable(role = Role.Button) { selectedQuestionnaireForView = q },
                         headlineContent = { Text(titleText, style = MaterialTheme.typography.titleMedium) },
                         supportingContent = { Text(q.id ?: "", style = MaterialTheme.typography.bodyMedium) },
                         trailingContent = {
@@ -153,6 +170,64 @@ fun QuestionnaireListScreen(
                         },
                     )
                     HorizontalDivider()
+                }
+            }
+        }
+    }
+
+    selectedQuestionnaireForView?.let { q ->
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { selectedQuestionnaireForView = null },
+            properties =
+                androidx.compose.ui.window
+                    .DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            androidx.compose.material3.Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background,
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    TopAppBar(
+                        title = { Text(q.title?.value ?: q.id ?: stringResource(Res.string.unknown)) },
+                        navigationIcon = {
+                            IconButton(onClick = { selectedQuestionnaireForView = null }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.cancel))
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = {
+                                q.id?.let { id ->
+                                    selectedQuestionnaireForView = null
+                                    onNavigateToBuilder(id)
+                                }
+                            }) {
+                                Icon(Icons.Default.FileCopy, contentDescription = stringResource(Res.string.cd_duplicate))
+                            }
+                            IconButton(onClick = {
+                                q.id?.let { id ->
+                                    questionnaireRepository.deleteQuestionnaire(id)
+                                    questionnaires = questionnaireRepository.getAvailableQuestionnaires()
+                                }
+                                selectedQuestionnaireForView = null
+                            }) {
+                                Icon(Icons.Default.Delete, contentDescription = stringResource(Res.string.cd_delete))
+                            }
+                        },
+                    )
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(16.dp),
+                    ) {
+                        io.healthplatform.chartcam.sdc.SdcQuestionnaireForm(
+                            questionnaire = q,
+                            answers = emptyMap(),
+                            readOnly = true,
+                            onFormUpdated = { _, _ -> },
+                        )
+                    }
                 }
             }
         }

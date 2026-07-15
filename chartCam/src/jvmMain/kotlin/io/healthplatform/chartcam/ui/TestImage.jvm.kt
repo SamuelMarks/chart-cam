@@ -1,4 +1,5 @@
 /**
+ * @file TestImage.jvm.kt
  * Contains test image utilities tailored specifically for the JVM platform.
  */
 package io.healthplatform.chartcam.ui

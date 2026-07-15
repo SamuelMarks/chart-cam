@@ -1,3 +1,7 @@
+/**
+ * @file SdcExtensions.kt
+ * Contains declarations for SdcExtensions.kt.
+ */
 package io.healthplatform.chartcam.fhir
 
 import com.google.fhir.model.r4.Questionnaire

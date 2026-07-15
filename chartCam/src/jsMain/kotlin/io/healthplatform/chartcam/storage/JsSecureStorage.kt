@@ -1,4 +1,5 @@
 /**
+ * @file JsSecureStorage.kt
  * JS-specific secure storage implementation.
  */
 package io.healthplatform.chartcam.storage

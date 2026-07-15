@@ -1,4 +1,5 @@
 /**
+ * @file CameraManager.js.kt
  * JS-specific camera management and permission implementations.
  */
 package io.healthplatform.chartcam.camera

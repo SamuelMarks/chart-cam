@@ -129,14 +129,20 @@ class EncounterDetailViewModel(
 
                     val docs =
                         photosMap.map { (stepName, path) ->
+                            val label =
+                                questionnaires.firstOrNull()?.item?.let { items ->
+                                    findItemRecursively(items, stepName)?.text?.value
+                                } ?: stepName
+
                             createFhirDocumentReference(
                                 id = UUID.randomUUID(),
                                 patientId = patient.id ?: "",
                                 encounterId = encounterId,
                                 dateStr = now.toString(),
-                                desc = stepName,
+                                desc = label,
                                 mime = "image/jpeg",
                                 urlPath = path,
+                                answerCode = stepName,
                             ).also {
                                 fhirRepository.saveDocumentReference(it)
                             }
@@ -164,7 +170,14 @@ class EncounterDetailViewModel(
 
                     if (existingResponses.isNotEmpty()) {
                         val latestQr = existingResponses.first()
-                        existingSelectedQ = questionnaires.find { it.id == latestQr.questionnaire?.value }
+
+                        // Parse FHIR Canonical URI to match local Resource ID
+                        // The Questionnaire reference may be an absolute URI, a relative path (e.g., 'Questionnaire/q-id'),
+                        // or just the raw ID. We substring after the last slash to normalize it to the base ID.
+                        val rawCanonical = latestQr.questionnaire?.value ?: ""
+                        val resolvedQId = rawCanonical.substringAfterLast("/")
+
+                        existingSelectedQ = questionnaires.find { it.id == resolvedQId }
 
                         if (existingSelectedQ == null) {
                             val dummyItems = buildDummyItemsRecursively(latestQr.item)
@@ -194,14 +207,24 @@ class EncounterDetailViewModel(
                                 .now()
                         val newDocs =
                             photosMap.map { (stepName, path) ->
+                                val label =
+                                    existingSelectedQ?.item?.let { items ->
+                                        findItemRecursively(items, stepName)?.text?.value
+                                    } ?: (
+                                        questionnaires.firstOrNull()?.item?.let { items ->
+                                            findItemRecursively(items, stepName)?.text?.value
+                                        } ?: stepName
+                                    )
+
                                 createFhirDocumentReference(
                                     id = UUID.randomUUID(),
                                     patientId = patient.id ?: "",
                                     encounterId = existingEncounter.id ?: "",
                                     dateStr = now.toString(),
-                                    desc = stepName,
+                                    desc = label,
                                     mime = "image/jpeg",
                                     urlPath = path,
+                                    answerCode = stepName,
                                 ).also {
                                     fhirRepository.saveDocumentReference(it)
                                 }
@@ -400,7 +423,15 @@ class EncounterDetailViewModel(
                             }
 
                             _uiState.value.photos.forEach { photo ->
-                                val stepName = photo.description?.value ?: return@forEach
+                                val stepName =
+                                    photo.context
+                                        ?.related
+                                        ?.firstOrNull()
+                                        ?.identifier
+                                        ?.value
+                                        ?.value
+                                        ?: photo.description?.value
+                                        ?: return@forEach
                                 val urlPath =
                                     photo.content
                                         .firstOrNull()
@@ -508,6 +539,37 @@ class EncounterDetailViewModel(
     }
 
     /**
+     * Reopens a finalized encounter by updating its FHIR status back to "in-progress"
+     * and clearing the `isFinalized` flag, allowing further edits to forms and photos.
+     */
+    fun reopenEncounter() {
+        val enc = _uiState.value.encounter ?: return
+        val id = enc.id ?: return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSyncing = true) }
+
+            // Revert the encounter status back to in-progress
+            fhirRepository.updateEncounterStatus(
+                id,
+                "in-progress",
+                "",
+            )
+
+            // Reload the encounter to ensure state is completely in sync with local DB
+            val updatedEnc = fhirRepository.getEncounter(id)
+
+            _uiState.update {
+                it.copy(
+                    encounter = updatedEnc,
+                    isSyncing = false,
+                    isFinalized = false,
+                )
+            }
+        }
+    }
+
+    /**
      * Adds newly captured photos to the current encounter.
      *
      * @param photosMap Map of step names to photo paths.
@@ -522,6 +584,11 @@ class EncounterDetailViewModel(
                     .now()
             val newDocs =
                 photosMap.map { (stepName, path) ->
+                    val label =
+                        _uiState.value.selectedQuestionnaire?.item?.let { items ->
+                            findItemRecursively(items, stepName)?.text?.value
+                        } ?: stepName
+
                     createFhirDocumentReference(
                         id =
                             io.healthplatform.chartcam.utils.UUID
@@ -529,9 +596,10 @@ class EncounterDetailViewModel(
                         patientId = patient.id ?: "",
                         encounterId = enc.id ?: "",
                         dateStr = now.toString(),
-                        desc = stepName,
+                        desc = label,
                         mime = "image/jpeg",
                         urlPath = path,
+                        answerCode = stepName,
                     ).also {
                         fhirRepository.saveDocumentReference(it)
                     }

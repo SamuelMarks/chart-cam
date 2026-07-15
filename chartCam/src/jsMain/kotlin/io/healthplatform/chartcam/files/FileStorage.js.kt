@@ -1,4 +1,5 @@
 /**
+ * @file FileStorage.js.kt
  * File storage functionality for the JS platform.
  */
 package io.healthplatform.chartcam.files

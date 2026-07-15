@@ -62,6 +62,7 @@ ChartCam is built upon a robust Kotlin Multiplatform foundation. While the core 
 
 *   **📱 Mobile (Android & iOS)**: Fully integrates native camera subsystems (CameraX, AVFoundation), precision hardware sensors (CoreMotion, SensorManager) for the clinical leveler, and hardware-backed secure enclaves (EncryptedSharedPreferences, Keychain) for key management and data at rest.
 *   **💻 Desktop (JVM) & Web (Wasm)**: The UI and administrative flows are fully functional. Hardware capabilities (camera, sensors) leverage robust fallback mechanisms and external library integrations (e.g., Sarxos Webcam) or web standards (HTML5 MediaDevices), ensuring cross-platform utility without compromising the core experience.
+    *   **macOS Desktop Warning**: Due to strict macOS privacy protections (especially on Apple Silicon / ARM64), your Terminal or IDE (e.g., Android Studio, IntelliJ) must explicitly be granted "Camera" permissions in System Settings -> Privacy & Security. Without this permission, the native camera driver will be silently blocked by the OS, and ChartCam will display a "Camera unavailable" message.
 
 ---
 

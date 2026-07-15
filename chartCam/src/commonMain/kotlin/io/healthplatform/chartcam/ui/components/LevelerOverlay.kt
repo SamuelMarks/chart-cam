@@ -20,12 +20,20 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.cd_leveler_status
+import chartcam.chartcam.generated.resources.level_status_level
+import chartcam.chartcam.generated.resources.level_status_tilted
 import io.healthplatform.chartcam.sensors.SensorManager
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
 
 /**
  * A UI overlay that draws a crosshair and a bubble level based on real-time device sensor data.
  * Turns Green when perfectly level (pitch and roll < 3 degrees).
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param sensorManager The sensor manager that emits orientation data.
  */
@@ -37,16 +45,35 @@ fun LevelerOverlay(sensorManager: SensorManager) {
                 .OrientationData(0.0, 0.0),
     )
 
-    // Threshold for "Green" level
-    val isLevel = abs(orientation.pitch) < 3.0 && abs(orientation.roll) < 3.0
+    LevelerOverlay(pitch = orientation.pitch.toFloat(), roll = orientation.roll.toFloat())
+}
+
+/**
+ * Stateless implementation of the leveler overlay.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
+ * @param pitch Device pitch in degrees.
+ * @param roll Device roll in degrees.
+ * @param tolerance Degrees within which the device is considered level.
+ */
+@Composable
+fun LevelerOverlay(
+    pitch: Float,
+    roll: Float,
+    tolerance: Float = 3.0f,
+) {
+    val isLevel = abs(pitch) < tolerance && abs(roll) < tolerance
     val color = if (isLevel) Color(0xFF52854C) else Color.White
 
-    val statusText = if (isLevel) "Camera is level" else "Camera is tilted"
+    val statusText = if (isLevel) stringResource(Res.string.level_status_level) else stringResource(Res.string.level_status_tilted)
+    val cdStatus = stringResource(Res.string.cd_leveler_status, statusText)
 
     Box(
         modifier =
             Modifier.fillMaxSize().semantics(mergeDescendants = true) {
-                contentDescription = "Camera Leveler: $statusText"
+                contentDescription = cdStatus
                 liveRegion = LiveRegionMode.Polite
             },
         contentAlignment = Alignment.Center,
@@ -84,8 +111,8 @@ fun LevelerOverlay(sensorManager: SensorManager) {
             val maxDeflection = 20.0 // Degrees that map to edge of circle
             val radiusPx = 40.dp.toPx()
 
-            val offsetX = (orientation.roll / maxDeflection).coerceIn(-1.0, 1.0) * radiusPx
-            val offsetY = (orientation.pitch / maxDeflection).coerceIn(-1.0, 1.0) * radiusPx
+            val offsetX = (roll / maxDeflection).coerceIn(-1.0, 1.0) * radiusPx
+            val offsetY = (pitch / maxDeflection).coerceIn(-1.0, 1.0) * radiusPx
 
             drawCircle(
                 color = color,

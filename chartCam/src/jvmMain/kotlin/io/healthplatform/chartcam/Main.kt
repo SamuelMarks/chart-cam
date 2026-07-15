@@ -1,4 +1,5 @@
 /**
+ * @file Main.kt
  * Main entry point for the JVM (Desktop) application.
  */
 package io.healthplatform.chartcam

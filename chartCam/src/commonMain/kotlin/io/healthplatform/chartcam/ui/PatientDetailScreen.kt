@@ -64,6 +64,9 @@ import org.jetbrains.compose.resources.stringResource
 /**
  * Screen displaying the details of a selected patient and their encounter history.
  *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  * @param patientId The unique identifier of the patient to display.
  * @param fhirRepository Repository used to load patient and encounter data.
  * @param onBack Callback invoked when the user requests to navigate back.

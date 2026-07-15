@@ -1,4 +1,5 @@
 /**
+ * @file PermissionManager.jvm.kt
  * Camera permission management for the JVM platform.
  */
 package io.healthplatform.chartcam.camera

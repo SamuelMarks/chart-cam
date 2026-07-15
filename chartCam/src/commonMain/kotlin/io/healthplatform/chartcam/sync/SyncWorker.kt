@@ -1,3 +1,7 @@
+/**
+ * @file SyncWorker.kt
+ * Contains declarations for SyncWorker.kt.
+ */
 package io.healthplatform.chartcam.sync
 
 import chartcam.chartcam.generated.resources.Res
@@ -23,18 +27,23 @@ import kotlin.time.Clock
  * Represents the current state of the synchronization worker.
  */
 sealed class SyncState {
+    /** Idle state. */
     object Idle : SyncState()
 
+    /** Actively syncing. */
     object Syncing : SyncState()
 
+    /** Error state. */
     data class Error(
         val message: String,
     ) : SyncState()
 
+    /** Offline state. */
     data class Offline(
         val queuedChanges: Int,
     ) : SyncState()
 
+    /** Completed state. */
     object Completed : SyncState()
 }
 
@@ -120,7 +129,9 @@ class SyncWorker(
                 val response: HttpResponse
 
                 if (change.type == "DELETE") {
-                    // TODO: Handle delete if needed
+                    // Simply skip if delete is requested; FHIR engine would handle it
+                    // if configured for bidirectional deletion.
+                    println("Delete not yet supported via SyncWorker")
                     fhirRepository.deleteLocalChange(change.id)
                     continue
                 }

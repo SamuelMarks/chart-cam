@@ -123,7 +123,22 @@
     <string name="select_questionnaire">Seleccionar Cuestionario</string>
     <string name="captured_photos_format">Fotos Capturadas (%1$d/%2$d)</string>
     <string name="provider_format">Proveedor: Dr. %1$s</string>
-<string name="build_questionnaire">Build Questionnaire (es)</string><string name="preview">Preview (es)</string><string name="save">Save (es)</string><string name="preview_mode">Preview Mode (es)</string><string name="questionnaire_title">Questionnaire Title (es)</string><string name="items">Items (es)</string><string name="add_widget">Add Widget (es)</string><string name="add">Add (es)</string><string name="label">Label (es)</string><string name="options_comma_separated">Options (comma-separated) (es)</string><string name="delete_item">Delete Item (es)</string><string name="type_format">Type: %1$s (es)</string><string name="cd_delete_item">Delete Item (es)</string><string name="cd_save">Save (es)</string><string name="cd_preview">Preview (es)</string><string name="cd_add">Add (es)</string>
+    <string name="build_questionnaire">Construir Cuestionario</string>
+    <string name="preview">Vista Previa</string>
+    <string name="save">Guardar</string>
+    <string name="preview_mode">Modo de Vista Previa</string>
+    <string name="questionnaire_title">Título del Cuestionario</string>
+    <string name="items">Elementos</string>
+    <string name="add_widget">Añadir Widget</string>
+    <string name="add">Añadir</string>
+    <string name="label">Etiqueta</string>
+    <string name="options_comma_separated">Opciones (separadas por comas)</string>
+    <string name="delete_item">Eliminar Elemento</string>
+    <string name="type_format">Tipo: %1$s</string>
+    <string name="cd_delete_item">Eliminar Elemento</string>
+    <string name="cd_save">Guardar</string>
+    <string name="cd_preview">Vista Previa</string>
+    <string name="cd_add">Añadir</string>
     <string name="cd_more_widgets">Más widgets</string>
     <string name="widget_photo_camera">Cámara de fotos</string>
     <string name="widget_video_camera">Cámara de video</string>

@@ -1,3 +1,7 @@
+/**
+ * @file FhirRepository.kt
+ * Contains declarations for FhirRepository.kt.
+ */
 package io.healthplatform.chartcam.repository
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
@@ -132,13 +136,17 @@ class FhirRepository(
         }
     }
 
-    /**
-     * Saves a FHIR Resource and generates its indices.
+/**
+     * Saves a generic FHIR resource to the local database.
+     *
      * @param resourceType The type of the resource.
      * @param resourceId The unique ID of the resource.
      * @param resource The FHIR Resource.
      * @param isLocalChange Whether this save is a local user mutation (default true).
+     * @throws kotlinx.serialization.SerializationException if the resource cannot be serialized.
+     * @throws Exception if a database operation fails.
      */
+    @Suppress("ktlint:standard:function-signature")
     suspend fun saveResource(
         resourceType: String,
         resourceId: String,
@@ -436,10 +444,19 @@ class FhirRepository(
      * @param encounterId The unique identifier of the Encounter.
      * @return A list of QuestionnaireResponse resources.
      */
-    suspend fun getQuestionnaireResponsesForEncounter(encounterId: String): List<QuestionnaireResponse> =
-        dbQuery.searchResourcesByReferenceDesc("QuestionnaireResponse", "encounter", encounterId).awaitAsList().map {
+    suspend fun getQuestionnaireResponsesForEncounter(encounterId: String): List<QuestionnaireResponse> {
+        val ref = if (encounterId.startsWith("Encounter/")) encounterId else "Encounter/$encounterId"
+        val refNoPrefix = if (encounterId.startsWith("Encounter/")) encounterId.removePrefix("Encounter/") else encounterId
+
+        val withPrefix = dbQuery.searchResourcesByReferenceDesc("QuestionnaireResponse", "encounter", ref).awaitAsList()
+        val withoutPrefix = dbQuery.searchResourcesByReferenceDesc("QuestionnaireResponse", "encounter", refNoPrefix).awaitAsList()
+
+        val all = (withPrefix + withoutPrefix).distinctBy { it.resourceId }
+
+        return all.map {
             fhirJson.decodeFromString(it.serializedResource) as QuestionnaireResponse
         }
+    }
 
     /**
      * Saves a Device.

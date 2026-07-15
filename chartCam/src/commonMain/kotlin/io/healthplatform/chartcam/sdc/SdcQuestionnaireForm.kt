@@ -46,9 +46,12 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -79,6 +82,9 @@ import org.jetbrains.compose.resources.stringResource
  * Acts as a KMP equivalent SDC engine supporting enableWhen, calculatedExpression,
  * and automatic QuestionnaireResponse generation.
  *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  * @param questionnaire The FHIR Questionnaire resource to render.
  * @param answers A map containing the current answers, keyed by linkId.
  * @param readOnly Whether the form should be rendered in read-only mode.
@@ -86,6 +92,7 @@ import org.jetbrains.compose.resources.stringResource
  * @param hideDisabledItems Whether to completely hide disabled items.
  * @param attachments Optional list of attachments to display inline (e.g. photos).
  * @param onFormUpdated Callback invoked when the user interacts with the input, returning the updated answers map and the generated QuestionnaireResponse.
+ * @param onTakePhotoRequested Callback invoked when the user taps to take a photo for a specific attachment item.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,6 +104,7 @@ fun SdcQuestionnaireForm(
     hideDisabledItems: Boolean = false,
     attachments: List<DocumentReference> = emptyList(),
     onFormUpdated: (Map<String, Any>, com.google.fhir.model.r4.QuestionnaireResponse) -> Unit,
+    onTakePhotoRequested: (String) -> Unit = {},
 ) {
     var touchedFields by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(setOf<String>()) }
     val handleAnswerChange: (String, Any?) -> Unit = { linkId, value ->
@@ -133,6 +141,7 @@ fun SdcQuestionnaireForm(
                 handleAnswerChange,
                 focusManager,
                 attachments,
+                onTakePhotoRequested,
             )
         }
     }
@@ -143,6 +152,13 @@ fun SdcQuestionnaireForm(
  * Manages visibility based on FHIR SDC enableWhen logic, read-only formatting,
  * and widget delegation based on item type and extensions.
  *
+ * Sibling items are stacked natively in a Column structure. Intentional spacing
+ * handles separation instead of rigid explicit dividers between each item, keeping
+ * the form visually uncluttered.
+ *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  * @param item The specific Questionnaire Item to render.
  * @param answers The current map of answers.
  * @param readOnly Whether the field should be forced into a read-only state.
@@ -152,6 +168,7 @@ fun SdcQuestionnaireForm(
  * @param onAnswerChanged Callback invoked when the user interacts with the input.
  * @param focusManager Compose focus manager to handle 'Next' actions on keyboards.
  * @param attachments A list of attached documents for rendering inline images in read-only mode.
+ * @param onTakePhotoRequested Callback invoked when the user taps to take a photo for a specific attachment item.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -165,6 +182,7 @@ fun RenderQuestionnaireItem(
     onAnswerChanged: (String, Any?) -> Unit,
     focusManager: FocusManager,
     attachments: List<DocumentReference> = emptyList(),
+    onTakePhotoRequested: (String) -> Unit = {},
 ) {
     val linkId = item.linkId.value ?: return
     val type = item.type.value ?: return
@@ -244,6 +262,7 @@ fun RenderQuestionnaireItem(
                                 onAnswerChanged,
                                 focusManager,
                                 attachments,
+                                onTakePhotoRequested,
                             )
                         }
                     }
@@ -471,7 +490,7 @@ fun RenderQuestionnaireItem(
 
                             val isMultiSelect = item.repeats?.value == true
 
-                            if (isMultiSelect) {
+                            if (isMultiSelect && itemControl != "check-box") {
                                 val selectedOptions = (answers[linkId] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
                                 FormBuilderMultiSelectDropdown(
                                     selectedOptions = selectedOptions,
@@ -486,11 +505,19 @@ fun RenderQuestionnaireItem(
                                             contentDescription = itemDesc
                                             if (isError && errorMessage != null) {
                                                 error(errorMessage)
+                                                liveRegion = LiveRegionMode.Polite
                                             }
                                         },
                                 )
-                            } else if (itemControl == "radio-button") {
-                                val selectedOption = answers[linkId] as? String ?: ""
+                            } else if (itemControl == "radio-button" || itemControl == "check-box") {
+                                val isCheckboxes = itemControl == "check-box"
+                                val selectedOptions =
+                                    if (isMultiSelect) {
+                                        (answers[linkId] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                                    } else {
+                                        listOfNotNull(answers[linkId] as? String)
+                                    }
+
                                 Column(
                                     modifier =
                                         Modifier
@@ -500,7 +527,7 @@ fun RenderQuestionnaireItem(
                                                 if (isError && errorMessage != null) {
                                                     error(errorMessage)
                                                 }
-                                            }.selectableGroup(),
+                                            }.then(if (!isMultiSelect) Modifier.selectableGroup() else Modifier),
                                 ) {
                                     io.healthplatform.chartcam.ui.components.FormLabel(
                                         displayLabel,
@@ -516,21 +543,56 @@ fun RenderQuestionnaireItem(
                                         )
                                     }
                                     options.forEach { option ->
+                                        val isSelected = selectedOptions.contains(option)
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
                                             modifier =
                                                 Modifier
                                                     .fillMaxWidth()
-                                                    .selectable(
-                                                        selected = selectedOption == option,
-                                                        onClick = { onAnswerChanged(linkId, option) },
-                                                        role = Role.RadioButton,
+                                                    .then(
+                                                        if (isMultiSelect) {
+                                                            Modifier.toggleable(
+                                                                value = isSelected,
+                                                                onValueChange = { checked ->
+                                                                    val newSelections =
+                                                                        if (checked) {
+                                                                            selectedOptions + option
+                                                                        } else {
+                                                                            selectedOptions - option
+                                                                        }
+                                                                    onAnswerChanged(
+                                                                        linkId,
+                                                                        if (newSelections.isEmpty()) null else newSelections,
+                                                                    )
+                                                                },
+                                                                role = Role.Checkbox,
+                                                            )
+                                                        } else {
+                                                            Modifier.selectable(
+                                                                selected = isSelected,
+                                                                onClick = {
+                                                                    if (isSelected && isCheckboxes) {
+                                                                        onAnswerChanged(linkId, null)
+                                                                    } else {
+                                                                        onAnswerChanged(linkId, option)
+                                                                    }
+                                                                },
+                                                                role = if (isCheckboxes) Role.Checkbox else Role.RadioButton,
+                                                            )
+                                                        },
                                                     ).padding(vertical = 4.dp),
                                         ) {
-                                            androidx.compose.material3.RadioButton(
-                                                selected = selectedOption == option,
-                                                onClick = null,
-                                            )
+                                            if (isCheckboxes) {
+                                                androidx.compose.material3.Checkbox(
+                                                    checked = isSelected,
+                                                    onCheckedChange = null,
+                                                )
+                                            } else {
+                                                androidx.compose.material3.RadioButton(
+                                                    selected = isSelected,
+                                                    onClick = null,
+                                                )
+                                            }
                                             Text(text = option, modifier = Modifier.padding(start = 8.dp))
                                         }
                                     }
@@ -605,23 +667,35 @@ fun RenderQuestionnaireItem(
                                             ?.value
                                     answerCode == linkId
                                 }
-                            if (relatedAttachments.isNotEmpty()) {
-                                androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
-                                    columns =
-                                        androidx.compose.foundation.lazy.grid.GridCells
-                                            .Fixed(2),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+
+                            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                                io.healthplatform.chartcam.ui.components.FormLabel(
+                                    text = displayLabel,
+                                    isRequired = isRequired,
                                     modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .height(
-                                                (150 * ((relatedAttachments.size + 1) / 2)).dp,
-                                            ).padding(vertical = 8.dp),
-                                ) {
-                                    items(relatedAttachments) { photo ->
-                                        io.healthplatform.chartcam.ui
-                                            .PhotoGridItem(photo)
+                                        Modifier.semantics(mergeDescendants = true) {
+                                            contentDescription = itemDesc
+                                        },
+                                )
+
+                                if (relatedAttachments.isNotEmpty()) {
+                                    androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+                                        columns =
+                                            androidx.compose.foundation.lazy.grid.GridCells
+                                                .Fixed(2),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier =
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .height(
+                                                    (150 * ((relatedAttachments.size + 1) / 2)).dp,
+                                                ).padding(vertical = 8.dp),
+                                    ) {
+                                        items(relatedAttachments) { photo ->
+                                            io.healthplatform.chartcam.ui
+                                                .PhotoGridItem(photo)
+                                        }
                                     }
                                 }
                             }
@@ -640,6 +714,7 @@ fun RenderQuestionnaireItem(
                                         contentDescription = itemDesc
                                         if (isError && errorMessage != null) {
                                             error(errorMessage)
+                                            liveRegion = LiveRegionMode.Polite
                                         }
                                     },
                             )
@@ -658,6 +733,7 @@ fun RenderQuestionnaireItem(
                                         contentDescription = itemDesc
                                         if (isError && errorMessage != null) {
                                             error(errorMessage)
+                                            liveRegion = LiveRegionMode.Polite
                                         }
                                     },
                             )
@@ -676,6 +752,7 @@ fun RenderQuestionnaireItem(
                                         contentDescription = itemDesc
                                         if (isError && errorMessage != null) {
                                             error(errorMessage)
+                                            liveRegion = LiveRegionMode.Polite
                                         }
                                     },
                             )
@@ -694,6 +771,7 @@ fun RenderQuestionnaireItem(
                                         contentDescription = itemDesc
                                         if (isError && errorMessage != null) {
                                             error(errorMessage)
+                                            liveRegion = LiveRegionMode.Polite
                                         }
                                     },
                             )
@@ -715,6 +793,7 @@ fun RenderQuestionnaireItem(
                                         contentDescription = itemDesc
                                         if (isError && errorMessage != null) {
                                             error(errorMessage)
+                                            liveRegion = LiveRegionMode.Polite
                                         }
                                     },
                             )
@@ -724,10 +803,7 @@ fun RenderQuestionnaireItem(
 
                     // Also render nested items if a non-group item has them
                 }
-                androidx.compose.material3.HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    color = androidx.compose.material3.MaterialTheme.colorScheme.outlineVariant,
-                )
+
                 if (item.item.isNotEmpty()) {
                     Column(modifier = Modifier.padding(start = 16.dp)) {
                         item.item.forEach { nestedItem ->
@@ -741,6 +817,7 @@ fun RenderQuestionnaireItem(
                                 onAnswerChanged,
                                 focusManager,
                                 attachments,
+                                onTakePhotoRequested,
                             )
                         }
                     }

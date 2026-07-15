@@ -48,6 +48,9 @@ interface CameraManager {
  * Note: CameraManager usually requires binding to a lifecycle or view via platform-specific
  * implementations, so this factory is often used internally by the Preview composable.
  *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  * @return A [CameraManager] instance valid for the current composition.
  */
 @Composable

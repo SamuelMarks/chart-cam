@@ -56,6 +56,9 @@ interface PermissionManager {
 /**
  * Composable helper to create and remember a [PermissionManager] instance scoped to the composition.
  *
+ * **State & Side Effects:**
+ * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
+ *
  * @return A [PermissionManager] valid for the current platform and context.
  */
 @Composable

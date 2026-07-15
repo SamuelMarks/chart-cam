@@ -1,4 +1,5 @@
 /**
+ * @file BrowserHistorySetup.jvm.kt
  * Browser history setup implementation for the JVM platform.
  */
 package io.healthplatform.chartcam.navigation

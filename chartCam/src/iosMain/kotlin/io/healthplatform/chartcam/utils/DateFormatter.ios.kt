@@ -1,3 +1,7 @@
+/**
+ * @file DateFormatter.ios.kt
+ * Contains declarations for DateFormatter.ios.kt.
+ */
 package io.healthplatform.chartcam.utils
 
 import platform.Foundation.NSDateFormatter
@@ -6,6 +10,12 @@ import platform.Foundation.NSISO8601DateFormatter
 import platform.Foundation.NSLocale
 import platform.Foundation.currentLocale
 
+/**
+ * Formats a FHIR date or datetime string into a localized, human-readable format on the iOS platform.
+ *
+ * @param fhirDate The date string in FHIR standard format (e.g., ISO 8601).
+ * @return The localized date string, or the original [fhirDate] if parsing fails.
+ */
 actual fun formatLocalizedDate(fhirDate: String): String {
     if (fhirDate.isBlank()) return fhirDate
     return try {
