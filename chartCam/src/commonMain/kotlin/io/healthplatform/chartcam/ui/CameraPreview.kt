@@ -1,4 +1,7 @@
 /**
+ * @file CameraPreview.kt
+ * Contains declarations for CameraPreview.kt.
+ *
  * Contains the cross-platform CameraPreview composable definition.
  */
 package io.healthplatform.chartcam.ui

@@ -1,4 +1,7 @@
 /**
+ * @file AppNavigation.kt
+ * Contains declarations for AppNavigation.kt.
+ *
  * Configures the primary navigation graph and dependency injection points for the ChartCam application.
  * This file maps semantic routes to Compose Multiplatform screens and handles session state
  * such as the [PhotoSessionManager].
@@ -10,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -33,6 +37,7 @@ import io.healthplatform.chartcam.ui.TriageScreen
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * A manager class responsible for handling temporary photo session data during navigation.
@@ -87,6 +92,7 @@ class PhotoSessionManager {
  */
 @Composable
 fun AppNavigation() {
+    val scope = rememberCoroutineScope()
     val navController = rememberNavController()
     SetupBrowserHistory(navController)
 
@@ -116,16 +122,17 @@ fun AppNavigation() {
         questionnaireRepository.loadDefaultForms()
     }
 
+    LaunchedEffect(user) {
+        if (user == null) {
+            navController.navigate(Routes.LOGIN) { popUpTo(0) { inclusive = true } }
+        }
+    }
+
     NavHost(navController = navController, startDestination = Routes.LOGIN) {
         composable(Routes.LOGIN) {
             val viewModel =
                 androidx.lifecycle.viewmodel.compose
                     .viewModel { LoginViewModel(authRepository) }
-            LaunchedEffect(user) {
-                if (user != null) {
-                    navController.navigate(Routes.PATIENT_LIST) { popUpTo(Routes.LOGIN) { inclusive = true } }
-                }
-            }
             androidx.compose.runtime.key(currentLang) {
                 LoginScreen(viewModel = viewModel, onLoginSuccess = {
                     navController.navigate(Routes.PATIENT_LIST) { popUpTo(Routes.LOGIN) { inclusive = true } }
@@ -165,14 +172,14 @@ fun AppNavigation() {
                     questionnaireRepository = questionnaireRepository,
                     onFinished = { outputPathsMap ->
                         if (outputPathsMap.isEmpty()) {
-                            navController.popBackStack()
+                            scope.launch { navController.popBackStack() }
                         } else {
                             photoSessionManager.setPhotos(outputPathsMap)
-                            navController.popBackStack()
+                            scope.launch { navController.popBackStack() }
                         }
                     },
                     onCancel = {
-                        navController.popBackStack()
+                        scope.launch { navController.popBackStack() }
                     },
                 )
             }
@@ -184,7 +191,7 @@ fun AppNavigation() {
                     capturedPhotoPaths = photoSessionManager.get(),
                     fhirRepository = fhirRepository,
                     onProceedToEncounter = { patientId, photos ->
-                        navController.navigate(NewVisitRoute(patientId))
+                        scope.launch { navController.navigate(NewVisitRoute(patientId)) }
                     },
                 )
             }
@@ -205,9 +212,9 @@ fun AppNavigation() {
                     syncWorker = syncWorker,
                     questionnaireRepository = questionnaireRepository,
                     newlyCreatedQuestionnaireId = newlyCreatedQuestionnaireId,
-                    onBack = { navController.popBackStack() },
+                    onBack = { scope.launch { navController.popBackStack() } },
                     onTakePhotos = { qId, linkId ->
-                        navController.navigate(CaptureForPatientRoute(patientId, qId, linkId))
+                        scope.launch { navController.navigate(CaptureForPatientRoute(patientId, qId, linkId)) }
                     },
                     onCreateNewQuestionnaire = {
                         navController.navigate(
@@ -248,9 +255,9 @@ fun AppNavigation() {
                     syncWorker = syncWorker,
                     questionnaireRepository = questionnaireRepository,
                     newlyCreatedQuestionnaireId = newlyCreatedQuestionnaireId,
-                    onBack = { navController.popBackStack() },
+                    onBack = { scope.launch { navController.popBackStack() } },
                     onTakePhotos = { qId, linkId ->
-                        navController.navigate(CaptureForPatientRoute(patientId, qId, linkId))
+                        scope.launch { navController.navigate(CaptureForPatientRoute(patientId, qId, linkId)) }
                     },
                     onCreateNewQuestionnaire = {
                         navController.navigate(
@@ -280,7 +287,7 @@ fun AppNavigation() {
                         navController.navigate(PatientDetailRoute(patientId))
                     },
                     onNavigateToQuestionnaires = {
-                        navController.navigate(Routes.QUESTIONNAIRE_LIST)
+                        scope.launch { navController.navigate(Routes.QUESTIONNAIRE_LIST) }
                     },
                     onLogout = {
                         authRepository.logout()
@@ -302,10 +309,10 @@ fun AppNavigation() {
             androidx.compose.runtime.key(currentLang) {
                 io.healthplatform.chartcam.ui.QuestionnaireBuilderScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() },
+                    onBack = { scope.launch { navController.popBackStack() } },
                     onSaved = { savedId ->
                         navController.previousBackStackEntry?.savedStateHandle?.set("createdQuestionnaireId", savedId)
-                        navController.popBackStack()
+                        scope.launch { navController.popBackStack() }
                     },
                 )
             }
@@ -315,12 +322,14 @@ fun AppNavigation() {
             androidx.compose.runtime.key(currentLang) {
                 QuestionnaireListScreen(
                     questionnaireRepository = questionnaireRepository,
-                    onBack = { navController.popBackStack() },
+                    onBack = { scope.launch { navController.popBackStack() } },
                     onNavigateToBuilder = { duplicateId ->
-                        navController.navigate(
-                            io.healthplatform.chartcam.navigation
-                                .QuestionnaireBuilderRoute(duplicateFromId = duplicateId),
-                        )
+                        scope.launch {
+                            navController.navigate(
+                                io.healthplatform.chartcam.navigation
+                                    .QuestionnaireBuilderRoute(duplicateFromId = duplicateId),
+                            )
+                        }
                     },
                 )
             }
@@ -333,12 +342,12 @@ fun AppNavigation() {
                 PatientDetailScreen(
                     patientId = patientId,
                     fhirRepository = fhirRepository,
-                    onBack = { navController.popBackStack() },
+                    onBack = { scope.launch { navController.popBackStack() } },
                     onNewVisit = {
-                        navController.navigate(NewVisitRoute(patientId))
+                        scope.launch { navController.navigate(NewVisitRoute(patientId)) }
                     },
                     onVisitSelected = { visitId ->
-                        navController.navigate(VisitDetailRoute(patientId, visitId))
+                        scope.launch { navController.navigate(VisitDetailRoute(patientId, visitId)) }
                     },
                 )
             }
@@ -351,12 +360,12 @@ fun AppNavigation() {
                 PatientDetailScreen(
                     patientId = patientId,
                     fhirRepository = fhirRepository,
-                    onBack = { navController.popBackStack() },
+                    onBack = { scope.launch { navController.popBackStack() } },
                     onNewVisit = {
-                        navController.navigate(NewVisitRoute(patientId))
+                        scope.launch { navController.navigate(NewVisitRoute(patientId)) }
                     },
                     onVisitSelected = { visitId ->
-                        navController.navigate(VisitDetailRoute(patientId, visitId))
+                        scope.launch { navController.navigate(VisitDetailRoute(patientId, visitId)) }
                     },
                 )
             }

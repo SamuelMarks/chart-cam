@@ -1,4 +1,7 @@
 /**
+ * @file TriageViewModel.kt
+ * Contains declarations for TriageViewModel.kt.
+ *
  * ViewModel and UI state definitions for the Triage screen.
  * This file handles logic for associating photos with patients in a triage workflow.
  */

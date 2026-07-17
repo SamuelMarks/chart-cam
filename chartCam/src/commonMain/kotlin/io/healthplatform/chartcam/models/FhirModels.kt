@@ -1,4 +1,7 @@
 /**
+ * @file FhirModels.kt
+ * Contains declarations for FhirModels.kt.
+ *
  * Contains models and utility extensions for interacting with FHIR resources.
  */
 package io.healthplatform.chartcam.models
@@ -215,6 +218,7 @@ val Encounter.encounterDate: kotlin.String
  * @param desc An optional description of the document.
  * @param mime The MIME type of the document content.
  * @param urlPath The URL or path to access the document content.
+ * @param answerCode The answer code
  * @return A populated FHIR [DocumentReference] object.
  */
 fun createFhirDocumentReference(

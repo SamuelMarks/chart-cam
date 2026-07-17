@@ -1,3 +1,7 @@
+/**
+ * @file LanguageSwitcherCommonTest.kt
+ * Contains declarations for LanguageSwitcherCommonTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import kotlinx.coroutines.test.runTest

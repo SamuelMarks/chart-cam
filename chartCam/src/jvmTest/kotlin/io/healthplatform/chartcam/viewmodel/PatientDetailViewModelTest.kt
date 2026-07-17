@@ -1,4 +1,7 @@
 /**
+ * @file PatientDetailViewModelTest.kt
+ * Contains declarations for PatientDetailViewModelTest.kt.
+ *
  * Comprehensive tests for [PatientDetailViewModel].
  *
  * Provides verification that patient details and encounters are loaded
@@ -31,7 +34,7 @@ import kotlin.test.assertTrue
  * Uses an in-memory SQL database for quick and reproducible validation of data loading logic.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class PatientDetailViewModelJvmTest {
+class PatientDetailViewModelTest {
     /**
      * Dispatcher to allow synchronized control of coroutine executions during tests.
      */
@@ -112,5 +115,45 @@ class PatientDetailViewModelJvmTest {
             val state = vm.uiState.value
             assertNotNull(state.patient)
             assertTrue(state.encounters.isEmpty())
+        }
+
+    /**
+     * Verifies successful deletion of patient data.
+     */
+    @Test
+    fun testPatientDeleteSuccess() =
+        runTest {
+            val patientId = "pat-del"
+            repo.savePatient(createFhirPatient(patientId, "Guy", "Del", kotlinx.datetime.LocalDate(1990, 1, 1), "444", "male"))
+
+            val vm = PatientDetailViewModel(repo)
+            vm.loadPatientData(patientId)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            var successCalled = false
+            vm.deletePatient {
+                successCalled = true
+            }
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertTrue(successCalled)
+            val deletedPatient = repo.getPatient(patientId)
+            assertEquals(null, deletedPatient)
+        }
+
+    /**
+     * Verifies deletePatient when patient is null.
+     */
+    @Test
+    fun testPatientDeleteNullPatient() =
+        runTest {
+            val vm = PatientDetailViewModel(repo)
+            var successCalled = false
+            vm.deletePatient {
+                successCalled = true
+            }
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(false, successCalled)
         }
 }

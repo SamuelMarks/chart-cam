@@ -1,4 +1,7 @@
 /**
+ * @file SensorManager.android.kt
+ * Contains declarations for SensorManager.android.kt.
+ *
  * File containing the Android implementation of [SensorManager] and its composable factory function.
  */
 package io.healthplatform.chartcam.sensors

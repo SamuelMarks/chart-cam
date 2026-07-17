@@ -1,4 +1,7 @@
 /**
+ * @file BrowserHistorySetup.android.kt
+ * Contains declarations for BrowserHistorySetup.android.kt.
+ *
  * File defining the Android-specific implementation for setting up browser history navigation.
  */
 package io.healthplatform.chartcam.navigation

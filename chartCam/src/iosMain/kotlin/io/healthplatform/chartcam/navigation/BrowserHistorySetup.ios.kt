@@ -1,4 +1,7 @@
 /**
+ * @file BrowserHistorySetup.ios.kt
+ * Contains declarations for BrowserHistorySetup.ios.kt.
+ *
  * iOS specific browser history setup implementation.
  */
 package io.healthplatform.chartcam.navigation

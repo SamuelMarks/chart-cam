@@ -1,3 +1,7 @@
+/**
+ * @file NetworkClientTest.kt
+ * Contains declarations for NetworkClientTest.kt.
+ */
 package io.healthplatform.chartcam.network
 
 import io.ktor.client.engine.mock.MockEngine

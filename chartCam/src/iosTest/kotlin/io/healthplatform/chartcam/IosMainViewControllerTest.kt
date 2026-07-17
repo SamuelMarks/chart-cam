@@ -1,3 +1,7 @@
+/**
+ * @file IosMainViewControllerTest.kt
+ * Contains declarations for IosMainViewControllerTest.kt.
+ */
 package io.healthplatform.chartcam
 
 import kotlin.test.Test

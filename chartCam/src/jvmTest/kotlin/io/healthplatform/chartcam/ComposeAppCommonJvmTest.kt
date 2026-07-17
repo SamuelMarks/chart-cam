@@ -1,4 +1,7 @@
 /**
+ * @file ComposeAppCommonJvmTest.kt
+ * Contains declarations for ComposeAppCommonJvmTest.kt.
+ *
  * Provides common unit tests for the Compose application logic.
  */
 package io.healthplatform.chartcam

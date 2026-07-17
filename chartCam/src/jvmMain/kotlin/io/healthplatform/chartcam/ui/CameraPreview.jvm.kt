@@ -1,6 +1,7 @@
 /**
  * @file CameraPreview.jvm.kt
  * Camera preview implementation for the JVM platform.
+ * Serves as a placeholder or mock UI, as native camera capture is not natively supported directly via Compose Desktop in this module.
  */
 package io.healthplatform.chartcam.ui
 

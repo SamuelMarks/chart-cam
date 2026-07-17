@@ -1,5 +1,9 @@
 /**
+ * @file CameraPreview.ios.kt
+ * Contains declarations for CameraPreview.ios.kt.
+ *
  * iOS implementation of the camera preview UI component.
+ * Uses AVCaptureSession and UIKit interop to display the camera feed and capture images natively.
  */
 package io.healthplatform.chartcam.ui
 

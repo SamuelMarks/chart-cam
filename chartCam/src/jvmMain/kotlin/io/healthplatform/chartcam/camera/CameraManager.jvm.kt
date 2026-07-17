@@ -25,7 +25,9 @@ class JvmCameraManager : CameraManager {
      */
     companion object {
         init {
-            if (System.getProperty("io.healthplatform.chartcam.camera.nativedriver.initialized") != "true") {
+            if (System.getProperty("chartcam.isTest") != "true" &&
+                System.getProperty("io.healthplatform.chartcam.camera.nativedriver.initialized") != "true"
+            ) {
                 try {
                     Webcam.setDriver(NativeDriver())
                     System.setProperty("io.healthplatform.chartcam.camera.nativedriver.initialized", "true")
@@ -51,6 +53,7 @@ class JvmCameraManager : CameraManager {
      */
     private suspend fun getWebcam(): Webcam? =
         withContext(Dispatchers.IO) {
+            if (System.getProperty("chartcam.isTest") == "true") return@withContext null
             if (webcam == null) {
                 try {
                     webcam = Webcam.getDefault()

@@ -1,3 +1,7 @@
+/**
+ * @file BrowserHistorySetupAndroidTest.kt
+ * Contains declarations for BrowserHistorySetupAndroidTest.kt.
+ */
 package io.healthplatform.chartcam.navigation
 
 import kotlin.test.Test

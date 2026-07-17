@@ -1,3 +1,7 @@
+/**
+ * @file CameraManagerJsTest.kt
+ * Contains declarations for CameraManagerJsTest.kt.
+ */
 package io.healthplatform.chartcam.camera
 
 import kotlin.test.Test

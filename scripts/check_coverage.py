@@ -7,7 +7,8 @@ def get_kdoc_coverage(source_dirs):
     documented_declarations = 0
     missing = []
 
-    decl_pattern = re.compile(r'^\s*(?:(?:public|protected|override|abstract|open|suspend|inline|data|value)\s+)*(class|interface|object|fun)\s+([a-zA-Z0-9_<>]+)')
+    # regex to match class, interface, object, fun (including private/internal)
+    decl_pattern = re.compile(r'^\s*(?:(?:public|protected|private|internal|override|abstract|open|suspend|inline|data|value|expect|actual)\s+)*(class|interface|object|fun)\s+([a-zA-Z0-9_<>]+)')
 
     for d in source_dirs:
         if not os.path.exists(d): continue
@@ -19,11 +20,19 @@ def get_kdoc_coverage(source_dirs):
                     with open(path, "r", encoding="utf-8") as f:
                         lines = f.readlines()
                         
+                    has_file_doc = False
+                    for i in range(min(15, len(lines))):
+                        if "@file" in lines[i]:
+                            has_file_doc = True
+                            break
+                    if not has_file_doc:
+                        total_declarations += 1
+                        missing.append(f"{path}:1 file missing @file KDoc")
+                    else:
+                        total_declarations += 1
+                        documented_declarations += 1
+
                     for i, line in enumerate(lines):
-                        # ignore "actual" or "private" or "internal"
-                        if "actual " in line or "private " in line or "internal " in line:
-                            continue
-                            
                         match = decl_pattern.match(line)
                         if match:
                             total_declarations += 1
@@ -47,27 +56,8 @@ def get_kdoc_coverage(source_dirs):
         return 100.0, missing
     return (documented_declarations / total_declarations) * 100.0, missing
 
-def update_readme(readme_path, doc_cov):
-    if not os.path.exists(readme_path):
-        content = ""
-    else:
-        with open(readme_path, "r", encoding="utf-8") as f:
-            content = f.read()
-
-    doc_badge = f"![Doc Coverage](https://img.shields.io/badge/Doc%20Coverage-{doc_cov:.1f}%25-brightgreen)"
-
-    if "![Doc Coverage]" in content:
-        content = re.sub(r"!\[Doc Coverage\]\(.+?\)", doc_badge, content)
-    else:
-        content = doc_badge + "\n" + content
-
-    with open(readme_path, "w", encoding="utf-8") as f:
-        f.write(content)
-
 if __name__ == "__main__":
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    readme_path = os.path.join(project_root, "README.md")
-    
     dirs = [
         os.path.join(project_root, "chartCam/src/commonMain/kotlin"),
         os.path.join(project_root, "chartCam/src/androidMain/kotlin"),
@@ -79,7 +69,6 @@ if __name__ == "__main__":
     ]
 
     doc_cov, missing = get_kdoc_coverage(dirs)
-    update_readme(readme_path, doc_cov)
 
     print(f"Doc Coverage: {doc_cov:.1f}%")
     if doc_cov < 100.0:

@@ -1,3 +1,7 @@
+/**
+ * @file CreatePatientDialogTest.kt
+ * Contains declarations for CreatePatientDialogTest.kt.
+ */
 package io.healthplatform.chartcam.ui.components
 
 import kotlin.test.Test

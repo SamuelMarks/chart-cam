@@ -1,4 +1,7 @@
 /**
+ * @file Routes.kt
+ * Contains declarations for Routes.kt.
+ *
  * Contains navigation routes used throughout the application.
  */
 package io.healthplatform.chartcam.navigation

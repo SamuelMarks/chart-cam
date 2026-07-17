@@ -120,6 +120,7 @@ object SdcEvaluator {
          * Parses a string expression into a Float value.
          * Currently stubbed out to return 0f.
          * @param str Parameter str
+         * @return the parsed float
          */
         fun parse(str: String): Float {
             var s = str.replace(" ", "")

@@ -1,4 +1,7 @@
 /**
+ * @file CaptureState.kt
+ * Contains declarations for CaptureState.kt.
+ *
  * Contains data structures defining the state and steps for the clinical photo capture workflow.
  */
 package io.healthplatform.chartcam.capture

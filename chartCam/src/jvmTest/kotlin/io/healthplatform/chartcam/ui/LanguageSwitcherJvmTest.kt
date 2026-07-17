@@ -1,3 +1,7 @@
+/**
+ * @file LanguageSwitcherJvmTest.kt
+ * Contains declarations for LanguageSwitcherJvmTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import org.junit.Test

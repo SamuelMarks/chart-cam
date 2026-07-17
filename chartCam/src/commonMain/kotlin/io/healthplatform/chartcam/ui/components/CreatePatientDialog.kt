@@ -1,4 +1,7 @@
 /**
+ * @file CreatePatientDialog.kt
+ * Contains declarations for CreatePatientDialog.kt.
+ *
  * Provides the CreatePatientDialog component for creating new patients.
  */
 package io.healthplatform.chartcam.ui.components
@@ -32,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -178,17 +180,19 @@ fun CreatePatientDialog(
                     label = { Text(stringResource(Res.string.first_name)) },
                     singleLine = true,
                     modifier =
-                        Modifier.fillMaxWidth().onPreviewKeyEvent {
-                            if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
-                                true
-                            } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                                focusManager.moveFocus(FocusDirection.Next)
-                                true
-                            } else {
-                                false
-                            }
-                        },
+                        Modifier
+                            .fillMaxWidth()
+                            .tabFocusNext(focusManager)
+                            .onPreviewKeyEvent {
+                                if (it.key == Key.Enter &&
+                                    it.type == KeyEventType.KeyUp
+                                ) {
+                                    focusManager.moveFocus(FocusDirection.Next)
+                                    true
+                                } else {
+                                    false
+                                }
+                            },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
                 )
@@ -198,17 +202,19 @@ fun CreatePatientDialog(
                     label = { Text(stringResource(Res.string.last_name)) },
                     singleLine = true,
                     modifier =
-                        Modifier.fillMaxWidth().onPreviewKeyEvent {
-                            if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
-                                true
-                            } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                                focusManager.moveFocus(FocusDirection.Next)
-                                true
-                            } else {
-                                false
-                            }
-                        },
+                        Modifier
+                            .fillMaxWidth()
+                            .tabFocusNext(focusManager)
+                            .onPreviewKeyEvent {
+                                if (it.key == Key.Enter &&
+                                    it.type == KeyEventType.KeyUp
+                                ) {
+                                    focusManager.moveFocus(FocusDirection.Next)
+                                    true
+                                } else {
+                                    false
+                                }
+                            },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
                 )
@@ -218,38 +224,41 @@ fun CreatePatientDialog(
                     label = { Text(stringResource(Res.string.mrn)) },
                     singleLine = true,
                     modifier =
-                        Modifier.fillMaxWidth().onPreviewKeyEvent {
-                            if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
-                                true
-                            } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                                focusManager.moveFocus(FocusDirection.Next)
-                                true
-                            } else {
-                                false
-                            }
-                        },
+                        Modifier
+                            .fillMaxWidth()
+                            .tabFocusNext(focusManager)
+                            .onPreviewKeyEvent {
+                                if (it.key == Key.Enter &&
+                                    it.type == KeyEventType.KeyUp
+                                ) {
+                                    focusManager.moveFocus(FocusDirection.Next)
+                                    true
+                                } else {
+                                    false
+                                }
+                            },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
                 )
                 OutlinedTextField(
                     value = dobString,
-                    onValueChange = { },
+                    onValueChange = { dobString = it },
                     label = { Text(stringResource(Res.string.dob_label)) },
                     singleLine = true,
-                    readOnly = true,
                     modifier =
-                        Modifier.fillMaxWidth().onPreviewKeyEvent {
-                            if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
-                                true
-                            } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                                showDatePicker = true
-                                true
-                            } else {
-                                false
-                            }
-                        },
+                        Modifier
+                            .fillMaxWidth()
+                            .tabFocusNext(focusManager)
+                            .onPreviewKeyEvent {
+                                if (it.key == Key.Enter &&
+                                    it.type == KeyEventType.KeyUp
+                                ) {
+                                    showDatePicker = true
+                                    true
+                                } else {
+                                    false
+                                }
+                            },
                     placeholder = { Text(stringResource(Res.string.dob_placeholder)) },
                     trailingIcon = {
                         IconButton(onClick = { showDatePicker = true }) {

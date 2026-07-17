@@ -1,3 +1,7 @@
+/**
+ * @file FormBuilderE2EJvmTest.kt
+ * Contains declarations for FormBuilderE2EJvmTest.kt.
+ */
 package io.healthplatform.chartcam
 
 import androidx.compose.ui.test.assertIsDisplayed

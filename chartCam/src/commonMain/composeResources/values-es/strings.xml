@@ -10,7 +10,12 @@
 
     
     <string name="triage_select_patient">Triaje: Seleccionar Paciente</string>
-    <string name="selected_photos_ready">Seleccionado. %1$d fotos listas.</string>
+    
+    <plurals name="selected_photos_ready">
+        <item quantity="one">[ES] Selected. 1 photo ready.</item>
+        <item quantity="other">[ES] Selected. %1$d photos ready.</item>
+    </plurals>
+    
     <string name="search_placeholder">Buscar Nombre o N.º de Historia...</string>
     <string name="mrn_dob_format">N.º: %1$s | Fecha: %2$s</string>
     <string name="no_patients_found">No se encontraron pacientes.</string>
@@ -74,6 +79,8 @@
     <string name="syncing_to_server">Sincronizando al Servidor...</string>
 
     <string name="questionnaire">Cuestionario</string>
+    <string name="questionnaire_format">Cuestionario: %1$s</string>
+
     <string name="create_new">Crear nuevo...</string>
     <string name="take_photos">Tomar Fotos</string>
     <string name="image_load_error">Error de Carga de Imagen</string>
@@ -177,4 +184,4 @@
     <string name="cd_unnamed_item">Pregunta sin nombre</string>
     <string name="cd_unnamed_group">Sección sin nombre</string>
     <string name="error_required_field">Este campo es obligatorio</string>
-</resources>
+<string name="japanese">[ES] 日本語</string><string name="cd_more_options">[ES] More options</string><string name="new_item">[ES] New Item</string><string name="state_selected">[ES] Selected</string><string name="at_least_one_option_required">[ES] At least one option is required</string><string name="espanol">[ES] Español</string><string name="not_answered">[ES] Not answered</string><string name="error_duplicate_id">[ES] A questionnaire with this generated ID already exists. Please change the title to make it unique.</string><string name="new_widget_item">[ES] New %1$s Item</string><string name="clear">[ES] Clear</string><string name="bullet_format">[ES] • %1$s</string><string name="cd_camera_icon">[ES] Camera icon</string><string name="invalid_credentials">[ES] Invalid Credentials</string><string name="state_unselected">[ES] Unselected</string><string name="cd_move_up">[ES] Move Up</string><string name="cd_delete">[ES] Delete</string><string name="unknown_error">[ES] Unknown error</string><string name="unknown_copy">[ES] %1$s (Copy)</string><string name="confirm_delete_option_title">[ES] Delete Option?</string><string name="camera_unavailable">[ES] Camera unavailable or permission denied.</string><string name="id_format">[ES] ID: %1$s</string><string name="english">[ES] English</string><string name="cd_move_down">[ES] Move Down</string><string name="clipboard_data_label">[ES] ChartCam Clipboard Data</string><string name="edit_visit">[ES] Edit visit</string><string name="failed_to_load_patients">[ES] Failed to load patients</string><string name="invalid_fhir_format">[ES] Invalid format: JSON is not a valid FHIR Questionnaire.</string><string name="incorrect_password">[ES] Incorrect password</string><string name="level_status_tilted">[ES] Camera is tilted</string><string name="finalize_visit">[ES] Finalize Visit</string><string name="error">[ES] Error</string><string name="cd_video_icon">[ES] Video icon</string><string name="confirm_delete_option_message">[ES] Are you sure you want to delete this option?</string><string name="confirm_delete_item_message">[ES] Are you sure you want to delete this item? This cannot be undone.</string><string name="cd_duplicate">[ES] Duplicate</string><string name="cd_leveler_status">[ES] Camera Leveler: %1$s</string><string name="confirm_delete_item_title">[ES] Delete Item?</string><string name="failed_to_import">[ES] Failed to import. Wrong password or bad data.</string><string name="decryption_failed">[ES] Decryption failed or data is empty.</string><string name="cd_select_date">[ES] Select Date</string><string name="invalid_fhir_json_format">[ES] Invalid FHIR JSON format</string><string name="mrn_date_format">[ES] MRN: %1$s | %2$s</string><string name="level_status_level">[ES] Camera is level</string><string name="delete_visit_title">[ES] Delete Visit</string></resources>

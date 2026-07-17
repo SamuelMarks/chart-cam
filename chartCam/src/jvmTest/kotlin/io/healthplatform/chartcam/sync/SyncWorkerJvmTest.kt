@@ -1,3 +1,7 @@
+/**
+ * @file SyncWorkerJvmTest.kt
+ * Contains declarations for SyncWorkerJvmTest.kt.
+ */
 package io.healthplatform.chartcam.sync
 
 import app.cash.sqldelight.async.coroutines.synchronous

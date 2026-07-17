@@ -1,4 +1,7 @@
 /**
+ * @file LoginViewModelTest.kt
+ * Contains declarations for LoginViewModelTest.kt.
+ *
  * Comprehensive tests for [LoginViewModel].
  *
  * Verifies that the login functionality works as expected, handling
@@ -6,6 +9,8 @@
  */
 package io.healthplatform.chartcam.viewmodel
 
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.invalid_credentials
 import io.healthplatform.chartcam.network.NetworkClient
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.storage.SecureStorage
@@ -33,7 +38,7 @@ import kotlin.test.assertTrue
  *
  * Provides automated tests for UI state changes based on authentication responses.
  */
-class LoginViewModelJvmTest {
+class LoginViewModelTest {
     /**
      * Dispatcher used to control the execution of coroutines in tests.
      */
@@ -173,6 +178,6 @@ class LoginViewModelJvmTest {
             // Assert
             assertFalse(viewModel.uiState.value.isLoggedIn)
             assertFalse(viewModel.uiState.value.isLoading)
-            assertEquals("Invalid Credentials", viewModel.uiState.value.errorMessage)
+            assertEquals(Res.string.invalid_credentials, viewModel.uiState.value.errorMessage)
         }
 }

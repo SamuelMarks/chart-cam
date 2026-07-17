@@ -1,4 +1,7 @@
 /**
+ * @file NetworkClient.kt
+ * Contains declarations for NetworkClient.kt.
+ *
  * Contains the network client configuration and factory methods for Ktor.
  */
 package io.healthplatform.chartcam.network

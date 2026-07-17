@@ -1,3 +1,7 @@
+/**
+ * @file ThemeTest.kt
+ * Contains declarations for ThemeTest.kt.
+ */
 package io.healthplatform.chartcam.ui.theme
 
 import kotlin.test.Test

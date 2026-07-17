@@ -1,3 +1,7 @@
+/**
+ * @file CameraPreviewAndroidTest.kt
+ * Contains declarations for CameraPreviewAndroidTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.Modifier

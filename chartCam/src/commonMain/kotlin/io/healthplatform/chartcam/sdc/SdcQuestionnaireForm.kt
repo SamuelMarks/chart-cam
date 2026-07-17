@@ -1,4 +1,7 @@
 /**
+ * @file SdcQuestionnaireForm.kt
+ * Contains declarations for SdcQuestionnaireForm.kt.
+ *
  * Provides components for rendering dynamic FHIR Questionnaires as UI forms.
  */
 package io.healthplatform.chartcam.sdc
@@ -38,11 +41,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.isShiftPressed
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
@@ -75,6 +73,7 @@ import io.healthplatform.chartcam.ui.components.FormBuilderMultiSelectDropdown
 import io.healthplatform.chartcam.ui.components.FormBuilderNumericInput
 import io.healthplatform.chartcam.ui.components.FormBuilderRangeSlider
 import io.healthplatform.chartcam.ui.components.FormBuilderTextArea
+import io.healthplatform.chartcam.ui.components.tabFocusNext
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -426,16 +425,7 @@ fun RenderQuestionnaireItem(
                                             if (isError && errorMessage != null) {
                                                 error(errorMessage)
                                             }
-                                        }.onKeyEvent {
-                                            if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                                focusManager.moveFocus(
-                                                    if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next,
-                                                )
-                                                true
-                                            } else {
-                                                false
-                                            }
-                                        },
+                                        }.tabFocusNext(focusManager),
                             )
                         }
                         Questionnaire.QuestionnaireItemType.Boolean -> {
@@ -627,16 +617,7 @@ fun RenderQuestionnaireItem(
                                                 .menuAnchor(
                                                     androidx.compose.material3.ExposedDropdownMenuAnchorType.PrimaryNotEditable,
                                                 ).fillMaxWidth()
-                                                .onKeyEvent {
-                                                    if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                                        focusManager.moveFocus(
-                                                            if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next,
-                                                        )
-                                                        true
-                                                    } else {
-                                                        false
-                                                    }
-                                                },
+                                                .tabFocusNext(focusManager),
                                     )
                                     ExposedDropdownMenu(
                                         expanded = expanded,

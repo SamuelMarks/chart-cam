@@ -1,4 +1,7 @@
 /**
+ * @file AuthRepository.kt
+ * Contains declarations for AuthRepository.kt.
+ *
  * Contains the AuthRepository which handles user authentication, session management,
  * and secure credential storage.
  */
@@ -18,12 +21,14 @@ import okio.ByteString.Companion.encodeUtf8
 
 /**
  * Repository responsible for user authentication and session management.
+ * Authentication flows rely on locally hashed credentials and managed session tokens.
+ * Functions may throw illegal state exceptions if operations are performed without valid session state.
  * Contains logic for OAuth2 Password Grant and storing the Practitioner context.
  *
  * @property client The Ktor HttpClient used for network requests.
  * @property storage The SecureStorage implementation used to store sensitive tokens and credentials.
  */
-class AuthRepository(
+open class AuthRepository(
     /**
      * The HTTP client used for remote authentication requests.
      */
@@ -41,7 +46,7 @@ class AuthRepository(
     /**
      * Observable stream of the currently logged-in practitioner.
      */
-    val currentUser: StateFlow<Practitioner?> = _currentUser.asStateFlow()
+    open val currentUser: StateFlow<Practitioner?> = _currentUser.asStateFlow()
 
     /**
      * Constants used by the AuthRepository for storage keys and network endpoints.
@@ -107,7 +112,7 @@ class AuthRepository(
      * @param password The secret password.
      * @return Result wrapping the Practitioner profile on success, or an Exception on failure.
      */
-    suspend fun login(
+    open suspend fun login(
         username: kotlin.String,
         password: kotlin.String,
     ): Result<Practitioner> =
@@ -164,7 +169,7 @@ class AuthRepository(
      *
      * @return True if session successfully restored, False otherwise.
      */
-    suspend fun checkSession(): kotlin.Boolean {
+    open suspend fun checkSession(): kotlin.Boolean {
         val token = storage.getString(KEY_ACCESS_TOKEN)
         val username = storage.getString(KEY_CURRENT_USERNAME) ?: "Doe"
         if (!token.isNullOrEmpty()) {
@@ -189,7 +194,7 @@ class AuthRepository(
     /**
      * Clears local tokens and session state, logging the user out.
      */
-    fun logout() {
+    open fun logout() {
         storage.delete(KEY_ACCESS_TOKEN)
         storage.delete(KEY_REFRESH_TOKEN)
         storage.delete(KEY_CURRENT_USERNAME)
@@ -201,7 +206,7 @@ class AuthRepository(
      *
      * @param username The username for which to delete stored credentials.
      */
-    fun deleteAccount(username: kotlin.String) {
+    open fun deleteAccount(username: kotlin.String) {
         val hashKey = "hash_$username"
         storage.delete(hashKey)
         logout()
@@ -213,7 +218,7 @@ class AuthRepository(
      *
      * @return Boolean indicating success or failure of the refresh operation.
      */
-    suspend fun refreshToken(): kotlin.Boolean {
+    open suspend fun refreshToken(): kotlin.Boolean {
         val refreshToken = storage.getString(KEY_REFRESH_TOKEN) ?: return false
 
         return try {

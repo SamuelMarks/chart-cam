@@ -1,3 +1,7 @@
+/**
+ * @file PatientListScreenTest.kt
+ * Contains declarations for PatientListScreenTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import kotlin.test.Test

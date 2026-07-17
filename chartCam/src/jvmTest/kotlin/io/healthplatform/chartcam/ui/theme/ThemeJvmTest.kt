@@ -1,3 +1,7 @@
+/**
+ * @file ThemeJvmTest.kt
+ * Contains declarations for ThemeJvmTest.kt.
+ */
 package io.healthplatform.chartcam.ui.theme
 
 import androidx.compose.material3.Text

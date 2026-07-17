@@ -1,3 +1,7 @@
+/**
+ * @file ClipboardUtilsWasmJsTest.kt
+ * Contains declarations for ClipboardUtilsWasmJsTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import kotlin.test.Test

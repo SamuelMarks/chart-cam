@@ -1,4 +1,7 @@
 /**
+ * @file InitDatabase.kt
+ * Contains declarations for InitDatabase.kt.
+ *
  * Provides database initialization logic across platforms.
  */
 package io.healthplatform.chartcam

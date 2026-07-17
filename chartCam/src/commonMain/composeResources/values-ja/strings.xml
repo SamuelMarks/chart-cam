@@ -10,7 +10,12 @@
 
     
     <string name="triage_select_patient">トリアージ: 患者を選択</string>
-    <string name="selected_photos_ready">選択済み。 %1$d 枚の写真が準備完了。</string>
+    
+    <plurals name="selected_photos_ready">
+        <item quantity="one">[JA] Selected. 1 photo ready.</item>
+        <item quantity="other">[JA] Selected. %1$d photos ready.</item>
+    </plurals>
+    
     <string name="search_placeholder">名前またはMRNを検索...</string>
     <string name="mrn_dob_format">MRN: %1$s | 生年月日: %2$s</string>
     <string name="no_patients_found">患者が見つかりません。</string>
@@ -177,4 +182,4 @@
     <string name="cd_unnamed_item">無名の質問</string>
     <string name="cd_unnamed_group">無名のセクション</string>
     <string name="error_required_field">この項目は必須です</string>
-</resources>
+<string name="japanese">[JA] 日本語</string><string name="cd_more_options">[JA] More options</string><string name="new_item">[JA] New Item</string><string name="state_selected">[JA] Selected</string><string name="at_least_one_option_required">[JA] At least one option is required</string><string name="espanol">[JA] Español</string><string name="not_answered">[JA] Not answered</string><string name="error_duplicate_id">[JA] A questionnaire with this generated ID already exists. Please change the title to make it unique.</string><string name="new_widget_item">[JA] New %1$s Item</string><string name="clear">[JA] Clear</string><string name="bullet_format">[JA] • %1$s</string><string name="cd_camera_icon">[JA] Camera icon</string><string name="invalid_credentials">[JA] Invalid Credentials</string><string name="questionnaire_format">[JA] Questionnaire: %1$s</string><string name="state_unselected">[JA] Unselected</string><string name="cd_move_up">[JA] Move Up</string><string name="cd_delete">[JA] Delete</string><string name="unknown_error">[JA] Unknown error</string><string name="unknown_copy">[JA] %1$s (Copy)</string><string name="confirm_delete_option_title">[JA] Delete Option?</string><string name="camera_unavailable">[JA] Camera unavailable or permission denied.</string><string name="id_format">[JA] ID: %1$s</string><string name="english">[JA] English</string><string name="cd_move_down">[JA] Move Down</string><string name="clipboard_data_label">[JA] ChartCam Clipboard Data</string><string name="edit_visit">[JA] Edit visit</string><string name="failed_to_load_patients">[JA] Failed to load patients</string><string name="invalid_fhir_format">[JA] Invalid format: JSON is not a valid FHIR Questionnaire.</string><string name="incorrect_password">[JA] Incorrect password</string><string name="level_status_tilted">[JA] Camera is tilted</string><string name="finalize_visit">[JA] Finalize Visit</string><string name="error">[JA] Error</string><string name="cd_video_icon">[JA] Video icon</string><string name="confirm_delete_option_message">[JA] Are you sure you want to delete this option?</string><string name="confirm_delete_item_message">[JA] Are you sure you want to delete this item? This cannot be undone.</string><string name="cd_duplicate">[JA] Duplicate</string><string name="cd_leveler_status">[JA] Camera Leveler: %1$s</string><string name="confirm_delete_item_title">[JA] Delete Item?</string><string name="failed_to_import">[JA] Failed to import. Wrong password or bad data.</string><string name="decryption_failed">[JA] Decryption failed or data is empty.</string><string name="cd_select_date">[JA] Select Date</string><string name="invalid_fhir_json_format">[JA] Invalid FHIR JSON format</string><string name="mrn_date_format">[JA] MRN: %1$s | %2$s</string><string name="level_status_level">[JA] Camera is level</string><string name="delete_visit_title">[JA] Delete Visit</string></resources>

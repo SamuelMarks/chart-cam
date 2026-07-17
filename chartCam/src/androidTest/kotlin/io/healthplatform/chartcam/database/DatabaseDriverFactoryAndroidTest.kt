@@ -1,3 +1,7 @@
+/**
+ * @file DatabaseDriverFactoryAndroidTest.kt
+ * Contains declarations for DatabaseDriverFactoryAndroidTest.kt.
+ */
 package io.healthplatform.chartcam.database
 
 import android.content.Context

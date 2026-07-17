@@ -1,3 +1,7 @@
+/**
+ * @file AndroidPermissionManagerTest.kt
+ * Contains declarations for AndroidPermissionManagerTest.kt.
+ */
 package io.healthplatform.chartcam.camera
 
 import android.content.Context

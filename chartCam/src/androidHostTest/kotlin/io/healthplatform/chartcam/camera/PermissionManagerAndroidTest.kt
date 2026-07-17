@@ -1,3 +1,7 @@
+/**
+ * @file PermissionManagerAndroidTest.kt
+ * Contains declarations for PermissionManagerAndroidTest.kt.
+ */
 package io.healthplatform.chartcam.camera
 
 import kotlin.test.Test

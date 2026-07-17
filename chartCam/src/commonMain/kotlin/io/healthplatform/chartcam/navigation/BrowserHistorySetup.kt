@@ -1,4 +1,7 @@
 /**
+ * @file BrowserHistorySetup.kt
+ * Contains declarations for BrowserHistorySetup.kt.
+ *
  * Provides setup for browser history integration across different platforms.
  */
 package io.healthplatform.chartcam.navigation

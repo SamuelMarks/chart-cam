@@ -1,4 +1,7 @@
 /**
+ * @file EncounterDetailViewModel.kt
+ * Contains declarations for EncounterDetailViewModel.kt.
+ *
  * ViewModel and UI state definitions for the Encounter Detail screen.
  * This file handles logic for creating, editing, and finalizing encounters,
  * including dynamic questionnaires and photo attachments.
@@ -94,6 +97,7 @@ class EncounterDetailViewModel(
      * @param patientId ID of the patient.
      * @param visitId ID of the visit (or "new" to create a new one).
      * @param photosMap Incoming captured photos, mapping step description to file path.
+     * @return Unit
      */
     fun initialize(
         patientId: String,

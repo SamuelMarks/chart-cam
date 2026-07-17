@@ -1,4 +1,7 @@
 /**
+ * @file LevelerOverlay.kt
+ * Contains declarations for LevelerOverlay.kt.
+ *
  * Contains the visual overlay for the camera leveler tool.
  */
 package io.healthplatform.chartcam.ui.components

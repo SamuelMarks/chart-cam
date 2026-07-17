@@ -1,3 +1,7 @@
+/**
+ * @file ShareServiceTest.kt
+ * Contains declarations for ShareServiceTest.kt.
+ */
 package io.healthplatform.chartcam.utils
 
 import kotlin.test.Test

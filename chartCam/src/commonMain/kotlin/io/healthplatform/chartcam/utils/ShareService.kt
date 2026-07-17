@@ -1,4 +1,7 @@
 /**
+ * @file ShareService.kt
+ * Contains declarations for ShareService.kt.
+ *
  * Provides an interface and factory for sharing content to other applications.
  */
 package io.healthplatform.chartcam.utils

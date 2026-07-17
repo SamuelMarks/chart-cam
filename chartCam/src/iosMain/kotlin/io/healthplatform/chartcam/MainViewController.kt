@@ -1,4 +1,7 @@
 /**
+ * @file MainViewController.kt
+ * Contains declarations for MainViewController.kt.
+ *
  * Entry point for the iOS application UI.
  */
 package io.healthplatform.chartcam

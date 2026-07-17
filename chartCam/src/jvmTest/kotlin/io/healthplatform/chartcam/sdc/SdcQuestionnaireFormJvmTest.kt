@@ -1,3 +1,7 @@
+/**
+ * @file SdcQuestionnaireFormJvmTest.kt
+ * Contains declarations for SdcQuestionnaireFormJvmTest.kt.
+ */
 package io.healthplatform.chartcam.sdc
 
 import androidx.compose.runtime.getValue

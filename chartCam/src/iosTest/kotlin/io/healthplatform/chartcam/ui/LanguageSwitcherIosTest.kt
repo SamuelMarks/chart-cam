@@ -1,3 +1,7 @@
+/**
+ * @file LanguageSwitcherIosTest.kt
+ * Contains declarations for LanguageSwitcherIosTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import kotlin.test.Test

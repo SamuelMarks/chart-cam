@@ -1,3 +1,7 @@
+/**
+ * @file CreatePatientDialogJvmTest.kt
+ * Contains declarations for CreatePatientDialogJvmTest.kt.
+ */
 package io.healthplatform.chartcam.ui.components
 
 import androidx.compose.ui.test.ExperimentalTestApi

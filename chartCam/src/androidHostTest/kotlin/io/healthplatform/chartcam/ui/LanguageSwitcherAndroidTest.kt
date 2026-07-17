@@ -1,3 +1,7 @@
+/**
+ * @file LanguageSwitcherAndroidTest.kt
+ * Contains declarations for LanguageSwitcherAndroidTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import android.content.Context

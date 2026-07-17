@@ -1,4 +1,7 @@
 /**
+ * @file PermissionManager.kt
+ * Contains declarations for PermissionManager.kt.
+ *
  * Contains cross-platform abstractions for permission management.
  */
 package io.healthplatform.chartcam.camera

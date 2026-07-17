@@ -1,4 +1,7 @@
 /**
+ * @file UUID.android.kt
+ * Contains declarations for UUID.android.kt.
+ *
  * File defining the Android-specific implementation for generating UUIDs.
  */
 package io.healthplatform.chartcam.utils

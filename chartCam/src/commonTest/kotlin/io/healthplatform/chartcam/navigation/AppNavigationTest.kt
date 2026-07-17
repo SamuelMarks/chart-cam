@@ -1,3 +1,7 @@
+/**
+ * @file AppNavigationTest.kt
+ * Contains declarations for AppNavigationTest.kt.
+ */
 package io.healthplatform.chartcam.navigation
 
 import kotlin.test.Test

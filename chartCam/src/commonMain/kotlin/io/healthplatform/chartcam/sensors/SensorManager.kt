@@ -1,4 +1,7 @@
 /**
+ * @file SensorManager.kt
+ * Contains declarations for SensorManager.kt.
+ *
  * Provides interfaces and data structures for managing device sensors (e.g., orientation).
  */
 package io.healthplatform.chartcam.sensors

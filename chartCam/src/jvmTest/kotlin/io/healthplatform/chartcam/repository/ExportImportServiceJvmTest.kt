@@ -1,3 +1,7 @@
+/**
+ * @file ExportImportServiceJvmTest.kt
+ * Contains declarations for ExportImportServiceJvmTest.kt.
+ */
 package io.healthplatform.chartcam.repository
 
 import app.cash.sqldelight.async.coroutines.synchronous
@@ -110,6 +114,26 @@ class ExportImportServiceJvmTest {
             }
 
             assertTrue(exceptionThrown, "Expected an exception when decrypting with the wrong password")
+        }
+
+    @Test
+    fun testExportWithMissingImage() =
+        runTest {
+            val fhirRepo = FhirRepository(db)
+            val docRef =
+                io.healthplatform.chartcam.models.createFhirDocumentReference(
+                    id = "doc1",
+                    patientId = "pat1",
+                    encounterId = "enc1",
+                    dateStr = "2026-07-09T00:00:00Z",
+                    desc = "desc",
+                    mime = "image/jpeg",
+                    urlPath = "missing.jpg",
+                )
+            fhirRepo.saveDocumentReference(docRef)
+
+            val encryptedData = service.exportData("password", exportAll = true)
+            assertTrue(encryptedData.isNotEmpty())
         }
 
     class MockFileStorage : FileStorage {

@@ -1,3 +1,7 @@
+/**
+ * @file AndroidAppInitTest.kt
+ * Contains declarations for AndroidAppInitTest.kt.
+ */
 package io.healthplatform.chartcam
 
 import android.content.Context

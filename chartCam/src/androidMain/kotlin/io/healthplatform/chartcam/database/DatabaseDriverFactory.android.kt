@@ -1,4 +1,7 @@
 /**
+ * @file DatabaseDriverFactory.android.kt
+ * Contains declarations for DatabaseDriverFactory.android.kt.
+ *
  * File defining the Android-specific implementation of the [DatabaseDriverFactory].
  */
 package io.healthplatform.chartcam.database

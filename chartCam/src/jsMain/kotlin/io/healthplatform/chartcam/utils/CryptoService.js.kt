@@ -17,6 +17,7 @@ external object HashWasm {
     /**
      * Argon2id hashing wrapper.
      * @param options The options parameter.
+     * @return the promise of uint8array
      */
     fun argon2id(options: dynamic): Promise<Uint8Array>
 }
@@ -194,6 +195,11 @@ actual class CryptoService actual constructor() {
         }
     }
 
+    /**
+     * Converts a Kotlin [ByteArray] to a JS [Uint8Array].
+     *
+     * @return The converted [Uint8Array].
+     */
     private fun ByteArray.toUint8Array(): Uint8Array =
         Uint8Array(
             this.unsafeCast<org.khronos.webgl.Int8Array>().buffer,
@@ -201,6 +207,11 @@ actual class CryptoService actual constructor() {
             this.size,
         )
 
+    /**
+     * Converts a JS [Uint8Array] to a Kotlin [ByteArray].
+     *
+     * @return The converted [ByteArray].
+     */
     private fun Uint8Array.toByteArray(): ByteArray =
         org.khronos.webgl
             .Int8Array(this.buffer, this.byteOffset, this.length)

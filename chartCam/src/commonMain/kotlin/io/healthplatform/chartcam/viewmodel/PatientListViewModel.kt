@@ -1,4 +1,7 @@
 /**
+ * @file PatientListViewModel.kt
+ * Contains declarations for PatientListViewModel.kt.
+ *
  * ViewModel and UI state definitions for the Patient List screen.
  * This file handles searching, creating, and exporting patients.
  */
@@ -6,6 +9,9 @@ package io.healthplatform.chartcam.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.failed_to_import
+import chartcam.chartcam.generated.resources.failed_to_load_patients
 import com.google.fhir.model.r4.Patient
 import io.healthplatform.chartcam.models.createFhirPatient
 import io.healthplatform.chartcam.repository.AuthRepository
@@ -18,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
+import org.jetbrains.compose.resources.StringResource
 
 /**
  * UI State definition for the Patient List Screen.
@@ -38,7 +45,7 @@ data class PatientListUiState(
     val isLoading: Boolean = false,
     val exportedData: String? = null,
     val exportPassword: String? = null,
-    val error: String? = null,
+    val error: StringResource? = null,
     val showAllPatients: Boolean = false,
 )
 
@@ -89,7 +96,7 @@ class PatientListViewModel(
                     }
                 _uiState.update { it.copy(patients = results, isLoading = false) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = "Failed to load patients") }
+                _uiState.update { it.copy(isLoading = false, error = Res.string.failed_to_load_patients) }
             }
         }
     }
@@ -157,7 +164,7 @@ class PatientListViewModel(
                 loadPatients()
                 onSuccess(newPatient.id ?: "")
             } catch (e: Exception) {
-                println("EXPORT/IMPORT DATA ERROR: ${e.message}")
+                // Ignoring error in production, log system can handle
                 e.printStackTrace()
             }
         }
@@ -179,7 +186,7 @@ class PatientListViewModel(
                 val data = exportImportService.exportData(password, exportAll, practitionerId)
                 _uiState.update { it.copy(exportedData = data, exportPassword = password) }
             } catch (e: Exception) {
-                println("EXPORT/IMPORT DATA ERROR: ${e.message}")
+                // Ignoring error in production, log system can handle
                 e.printStackTrace()
             }
         }
@@ -212,7 +219,7 @@ class PatientListViewModel(
                 onSuccess()
             } catch (e: Exception) {
                 e.printStackTrace()
-                _uiState.update { it.copy(error = "Failed to import. Wrong password or bad data.") }
+                _uiState.update { it.copy(error = Res.string.failed_to_import) }
             }
         }
     }

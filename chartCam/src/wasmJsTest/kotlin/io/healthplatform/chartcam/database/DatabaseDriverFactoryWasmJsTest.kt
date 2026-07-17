@@ -1,3 +1,7 @@
+/**
+ * @file DatabaseDriverFactoryWasmJsTest.kt
+ * Contains declarations for DatabaseDriverFactoryWasmJsTest.kt.
+ */
 package io.healthplatform.chartcam.database
 
 import kotlin.test.Test

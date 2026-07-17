@@ -155,6 +155,7 @@ class QuestionnaireBuilderViewModel(
      * Updates the title of the questionnaire.
      *
      * @param newTitle The new title.
+     * @return Unit
      */
     fun updateTitle(newTitle: kotlin.String) {
         _state.update { it.copy(title = newTitle, isDuplicateNameError = false) }

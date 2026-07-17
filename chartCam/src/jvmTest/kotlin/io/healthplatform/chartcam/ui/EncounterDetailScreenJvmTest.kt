@@ -1,3 +1,7 @@
+/**
+ * @file EncounterDetailScreenJvmTest.kt
+ * Contains declarations for EncounterDetailScreenJvmTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi

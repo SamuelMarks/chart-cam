@@ -1,4 +1,7 @@
 /**
+ * @file PatientDetailViewModel.kt
+ * Contains declarations for PatientDetailViewModel.kt.
+ *
  * ViewModel and UI state definitions for the Patient Detail screen.
  * This file handles logic for loading and managing patient data and encounters.
  */
@@ -53,6 +56,7 @@ class PatientDetailViewModel(
      * Updates the UI state with the fetched data.
      *
      * @param patientId The unique identifier of the patient to load.
+     * @return Unit
      */
     fun loadPatientData(patientId: String) {
         viewModelScope.launch {

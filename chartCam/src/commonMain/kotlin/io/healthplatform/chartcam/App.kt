@@ -1,4 +1,7 @@
 /**
+ * @file App.kt
+ * Contains declarations for App.kt.
+ *
  * Contains the root composable for the ChartCam application.
  * Bootstraps the UI theme and application navigation graph.
  */

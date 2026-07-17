@@ -1,3 +1,7 @@
+/**
+ * @file PlatformWasmJsTest.kt
+ * Contains declarations for PlatformWasmJsTest.kt.
+ */
 package io.healthplatform.chartcam
 
 import kotlin.test.Test

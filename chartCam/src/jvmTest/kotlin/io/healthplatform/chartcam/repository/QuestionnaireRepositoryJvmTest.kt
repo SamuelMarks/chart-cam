@@ -1,3 +1,7 @@
+/**
+ * @file QuestionnaireRepositoryJvmTest.kt
+ * Contains declarations for QuestionnaireRepositoryJvmTest.kt.
+ */
 package io.healthplatform.chartcam.repository
 
 import org.junit.Test

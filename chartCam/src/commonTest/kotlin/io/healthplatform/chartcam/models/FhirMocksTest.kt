@@ -1,3 +1,7 @@
+/**
+ * @file FhirMocksTest.kt
+ * Contains declarations for FhirMocksTest.kt.
+ */
 package io.healthplatform.chartcam.models
 import kotlin.test.Test
 import kotlin.test.assertTrue

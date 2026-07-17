@@ -1,4 +1,7 @@
 /**
+ * @file LanguageSwitcher.kt
+ * Contains declarations for LanguageSwitcher.kt.
+ *
  * Provides functionality for managing and changing the application's language state.
  */
 package io.healthplatform.chartcam.ui

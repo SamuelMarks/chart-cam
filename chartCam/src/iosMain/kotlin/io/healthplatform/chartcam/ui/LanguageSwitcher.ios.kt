@@ -1,4 +1,7 @@
 /**
+ * @file LanguageSwitcher.ios.kt
+ * Contains declarations for LanguageSwitcher.ios.kt.
+ *
  * iOS implementation for changing the application language.
  */
 package io.healthplatform.chartcam.ui

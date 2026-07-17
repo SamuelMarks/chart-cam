@@ -1,3 +1,7 @@
+/**
+ * @file UUIDJvmTest.kt
+ * Contains declarations for UUIDJvmTest.kt.
+ */
 package io.healthplatform.chartcam.utils
 
 import kotlin.test.Test

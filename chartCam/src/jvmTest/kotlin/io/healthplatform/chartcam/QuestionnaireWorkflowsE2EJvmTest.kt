@@ -1,3 +1,7 @@
+/**
+ * @file QuestionnaireWorkflowsE2EJvmTest.kt
+ * Contains declarations for QuestionnaireWorkflowsE2EJvmTest.kt.
+ */
 package io.healthplatform.chartcam
 
 import androidx.compose.ui.test.ExperimentalTestApi

@@ -1,4 +1,7 @@
 /**
+ * @file PermissionManager.android.kt
+ * Contains declarations for PermissionManager.android.kt.
+ *
  * File defining the Android-specific implementation of [PermissionManager] and its composable factory.
  */
 package io.healthplatform.chartcam.camera

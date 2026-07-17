@@ -1,3 +1,7 @@
+/**
+ * @file DatabaseJvmTest.kt
+ * Contains declarations for DatabaseJvmTest.kt.
+ */
 package io.healthplatform.chartcam.database
 
 import app.cash.sqldelight.async.coroutines.synchronous

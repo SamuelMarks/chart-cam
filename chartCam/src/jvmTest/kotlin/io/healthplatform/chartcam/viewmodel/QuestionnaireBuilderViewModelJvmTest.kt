@@ -1,3 +1,7 @@
+/**
+ * @file QuestionnaireBuilderViewModelJvmTest.kt
+ * Contains declarations for QuestionnaireBuilderViewModelJvmTest.kt.
+ */
 package io.healthplatform.chartcam.viewmodel
 
 import com.google.fhir.model.r4.Questionnaire
@@ -265,6 +269,134 @@ class QuestionnaireBuilderViewModelJvmTest {
                 .first()
                 .isError,
         )
+        assertFalse(viewModel.validate())
+    }
+
+    @Test
+    fun testDuplicateFromId() {
+        val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
+
+        // 1. Create a source questionnaire
+        val sourceViewModel = QuestionnaireBuilderViewModel(repo)
+        sourceViewModel.updateTitle("Source Form")
+        sourceViewModel.addItem(WidgetType.SINGLE_LINE_TEXT)
+        sourceViewModel.addItem(WidgetType.MULTI_SELECT)
+
+        // Fix the multi select item so it's valid
+        val items = sourceViewModel.state.value.items
+        val multiSelectId = items.first { it.widgetType == WidgetType.MULTI_SELECT }.linkId
+        sourceViewModel.updateItem(multiSelectId, "Label", listOf("Opt1", "Opt2"))
+
+        val sourceId = sourceViewModel.saveQuestionnaire()
+        assertTrue(sourceId != null)
+
+        // 2. Duplicate it
+        val dupViewModel = QuestionnaireBuilderViewModel(repo, duplicateFromId = sourceId)
+        val state = dupViewModel.state.value
+
+        assertEquals("Source Form (Copy)", state.title)
+        assertEquals(2, state.items.size)
+
+        val item1 = state.items[0]
+        assertEquals(WidgetType.SINGLE_LINE_TEXT, item1.widgetType)
+
+        val item2 = state.items[1]
+        assertEquals(WidgetType.MULTI_SELECT, item2.widgetType)
+        assertEquals(listOf("Opt1", "Opt2"), item2.options)
+
+        // 3. Ensure nextItemId is correctly set
+        dupViewModel.addItem(WidgetType.PHOTO_CAMERA)
+        val newItem =
+            dupViewModel.state.value.items
+                .last()
+        assertTrue(newItem.linkId.startsWith("item_"))
+        val idNum = newItem.linkId.removePrefix("item_").toInt()
+        assertTrue(idNum > 2)
+    }
+
+    @Test
+    fun testAllWidgetTypesMapping() {
+        val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
+        val viewModel = QuestionnaireBuilderViewModel(repo)
+
+        viewModel.updateTitle("All Widgets Test")
+        WidgetType.values().forEach { widgetType ->
+            viewModel.addItem(widgetType)
+            val addedItem =
+                viewModel.state.value.items
+                    .last()
+
+            // Fix validation for choice items
+            if (widgetType == WidgetType.SINGLE_SELECT || widgetType == WidgetType.MULTI_SELECT) {
+                viewModel.updateItem(addedItem.linkId, addedItem.label, listOf("OptA", "OptB"))
+            }
+        }
+
+        val savedId = viewModel.saveQuestionnaire()
+        assertTrue(savedId != null, "Should be valid and saved")
+
+        // Duplicate to test the reverse mapping
+        val dupViewModel = QuestionnaireBuilderViewModel(repo, duplicateFromId = savedId)
+        val state = dupViewModel.state.value
+
+        assertEquals(WidgetType.values().size, state.items.size)
+        WidgetType.values().forEachIndexed { index, expectedType ->
+            val actualType = state.items[index].widgetType
+            // Note: SWITCH and CHECKBOX both map to QuestionnaireItemType.Boolean.
+            // On duplicate, they map back to WidgetType.SWITCH since there's no itemControl code saved for CHECKBOX.
+            if (expectedType == WidgetType.CHECKBOX) {
+                assertEquals(WidgetType.SWITCH, actualType)
+            } else {
+                assertEquals(expectedType, actualType)
+            }
+        }
+    }
+
+    @Test
+    fun testSaveQuestionnaireDuplicateNameError() {
+        val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
+
+        val viewModel1 = QuestionnaireBuilderViewModel(repo)
+        viewModel1.updateTitle("Unique Name")
+        viewModel1.addItem(WidgetType.SINGLE_LINE_TEXT)
+        val savedId = viewModel1.saveQuestionnaire()
+        assertTrue(savedId != null)
+
+        val viewModel2 = QuestionnaireBuilderViewModel(repo)
+        viewModel2.updateTitle("Unique Name")
+        viewModel2.addItem(WidgetType.SINGLE_LINE_TEXT)
+
+        val failedId = viewModel2.saveQuestionnaire()
+        assertEquals(null, failedId)
+        assertTrue(viewModel2.state.value.isDuplicateNameError)
+
+        // Update title should clear error
+        viewModel2.updateTitle("Another Name")
+        assertFalse(viewModel2.state.value.isDuplicateNameError)
+
+        val successfulId = viewModel2.saveQuestionnaire()
+        assertTrue(successfulId != null)
+    }
+
+    @Test
+    fun testValidateCatchesItemError() {
+        val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
+        val viewModel = QuestionnaireBuilderViewModel(repo)
+
+        viewModel.updateTitle("Valid Title")
+
+        // SINGLE_SELECT without options is an error state
+        viewModel.addItem(WidgetType.SINGLE_SELECT)
+        assertTrue(
+            viewModel.state.value.items
+                .last()
+                .isError,
+        )
+
         assertFalse(viewModel.validate())
     }
 }

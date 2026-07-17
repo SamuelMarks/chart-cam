@@ -1,6 +1,7 @@
 /**
  * @file FhirRepository.kt
- * Contains declarations for FhirRepository.kt.
+ * Repository for storing and retrieving FHIR resources (Patients and Encounters).
+ * This repository handles bidirectional conversion between FHIR objects and local database models.
  */
 package io.healthplatform.chartcam.repository
 
@@ -29,7 +30,7 @@ import io.healthplatform.chartcam.models.mrn
  *
  * @property database The database instance used by this repository for executing queries.
  */
-class FhirRepository(
+open class FhirRepository(
     val database: ChartCamDatabase,
 ) {
     /**
@@ -46,7 +47,7 @@ class FhirRepository(
      */
     constructor(driver: SqlDriver) : this(ChartCamDatabase(driver))
 
-    private val dbQuery = database.chartCamQueries
+    private val dbQuery by lazy { database.chartCamQueries }
     private val fhirJson = FhirR4Json()
 
     /**
@@ -147,7 +148,7 @@ class FhirRepository(
      * @throws Exception if a database operation fails.
      */
     @Suppress("ktlint:standard:function-signature")
-    suspend fun saveResource(
+    open suspend fun saveResource(
         resourceType: String,
         resourceId: String,
         resource: Resource,
@@ -173,7 +174,7 @@ class FhirRepository(
      * @param resourceId The unique ID of the resource.
      * @param resource The FHIR Resource.
      */
-    suspend fun saveResourceFromSync(
+    open suspend fun saveResourceFromSync(
         resourceType: String,
         resourceId: String,
         resource: Resource,
@@ -189,7 +190,7 @@ class FhirRepository(
      * @param resourceId The unique ID of the resource.
      * @return The resource, or null if not found.
      */
-    suspend fun getResource(
+    open suspend fun getResource(
         resourceType: String,
         resourceId: String,
     ): Resource? {
@@ -203,7 +204,7 @@ class FhirRepository(
      * @param resourceId The unique ID of the resource.
      * @param isLocalChange Whether this delete is a local user mutation (default true).
      */
-    suspend fun deleteResource(
+    open suspend fun deleteResource(
         resourceType: String,
         resourceId: String,
         isLocalChange: Boolean = true,
@@ -223,19 +224,19 @@ class FhirRepository(
      * Retrieves all pending local changes for synchronization.
      * @return List of LocalChangeEntity.
      */
-    suspend fun getAllLocalChanges() = dbQuery.getAllLocalChanges().awaitAsList()
+    open suspend fun getAllLocalChanges() = dbQuery.getAllLocalChanges().awaitAsList()
 
     /**
      * Retrieves the count of pending local changes.
      * @return Number of pending changes.
      */
-    suspend fun getPendingLocalChangesCount(): Int = dbQuery.getAllLocalChanges().awaitAsList().size
+    open suspend fun getPendingLocalChangesCount(): Int = dbQuery.getAllLocalChanges().awaitAsList().size
 
     /**
      * Deletes a local change record after successful sync.
      * @param id The ID of the local change.
      */
-    suspend fun deleteLocalChange(id: Long) {
+    open suspend fun deleteLocalChange(id: Long) {
         dbQuery.deleteLocalChange(id)
     }
 
@@ -243,7 +244,7 @@ class FhirRepository(
      * Saves a Practitioner.
      * @param practitioner The Practitioner resource to persist.
      */
-    suspend fun savePractitioner(practitioner: Practitioner) {
+    open suspend fun savePractitioner(practitioner: Practitioner) {
         saveResource("Practitioner", practitioner.id ?: "", practitioner)
     }
 
@@ -252,13 +253,13 @@ class FhirRepository(
      * @param id The unique identifier of the Practitioner to retrieve.
      * @return The Practitioner resource if found, or null otherwise.
      */
-    suspend fun getPractitioner(id: String): Practitioner? = getResource("Practitioner", id) as? Practitioner
+    open suspend fun getPractitioner(id: String): Practitioner? = getResource("Practitioner", id) as? Practitioner
 
     /**
      * Deletes a Practitioner.
      * @param id The unique identifier of the Practitioner to delete.
      */
-    suspend fun deletePractitioner(id: String) {
+    open suspend fun deletePractitioner(id: String) {
         deleteResource("Practitioner", id)
     }
 
@@ -266,7 +267,7 @@ class FhirRepository(
      * Saves a Patient.
      * @param patient The Patient resource to persist.
      */
-    suspend fun savePatient(patient: Patient) {
+    open suspend fun savePatient(patient: Patient) {
         saveResource("Patient", patient.id ?: "", patient)
     }
 
@@ -275,7 +276,7 @@ class FhirRepository(
      * @param id The unique identifier of the Patient to retrieve.
      * @return The Patient resource if found, or null otherwise.
      */
-    suspend fun getPatient(id: String): Patient? = getResource("Patient", id) as? Patient
+    open suspend fun getPatient(id: String): Patient? = getResource("Patient", id) as? Patient
 
     /**
      * Retrieves all Patients.
@@ -283,7 +284,7 @@ class FhirRepository(
      * @param practitionerId The Practitioner to filter by, if showAll is false.
      * @return A list containing all matching Patient resources.
      */
-    suspend fun getAllPatients(
+    open suspend fun getAllPatients(
         showAll: Boolean = true,
         practitionerId: String? = null,
     ): List<Patient> =
@@ -309,7 +310,7 @@ class FhirRepository(
      * @param practitionerId The Practitioner to filter by, if showAll is false.
      * @return A list of matching Patient resources.
      */
-    suspend fun searchPatients(
+    open suspend fun searchPatients(
         query: String,
         showAll: Boolean = true,
         practitionerId: String? = null,
@@ -332,7 +333,7 @@ class FhirRepository(
      * Deletes a Patient.
      * @param id The unique identifier of the Patient to delete.
      */
-    suspend fun deletePatient(id: String) {
+    open suspend fun deletePatient(id: String) {
         deleteResource("Patient", id)
     }
 
@@ -340,7 +341,7 @@ class FhirRepository(
      * Saves an Encounter.
      * @param encounter The Encounter resource to persist.
      */
-    suspend fun saveEncounter(encounter: Encounter) {
+    open suspend fun saveEncounter(encounter: Encounter) {
         saveResource("Encounter", encounter.id ?: "", encounter)
     }
 
@@ -349,14 +350,14 @@ class FhirRepository(
      * @param id The unique identifier of the Encounter to retrieve.
      * @return The Encounter resource if found, or null otherwise.
      */
-    suspend fun getEncounter(id: String): Encounter? = getResource("Encounter", id) as? Encounter
+    open suspend fun getEncounter(id: String): Encounter? = getResource("Encounter", id) as? Encounter
 
     /**
      * Retrieves Encounters for a specific Patient.
      * @param patientId The unique identifier of the Patient.
      * @return A list of Encounter resources.
      */
-    suspend fun getEncountersForPatient(patientId: String): List<Encounter> =
+    open suspend fun getEncountersForPatient(patientId: String): List<Encounter> =
         dbQuery.searchResourcesByReferenceDesc("Encounter", "patient", patientId).awaitAsList().map {
             fhirJson.decodeFromString(it.serializedResource) as Encounter
         }
@@ -367,7 +368,7 @@ class FhirRepository(
      * @param status The new status.
      * @param notes Optional notes.
      */
-    suspend fun updateEncounterStatus(
+    open suspend fun updateEncounterStatus(
         id: String,
         status: String,
         notes: String? = null,
@@ -409,7 +410,7 @@ class FhirRepository(
      * Deletes an Encounter.
      * @param id The unique identifier of the Encounter to delete.
      */
-    suspend fun deleteEncounter(id: String) {
+    open suspend fun deleteEncounter(id: String) {
         deleteResource("Encounter", id)
     }
 
@@ -417,7 +418,7 @@ class FhirRepository(
      * Saves a DocumentReference (photo).
      * @param doc The DocumentReference resource to persist.
      */
-    suspend fun saveDocumentReference(doc: DocumentReference) {
+    open suspend fun saveDocumentReference(doc: DocumentReference) {
         saveResource("DocumentReference", doc.id ?: "", doc)
     }
 
@@ -426,7 +427,7 @@ class FhirRepository(
      * @param encounterId The unique identifier of the Encounter.
      * @return A list of DocumentReference resources.
      */
-    suspend fun getPhotosForEncounter(encounterId: String): List<DocumentReference> =
+    open suspend fun getPhotosForEncounter(encounterId: String): List<DocumentReference> =
         dbQuery.searchResourcesByReference("DocumentReference", "encounter", encounterId).awaitAsList().map {
             fhirJson.decodeFromString(it.serializedResource) as DocumentReference
         }
@@ -435,7 +436,7 @@ class FhirRepository(
      * Saves a QuestionnaireResponse.
      * @param qr The QuestionnaireResponse resource to persist.
      */
-    suspend fun saveQuestionnaireResponse(qr: QuestionnaireResponse) {
+    open suspend fun saveQuestionnaireResponse(qr: QuestionnaireResponse) {
         saveResource("QuestionnaireResponse", qr.id ?: "", qr)
     }
 
@@ -444,7 +445,7 @@ class FhirRepository(
      * @param encounterId The unique identifier of the Encounter.
      * @return A list of QuestionnaireResponse resources.
      */
-    suspend fun getQuestionnaireResponsesForEncounter(encounterId: String): List<QuestionnaireResponse> {
+    open suspend fun getQuestionnaireResponsesForEncounter(encounterId: String): List<QuestionnaireResponse> {
         val ref = if (encounterId.startsWith("Encounter/")) encounterId else "Encounter/$encounterId"
         val refNoPrefix = if (encounterId.startsWith("Encounter/")) encounterId.removePrefix("Encounter/") else encounterId
 
@@ -462,7 +463,7 @@ class FhirRepository(
      * Saves a Device.
      * @param device The Device resource to persist.
      */
-    suspend fun saveDevice(device: Device) {
+    open suspend fun saveDevice(device: Device) {
         saveResource("Device", device.id ?: "", device)
     }
 
@@ -471,14 +472,14 @@ class FhirRepository(
      * @param id The unique identifier of the Device to retrieve.
      * @return The Device resource if found, or null otherwise.
      */
-    suspend fun getDevice(id: String): Device? = getResource("Device", id) as? Device
+    open suspend fun getDevice(id: String): Device? = getResource("Device", id) as? Device
 
     /**
      * Saves a Provenance.
      * @param provenance The Provenance resource to persist.
      * @param encounterId Optional unique identifier of the Encounter.
      */
-    suspend fun saveProvenance(
+    open suspend fun saveProvenance(
         provenance: Provenance,
         encounterId: String? = null,
     ) {
@@ -493,7 +494,7 @@ class FhirRepository(
      * @param encounterId The unique identifier of the Encounter.
      * @return A list of Provenance resources.
      */
-    suspend fun getProvenancesForEncounter(encounterId: String): List<Provenance> =
+    open suspend fun getProvenancesForEncounter(encounterId: String): List<Provenance> =
         dbQuery.searchResourcesByReferenceDesc("Provenance", "encounter", encounterId).awaitAsList().map {
             fhirJson.decodeFromString(it.serializedResource) as Provenance
         }
@@ -502,7 +503,7 @@ class FhirRepository(
      * Retrieves all Practitioner resources.
      * @return A list of Practitioner resources.
      */
-    suspend fun getAllPractitioners() =
+    open suspend fun getAllPractitioners() =
         dbQuery.getAllResourcesByType("Practitioner").awaitAsList().map {
             fhirJson.decodeFromString(it.serializedResource) as Practitioner
         }
@@ -511,7 +512,7 @@ class FhirRepository(
      * Retrieves all Encounter resources.
      * @return A list of Encounter resources.
      */
-    suspend fun getAllEncounters() =
+    open suspend fun getAllEncounters() =
         dbQuery.getAllResourcesByType("Encounter").awaitAsList().map {
             fhirJson.decodeFromString(it.serializedResource) as Encounter
         }
@@ -520,7 +521,7 @@ class FhirRepository(
      * Retrieves all DocumentReference resources.
      * @return A list of DocumentReference resources.
      */
-    suspend fun getAllDocumentReferences() =
+    open suspend fun getAllDocumentReferences() =
         dbQuery.getAllResourcesByType("DocumentReference").awaitAsList().map {
             fhirJson.decodeFromString(it.serializedResource) as DocumentReference
         }
@@ -529,7 +530,7 @@ class FhirRepository(
      * Retrieves all QuestionnaireResponse resources.
      * @return A list of QuestionnaireResponse resources.
      */
-    suspend fun getAllQuestionnaireResponses() =
+    open suspend fun getAllQuestionnaireResponses() =
         dbQuery.getAllResourcesByType("QuestionnaireResponse").awaitAsList().map {
             fhirJson.decodeFromString(it.serializedResource) as QuestionnaireResponse
         }
@@ -538,7 +539,7 @@ class FhirRepository(
      * Retrieves all Provenance resources.
      * @return A list of Provenance resources.
      */
-    suspend fun getAllProvenances() =
+    open suspend fun getAllProvenances() =
         dbQuery.getAllResourcesByType("Provenance").awaitAsList().map {
             fhirJson.decodeFromString(it.serializedResource) as Provenance
         }
@@ -547,7 +548,7 @@ class FhirRepository(
      * Retrieves all Device resources.
      * @return A list of Device resources.
      */
-    suspend fun getAllDevices() =
+    open suspend fun getAllDevices() =
         dbQuery.getAllResourcesByType("Device").awaitAsList().map {
             fhirJson.decodeFromString(it.serializedResource) as Device
         }

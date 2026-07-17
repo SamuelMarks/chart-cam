@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -36,6 +37,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,7 +46,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
@@ -57,6 +64,7 @@ import chartcam.chartcam.generated.resources.copy_to_clipboard
 import chartcam.chartcam.generated.resources.create
 import chartcam.chartcam.generated.resources.create_questionnaire
 import chartcam.chartcam.generated.resources.file_import_coming_soon
+import chartcam.chartcam.generated.resources.id_format
 import chartcam.chartcam.generated.resources.import_action
 import chartcam.chartcam.generated.resources.import_confirmation
 import chartcam.chartcam.generated.resources.import_error_format
@@ -76,6 +84,7 @@ import chartcam.chartcam.generated.resources.unknown
 import com.google.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.repository.QuestionnaireSharingService
+import io.healthplatform.chartcam.ui.components.tabFocusNext
 import io.healthplatform.chartcam.utils.createShareService
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -89,6 +98,7 @@ import org.jetbrains.compose.resources.stringResource
  *
  * @param questionnaireRepository The repository for fetching and creating questionnaires.
  * @param onBack Callback invoked when the back button is pressed.
+ * @param onNavigateToBuilder Callback invoked to navigate to the questionnaire builder.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,6 +107,7 @@ fun QuestionnaireListScreen(
     onBack: () -> Unit,
     onNavigateToBuilder: (String?) -> Unit = {},
 ) {
+    val focusManager = LocalFocusManager.current
     var questionnaires by remember { mutableStateOf(questionnaireRepository.getAvailableQuestionnaires()) }
     var showCreateDialog by remember { mutableStateOf(false) }
 
@@ -121,7 +132,7 @@ fun QuestionnaireListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.questionnaires)) },
+                title = { Text(stringResource(Res.string.questionnaires), modifier = Modifier.semantics { heading() }) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.cd_back))
@@ -158,9 +169,18 @@ fun QuestionnaireListScreen(
                 items(questionnaires) { q ->
                     val titleText = q.title?.value ?: q.id ?: stringResource(Res.string.unknown)
                     ListItem(
-                        modifier = Modifier.clickable(role = Role.Button) { selectedQuestionnaireForView = q },
+                        modifier =
+                            Modifier.minimumInteractiveComponentSize().clickable(role = Role.Button) {
+                                selectedQuestionnaireForView =
+                                    q
+                            },
                         headlineContent = { Text(titleText, style = MaterialTheme.typography.titleMedium) },
-                        supportingContent = { Text(q.id ?: "", style = MaterialTheme.typography.bodyMedium) },
+                        supportingContent = {
+                            Text(
+                                stringResource(Res.string.id_format, q.id ?: stringResource(Res.string.unknown)),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        },
                         trailingContent = {
                             IconButton(onClick = {
                                 selectedQuestionnaireForShare = q
@@ -188,7 +208,12 @@ fun QuestionnaireListScreen(
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     TopAppBar(
-                        title = { Text(q.title?.value ?: q.id ?: stringResource(Res.string.unknown)) },
+                        title = {
+                            Text(
+                                q.title?.value ?: q.id ?: stringResource(Res.string.unknown),
+                                modifier = Modifier.semantics { heading() },
+                            )
+                        },
                         navigationIcon = {
                             IconButton(onClick = { selectedQuestionnaireForView = null }) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.cancel))
@@ -295,7 +320,7 @@ fun QuestionnaireListScreen(
     previewQuestionnaire?.let { q ->
         AlertDialog(
             onDismissRequest = { previewQuestionnaire = null },
-            title = { Text(stringResource(Res.string.import_questionnaire)) },
+            title = { Text(stringResource(Res.string.import_questionnaire), modifier = Modifier.semantics { heading() }) },
             text = {
                 Column {
                     Text(stringResource(Res.string.title_format, q.title?.value ?: q.id ?: stringResource(Res.string.unknown)))
@@ -392,27 +417,32 @@ fun QuestionnaireListScreen(
     if (showCreateDialog) {
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
-            title = { Text(stringResource(Res.string.create_questionnaire)) },
+            title = { Text(stringResource(Res.string.create_questionnaire), modifier = Modifier.semantics { heading() }) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = newTitle,
                         onValueChange = { newTitle = it },
                         label = { Text(stringResource(Res.string.title)) },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).tabFocusNext(focusManager),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
                     )
                     OutlinedTextField(
                         value = newPhotosCount,
                         onValueChange = { newPhotosCount = it },
                         label = { Text(stringResource(Res.string.number_of_photos)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number).copy(imeAction = ImeAction.Next),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).tabFocusNext(focusManager),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
                     )
                     OutlinedTextField(
                         value = newLabels,
                         onValueChange = { newLabels = it },
                         label = { Text(stringResource(Res.string.labels_comma)) },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().tabFocusNext(focusManager),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
                     )
                 }
             },

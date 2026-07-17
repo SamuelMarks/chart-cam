@@ -1,3 +1,7 @@
+/**
+ * @file GreetingTest.kt
+ * Contains declarations for GreetingTest.kt.
+ */
 package io.healthplatform.chartcam
 
 import kotlin.test.Test

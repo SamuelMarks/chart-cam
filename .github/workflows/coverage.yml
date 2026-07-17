@@ -32,3 +32,11 @@ jobs:
 
       - name: Run Python Coverage Check
         run: python3 scripts/check_coverage.py
+      - name: Run Composable Docs Check
+        run: python3 scripts/check_composable_docs.py
+      - name: Run Param/Return Check
+        run: python3 scripts/check_param_return.py
+      - name: Run Test Coverage Check
+        run: python3 scripts/test_cov.py
+      - name: Run i18n Completeness Check
+        run: python3 scripts/test_i18n.py

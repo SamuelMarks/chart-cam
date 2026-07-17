@@ -1,3 +1,7 @@
+/**
+ * @file AndroidCryptoServiceTest.kt
+ * Contains declarations for AndroidCryptoServiceTest.kt.
+ */
 package io.healthplatform.chartcam.utils
 
 import androidx.test.ext.junit.runners.AndroidJUnit4

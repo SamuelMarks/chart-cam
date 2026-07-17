@@ -1,4 +1,7 @@
 /**
+ * @file QuestionnaireRepository.kt
+ * Contains declarations for QuestionnaireRepository.kt.
+ *
  * Repository for providing and managing FHIR Questionnaire resources.
  */
 package io.healthplatform.chartcam.repository

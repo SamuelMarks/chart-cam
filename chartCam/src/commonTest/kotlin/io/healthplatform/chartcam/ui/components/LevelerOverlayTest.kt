@@ -1,3 +1,7 @@
+/**
+ * @file LevelerOverlayTest.kt
+ * Contains declarations for LevelerOverlayTest.kt.
+ */
 package io.healthplatform.chartcam.ui.components
 
 import kotlin.test.Test

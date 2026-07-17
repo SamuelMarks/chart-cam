@@ -1,3 +1,7 @@
+/**
+ * @file AndroidDateFormatterTest.kt
+ * Contains declarations for AndroidDateFormatterTest.kt.
+ */
 package io.healthplatform.chartcam.utils
 
 import androidx.test.ext.junit.runners.AndroidJUnit4

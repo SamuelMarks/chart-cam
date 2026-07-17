@@ -1,4 +1,7 @@
 /**
+ * @file WasmSecureStorageWasmJsTest.kt
+ * Contains declarations for WasmSecureStorageWasmJsTest.kt.
+ *
  * Provides tests for the Wasm-JavaScript specific implementation of secure storage.
  */
 package io.healthplatform.chartcam.storage

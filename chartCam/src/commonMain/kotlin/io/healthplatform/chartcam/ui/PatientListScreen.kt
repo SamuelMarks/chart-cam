@@ -1,4 +1,7 @@
 /**
+ * @file PatientListScreen.kt
+ * Contains declarations for PatientListScreen.kt.
+ *
  * Patient List Screen definition.
  * Displays a directory of patients, allows searching, adding new patients,
  * and performing global actions like data export/import.
@@ -38,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -46,15 +50,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -106,6 +109,7 @@ import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.ui.components.CreatePatientDialog
+import io.healthplatform.chartcam.ui.components.tabFocusNext
 import io.healthplatform.chartcam.utils.createShareService
 import io.healthplatform.chartcam.viewmodel.PatientListViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -118,7 +122,7 @@ import org.jetbrains.compose.resources.stringResource
  * **State & Side Effects:**
  * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
- * @param fhirRepository Repository used to access patient data.
+ * @param fhirRepository Repository used to access patient data. (Injected side-effect)
  * @param exportImportService Service to handle exporting/importing the database.
  * @param authRepository Repository used for practitioner authentication and deletion.
  * @param onPatientSelected Callback triggered when a patient is selected, receiving the patient's ID.
@@ -167,7 +171,7 @@ fun PatientListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.patient_directory)) },
+                title = { Text(stringResource(Res.string.patient_directory), modifier = Modifier.semantics { heading() }) },
                 actions = {
                     var showLanguageMenu by remember { mutableStateOf(false) }
                     Box {
@@ -336,7 +340,7 @@ fun PatientListScreen(
     if (showExportPasswordDialog) {
         AlertDialog(
             onDismissRequest = { showExportPasswordDialog = false },
-            title = { Text(stringResource(Res.string.export_password_title)) },
+            title = { Text(stringResource(Res.string.export_password_title), modifier = Modifier.semantics { heading() }) },
             text = {
                 Column {
                     TextField(
@@ -345,21 +349,24 @@ fun PatientListScreen(
                         label = { Text(stringResource(Res.string.export_password_label)) },
                         visualTransformation = PasswordVisualTransformation(),
                         modifier =
-                            Modifier.fillMaxWidth().onKeyEvent {
-                                if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                    focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
-                                    true
-                                } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                                    focusManager.clearFocus()
-                                    viewModel.exportData(exportPassword, exportAllVisits)
-                                    showExportPasswordDialog = false
-                                    exportPassword = ""
-                                    exportAllVisits = true
-                                    true
-                                } else {
-                                    false
-                                }
-                            },
+                            Modifier
+                                .fillMaxWidth()
+                                .tabFocusNext(focusManager)
+                                .onKeyEvent {
+                                    if (it.key == Key.Enter &&
+                                        it.type == KeyEventType.KeyUp
+                                    ) {
+                                        focusManager.clearFocus()
+                                        viewModel.exportData(exportPassword, exportAllVisits)
+                                        showExportPasswordDialog =
+                                            false
+                                        exportPassword = ""
+                                        exportAllVisits = true
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                },
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions =
                             KeyboardActions(onDone = {
@@ -373,7 +380,7 @@ fun PatientListScreen(
                     )
                     Row(
                         modifier =
-                            Modifier.fillMaxWidth().padding(top = 16.dp).clickable(role = Role.Checkbox) {
+                            Modifier.fillMaxWidth().padding(top = 16.dp).minimumInteractiveComponentSize().clickable(role = Role.Checkbox) {
                                 exportAllVisits =
                                     !exportAllVisits
                             },
@@ -408,7 +415,7 @@ fun PatientListScreen(
     if (state.exportedData != null) {
         AlertDialog(
             onDismissRequest = { viewModel.clearExportData() },
-            title = { Text(stringResource(Res.string.data_exported_title)) },
+            title = { Text(stringResource(Res.string.data_exported_title), modifier = Modifier.semantics { heading() }) },
             text = {
                 Column {
                     Text(stringResource(Res.string.data_exported_message))
@@ -439,7 +446,7 @@ fun PatientListScreen(
     if (showAboutDialog) {
         AlertDialog(
             onDismissRequest = { showAboutDialog = false },
-            title = { Text(stringResource(Res.string.about_title)) },
+            title = { Text(stringResource(Res.string.about_title), modifier = Modifier.semantics { heading() }) },
             text = {
                 val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
                 val fullText = stringResource(Res.string.version_text, "0.0.1 — https://healthplatform.io")
@@ -486,7 +493,7 @@ fun PatientListScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text(stringResource(Res.string.delete_account_title)) },
+            title = { Text(stringResource(Res.string.delete_account_title), modifier = Modifier.semantics { heading() }) },
             text = { Text(stringResource(Res.string.delete_account_message)) },
             confirmButton = {
                 TextButton(onClick = {
@@ -509,7 +516,7 @@ fun PatientListScreen(
     if (showImportDialog) {
         AlertDialog(
             onDismissRequest = { showImportDialog = false },
-            title = { Text(stringResource(Res.string.import_title)) },
+            title = { Text(stringResource(Res.string.import_title), modifier = Modifier.semantics { heading() }) },
             text = {
                 Column {
                     TextField(
@@ -517,14 +524,7 @@ fun PatientListScreen(
                         onValueChange = { importText = it },
                         label = { Text(stringResource(Res.string.paste_data_here)) },
                         modifier =
-                            Modifier.fillMaxWidth().onKeyEvent {
-                                if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                    focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
-                                    true
-                                } else {
-                                    false
-                                }
-                            },
+                            Modifier.fillMaxWidth().tabFocusNext(focusManager),
                     )
                     TextField(
                         value = importPassword,
@@ -532,22 +532,26 @@ fun PatientListScreen(
                         label = { Text(stringResource(Res.string.password)) },
                         visualTransformation = PasswordVisualTransformation(),
                         modifier =
-                            Modifier.fillMaxWidth().padding(top = 8.dp).onKeyEvent {
-                                if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                    focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
-                                    true
-                                } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                                    focusManager.clearFocus()
-                                    viewModel.importData(importText, importPassword) {
-                                        showImportDialog = false
-                                        importText = ""
-                                        importPassword = ""
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp)
+                                .tabFocusNext(focusManager)
+                                .onKeyEvent {
+                                    if (it.key == Key.Enter &&
+                                        it.type == KeyEventType.KeyUp
+                                    ) {
+                                        focusManager.clearFocus()
+                                        viewModel.importData(importText, importPassword) {
+                                            showImportDialog =
+                                                false
+                                            ; importText = ""
+                                            importPassword = ""
+                                        }
+                                        true
+                                    } else {
+                                        false
                                     }
-                                    true
-                                } else {
-                                    false
-                                }
-                            },
+                                },
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions =
                             KeyboardActions(onDone = {
@@ -560,8 +564,8 @@ fun PatientListScreen(
                             }),
                         singleLine = true,
                     )
-                    if (state.error != null) {
-                        Text(state.error!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+                    state.error?.let { err ->
+                        Text(stringResource(err), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
                     }
                 }
             },
@@ -617,6 +621,7 @@ fun PatientListItem(
         },
         modifier =
             Modifier
+                .minimumInteractiveComponentSize()
                 .semantics(mergeDescendants = true) {}
                 .clickable(role = Role.Button) { onClick() },
     )

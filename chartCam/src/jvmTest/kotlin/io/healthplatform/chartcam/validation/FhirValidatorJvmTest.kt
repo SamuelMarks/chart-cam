@@ -1,3 +1,7 @@
+/**
+ * @file FhirValidatorJvmTest.kt
+ * Contains declarations for FhirValidatorJvmTest.kt.
+ */
 package io.healthplatform.chartcam.validation
 
 import com.google.fhir.model.r4.Enumeration

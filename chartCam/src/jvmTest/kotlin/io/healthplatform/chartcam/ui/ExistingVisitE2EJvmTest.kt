@@ -1,3 +1,7 @@
+/**
+ * @file ExistingVisitE2EJvmTest.kt
+ * Contains declarations for ExistingVisitE2EJvmTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi

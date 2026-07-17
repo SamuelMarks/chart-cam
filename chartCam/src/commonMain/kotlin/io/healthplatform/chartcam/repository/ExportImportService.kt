@@ -1,6 +1,8 @@
 /**
  * @file ExportImportService.kt
- * Contains declarations for ExportImportService.kt.
+ * Service responsible for exporting and importing the entire application database state.
+ * The exported JSON structure is defined by the AppData wrapper class, which encrypts
+ * internal states. Imported JSON must conform to this expected AppData schema.
  */
 package io.healthplatform.chartcam.repository
 
@@ -30,7 +32,7 @@ import okio.ByteString.Companion.toByteString
  * @param fileStorage Storage mechanism used for reading and writing binary data (like images).
  * @param cryptoService Service used to encrypt and decrypt the FHIR bundle JSON string.
  */
-class ExportImportService(
+open class ExportImportService(
     val database: ChartCamDatabase,
     private val fileStorage: FileStorage,
     private val cryptoService: CryptoService = CryptoService(),
@@ -46,7 +48,7 @@ class ExportImportService(
      * @param practitionerId An optional practitioner ID to filter the exported data.
      * @return A password-encrypted JSON string representing the exported FHIR Bundle.
      */
-    suspend fun exportData(
+    open suspend fun exportData(
         password: String,
         exportAll: Boolean = true,
         practitionerId: String? = null,
@@ -162,7 +164,7 @@ class ExportImportService(
      * @param password The password used to decrypt the data.
      * @throws IllegalArgumentException if the decryption fails, the JSON is malformed, or it is not a valid FHIR Bundle.
      */
-    suspend fun importData(
+    open suspend fun importData(
         encryptedData: String,
         password: String,
     ) {

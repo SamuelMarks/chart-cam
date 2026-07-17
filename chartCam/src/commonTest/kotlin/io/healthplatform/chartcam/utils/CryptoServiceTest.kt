@@ -1,3 +1,7 @@
+/**
+ * @file CryptoServiceTest.kt
+ * Contains declarations for CryptoServiceTest.kt.
+ */
 package io.healthplatform.chartcam.utils
 
 import kotlinx.coroutines.test.runTest

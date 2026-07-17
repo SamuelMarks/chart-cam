@@ -1,3 +1,7 @@
+/**
+ * @file FhirConstantsJvmTest.kt
+ * Contains declarations for FhirConstantsJvmTest.kt.
+ */
 package io.healthplatform.chartcam.utils
 
 import org.junit.Test

@@ -1,3 +1,7 @@
+/**
+ * @file AndroidUUIDTest.kt
+ * Contains declarations for AndroidUUIDTest.kt.
+ */
 package io.healthplatform.chartcam.utils
 
 import androidx.test.ext.junit.runners.AndroidJUnit4

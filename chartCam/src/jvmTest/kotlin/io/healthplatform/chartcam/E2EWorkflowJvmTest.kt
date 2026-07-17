@@ -1,4 +1,7 @@
 /**
+ * @file E2EWorkflowJvmTest.kt
+ * Contains declarations for E2EWorkflowJvmTest.kt.
+ *
  * Contains End-to-End (E2E) workflow tests for the ChartCam application.
  */
 package io.healthplatform.chartcam

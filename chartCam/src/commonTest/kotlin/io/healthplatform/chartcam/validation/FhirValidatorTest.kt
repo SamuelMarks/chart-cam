@@ -1,3 +1,7 @@
+/**
+ * @file FhirValidatorTest.kt
+ * Contains declarations for FhirValidatorTest.kt.
+ */
 package io.healthplatform.chartcam.validation
 
 import kotlin.test.Test

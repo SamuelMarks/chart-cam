@@ -1,11 +1,36 @@
 package io.healthplatform.chartcam.ui
 
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.Clipboard
+import kotlinx.coroutines.test.runTest
+import platform.UIKit.UIPasteboard
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 class ClipboardUtilsIosTest {
+    @OptIn(ExperimentalComposeUiApi::class)
     @Test
-    fun dummyTest() {
-        assertTrue(true)
-    }
+    fun testSetAndGetPlainText() =
+        runTest {
+            val fakeClipboard =
+                object : Clipboard {
+                    private var currentEntry: ClipEntry? = null
+
+                    override suspend fun getClipEntry(): ClipEntry? = currentEntry
+
+                    override suspend fun setClipEntry(clipEntry: ClipEntry?) {
+                        currentEntry = clipEntry
+                    }
+
+                    override val nativeClipboard: UIPasteboard
+                        get() = UIPasteboard.generalPasteboard
+                }
+
+            val testText = "Hello, iOS Clipboard!"
+            fakeClipboard.setPlainText(testText)
+
+            val retrievedText = fakeClipboard.getPlainText()
+            assertEquals(testText, retrievedText)
+        }
 }

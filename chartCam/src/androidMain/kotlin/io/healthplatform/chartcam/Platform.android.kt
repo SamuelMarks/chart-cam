@@ -1,4 +1,7 @@
 /**
+ * @file Platform.android.kt
+ * Contains declarations for Platform.android.kt.
+ *
  * File defining the Android-specific platform identification.
  */
 package io.healthplatform.chartcam

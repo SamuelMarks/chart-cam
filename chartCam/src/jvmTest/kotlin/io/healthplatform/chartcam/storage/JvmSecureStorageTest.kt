@@ -1,4 +1,7 @@
 /**
+ * @file JvmSecureStorageTest.kt
+ * Contains declarations for JvmSecureStorageTest.kt.
+ *
  * Contains unit tests validating the JVM implementation of [SecureStorage].
  */
 package io.healthplatform.chartcam.storage

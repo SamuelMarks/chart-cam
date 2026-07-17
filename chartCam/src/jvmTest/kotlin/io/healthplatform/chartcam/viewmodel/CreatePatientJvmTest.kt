@@ -1,4 +1,7 @@
 /**
+ * @file CreatePatientJvmTest.kt
+ * Contains declarations for CreatePatientJvmTest.kt.
+ *
  * Contains testing definitions for patient creation workflows.
  *
  * Allows isolated testing of the view model methods used to create a new patient

@@ -1,4 +1,7 @@
 /**
+ * @file TriageScreen.kt
+ * Contains declarations for TriageScreen.kt.
+ *
  * Triage Screen definition.
  * Allows users to search for or create patients to attach captured photos to.
  */
@@ -28,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,6 +39,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cd_create_patient
@@ -51,6 +57,7 @@ import io.healthplatform.chartcam.models.mrn
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.ui.components.CreatePatientDialog
 import io.healthplatform.chartcam.viewmodel.TriageViewModel
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -86,7 +93,7 @@ fun TriageScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.triage_select_patient)) },
+                title = { Text(stringResource(Res.string.triage_select_patient), modifier = Modifier.semantics { heading() }) },
             )
         },
     ) { padding ->
@@ -94,7 +101,15 @@ fun TriageScreen(
             state.selectedPatient?.let { patient ->
                 ListItem(
                     headlineContent = { Text(patient.fullName, style = MaterialTheme.typography.titleMedium) },
-                    supportingContent = { Text(stringResource(Res.string.selected_photos_ready, state.capturedPhotoPaths.size)) },
+                    supportingContent = {
+                        Text(
+                            pluralStringResource(
+                                Res.plurals.selected_photos_ready,
+                                state.capturedPhotoPaths.size,
+                                state.capturedPhotoPaths.size,
+                            ),
+                        )
+                    },
                     trailingContent = {
                         IconButton(onClick = { onProceedToEncounter(patient.id ?: "", state.capturedPhotoPaths) }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = stringResource(Res.string.cd_proceed))
@@ -145,7 +160,10 @@ fun TriageScreen(
                                 ),
                             )
                         },
-                        modifier = Modifier.clickable(role = Role.Button) { viewModel.selectPatient(patient) },
+                        modifier =
+                            Modifier.minimumInteractiveComponentSize().clickable(
+                                role = Role.Button,
+                            ) { viewModel.selectPatient(patient) },
                     )
                     HorizontalDivider()
                 }

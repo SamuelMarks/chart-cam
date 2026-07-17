@@ -1,4 +1,7 @@
 /**
+ * @file PermissionManager.ios.kt
+ * Contains declarations for PermissionManager.ios.kt.
+ *
  * iOS implementation of the camera permission manager.
  */
 package io.healthplatform.chartcam.camera
@@ -28,7 +31,7 @@ class IosPermissionManager : PermissionManager {
     /**
      * Retrieves the current camera permission status.
      *
-     * Queries the system using [AVCaptureDevice.authorizationStatusForMediaType] for video.
+     * Queries the system using [authorizationStatusForMediaType] for video.
      *
      * @return The current [PermissionStatus], such as [PermissionStatus.GRANTED],
      *         [PermissionStatus.DENIED], or [PermissionStatus.NOT_DETERMINED].
@@ -47,7 +50,7 @@ class IosPermissionManager : PermissionManager {
      * Requests camera permission from the user if not already granted or denied.
      *
      * If the status is undetermined, it prompts the user using
-     * [AVCaptureDevice.requestAccessForMediaType] and suspends until the user responds.
+     * [requestAccessForMediaType] and suspends until the user responds.
      *
      * @return `true` if permission is granted, `false` otherwise. Note that iOS
      *         does not allow re-prompting once denied, so it will return `false`

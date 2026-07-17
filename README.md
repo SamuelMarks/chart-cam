@@ -1,7 +1,7 @@
 ChartCam
 ========
 
-![Doc Coverage](https://img.shields.io/badge/Doc%20Coverage-100.0%25-brightgreen)
+![Doc Coverage](https://img.shields.io/badge/Doc%20Coverage-36.5%25-brightgreen)
 ![Test Coverage](https://img.shields.io/badge/Test%20Coverage-100.0%25-brightgreen)
 [![Coverage Verification](https://github.com/SamuelMarks/chart-cam/actions/workflows/coverage.yml/badge.svg)](https://github.com/SamuelMarks/chart-cam/actions/workflows/coverage.yml)
 [![ChartCam CI/CD](https://github.com/SamuelMarks/chart-cam/actions/workflows/deploy.yml/badge.svg)](https://github.com/SamuelMarks/chart-cam/actions/workflows/deploy.yml)

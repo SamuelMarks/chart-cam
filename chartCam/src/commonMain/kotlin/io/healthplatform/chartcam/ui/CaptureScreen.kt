@@ -1,4 +1,7 @@
 /**
+ * @file CaptureScreen.kt
+ * Contains declarations for CaptureScreen.kt.
+ *
  * UI components for capturing photos.
  * Provides the main screen and overlays for the camera feature.
  */
@@ -44,6 +47,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -82,8 +86,8 @@ import org.jetbrains.compose.resources.stringResource
  * @param questionnaireId The ID of the questionnaire defining the photo steps.
  * @param linkId An optional linkId within the questionnaire to target a specific capture sequence.
  * @param questionnaireRepository Repository to fetch the questionnaire details.
- * @param onFinished Callback invoked when all required photos are captured and confirmed, mapping step linkIds to file paths.
- * @param onCancel Callback invoked if the user cancels the capture process.
+ * @param onFinished Callback invoked when all required photos are captured and confirmed, mapping step linkIds to file paths. This is a hoisted callback.
+ * @param onCancel Callback invoked if the user cancels the capture process. This is a hoisted callback for UI navigation.
  */
 @OptIn(ExperimentalResourceApi::class)
 @Composable
@@ -146,6 +150,7 @@ fun CaptureScreen(
          * Extracts a flattened list of [PhotoStep]s from a list of Questionnaire items.
          * Handles nested groups and choice options.
          * @param items Parameter items
+         * @return The list of extracted steps
          */
         fun extractSteps(items: List<com.google.fhir.model.r4.Questionnaire.Item>): List<PhotoStep> {
             val result = mutableListOf<PhotoStep>()
@@ -215,6 +220,7 @@ fun CaptureScreen(
                         .clickable(
                             interactionSource = interactionSource,
                             indication = null,
+                            role = Role.Button,
                         ) {
                             viewModel.onCapture()
                         },
@@ -284,7 +290,7 @@ fun ControlsLayer(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                    .background(Color.Black.copy(alpha = 0.7f), CircleShape)
                     .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {

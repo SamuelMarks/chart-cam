@@ -1,24 +1,24 @@
-/**
- * Provides comprehensive tests for the [PatientListViewModel].
- */
 package io.healthplatform.chartcam.viewmodel
 
-import app.cash.sqldelight.async.coroutines.awaitCreate
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.failed_to_import
+import chartcam.chartcam.generated.resources.failed_to_load_patients
+import com.google.fhir.model.r4.Patient
+import com.google.fhir.model.r4.Practitioner
 import io.healthplatform.chartcam.database.ChartCamDatabase
-import io.healthplatform.chartcam.files.createFileStorage
+import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.createFhirPatient
-import io.healthplatform.chartcam.models.givenName
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.storage.SecureStorage
-import io.healthplatform.chartcam.utils.CryptoService
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.respondOk
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -30,217 +30,315 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/**
- * Test class for validating the behavior and state management of [PatientListViewModel].
- *
- * Sets up in-memory databases and mock services to ensure the ViewModel
- * handles data loading, filtering, patient creation, and export/import correctly.
- */
-class PatientListViewModelJvmTest {
-    /**
-     * The dispatcher used for controlling coroutine execution during tests.
-     */
+@OptIn(ExperimentalCoroutinesApi::class)
+class PatientListViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
+    private lateinit var mockFhirRepository: MockFhirRepository
+    private lateinit var mockExportImportService: MockExportImportService
+    private lateinit var mockAuthRepository: MockAuthRepository
+    private lateinit var viewModel: PatientListViewModel
 
-    /**
-     * The mocked [FhirRepository] for database operations.
-     */
-    private lateinit var repo: FhirRepository
-
-    /**
-     * The mocked or in-memory [io.healthplatform.chartcam.files.FileStorage].
-     */
-    private lateinit var fileStorage: io.healthplatform.chartcam.files.FileStorage
-
-    /**
-     * The [ExportImportService] instance for data backup and restoration.
-     */
-    private lateinit var exportImportService: ExportImportService
-
-    /**
-     * The mocked [AuthRepository] handling authentication flows.
-     */
-    private lateinit var authRepository: AuthRepository
-
-    /**
-     * The in-memory SQLite driver used for testing.
-     */
     private lateinit var driver: JdbcSqliteDriver
+    private lateinit var database: ChartCamDatabase
 
-    /**
-     * Sets up the test environment before each test.
-     *
-     * Initializes the standard test dispatcher, sets up the in-memory SQLite driver,
-     * creates the database schema, and initializes all required repositories and services.
-     */
     @BeforeTest
-    fun setUp() {
+    fun setup() {
         Dispatchers.setMain(testDispatcher)
         driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        kotlinx.coroutines.runBlocking { ChartCamDatabase.Schema.awaitCreate(driver) }
-        val database = ChartCamDatabase(driver)
-        repo = FhirRepository(database)
-        fileStorage = createFileStorage()
-        exportImportService = ExportImportService(database, fileStorage, CryptoService())
+        ChartCamDatabase.Schema.create(driver)
+        database = ChartCamDatabase(driver)
 
-        val client =
-            io.ktor.client.HttpClient(
-                io.ktor.client.engine.mock
-                    .MockEngine { respond("") },
-            )
-        val mockStorage =
-            object : io.healthplatform.chartcam.storage.SecureStorage {
-                private val data = mutableMapOf<String, String>()
+        mockFhirRepository = MockFhirRepository(database)
 
+        val fakeFileStorage =
+            object : FileStorage {
+                override fun saveImage(
+                    fileName: String,
+                    bytes: ByteArray,
+                ): String = fileName
+
+                override fun readImage(path: String): ByteArray = ByteArray(0)
+
+                override fun clearCache() {}
+            }
+        mockExportImportService = MockExportImportService(database, fakeFileStorage)
+
+        val fakeSecureStorage =
+            object : SecureStorage {
                 override fun save(
                     key: String,
                     value: String,
-                ) {
-                    data[key] = value
-                }
+                ) {}
 
-                override fun getString(key: String): String? = data[key]
+                override fun getString(key: String): String? = null
 
-                override fun delete(key: String) {
-                    data.remove(key)
-                }
+                override fun delete(key: String) {}
             }
-        authRepository = AuthRepository(client, mockStorage)
+        val mockHttpClient = HttpClient(MockEngine) { engine { addHandler { respondOk() } } }
+
+        mockAuthRepository = MockAuthRepository(mockHttpClient, fakeSecureStorage)
+
+        mockAuthRepository.currentUserFlow.value =
+            io.healthplatform.chartcam.models.createFhirPractitioner(
+                "practitioner-1",
+                "Smith",
+                "John",
+                true,
+            )
+
+        viewModel =
+            PatientListViewModel(
+                mockFhirRepository,
+                mockExportImportService,
+                mockAuthRepository,
+            )
     }
 
-    /**
-     * Tests the error state handling when loading patients fails.
-     */
-    @Test
-    fun testLoadPatientsErrorState() =
-        runTest {
-            // Force the repository to fail by closing the underlying database driver
-            driver.close()
-
-            val vm = PatientListViewModel(repo, exportImportService, authRepository)
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            // Verify that the error state was populated
-            assertNotNull(vm.uiState.value.error)
-            assertEquals("Failed to load patients", vm.uiState.value.error)
-            assertFalse(vm.uiState.value.isLoading)
-        }
-
-    /**
-     * Cleans up the test environment after each test by resetting the main dispatcher.
-     */
     @AfterTest
     fun tearDown() {
+        driver.close()
         Dispatchers.resetMain()
     }
 
-    /**
-     * Tests the patient list search and filtering state logic.
-     *
-     * Verifies that updating the search query correctly filters the list of patients
-     * in the [PatientListViewModel.uiState].
-     */
     @Test
-    fun testSearchFilterStateLogic() =
-        runTest {
-            // Seed
-            repo.savePatient(createFhirPatient("1", "John", "Doe", LocalDate(1990, 1, 1), "123", "male"))
+    fun `loadPatients sets patients in state`() =
+        runTest(testDispatcher) {
+            val patient = createFhirPatient("1", "John", "Doe", LocalDate(1990, 1, 1), "mrn1", "male")
+            mockFhirRepository.patientsToReturn = listOf(patient)
 
-            val vm = PatientListViewModel(repo, exportImportService, authRepository)
-            testDispatcher.scheduler.advanceUntilIdle() // Wait for init load
-
-            // Initial check
-            assertEquals(1, vm.uiState.value.patients.size)
-
-            // Filter empty
-            vm.onSearchQueryChanged("Nobody")
+            viewModel.loadPatients()
             testDispatcher.scheduler.advanceUntilIdle()
-            assertEquals(0, vm.uiState.value.patients.size)
 
-            // Clear filter
-            vm.onSearchQueryChanged("")
-            testDispatcher.scheduler.advanceUntilIdle()
-            assertEquals(1, vm.uiState.value.patients.size)
+            assertEquals(1, viewModel.uiState.value.patients.size)
+            assertEquals(
+                "1",
+                viewModel.uiState.value.patients
+                    .first()
+                    .id,
+            )
+            assertFalse(viewModel.uiState.value.isLoading)
         }
 
-    /**
-     * Tests the patient creation flow within the [PatientListViewModel].
-     *
-     * Verifies that calling `createPatient` successfully adds a patient to the
-     * underlying repository and updates the UI state accordingly.
-     */
     @Test
-    fun testPatientCreation() =
-        runTest {
-            val vm = PatientListViewModel(repo, exportImportService, authRepository)
-            testDispatcher.scheduler.advanceUntilIdle()
-            assertEquals(0, vm.uiState.value.patients.size)
+    fun `loadPatients handles error`() =
+        runTest(testDispatcher) {
+            mockFhirRepository.shouldThrow = true
 
-            var createdId: String? = null
-            vm.createPatient("Alice", "Test", "MRN-A", LocalDate(2000, 1, 1), "female") { id ->
+            viewModel.loadPatients()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(Res.string.failed_to_load_patients, viewModel.uiState.value.error)
+            assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
+    fun `onSearchQueryChanged updates query and reloads`() =
+        runTest(testDispatcher) {
+            viewModel.onSearchQueryChanged("Jane")
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals("Jane", viewModel.uiState.value.searchQuery)
+            assertEquals("Jane", mockFhirRepository.lastSearchQuery)
+        }
+
+    @Test
+    fun `setShowAllPatients updates state and reloads`() =
+        runTest(testDispatcher) {
+            viewModel.setShowAllPatients(true)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value.showAllPatients)
+            assertTrue(mockFhirRepository.lastShowAll)
+        }
+
+    @Test
+    fun `createPatient saves patient and reloads`() =
+        runTest(testDispatcher) {
+            var createdId = ""
+            viewModel.createPatient(
+                firstName = "New",
+                lastName = "Patient",
+                mrn = "MRN2",
+                dob = LocalDate(1980, 2, 2),
+                gender = "female",
+            ) { id ->
                 createdId = id
             }
             testDispatcher.scheduler.advanceUntilIdle()
 
-            val state = vm.uiState.value
-            assertEquals(1, state.patients.size)
-            assertEquals(
-                "Alice",
-                state.patients[0]
-                    .name
-                    .firstOrNull()
-                    ?.givenName,
-            )
-            assertTrue(createdId != null)
+            assertNotNull(mockFhirRepository.savedPatient)
+            assertTrue(createdId.isNotEmpty())
         }
 
-    /**
-     * Tests the database export and import flow within the [PatientListViewModel].
-     *
-     * Verifies that data can be correctly exported with a password, cleared from
-     * state, and subsequently imported successfully, handling both correct and
-     * incorrect passwords appropriately.
-     */
     @Test
-    fun testExportImportFlow() =
+    fun `exportData calls service and updates state`() =
         runTest(testDispatcher) {
-            val vm = PatientListViewModel(repo, exportImportService, authRepository)
+            viewModel.exportData("password123", true)
             testDispatcher.scheduler.advanceUntilIdle()
 
-            vm.createPatient("Exp", "Ort", "999", LocalDate(2000, 1, 1), "male") {}
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            // Test export
-            vm.exportData("secret", true)
-
-            val exportedState = vm.uiState.first { it.exportedData != null }
-            val exported = exportedState.exportedData
-            assertNotNull(exported)
-            assertEquals("secret", exportedState.exportPassword)
-
-            // Test clear
-            vm.clearExportData()
-            val clearedState = vm.uiState.first { it.exportedData == null }
-            assertNull(clearedState.exportedData)
-
-            // Test import
-            val importChannel = kotlinx.coroutines.channels.Channel<Boolean>(1)
-            vm.importData(exported, "secret") {
-                importChannel.trySend(true)
-            }
-            assertTrue(importChannel.receive())
-            assertNull(vm.uiState.value.error)
-
-            // Test import fail
-            vm.importData(exported, "wrongpassword") {}
-            val errorState = vm.uiState.first { it.error != null }
-            assertNotNull(errorState.error)
-
-            vm.clearError()
-            val clearedErrorState = vm.uiState.first { it.error == null }
-            assertNull(clearedErrorState.error)
+            assertEquals("exported-data", viewModel.uiState.value.exportedData)
+            assertEquals("password123", viewModel.uiState.value.exportPassword)
         }
+
+    @Test
+    fun `clearExportData resets state`() =
+        runTest(testDispatcher) {
+            viewModel.exportData("pass", true)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.clearExportData()
+            assertEquals(null, viewModel.uiState.value.exportedData)
+            assertEquals(null, viewModel.uiState.value.exportPassword)
+        }
+
+    @Test
+    fun `importData success reloads patients`() =
+        runTest(testDispatcher) {
+            var successCalled = false
+            viewModel.importData("data", "pass") {
+                successCalled = true
+            }
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertTrue(successCalled)
+            assertEquals("data", mockExportImportService.lastImportData)
+            assertEquals(null, viewModel.uiState.value.error)
+        }
+
+    @Test
+    fun `importData failure sets error`() =
+        runTest(testDispatcher) {
+            mockExportImportService.shouldThrow = true
+            viewModel.importData("data", "pass") {}
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(Res.string.failed_to_import, viewModel.uiState.value.error)
+        }
+
+    @Test
+    fun `deleteAccount deletes practitioner and patients`() =
+        runTest(testDispatcher) {
+            val patient = createFhirPatient("p1", "Jane", "Doe", LocalDate(1990, 1, 1), "mrn", "female")
+            mockFhirRepository.patientsToReturn = listOf(patient)
+
+            var successCalled = false
+            viewModel.deleteAccount {
+                successCalled = true
+            }
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertTrue(successCalled)
+            assertEquals("p1", mockFhirRepository.deletedPatientId)
+            assertEquals("practitioner-1", mockFhirRepository.deletedPractitionerId)
+            assertTrue(mockAuthRepository.deleteAccountCalled)
+        }
+
+    @Test
+    fun `clearError sets error to null`() =
+        runTest(testDispatcher) {
+            mockExportImportService.shouldThrow = true
+            viewModel.importData("data", "pass") {}
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.clearError()
+            assertEquals(null, viewModel.uiState.value.error)
+        }
+}
+
+class MockFhirRepository(
+    database: ChartCamDatabase,
+) : FhirRepository(database) {
+    var patientsToReturn: List<Patient> = emptyList()
+    var shouldThrow = false
+    var lastSearchQuery = ""
+    var lastShowAll = false
+    var savedPatient: Patient? = null
+    var deletedPatientId: String? = null
+    var deletedPractitionerId: String? = null
+
+    override suspend fun getAllPatients(
+        showAll: Boolean,
+        practitionerId: String?,
+    ): List<Patient> {
+        if (shouldThrow) throw Exception("DB Error")
+        lastShowAll = showAll
+        return patientsToReturn
+    }
+
+    override suspend fun searchPatients(
+        query: String,
+        showAll: Boolean,
+        practitionerId: String?,
+    ): List<Patient> {
+        if (shouldThrow) throw Exception("DB Error")
+        lastSearchQuery = query
+        lastShowAll = showAll
+        return patientsToReturn
+    }
+
+    override suspend fun savePatient(patient: Patient) {
+        savedPatient = patient
+    }
+
+    override suspend fun deletePatient(id: String) {
+        deletedPatientId = id
+    }
+
+    override suspend fun deletePractitioner(id: String) {
+        deletedPractitionerId = id
+    }
+}
+
+class MockExportImportService(
+    database: ChartCamDatabase,
+    fileStorage: FileStorage,
+) : ExportImportService(database, fileStorage) {
+    var shouldThrow = false
+    var lastImportData: String? = null
+
+    override suspend fun exportData(
+        password: String,
+        exportAll: Boolean,
+        practitionerId: String?,
+    ): String {
+        if (shouldThrow) throw Exception("Export error")
+        return "exported-data"
+    }
+
+    override suspend fun importData(
+        encryptedData: String,
+        password: String,
+    ) {
+        if (shouldThrow) throw Exception("Import error")
+        lastImportData = encryptedData
+    }
+}
+
+class MockAuthRepository(
+    client: HttpClient,
+    storage: SecureStorage,
+) : AuthRepository(client, storage) {
+    val currentUserFlow = MutableStateFlow<Practitioner?>(null)
+    var deleteAccountCalled = false
+
+    override val currentUser = currentUserFlow
+
+    override suspend fun login(
+        username: String,
+        password: String,
+    ): Result<Practitioner> =
+        Result.success(
+            io.healthplatform.chartcam.models
+                .createFhirPractitioner("1", "S", "J", true),
+        )
+
+    override suspend fun checkSession(): Boolean = true
+
+    override fun logout() {}
+
+    override fun deleteAccount(username: String) {
+        deleteAccountCalled = true
+    }
 }

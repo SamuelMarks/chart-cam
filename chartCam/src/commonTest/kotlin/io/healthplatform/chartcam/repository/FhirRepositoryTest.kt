@@ -1,3 +1,7 @@
+/**
+ * @file FhirRepositoryTest.kt
+ * Contains declarations for FhirRepositoryTest.kt.
+ */
 package io.healthplatform.chartcam.repository
 
 import kotlin.test.Test

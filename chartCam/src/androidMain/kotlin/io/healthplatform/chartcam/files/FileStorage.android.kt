@@ -1,4 +1,7 @@
 /**
+ * @file FileStorage.android.kt
+ * Contains declarations for FileStorage.android.kt.
+ *
  * File defining the Android-specific implementation of the [FileStorage] interface.
  */
 package io.healthplatform.chartcam.files

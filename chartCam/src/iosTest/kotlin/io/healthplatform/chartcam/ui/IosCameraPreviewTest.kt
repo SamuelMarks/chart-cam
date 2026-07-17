@@ -1,3 +1,7 @@
+/**
+ * @file IosCameraPreviewTest.kt
+ * Contains declarations for IosCameraPreviewTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import kotlin.test.Test

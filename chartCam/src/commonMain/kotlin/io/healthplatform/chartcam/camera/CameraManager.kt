@@ -1,4 +1,7 @@
 /**
+ * @file CameraManager.kt
+ * Contains declarations for CameraManager.kt.
+ *
  * Contains cross-platform abstractions for camera management and configuration.
  */
 package io.healthplatform.chartcam.camera

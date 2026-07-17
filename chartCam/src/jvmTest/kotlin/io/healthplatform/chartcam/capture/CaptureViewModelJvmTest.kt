@@ -1,4 +1,7 @@
 /**
+ * @file CaptureViewModelJvmTest.kt
+ * Contains declarations for CaptureViewModelJvmTest.kt.
+ *
  * Test definitions for the photo capture workflows.
  *
  * This test suite focuses on ensuring that [CaptureViewModel] orchestrates

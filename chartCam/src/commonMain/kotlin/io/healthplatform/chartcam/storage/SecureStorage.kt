@@ -1,4 +1,7 @@
 /**
+ * @file SecureStorage.kt
+ * Contains declarations for SecureStorage.kt.
+ *
  * Defines the contract for secure storage of sensitive data.
  */
 package io.healthplatform.chartcam.storage

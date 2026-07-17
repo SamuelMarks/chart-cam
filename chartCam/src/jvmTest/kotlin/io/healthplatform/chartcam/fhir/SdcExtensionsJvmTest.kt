@@ -1,3 +1,7 @@
+/**
+ * @file SdcExtensionsJvmTest.kt
+ * Contains declarations for SdcExtensionsJvmTest.kt.
+ */
 package io.healthplatform.chartcam.fhir
 
 import com.google.fhir.model.r4.Boolean

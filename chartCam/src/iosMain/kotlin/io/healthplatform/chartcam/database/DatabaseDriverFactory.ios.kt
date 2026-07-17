@@ -1,4 +1,7 @@
 /**
+ * @file DatabaseDriverFactory.ios.kt
+ * Contains declarations for DatabaseDriverFactory.ios.kt.
+ *
  * iOS implementation of the database driver factory.
  */
 package io.healthplatform.chartcam.database

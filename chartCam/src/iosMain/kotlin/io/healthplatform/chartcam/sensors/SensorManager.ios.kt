@@ -1,4 +1,7 @@
 /**
+ * @file SensorManager.ios.kt
+ * Contains declarations for SensorManager.ios.kt.
+ *
  * iOS implementation of the sensor manager.
  */
 package io.healthplatform.chartcam.sensors

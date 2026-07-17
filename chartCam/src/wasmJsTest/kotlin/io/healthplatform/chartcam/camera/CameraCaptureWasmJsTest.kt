@@ -1,4 +1,7 @@
 /**
+ * @file CameraCaptureWasmJsTest.kt
+ * Contains declarations for CameraCaptureWasmJsTest.kt.
+ *
  * Provides tests for Wasm-JavaScript camera capture functionalities.
  */
 package io.healthplatform.chartcam.camera

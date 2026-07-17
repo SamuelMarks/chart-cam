@@ -1,3 +1,7 @@
+/**
+ * @file EncounterDetailViewModelJvmTest.kt
+ * Contains declarations for EncounterDetailViewModelJvmTest.kt.
+ */
 package io.healthplatform.chartcam.viewmodel
 
 import com.google.fhir.model.r4.Canonical

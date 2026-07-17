@@ -1,3 +1,7 @@
+/**
+ * @file ClipboardUtilsAndroidTest.kt
+ * Contains declarations for ClipboardUtilsAndroidTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import kotlin.test.Test

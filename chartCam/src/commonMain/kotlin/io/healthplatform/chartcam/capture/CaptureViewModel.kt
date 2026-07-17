@@ -1,4 +1,7 @@
 /**
+ * @file CaptureViewModel.kt
+ * Contains declarations for CaptureViewModel.kt.
+ *
  * Provides the ViewModel responsible for orchestrating the clinical photography workflow.
  */
 package io.healthplatform.chartcam.capture

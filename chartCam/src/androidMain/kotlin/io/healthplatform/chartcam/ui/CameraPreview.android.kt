@@ -1,5 +1,9 @@
 /**
+ * @file CameraPreview.android.kt
+ * Contains declarations for CameraPreview.android.kt.
+ *
  * File defining the Android-specific implementation of the [CameraPreview] composable.
+ * Integrates CameraX API for previewing and capturing images safely on Android devices.
  */
 package io.healthplatform.chartcam.ui
 

@@ -1,3 +1,7 @@
+/**
+ * @file BrowserHistorySetupAndroidTest.kt
+ * Contains declarations for BrowserHistorySetupAndroidTest.kt.
+ */
 package io.healthplatform.chartcam.navigation
 
 import androidx.compose.ui.test.junit4.createComposeRule

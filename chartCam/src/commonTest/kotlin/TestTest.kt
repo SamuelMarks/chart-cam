@@ -1,3 +1,7 @@
+/**
+ * @file TestTest.kt
+ * Contains declarations for TestTest.kt.
+ */
 package test
 
 import kotlin.test.Test

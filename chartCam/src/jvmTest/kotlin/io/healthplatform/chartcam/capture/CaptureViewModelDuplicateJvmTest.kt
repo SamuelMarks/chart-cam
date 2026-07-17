@@ -1,4 +1,7 @@
 /**
+ * @file CaptureViewModelDuplicateJvmTest.kt
+ * Contains declarations for CaptureViewModelDuplicateJvmTest.kt.
+ *
  * Validates capture view model duplicate handling.
  */
 package io.healthplatform.chartcam.capture

@@ -1,3 +1,7 @@
+/**
+ * @file AndroidClipboardUtilsTest.kt
+ * Contains declarations for AndroidClipboardUtilsTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.platform.ClipEntry

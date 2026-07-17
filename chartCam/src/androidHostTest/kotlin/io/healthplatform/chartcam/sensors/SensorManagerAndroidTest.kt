@@ -1,3 +1,7 @@
+/**
+ * @file SensorManagerAndroidTest.kt
+ * Contains declarations for SensorManagerAndroidTest.kt.
+ */
 package io.healthplatform.chartcam.sensors
 
 import android.content.Context

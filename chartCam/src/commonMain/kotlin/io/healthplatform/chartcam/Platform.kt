@@ -1,4 +1,7 @@
 /**
+ * @file Platform.kt
+ * Contains declarations for Platform.kt.
+ *
  * Defines the cross-platform contract for accessing platform-specific information.
  */
 package io.healthplatform.chartcam

@@ -1,4 +1,7 @@
 /**
+ * @file UUID.ios.kt
+ * Contains declarations for UUID.ios.kt.
+ *
  * iOS implementation of UUID generation.
  * This file provides the iOS-specific actual implementation for UUIDs.
  */

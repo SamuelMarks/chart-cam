@@ -10,7 +10,12 @@
 
     
     <string name="triage_select_patient">Triage: Select Patient</string>
-    <string name="selected_photos_ready">Selected. %1$d photos ready.</string>
+    
+    <plurals name="selected_photos_ready">
+        <item quantity="one">Selected. 1 photo ready.</item>
+        <item quantity="other">Selected. %1$d photos ready.</item>
+    </plurals>
+
     <string name="search_placeholder">Search Name or MRN...</string>
     <string name="mrn_dob_format">MRN: %1$s | DOB: %2$s</string>
     <string name="mrn_date_format">MRN: %1$s | %2$s</string>
@@ -75,6 +80,8 @@
     <string name="syncing_to_server">Syncing to Server...</string>
 
     <string name="questionnaire">Questionnaire</string>
+    <string name="questionnaire_format">Questionnaire: %1$s</string>
+
     <string name="create_new">Create New</string>
     <string name="edit_visit">Edit visit</string>
     <string name="finalize_visit">Finalize Visit</string>
@@ -152,6 +159,9 @@
     <string name="import_questionnaire">Import Questionnaire</string>
     <string name="import_error_format">Import Error: %1$s</string>
     <string name="unknown">Unknown</string>
+    <string name="new_item">New Item</string>
+    <string name="new_widget_item">New %1$s Item</string>
+    <string name="unknown_copy">%1$s (Copy)</string>
     <string name="paste_from_clipboard">Paste from Clipboard</string>
     <string name="file_import_coming_soon">File Import and QR Code Scanner coming soon</string>
     <string name="number_of_items_format">Number of items: %1$s</string>
@@ -196,5 +206,18 @@
     <string name="level_status_level">Camera is level</string>
     <string name="level_status_tilted">Camera is tilted</string>
     <string name="cd_leveler_status">Camera Leveler: %1$s</string>
+    
+    <string name="id_format">ID: %1$s</string>
+    <string name="cd_camera_icon">Camera icon</string>
+    <string name="cd_video_icon">Video icon</string>
+    <string name="clipboard_data_label">ChartCam Clipboard Data</string>
+
+    <string name="state_selected">Selected</string>
+    <string name="state_unselected">Unselected</string>
+
+
+    <string name="incorrect_password">Incorrect password</string>
+    <string name="invalid_credentials">Invalid Credentials</string>
 </resources>
+
 

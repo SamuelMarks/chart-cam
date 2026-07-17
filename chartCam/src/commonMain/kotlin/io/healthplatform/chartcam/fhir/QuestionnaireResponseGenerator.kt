@@ -49,11 +49,18 @@ object QuestionnaireResponseGenerator {
             }.build()
     }
 
+    /**
+     * Creates a builder for a [QuestionnaireResponse.Item] from a given [Questionnaire.Item] and answers map.
+     *
+     * @param item The questionnaire item.
+     * @param answers The map of answers.
+     * @return A builder for the questionnaire response item, or null if it cannot be built.
+     */
     private fun createResponseItemBuilder(
         item: Questionnaire.Item,
         answers: Map<kotlin.String, Any>,
     ): QuestionnaireResponse.Item.Builder? {
-        val linkId = item.linkId?.value ?: return null
+        val linkId = item.linkId.value ?: return null
         val answerValue = answers[linkId]
         val nestedItemBuilders = item.item.mapNotNull { createResponseItemBuilder(it, answers) }
 

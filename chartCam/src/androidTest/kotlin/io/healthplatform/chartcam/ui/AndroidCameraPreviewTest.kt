@@ -1,3 +1,7 @@
+/**
+ * @file AndroidCameraPreviewTest.kt
+ * Contains declarations for AndroidCameraPreviewTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.foundation.layout.fillMaxSize

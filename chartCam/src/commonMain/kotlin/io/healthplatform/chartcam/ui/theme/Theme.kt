@@ -1,4 +1,7 @@
 /**
+ * @file Theme.kt
+ * Contains declarations for Theme.kt.
+ *
  * Defines the main application theme, including colors, typography, and material design shapes.
  */
 package io.healthplatform.chartcam.ui.theme

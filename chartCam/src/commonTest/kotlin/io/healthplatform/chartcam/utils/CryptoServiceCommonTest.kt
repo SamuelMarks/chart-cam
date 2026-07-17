@@ -1,3 +1,7 @@
+/**
+ * @file CryptoServiceCommonTest.kt
+ * Contains declarations for CryptoServiceCommonTest.kt.
+ */
 package io.healthplatform.chartcam.utils
 
 import kotlin.test.Test

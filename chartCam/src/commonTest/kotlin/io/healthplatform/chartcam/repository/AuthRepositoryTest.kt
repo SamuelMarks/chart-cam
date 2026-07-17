@@ -1,3 +1,7 @@
+/**
+ * @file AuthRepositoryTest.kt
+ * Contains declarations for AuthRepositoryTest.kt.
+ */
 package io.healthplatform.chartcam.repository
 
 import io.healthplatform.chartcam.storage.SecureStorage

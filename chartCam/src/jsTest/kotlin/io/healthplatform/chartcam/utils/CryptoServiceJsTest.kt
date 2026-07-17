@@ -1,3 +1,7 @@
+/**
+ * @file CryptoServiceJsTest.kt
+ * Contains declarations for CryptoServiceJsTest.kt.
+ */
 package io.healthplatform.chartcam.utils
 
 import kotlin.test.Test

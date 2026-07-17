@@ -1,3 +1,7 @@
+/**
+ * @file BrowserHistorySetupWasmJsTest.kt
+ * Contains declarations for BrowserHistorySetupWasmJsTest.kt.
+ */
 package io.healthplatform.chartcam.navigation
 
 import kotlin.test.Test

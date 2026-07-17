@@ -1,6 +1,6 @@
 /**
  * @file QuestionnaireBuilderScreen.kt
- * Contains declarations for QuestionnaireBuilderScreen.kt.
+ * Contains the UI for the Questionnaire Builder feature. This allows dynamic creation and editing of FHIR Questionnaires.
  */
 package io.healthplatform.chartcam.ui
 
@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Notes
@@ -60,17 +62,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.add_option
@@ -111,6 +118,7 @@ import chartcam.chartcam.generated.resources.widget_single_line_text
 import chartcam.chartcam.generated.resources.widget_single_select
 import chartcam.chartcam.generated.resources.widget_switch
 import chartcam.chartcam.generated.resources.widget_video_camera
+import io.healthplatform.chartcam.ui.components.tabFocusNext
 import io.healthplatform.chartcam.viewmodel.BuilderItem
 import io.healthplatform.chartcam.viewmodel.QuestionnaireBuilderViewModel
 import io.healthplatform.chartcam.viewmodel.WidgetType
@@ -206,7 +214,10 @@ fun WidgetSelectionRow(
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             primaryWidgets.forEach { widget ->
                 TooltipBox(
-                    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+                    positionProvider =
+                        TooltipDefaults.rememberTooltipPositionProvider(
+                            positioning = androidx.compose.material3.TooltipAnchorPosition.Above,
+                        ),
                     tooltip = { PlainTooltip { Text(getWidgetNameString(widget)) } },
                     state = rememberTooltipState(),
                 ) {
@@ -218,7 +229,10 @@ fun WidgetSelectionRow(
 
             Box {
                 TooltipBox(
-                    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+                    positionProvider =
+                        TooltipDefaults.rememberTooltipPositionProvider(
+                            positioning = androidx.compose.material3.TooltipAnchorPosition.Above,
+                        ),
                     tooltip = { PlainTooltip { Text(stringResource(Res.string.cd_more_widgets)) } },
                     state = rememberTooltipState(),
                 ) {
@@ -263,12 +277,13 @@ fun QuestionnaireBuilderScreen(
     onBack: () -> Unit,
     onSaved: (String) -> Unit = {},
 ) {
+    val focusManager = LocalFocusManager.current
     val state by viewModel.state.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.build_questionnaire)) },
+                title = { Text(stringResource(Res.string.build_questionnaire), modifier = Modifier.semantics { heading() }) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.cd_back))
@@ -338,7 +353,9 @@ fun QuestionnaireBuilderScreen(
                     supportingText = { if (titleError) Text(stringResource(Res.string.error_required_field)) },
                     singleLine = true,
                     maxLines = 1,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).tabFocusNext(focusManager),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
                 )
 
                 WidgetSelectionRow(
@@ -346,25 +363,47 @@ fun QuestionnaireBuilderScreen(
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
 
-                val focusRequesters = remember(state.items.size) { List(state.items.size) { FocusRequester() } }
+                val focusRequesters = remember { mutableMapOf<String, FocusRequester>() }
 
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(state.items.size) { index ->
+                    items(
+                        count = state.items.size,
+                        key = { index -> state.items[index].linkId },
+                    ) { index ->
                         val item = state.items[index]
+                        val currentFocusRequester = focusRequesters.getOrPut(item.linkId) { FocusRequester() }
+
                         BuilderItemRow(
                             item = item,
                             canMoveUp = index > 0,
                             canMoveDown = index < state.items.size - 1,
                             onUpdate = { newLabel, newOptions -> viewModel.updateItem(item.linkId, newLabel, newOptions) },
-                            onDelete = { viewModel.removeItem(item.linkId) },
+                            onDelete = {
+                                focusRequesters.remove(item.linkId)
+                                viewModel.removeItem(item.linkId)
+                            },
                             onMoveUp = { viewModel.moveItemUp(item.linkId) },
                             onMoveDown = { viewModel.moveItemDown(item.linkId) },
                             modifier =
                                 Modifier
                                     .focusProperties {
-                                        next = if (index < state.items.size - 1) focusRequesters[index + 1] else FocusRequester.Default
-                                        previous = if (index > 0) focusRequesters[index - 1] else FocusRequester.Default
-                                    }.focusRequester(focusRequesters[index]),
+                                        next =
+                                            if (index <
+                                                state.items.size - 1
+                                            ) {
+                                                focusRequesters.getOrPut(state.items[index + 1].linkId) { FocusRequester() }
+                                            } else {
+                                                FocusRequester.Default
+                                            }
+                                        previous =
+                                            if (index >
+                                                0
+                                            ) {
+                                                focusRequesters.getOrPut(state.items[index - 1].linkId) { FocusRequester() }
+                                            } else {
+                                                FocusRequester.Default
+                                            }
+                                    }.focusRequester(currentFocusRequester),
                         )
                     }
                 }
@@ -399,13 +438,14 @@ fun BuilderItemRow(
     onMoveDown: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val focusManager = LocalFocusManager.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var optionToDeleteIndex by remember { mutableStateOf<Int?>(null) }
 
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text(stringResource(Res.string.confirm_delete_item_title)) },
+            title = { Text(stringResource(Res.string.confirm_delete_item_title), modifier = Modifier.semantics { heading() }) },
             text = { Text(stringResource(Res.string.confirm_delete_item_message)) },
             confirmButton = {
                 TextButton(onClick = {
@@ -426,7 +466,7 @@ fun BuilderItemRow(
     if (optionToDeleteIndex != null) {
         AlertDialog(
             onDismissRequest = { optionToDeleteIndex = null },
-            title = { Text(stringResource(Res.string.confirm_delete_option_title)) },
+            title = { Text(stringResource(Res.string.confirm_delete_option_title), modifier = Modifier.semantics { heading() }) },
             text = { Text(stringResource(Res.string.confirm_delete_option_message)) },
             confirmButton = {
                 TextButton(onClick = {
@@ -478,7 +518,14 @@ fun BuilderItemRow(
                     label = { Text(stringResource(Res.string.label)) },
                     isError = item.isError && item.label.isBlank(),
                     supportingText = { if (item.isError && item.label.isBlank()) Text(stringResource(Res.string.error_required_field)) },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp).focusRequester(focusRequester),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                            .focusRequester(focusRequester)
+                            .tabFocusNext(focusManager),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
                 )
 
                 if (item.widgetType == WidgetType.SINGLE_SELECT || item.widgetType == WidgetType.MULTI_SELECT) {
@@ -528,13 +575,18 @@ fun BuilderItemRow(
                                     .fillMaxWidth()
                                     .padding(top = 8.dp)
                                     .onKeyEvent {
-                                        if (it.key == Key.Enter && it.type == KeyEventType.KeyDown) {
+                                        if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                                            focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
+                                            true
+                                        } else if (it.key == Key.Enter && it.type == KeyEventType.KeyDown) {
                                             handleAddOption()
                                             true
                                         } else {
                                             false
                                         }
                                     },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
                             trailingIcon = {
                                 IconButton(onClick = handleAddOption) {
                                     Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.add_option))

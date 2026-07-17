@@ -28,6 +28,12 @@ object FhirValidator {
         }
     }
 
+    /**
+     * Validates a Patient resource, ensuring it has necessary fields like name and identifier.
+     *
+     * @param patient The Patient resource to validate.
+     * @return True if valid, false otherwise.
+     */
     private fun validatePatient(patient: Patient): Boolean {
         if (patient.name.isEmpty()) return false
         val hasGiven = patient.name.any { it.given.isNotEmpty() }

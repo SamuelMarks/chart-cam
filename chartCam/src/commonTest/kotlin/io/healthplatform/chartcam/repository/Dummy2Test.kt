@@ -1,3 +1,7 @@
+/**
+ * @file Dummy2Test.kt
+ * Contains declarations for Dummy2Test.kt.
+ */
 package io.healthplatform.chartcam.repository
 
 import kotlin.test.Test

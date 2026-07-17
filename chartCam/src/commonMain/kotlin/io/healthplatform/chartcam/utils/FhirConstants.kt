@@ -1,4 +1,7 @@
 /**
+ * @file FhirConstants.kt
+ * Contains declarations for FhirConstants.kt.
+ *
  * Contains constants related to the Fast Healthcare Interoperability Resources (FHIR) standard.
  */
 package io.healthplatform.chartcam.utils

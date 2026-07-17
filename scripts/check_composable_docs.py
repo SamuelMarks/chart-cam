@@ -4,8 +4,8 @@ import sys
 
 def check_composable_docs(source_dirs):
     missing = []
-    composable_pattern = re.compile(r'@Composable')
     func_pattern = re.compile(r'^\s*(?:(?:public|protected|internal|private)\s+)*fun\s+([a-zA-Z0-9_<>]+)\s*\(')
+    param_pattern = re.compile(r'@param\s+([a-zA-Z0-9_]+)')
 
     for d in source_dirs:
         if not os.path.exists(d): continue
@@ -27,6 +27,19 @@ def check_composable_docs(source_dirs):
                             if k < len(lines):
                                 func_match = func_pattern.match(lines[k])
                                 func_name = func_match.group(1)
+                                
+                                # Find parameters
+                                # We'll do a naive parse until closing paren.
+                                params_str = ""
+                                m = k
+                                while m < len(lines):
+                                    params_str += lines[m]
+                                    if ')' in lines[m]:
+                                        break
+                                    m += 1
+                                
+                                # Roughly extract param names
+                                raw_params = re.findall(r'([a-zA-Z0-9_]+)\s*:\s*[A-Z]', params_str)
                                 
                                 # Check doc above @Composable
                                 j = i - 1
@@ -51,16 +64,31 @@ def check_composable_docs(source_dirs):
                                 if not is_documented:
                                     missing.append(f"{path}:{k+1} {func_name} missing KDoc")
                                 else:
-                                    doc_str = "".join(doc_block).lower()
-                                    # Very basic check: just see if it mentions Modifier if the signature has it
-                                    # and see if it mentions state/side-effects. We will just check if there's *any* KDoc to start with.
-                                    # Since the requirement says: "Add comprehensive KDocs for all Composable functions, detailing state side-effects and Modifier behaviors"
-                                    
+                                    doc_str = "".join(doc_block)
+                                    doc_params = param_pattern.findall(doc_str)
+                                    for p in raw_params:
+                                        if p not in doc_params and p != "modifier" and p != "Modifier": # sometimes modifier is lower/upper
+                                            missing.append(f"{path}:{k+1} {func_name} missing @param {p}")
+                                            
     return missing
 
-dirs = [
-    "chartCam/src/commonMain/kotlin",
-]
-missing = check_composable_docs(dirs)
-for m in missing:
-    print(m)
+if __name__ == "__main__":
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    dirs = [
+        os.path.join(project_root, "chartCam/src/commonMain/kotlin"),
+        os.path.join(project_root, "chartCam/src/androidMain/kotlin"),
+        os.path.join(project_root, "chartCam/src/iosMain/kotlin"),
+        os.path.join(project_root, "chartCam/src/jvmMain/kotlin"),
+        os.path.join(project_root, "chartCam/src/jsMain/kotlin"),
+        os.path.join(project_root, "chartCam/src/wasmJsMain/kotlin"),
+        os.path.join(project_root, "chartCam/src/webMain/kotlin"),
+    ]
+    missing = check_composable_docs(dirs)
+    if missing:
+        print("Missing Composable KDocs:")
+        for m in missing:
+            print(m)
+        sys.exit(1)
+    
+    print("All Composables are documented.")
+    sys.exit(0)

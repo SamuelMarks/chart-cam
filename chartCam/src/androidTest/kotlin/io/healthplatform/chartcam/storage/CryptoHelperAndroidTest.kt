@@ -1,3 +1,7 @@
+/**
+ * @file CryptoHelperAndroidTest.kt
+ * Contains declarations for CryptoHelperAndroidTest.kt.
+ */
 package io.healthplatform.chartcam.storage
 
 import androidx.test.ext.junit.runners.AndroidJUnit4

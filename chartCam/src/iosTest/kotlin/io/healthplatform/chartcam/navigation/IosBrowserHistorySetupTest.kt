@@ -1,3 +1,7 @@
+/**
+ * @file IosBrowserHistorySetupTest.kt
+ * Contains declarations for IosBrowserHistorySetupTest.kt.
+ */
 package io.healthplatform.chartcam.navigation
 
 import kotlin.test.Test

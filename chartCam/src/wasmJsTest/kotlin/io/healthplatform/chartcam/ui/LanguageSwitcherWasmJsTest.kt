@@ -1,3 +1,7 @@
+/**
+ * @file LanguageSwitcherWasmJsTest.kt
+ * Contains declarations for LanguageSwitcherWasmJsTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import kotlin.test.Test

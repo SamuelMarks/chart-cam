@@ -1,3 +1,7 @@
+/**
+ * @file IosSecureStorageTest.kt
+ * Contains declarations for IosSecureStorageTest.kt.
+ */
 package io.healthplatform.chartcam.storage
 
 import kotlin.test.Test

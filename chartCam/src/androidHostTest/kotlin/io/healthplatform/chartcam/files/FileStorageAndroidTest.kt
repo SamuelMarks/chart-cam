@@ -1,3 +1,7 @@
+/**
+ * @file FileStorageAndroidTest.kt
+ * Contains declarations for FileStorageAndroidTest.kt.
+ */
 package io.healthplatform.chartcam.files
 
 import io.healthplatform.chartcam.AndroidAppInit

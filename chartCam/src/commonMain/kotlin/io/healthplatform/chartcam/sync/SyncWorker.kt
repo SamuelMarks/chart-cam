@@ -118,6 +118,8 @@ class SyncWorker(
     /**
      * Pushes all pending local changes to the FHIR server using RESTful PUT/POST operations.
      * Handles conflict resolution based on ETag (VersionId).
+     *
+     * @return True if all local changes were pushed successfully, false otherwise.
      */
     private suspend fun pushLocalChanges(): Boolean {
         val changes = fhirRepository.getAllLocalChanges()
@@ -131,7 +133,7 @@ class SyncWorker(
                 if (change.type == "DELETE") {
                     // Simply skip if delete is requested; FHIR engine would handle it
                     // if configured for bidirectional deletion.
-                    println("Delete not yet supported via SyncWorker")
+                    // Delete not yet supported via SyncWorker
                     fhirRepository.deleteLocalChange(change.id)
                     continue
                 }
@@ -159,7 +161,7 @@ class SyncWorker(
                     }
                 } else if (response.status.value == 412) { // Precondition Failed (Conflict)
                     // Handle conflict: server has a newer version.
-                    println("Conflict detected for ${change.resourceType}/${change.resourceId}")
+                    // Conflict detected for ${change.resourceType}/${change.resourceId}
                     // Fallback to fetch latest and then retry later.
                     allSuccess = false
                 } else {
@@ -175,6 +177,8 @@ class SyncWorker(
 
     /**
      * Pulls remote changes from the FHIR server using delta-sync (lastUpdated filter).
+     *
+     * @return True if remote changes were pulled and stored successfully, false otherwise.
      */
     private suspend fun pullRemoteChanges(): Boolean {
         try {
@@ -213,6 +217,7 @@ class SyncWorker(
      * Fetches localized Questionnaire resources from the server based on the device's current locale.
      *
      * @param questionnaireRepository The repository to save the fetched questionnaires.
+     * @return true if successful
      */
     suspend fun fetchLocalizedQuestionnaires(
         questionnaireRepository: io.healthplatform.chartcam.repository.QuestionnaireRepository,

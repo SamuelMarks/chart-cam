@@ -1,3 +1,7 @@
+/**
+ * @file MainTest.kt
+ * Contains declarations for MainTest.kt.
+ */
 package io.healthplatform.chartcam
 
 import kotlin.test.Test

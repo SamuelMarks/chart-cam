@@ -1,6 +1,6 @@
 /**
  * @file FormBuilderWidgets.kt
- * Contains declarations for FormBuilderWidgets.kt.
+ * Contains declarations for form input widgets used in Questionnaires (e.g. TextInput, Switch, Slider).
  */
 package io.healthplatform.chartcam.ui.components
 
@@ -38,6 +38,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -47,22 +48,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cancel
+import chartcam.chartcam.generated.resources.cd_camera_icon
+import chartcam.chartcam.generated.resources.cd_video_icon
 import chartcam.chartcam.generated.resources.clear
 import chartcam.chartcam.generated.resources.date_format_label
 import chartcam.chartcam.generated.resources.datetime_format_label
 import chartcam.chartcam.generated.resources.ok
-import chartcam.chartcam.generated.resources.widget_photo_camera
-import chartcam.chartcam.generated.resources.widget_video_camera
+import chartcam.chartcam.generated.resources.state_selected
+import chartcam.chartcam.generated.resources.state_unselected
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
@@ -79,6 +85,8 @@ import org.jetbrains.compose.resources.stringResource
  * @param isRequired Whether the field is required.
  * @param isError Whether the field is in an error state.
  * @param errorMessage The error message to display when in an error state.
+ * @param keyboardOptions Keyboard options.
+ * @param keyboardActions Keyboard actions.
  * @param modifier The modifier to be applied to the widget.
  */
 @Composable
@@ -93,9 +101,17 @@ fun FormBuilderTextInput(
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     modifier: Modifier = Modifier,
 ) {
+    val focusManager = LocalFocusManager.current
     OutlinedTextField(
         value = value,
-        onValueChange = onValueChange,
+        onValueChange = {
+            if (it.contains("\t")) {
+                onValueChange(it.replace("\t", ""))
+                focusManager.moveFocus(FocusDirection.Next)
+            } else {
+                onValueChange(it)
+            }
+        },
         label = { FormLabel(label, isRequired) },
         isError = isError,
         supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
@@ -112,6 +128,7 @@ fun FormBuilderTextInput(
         modifier =
             modifier
                 .fillMaxWidth()
+                .tabFocusNext(focusManager)
                 .semantics {
                     if (isError && errorMessage != null) {
                         error(errorMessage)
@@ -144,6 +161,7 @@ fun FormBuilderTextArea(
     errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
+    val focusManager = LocalFocusManager.current
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -161,6 +179,7 @@ fun FormBuilderTextArea(
         modifier =
             modifier
                 .fillMaxWidth()
+                .tabFocusNext(focusManager)
                 .semantics {
                     if (isError && errorMessage != null) {
                         error(errorMessage)
@@ -193,13 +212,15 @@ fun FormBuilderSwitch(
     errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
+    val selectedText = stringResource(Res.string.state_selected)
+    val unselectedText = stringResource(Res.string.state_unselected)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier =
             modifier
                 .fillMaxWidth()
                 .semantics {
-                    stateDescription = if (checked) "Selected" else "Unselected"
+                    stateDescription = if (checked) selectedText else unselectedText
                     if (isError && errorMessage != null) {
                         error(errorMessage)
                     }
@@ -208,6 +229,7 @@ fun FormBuilderSwitch(
                     onValueChange = onCheckedChange,
                     role = Role.Switch,
                 ).padding(vertical = 8.dp)
+                .minimumInteractiveComponentSize()
                 .testTag("Switch $label"),
     ) {
         Switch(
@@ -243,13 +265,15 @@ fun FormBuilderCheckbox(
     errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
+    val selectedText = stringResource(Res.string.state_selected)
+    val unselectedText = stringResource(Res.string.state_unselected)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier =
             modifier
                 .fillMaxWidth()
                 .semantics {
-                    stateDescription = if (checked) "Selected" else "Unselected"
+                    stateDescription = if (checked) selectedText else unselectedText
                     if (isError && errorMessage != null) {
                         error(errorMessage)
                     }
@@ -258,6 +282,7 @@ fun FormBuilderCheckbox(
                     onValueChange = onCheckedChange,
                     role = Role.Checkbox,
                 ).padding(vertical = 8.dp)
+                .minimumInteractiveComponentSize()
                 .testTag("CheckboxRow $label"),
     ) {
         Checkbox(
@@ -293,9 +318,15 @@ fun FormBuilderNumericInput(
     errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
+    val focusManager = LocalFocusManager.current
     OutlinedTextField(
         value = value,
         onValueChange = { newVal ->
+            if (newVal.contains("\t")) {
+                onValueChange(newVal.replace("\t", ""))
+                focusManager.moveFocus(FocusDirection.Next)
+                return@OutlinedTextField
+            }
             if (newVal.isEmpty() || newVal.matches(Regex("^\\d*\\.?\\d*$"))) {
                 onValueChange(newVal)
             }
@@ -311,10 +342,12 @@ fun FormBuilderNumericInput(
             }
         },
         singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
         modifier =
             modifier
                 .fillMaxWidth()
+                .tabFocusNext(focusManager)
                 .semantics {
                     if (isError && errorMessage != null) {
                         error(errorMessage)
@@ -349,7 +382,7 @@ fun FormBuilderRangeSlider(
     errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.padding(vertical = 8.dp).testTag("RangeSlider $label")) {
+    Column(modifier = modifier.padding(vertical = 8.dp).minimumInteractiveComponentSize().testTag("RangeSlider $label")) {
         Text(text = label, style = MaterialTheme.typography.bodyMedium)
         Slider(
             value = value,
@@ -392,7 +425,12 @@ fun FormBuilderDropdown(
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it },
-        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("Dropdown $label"),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .minimumInteractiveComponentSize()
+                .testTag("Dropdown $label"),
     ) {
         OutlinedTextField(
             value = selectedOption,
@@ -450,7 +488,14 @@ fun FormBuilderMultiSelectDropdown(
     errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("MultiSelectDropdown $label")) {
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .minimumInteractiveComponentSize()
+                .testTag("MultiSelectDropdown $label"),
+    ) {
         FormLabel(label, isRequired, modifier = Modifier.padding(bottom = 4.dp))
         if (isError && errorMessage != null) {
             Text(
@@ -521,7 +566,7 @@ fun FormBuilderDatePicker(
                 TextButton(onClick = {
                     val millis = datePickerState.selectedDateMillis
                     if (millis != null) {
-                        val instant = kotlinx.datetime.Instant.fromEpochMilliseconds(millis)
+                        val instant = kotlin.time.Instant.fromEpochMilliseconds(millis)
                         val tz = kotlinx.datetime.TimeZone.currentSystemDefault()
                         val localDate = instant.toLocalDateTime(tz).date
                         onValueChange(localDate.toString())
@@ -541,7 +586,13 @@ fun FormBuilderDatePicker(
         }
     }
 
-    androidx.compose.foundation.layout.Box(modifier = modifier.fillMaxWidth().clickable { showDialog = true }) {
+    androidx.compose.foundation.layout.Box(
+        modifier =
+            modifier.fillMaxWidth().clickable(role = androidx.compose.ui.semantics.Role.Button) {
+                showDialog =
+                    true
+            },
+    ) {
         OutlinedTextField(
             value = value,
             onValueChange = { },
@@ -612,7 +663,7 @@ fun FormBuilderDateTimePicker(
                 TextButton(onClick = {
                     val millis = datePickerState.selectedDateMillis
                     if (millis != null) {
-                        val instant = kotlinx.datetime.Instant.fromEpochMilliseconds(millis)
+                        val instant = kotlin.time.Instant.fromEpochMilliseconds(millis)
                         val tz = kotlinx.datetime.TimeZone.currentSystemDefault()
                         val localDate = instant.toLocalDateTime(tz).date
                         selectedDateStr = localDate.toString()
@@ -659,7 +710,13 @@ fun FormBuilderDateTimePicker(
         )
     }
 
-    androidx.compose.foundation.layout.Box(modifier = modifier.fillMaxWidth().clickable { showDateDialog = true }) {
+    androidx.compose.foundation.layout.Box(
+        modifier =
+            modifier.fillMaxWidth().clickable(role = androidx.compose.ui.semantics.Role.Button) {
+                showDateDialog =
+                    true
+            },
+    ) {
         OutlinedTextField(
             value = value,
             onValueChange = { },
@@ -697,9 +754,6 @@ fun FormBuilderDateTimePicker(
  * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param label The instructional label for the user (e.g. "Take photo of left ear").
- * @param isRequired Whether the field is required.
- * @param isError Whether the field is in an error state.
- * @param errorMessage The error message to display when in an error state.
  * @param onClick Callback when the camera button is clicked.
  * @param modifier The modifier to be applied to the widget.
  */
@@ -711,9 +765,14 @@ fun FormBuilderPhotoCamera(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("PhotoCamera $label"),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .minimumInteractiveComponentSize()
+                .testTag("PhotoCamera $label"),
     ) {
-        Icon(Icons.Default.CameraAlt, contentDescription = stringResource(Res.string.widget_photo_camera), modifier = Modifier.size(24.dp))
+        Icon(Icons.Default.CameraAlt, contentDescription = stringResource(Res.string.cd_camera_icon), modifier = Modifier.size(24.dp))
         Text(text = label, modifier = Modifier.padding(start = 8.dp))
     }
 }
@@ -725,9 +784,6 @@ fun FormBuilderPhotoCamera(
  * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param label The instructional label for the user (e.g. "Take video of face").
- * @param isRequired Whether the field is required.
- * @param isError Whether the field is in an error state.
- * @param errorMessage The error message to display when in an error state.
  * @param onClick Callback when the camera button is clicked.
  * @param modifier The modifier to be applied to the widget.
  */
@@ -739,9 +795,14 @@ fun FormBuilderVideoCamera(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("VideoCamera $label"),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .minimumInteractiveComponentSize()
+                .testTag("VideoCamera $label"),
     ) {
-        Icon(Icons.Default.Videocam, contentDescription = stringResource(Res.string.widget_video_camera), modifier = Modifier.size(24.dp))
+        Icon(Icons.Default.Videocam, contentDescription = stringResource(Res.string.cd_video_icon), modifier = Modifier.size(24.dp))
         Text(text = label, modifier = Modifier.padding(start = 8.dp))
     }
 }

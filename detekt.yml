@@ -1,14 +1,9 @@
 comments:
-  KDocRequired:
-    active: true
-    includes: ['**/*.kt']
-    excludePublicOnly: false
   OutdatedDocumentation:
     active: true
     allowParamOnConstructorProperties: true
     matchTypeParameters: true
     matchDeclarationsOrder: true
-    allowMultipleThrows: true
   UndocumentedPublicClass:
     active: true
     includes: ['**/*.kt']

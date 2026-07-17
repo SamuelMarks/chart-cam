@@ -1,4 +1,7 @@
 /**
+ * @file ShareService.ios.kt
+ * Contains declarations for ShareService.ios.kt.
+ *
  * iOS implementation of the sharing service.
  */
 package io.healthplatform.chartcam.utils

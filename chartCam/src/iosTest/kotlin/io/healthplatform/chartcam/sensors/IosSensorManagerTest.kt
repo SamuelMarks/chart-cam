@@ -1,3 +1,7 @@
+/**
+ * @file IosSensorManagerTest.kt
+ * Contains declarations for IosSensorManagerTest.kt.
+ */
 package io.healthplatform.chartcam.sensors
 
 import kotlin.test.Test

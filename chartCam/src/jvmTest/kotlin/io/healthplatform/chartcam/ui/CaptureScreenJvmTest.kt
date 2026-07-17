@@ -1,3 +1,7 @@
+/**
+ * @file CaptureScreenJvmTest.kt
+ * Contains declarations for CaptureScreenJvmTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi

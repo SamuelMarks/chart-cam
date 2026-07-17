@@ -1,3 +1,7 @@
+/**
+ * @file QuestionnaireSharingServiceTest.kt
+ * Contains declarations for QuestionnaireSharingServiceTest.kt.
+ */
 package io.healthplatform.chartcam.repository
 
 import com.google.fhir.model.r4.Enumeration

@@ -1,3 +1,7 @@
+/**
+ * @file CaptureViewModelTest.kt
+ * Contains declarations for CaptureViewModelTest.kt.
+ */
 package io.healthplatform.chartcam.capture
 
 import io.healthplatform.chartcam.camera.CameraManager

@@ -1,3 +1,7 @@
+/**
+ * @file SecureStorageAndroidTest.kt
+ * Contains declarations for SecureStorageAndroidTest.kt.
+ */
 package io.healthplatform.chartcam.storage
 
 import android.content.Context

@@ -1,4 +1,7 @@
 /**
+ * @file JsSecureStorageTest.kt
+ * Contains declarations for JsSecureStorageTest.kt.
+ *
  * Provides tests for the JavaScript-specific implementation of secure storage.
  */
 package io.healthplatform.chartcam.storage

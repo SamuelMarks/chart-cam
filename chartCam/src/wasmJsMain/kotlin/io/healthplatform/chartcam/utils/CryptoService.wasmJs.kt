@@ -11,11 +11,23 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.js.Promise
 
+/**
+ * Retrieves the Web Crypto API object depending on the environment (browser or Node.js).
+ *
+ * @return The crypto object as [JsAny].
+ */
 private fun getWebCrypto(): JsAny? =
     js(
         "typeof window !== 'undefined' && window.crypto ? window.crypto : (typeof global !== 'undefined' && global.crypto ? global.crypto : require('crypto').webcrypto)",
     )
 
+/**
+ * Derives a cryptographic key using the Argon2 hashing algorithm in JavaScript.
+ *
+ * @param password The plaintext password.
+ * @param salt The cryptographic salt.
+ * @return A promise containing the derived key as [JsAny].
+ */
 private fun deriveKeyArgon2Js(
     password: String,
     salt: Int8Array,
@@ -38,6 +50,14 @@ private fun deriveKeyArgon2Js(
 """,
     )
 
+/**
+ * Encrypts data using AES-GCM via the Web Crypto API.
+ *
+ * @param plaintext The plaintext data to encrypt.
+ * @param key The encryption key.
+ * @param crypto The Web Crypto API object.
+ * @return A promise containing the encrypted data as [JsAny].
+ */
 private fun encryptAesGcmJs(
     plaintext: Int8Array,
     key: Int8Array,
@@ -72,6 +92,14 @@ private fun encryptAesGcmJs(
 """,
     )
 
+/**
+ * Decrypts data using AES-GCM via the Web Crypto API.
+ *
+ * @param ciphertext The encrypted data.
+ * @param key The encryption key.
+ * @param crypto The Web Crypto API object.
+ * @return A promise containing the decrypted data as [JsAny].
+ */
 private fun decryptAesGcmJs(
     ciphertext: Int8Array,
     key: Int8Array,
@@ -105,6 +133,12 @@ private fun decryptAesGcmJs(
 """,
     )
 
+/**
+ * Generates cryptographically secure random values.
+ *
+ * @param array The array to fill with random values.
+ * @param crypto The Web Crypto API object.
+ */
 private fun getRandomValuesJs(
     array: Int8Array,
     crypto: JsAny,
@@ -219,6 +253,11 @@ actual class CryptoService actual constructor() {
         }
     }
 
+    /**
+     * Converts a Kotlin [ByteArray] to a JS [Int8Array].
+     *
+     * @return The converted [Int8Array].
+     */
     private fun ByteArray.toInt8Array(): Int8Array {
         val array = Int8Array(this.size)
         for (i in this.indices) {
@@ -227,16 +266,35 @@ actual class CryptoService actual constructor() {
         return array
     }
 
+    /**
+     * Converts a JS [Int8Array] to a Kotlin [ByteArray].
+     *
+     * @return The converted [ByteArray].
+     */
     private fun Int8Array.toByteArray(): ByteArray = ByteArray(this.length) { getInt8Js(this, it) }
+
+    /**
+     * Gets a byte at the specified index from an [Int8Array].
+     *
+     * @param array The JS [Int8Array].
+     * @param index The index to read from.
+     * @return The byte at the specified index.
+     */
+    private fun getInt8Js(
+        array: Int8Array,
+        index: Int,
+    ): Byte = js("array[index]")
+
+    /**
+     * Sets a byte at the specified index in an [Int8Array].
+     *
+     * @param array The JS [Int8Array].
+     * @param index The index to write to.
+     * @param value The byte value to write.
+     */
+    private fun setInt8Js(
+        array: Int8Array,
+        index: Int,
+        value: Byte,
+    ): Unit = js("array[index] = value")
 }
-
-private fun getInt8Js(
-    array: Int8Array,
-    index: Int,
-): Byte = js("array[index]")
-
-private fun setInt8Js(
-    array: Int8Array,
-    index: Int,
-    value: Byte,
-): Unit = js("array[index] = value")

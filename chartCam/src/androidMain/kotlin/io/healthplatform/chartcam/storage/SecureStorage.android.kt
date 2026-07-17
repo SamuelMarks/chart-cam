@@ -1,4 +1,7 @@
 /**
+ * @file SecureStorage.android.kt
+ * Contains declarations for SecureStorage.android.kt.
+ *
  * File defining the Android-specific implementation of the [SecureStorage] interface.
  */
 package io.healthplatform.chartcam.storage

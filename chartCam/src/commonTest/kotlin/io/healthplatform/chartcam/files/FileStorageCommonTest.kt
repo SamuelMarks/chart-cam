@@ -1,3 +1,7 @@
+/**
+ * @file FileStorageCommonTest.kt
+ * Contains declarations for FileStorageCommonTest.kt.
+ */
 package io.healthplatform.chartcam.files
 
 import kotlin.test.Test

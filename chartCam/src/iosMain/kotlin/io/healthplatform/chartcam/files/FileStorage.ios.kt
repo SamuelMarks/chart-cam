@@ -1,4 +1,7 @@
 /**
+ * @file FileStorage.ios.kt
+ * Contains declarations for FileStorage.ios.kt.
+ *
  * iOS implementation of the FileStorage interface.
  * Uses okio and native Foundation APIs to manage files in the iOS document directory.
  */

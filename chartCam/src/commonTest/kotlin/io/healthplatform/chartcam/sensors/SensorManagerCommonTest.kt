@@ -1,3 +1,7 @@
+/**
+ * @file SensorManagerCommonTest.kt
+ * Contains declarations for SensorManagerCommonTest.kt.
+ */
 package io.healthplatform.chartcam.sensors
 
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -1,4 +1,7 @@
 /**
+ * @file MultiplePhotosE2EJvmTest.kt
+ * Contains declarations for MultiplePhotosE2EJvmTest.kt.
+ *
  * Tests multi-photo workflows.
  */
 package io.healthplatform.chartcam

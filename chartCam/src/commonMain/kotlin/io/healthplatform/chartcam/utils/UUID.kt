@@ -1,4 +1,7 @@
 /**
+ * @file UUID.kt
+ * Contains declarations for UUID.kt.
+ *
  * Provides multiplatform utilities for generating Universally Unique Identifiers (UUIDs).
  */
 package io.healthplatform.chartcam.utils

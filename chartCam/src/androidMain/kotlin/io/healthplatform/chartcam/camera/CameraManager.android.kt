@@ -1,4 +1,7 @@
 /**
+ * @file CameraManager.android.kt
+ * Contains declarations for CameraManager.android.kt.
+ *
  * File defining the Android-specific implementation of [CameraManager] and its composable factory.
  */
 package io.healthplatform.chartcam.camera

@@ -1,4 +1,7 @@
 /**
+ * @file AndroidAppInit.kt
+ * Contains declarations for AndroidAppInit.kt.
+ *
  * File defining [AndroidAppInit] which acts as a holder for the application context.
  */
 package io.healthplatform.chartcam

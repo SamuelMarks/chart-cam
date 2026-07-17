@@ -1,4 +1,7 @@
 /**
+ * @file PatientDetailScreen.kt
+ * Contains declarations for PatientDetailScreen.kt.
+ *
  * Provides the PatientDetailScreen component for displaying detailed information about a patient.
  */
 package io.healthplatform.chartcam.ui
@@ -29,6 +32,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,6 +43,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cancel
@@ -97,7 +103,7 @@ fun PatientDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.patient_detail)) },
+                title = { Text(stringResource(Res.string.patient_detail), modifier = Modifier.semantics { heading() }) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.cd_back))
@@ -129,7 +135,7 @@ fun PatientDetailScreen(
                     if (showDeleteConfirm) {
                         AlertDialog(
                             onDismissRequest = { showDeleteConfirm = false },
-                            title = { Text(stringResource(Res.string.delete_patient)) },
+                            title = { Text(stringResource(Res.string.delete_patient), modifier = Modifier.semantics { heading() }) },
                             text = { Text(stringResource(Res.string.delete_patient_message)) },
                             confirmButton = {
                                 TextButton(onClick = {
@@ -200,7 +206,11 @@ fun PatientDetailScreen(
                                     ?.removeSuffix("</div>") ?: stringResource(Res.string.no_notes),
                             )
                         },
-                        modifier = Modifier.clickable(role = Role.Button) { onVisitSelected(encounter.id ?: "") },
+                        modifier =
+                            Modifier
+                                .minimumInteractiveComponentSize()
+                                .semantics(mergeDescendants = true) {}
+                                .clickable(role = Role.Button) { onVisitSelected(encounter.id ?: "") },
                     )
                     HorizontalDivider()
                 }

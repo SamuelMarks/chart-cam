@@ -1,3 +1,7 @@
+/**
+ * @file TerminologyServiceTest.kt
+ * Contains declarations for TerminologyServiceTest.kt.
+ */
 package io.healthplatform.chartcam.terminology
 
 import kotlin.test.Test

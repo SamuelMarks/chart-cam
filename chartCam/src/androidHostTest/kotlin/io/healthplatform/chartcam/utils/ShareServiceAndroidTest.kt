@@ -1,3 +1,7 @@
+/**
+ * @file ShareServiceAndroidTest.kt
+ * Contains declarations for ShareServiceAndroidTest.kt.
+ */
 package io.healthplatform.chartcam.utils
 
 import android.content.Context

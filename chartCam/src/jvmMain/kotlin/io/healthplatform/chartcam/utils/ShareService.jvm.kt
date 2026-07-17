@@ -15,6 +15,11 @@ import javax.swing.JOptionPane
  * On Desktop, this typically opens the file location or copies text to the clipboard.
  */
 class JvmShareService : ShareService {
+    /**
+     * Checks if the current code is running in a testing environment.
+     *
+     * @return True if in a testing environment, false otherwise.
+     */
     private fun isTesting(): Boolean =
         Thread.currentThread().stackTrace.any {
             it.className.startsWith("org.junit.") || it.className.startsWith("kotlin.test.")

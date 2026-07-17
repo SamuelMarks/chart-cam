@@ -1,4 +1,7 @@
 /**
+ * @file DatabaseDriverFactory.kt
+ * Contains declarations for DatabaseDriverFactory.kt.
+ *
  * Defines the contract for providing a platform-specific SQL database driver.
  */
 package io.healthplatform.chartcam.database

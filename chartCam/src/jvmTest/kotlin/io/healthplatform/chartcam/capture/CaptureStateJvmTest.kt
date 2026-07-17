@@ -1,4 +1,7 @@
 /**
+ * @file CaptureStateJvmTest.kt
+ * Contains declarations for CaptureStateJvmTest.kt.
+ *
  * Test definitions for the capture state data structures.
  */
 package io.healthplatform.chartcam.capture

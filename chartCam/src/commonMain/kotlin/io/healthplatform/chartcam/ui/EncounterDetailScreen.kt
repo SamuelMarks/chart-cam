@@ -1,4 +1,7 @@
 /**
+ * @file EncounterDetailScreen.kt
+ * Contains declarations for EncounterDetailScreen.kt.
+ *
  * Screen displaying the details of a patient's encounter (visit).
  */
 package io.healthplatform.chartcam.ui
@@ -74,10 +77,12 @@ import chartcam.chartcam.generated.resources.image_load_error
 import chartcam.chartcam.generated.resources.mrn_date_format
 import chartcam.chartcam.generated.resources.provider_format
 import chartcam.chartcam.generated.resources.questionnaire
+import chartcam.chartcam.generated.resources.questionnaire_format
 import chartcam.chartcam.generated.resources.select_questionnaire
 import chartcam.chartcam.generated.resources.syncing_to_server
 import chartcam.chartcam.generated.resources.take_photos
 import chartcam.chartcam.generated.resources.title
+import chartcam.chartcam.generated.resources.unknown
 import chartcam.chartcam.generated.resources.visit_detail
 import com.google.fhir.model.r4.DocumentReference
 import com.google.fhir.model.r4.Questionnaire
@@ -203,7 +208,7 @@ fun EncounterDetailScreen(
     if (showDeleteConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmDialog = false },
-            title = { Text(stringResource(Res.string.delete_visit_title)) },
+            title = { Text(stringResource(Res.string.delete_visit_title), modifier = Modifier.semantics { heading() }) },
             text = { Text(stringResource(Res.string.delete_visit_message)) },
             confirmButton = {
                 TextButton(onClick = {
@@ -227,7 +232,7 @@ fun EncounterDetailScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.visit_detail)) },
+                title = { Text(stringResource(Res.string.visit_detail), modifier = Modifier.semantics { heading() }) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.cd_back))
@@ -327,7 +332,11 @@ fun EncounterDetailScreen(
 
                         if (isLocked) {
                             Text(
-                                text = "${stringResource(Res.string.questionnaire)}: ${state.selectedQuestionnaire?.title?.value ?: ""}",
+                                text =
+                                    stringResource(
+                                        Res.string.questionnaire_format,
+                                        state.selectedQuestionnaire?.title?.value ?: "",
+                                    ), // Updated for i18n
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.padding(vertical = 8.dp),
                             )
@@ -358,7 +367,7 @@ fun EncounterDetailScreen(
                                 ) {
                                     state.availableQuestionnaires.forEach { q ->
                                         DropdownMenuItem(
-                                            text = { Text(q.title?.value ?: "") },
+                                            text = { Text(q.title?.value ?: stringResource(Res.string.unknown)) },
                                             onClick = {
                                                 viewModel.selectQuestionnaire(q)
                                                 expanded = false
@@ -443,7 +452,9 @@ fun EncounterDetailScreen(
 @OptIn(ExperimentalResourceApi::class)
 @Composable
 fun PhotoGridItem(doc: DocumentReference) {
-    ElevatedCard {
+    ElevatedCard(
+        modifier = Modifier.semantics(mergeDescendants = true) {},
+    ) {
         Column {
             /** The raw byte data decoded from the image file URL. */
             val bytes =

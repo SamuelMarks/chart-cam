@@ -1,3 +1,7 @@
+/**
+ * @file AppJvmTest.kt
+ * Contains declarations for AppJvmTest.kt.
+ */
 package io.healthplatform.chartcam
 
 import androidx.compose.ui.test.ExperimentalTestApi

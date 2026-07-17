@@ -1,3 +1,7 @@
+/**
+ * @file CaptureScreenCommonTest.kt
+ * Contains declarations for CaptureScreenCommonTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import kotlin.test.Test

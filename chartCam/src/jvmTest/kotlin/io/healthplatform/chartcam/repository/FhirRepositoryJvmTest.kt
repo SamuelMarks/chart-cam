@@ -1,3 +1,7 @@
+/**
+ * @file FhirRepositoryJvmTest.kt
+ * Contains declarations for FhirRepositoryJvmTest.kt.
+ */
 package io.healthplatform.chartcam.repository
 
 import app.cash.sqldelight.async.coroutines.synchronous

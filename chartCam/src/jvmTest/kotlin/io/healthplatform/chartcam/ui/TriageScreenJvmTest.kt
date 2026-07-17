@@ -1,3 +1,7 @@
+/**
+ * @file TriageScreenJvmTest.kt
+ * Contains declarations for TriageScreenJvmTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi

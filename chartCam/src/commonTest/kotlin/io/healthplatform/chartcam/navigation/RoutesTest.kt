@@ -1,3 +1,7 @@
+/**
+ * @file RoutesTest.kt
+ * Contains declarations for RoutesTest.kt.
+ */
 package io.healthplatform.chartcam.navigation
 
 import kotlin.test.Test

@@ -1,3 +1,7 @@
+/**
+ * @file SdcQuestionnaireFormTest.kt
+ * Contains declarations for SdcQuestionnaireFormTest.kt.
+ */
 package io.healthplatform.chartcam.sdc
 
 import kotlin.test.Test

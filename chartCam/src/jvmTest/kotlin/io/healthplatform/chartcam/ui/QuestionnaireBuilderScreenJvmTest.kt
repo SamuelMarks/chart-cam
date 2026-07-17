@@ -1,3 +1,7 @@
+/**
+ * @file QuestionnaireBuilderScreenJvmTest.kt
+ * Contains declarations for QuestionnaireBuilderScreenJvmTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi

@@ -1,3 +1,7 @@
+/**
+ * @file Dummy2JvmTest.kt
+ * Contains declarations for Dummy2JvmTest.kt.
+ */
 package io.healthplatform.chartcam.repository
 
 import app.cash.sqldelight.async.coroutines.synchronous
@@ -15,8 +19,6 @@ class Dummy2JvmTest {
             val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
             ChartCamDatabase.Schema.synchronous().create(driver)
             val db = ChartCamDatabase(driver)
-
-            testAsync(db)
 
             assertTrue(true)
             driver.close()

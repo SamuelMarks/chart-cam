@@ -1,4 +1,7 @@
 /**
+ * @file ShareService.android.kt
+ * Contains declarations for ShareService.android.kt.
+ *
  * File defining the Android-specific implementation for the [ShareService] interface.
  */
 package io.healthplatform.chartcam.utils

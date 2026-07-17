@@ -1,3 +1,7 @@
+/**
+ * @file InternationalizationJvmTest.kt
+ * Contains declarations for InternationalizationJvmTest.kt.
+ */
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.material3.Text

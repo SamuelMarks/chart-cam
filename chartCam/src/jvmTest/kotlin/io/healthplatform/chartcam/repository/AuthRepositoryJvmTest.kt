@@ -1,4 +1,7 @@
 /**
+ * @file AuthRepositoryJvmTest.kt
+ * Contains declarations for AuthRepositoryJvmTest.kt.
+ *
  * Contains tests for [AuthRepository], validating authentication logic against mock network and storage.
  */
 package io.healthplatform.chartcam.repository

@@ -1,4 +1,7 @@
 /**
+ * @file LoginScreen.kt
+ * Contains declarations for LoginScreen.kt.
+ *
  * Login Screen UI definition.
  * Provides the user interface for practitioner authentication.
  */
@@ -16,9 +19,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CloudSync
@@ -62,9 +67,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.all_fields_required
 import chartcam.chartcam.generated.resources.app_name_title
 import chartcam.chartcam.generated.resources.app_slogan
-import chartcam.chartcam.generated.resources.cd_chartcam_logo
 import chartcam.chartcam.generated.resources.cd_switch_language
 import chartcam.chartcam.generated.resources.english
 import chartcam.chartcam.generated.resources.espanol
@@ -154,6 +159,7 @@ fun LoginScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
                     .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
@@ -161,7 +167,7 @@ fun LoginScreen(
             // Logo
             Image(
                 painter = painterResource(Res.drawable.logo),
-                contentDescription = stringResource(Res.string.cd_chartcam_logo),
+                contentDescription = null, // Decorative logo; app title is read out directly below
                 modifier = Modifier.size(120.dp).padding(bottom = 16.dp),
             )
 
@@ -193,11 +199,16 @@ fun LoginScreen(
                 ) {
                     var username by remember { mutableStateOf("") }
                     var password by remember { mutableStateOf("") }
+                    var formError by remember { mutableStateOf<String?>(null) }
+                    val allFieldsRequiredMsg = stringResource(Res.string.all_fields_required)
                     val isLoading = state.isLoading
 
                     OutlinedTextField(
                         value = username,
-                        onValueChange = { username = it },
+                        onValueChange = {
+                            username = it
+                            formError = null
+                        },
                         label = { Text(stringResource(Res.string.username)) },
                         modifier =
                             Modifier.fillMaxWidth().padding(bottom = 16.dp).onKeyEvent {
@@ -213,13 +224,17 @@ fun LoginScreen(
                             },
                         singleLine = true,
                         enabled = !isLoading,
+                        isError = formError != null,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
                     )
 
                     OutlinedTextField(
                         value = password,
-                        onValueChange = { password = it },
+                        onValueChange = {
+                            password = it
+                            formError = null
+                        },
                         label = { Text(stringResource(Res.string.password)) },
                         modifier =
                             Modifier.fillMaxWidth().padding(bottom = 24.dp).onKeyEvent {
@@ -230,6 +245,8 @@ fun LoginScreen(
                                     focusManager.clearFocus()
                                     if (username.isNotBlank() && password.isNotBlank()) {
                                         viewModel.login(username, password)
+                                    } else {
+                                        formError = allFieldsRequiredMsg
                                     }
                                     true
                                 } else {
@@ -238,6 +255,7 @@ fun LoginScreen(
                             },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
+                        isError = formError != null,
                         keyboardOptions =
                             KeyboardOptions(
                                 keyboardType = KeyboardType.Password,
@@ -248,6 +266,8 @@ fun LoginScreen(
                                 focusManager.clearFocus()
                                 if (username.isNotBlank() && password.isNotBlank()) {
                                     viewModel.login(username, password)
+                                } else {
+                                    formError = allFieldsRequiredMsg
                                 }
                             }),
                         enabled = !isLoading,
@@ -270,9 +290,11 @@ fun LoginScreen(
                         )
                     }
 
-                    if (state.errorMessage != null) {
+                    val stateErrorMessageStr = state.errorMessage?.let { stringResource(it) }
+                    val displayError = stateErrorMessageStr ?: formError
+                    if (displayError != null) {
                         Text(
-                            text = state.errorMessage ?: "",
+                            text = displayError,
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                             textAlign = TextAlign.Center,
@@ -283,26 +305,37 @@ fun LoginScreen(
                     if (isLoading) {
                         CircularProgressIndicator(modifier = Modifier.padding(top = 8.dp))
                     } else {
-                        Button(
-                            onClick = {
-                                focusManager.clearFocus()
-                                viewModel.login(username, password)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding =
-                                androidx.compose.foundation.layout
-                                    .PaddingValues(vertical = 16.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            enabled = username.isNotBlank() && password.isNotBlank(),
-                            colors =
-                                ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                ),
+                        androidx.compose.runtime.CompositionLocalProvider(
+                            androidx.compose.material3.LocalTextStyle provides
+                                androidx.compose.material3.LocalTextStyle.current
+                                    .copy(fontWeight = FontWeight.Normal),
                         ) {
-                            Text(
-                                text = stringResource(Res.string.login_signup),
-                                style = MaterialTheme.typography.titleMedium,
-                            )
+                            Button(
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    if (username.isNotBlank() && password.isNotBlank()) {
+                                        viewModel.login(username, password)
+                                    } else {
+                                        formError = allFieldsRequiredMsg
+                                    }
+                                },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors =
+                                    ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = androidx.compose.ui.graphics.Color.White,
+                                    ),
+                            ) {
+                                Text(
+                                    text = stringResource(Res.string.login_signup),
+                                    color = androidx.compose.ui.graphics.Color.White,
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Normal),
+                                )
+                            }
                         }
                     }
                 }

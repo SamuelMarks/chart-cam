@@ -1,4 +1,7 @@
 /**
+ * @file Platform.ios.kt
+ * Contains declarations for Platform.ios.kt.
+ *
  * iOS implementation of the Platform interface.
  * Provides details about the iOS platform using native UIKit APIs.
  */

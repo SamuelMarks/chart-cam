@@ -1,3 +1,7 @@
+/**
+ * @file InitDatabaseJvmTest.kt
+ * Contains declarations for InitDatabaseJvmTest.kt.
+ */
 package io.healthplatform.chartcam
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver

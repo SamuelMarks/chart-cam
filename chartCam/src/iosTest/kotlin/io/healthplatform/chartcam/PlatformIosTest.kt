@@ -1,3 +1,7 @@
+/**
+ * @file PlatformIosTest.kt
+ * Contains declarations for PlatformIosTest.kt.
+ */
 package io.healthplatform.chartcam
 
 import kotlin.test.Test

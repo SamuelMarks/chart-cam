@@ -1,3 +1,7 @@
+/**
+ * @file CaptureStateTest.kt
+ * Contains declarations for CaptureStateTest.kt.
+ */
 package io.healthplatform.chartcam.capture
 
 import kotlin.test.Test

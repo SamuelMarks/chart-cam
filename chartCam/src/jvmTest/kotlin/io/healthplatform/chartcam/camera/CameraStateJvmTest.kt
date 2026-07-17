@@ -1,4 +1,7 @@
 /**
+ * @file CameraStateJvmTest.kt
+ * Contains declarations for CameraStateJvmTest.kt.
+ *
  * Contains unit tests validating the coordination logic around Camera functionality.
  */
 package io.healthplatform.chartcam.camera

@@ -1,3 +1,7 @@
+/**
+ * @file TestInstantTest.kt
+ * Contains declarations for TestInstantTest.kt.
+ */
 package io.healthplatform.chartcam
 
 import kotlin.test.Test

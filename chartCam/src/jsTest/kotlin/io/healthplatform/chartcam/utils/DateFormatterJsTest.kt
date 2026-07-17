@@ -1,3 +1,7 @@
+/**
+ * @file DateFormatterJsTest.kt
+ * Contains declarations for DateFormatterJsTest.kt.
+ */
 package io.healthplatform.chartcam.utils
 
 import kotlin.test.Test

@@ -1,3 +1,7 @@
+/**
+ * @file JvmCameraManagerTest.kt
+ * Contains declarations for JvmCameraManagerTest.kt.
+ */
 package io.healthplatform.chartcam.camera
 
 import androidx.compose.ui.test.ExperimentalTestApi

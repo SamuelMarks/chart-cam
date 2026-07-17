@@ -1,4 +1,7 @@
 /**
+ * @file FhirJsonJvmTest.kt
+ * Contains declarations for FhirJsonJvmTest.kt.
+ *
  * Ensures serialization functionality works for the FHIR resource representations.
  *
  * Acts as a sanity check to verify that underlying JSON serialization library mappings
