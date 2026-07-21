@@ -64,12 +64,9 @@ kotlin {
             baseName = "ChartCamShared"
             isStatic = false
 
-            val isGitHubActions = System.getenv("GITHUB_ACTIONS") == "true"
             val compilerArgs = mutableListOf("-Xbinary=bundleId=io.healthplatform.chartcam.ChartCamShared")
 
-            if (isGitHubActions) {
-                compilerArgs.add("-Xdisable-phases=DevirtualizationAnalysis,RemoveRedundantCallsToStaticInitializersPhase")
-            }
+            compilerArgs.add("-Xdisable-phases=DevirtualizationAnalysis,RemoveRedundantCallsToStaticInitializersPhase")
 
             freeCompilerArgs += compilerArgs
         }

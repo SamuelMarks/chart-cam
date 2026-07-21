@@ -16,7 +16,17 @@ build_release_android:
 	./gradlew --console=plain :androidApp:assembleRelease
 
 build_release_ios:
-	cd iosApp && xcodebuild -scheme iosApp -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO build
+	@echo "Creating iOS archive..."
+	cd iosApp && xcodebuild -scheme iosApp -configuration Release -destination 'generic/platform=iOS' CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO archive -archivePath ../build/ios/ChartCam.xcarchive
+	@echo "================================================================="
+	@echo "Archive successfully generated at:"
+	@echo "  build/ios/ChartCam.xcarchive"
+	@echo ""
+	@echo "If you need an unsigned .ipa, you can manually zip the .app:"
+	@echo "  mkdir -p build/ios/Payload"
+	@echo "  cp -R build/ios/ChartCam.xcarchive/Products/Applications/ChartCam.app build/ios/Payload/"
+	@echo "  cd build/ios && zip -r ChartCam-unsigned.ipa Payload"
+	@echo "================================================================="
 
 build_release_jvm:
 	./gradlew --console=plain :chartCam:packageReleaseDistributionForCurrentOS

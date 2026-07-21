@@ -272,29 +272,29 @@ actual class CryptoService actual constructor() {
      * @return The converted [ByteArray].
      */
     private fun Int8Array.toByteArray(): ByteArray = ByteArray(this.length) { getInt8Js(this, it) }
-
-    /**
-     * Gets a byte at the specified index from an [Int8Array].
-     *
-     * @param array The JS [Int8Array].
-     * @param index The index to read from.
-     * @return The byte at the specified index.
-     */
-    private fun getInt8Js(
-        array: Int8Array,
-        index: Int,
-    ): Byte = js("array[index]")
-
-    /**
-     * Sets a byte at the specified index in an [Int8Array].
-     *
-     * @param array The JS [Int8Array].
-     * @param index The index to write to.
-     * @param value The byte value to write.
-     */
-    private fun setInt8Js(
-        array: Int8Array,
-        index: Int,
-        value: Byte,
-    ): Unit = js("array[index] = value")
 }
+
+/**
+ * Gets a byte at the specified index from an [Int8Array].
+ *
+ * @param array The JS [Int8Array].
+ * @param index The index to read from.
+ * @return The byte at the specified index.
+ */
+private fun getInt8Js(
+    array: Int8Array,
+    index: Int,
+): Byte = js("array[index]")
+
+/**
+ * Sets a byte at the specified index in an [Int8Array].
+ *
+ * @param array The JS [Int8Array].
+ * @param index The index to write to.
+ * @param value The byte value to write.
+ */
+private fun setInt8Js(
+    array: Int8Array,
+    index: Int,
+    value: Byte,
+): Unit = js("array[index] = value")
