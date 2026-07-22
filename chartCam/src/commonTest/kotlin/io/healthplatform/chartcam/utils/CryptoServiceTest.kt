@@ -12,7 +12,6 @@ import kotlin.test.assertNotEquals
 
 class CryptoServiceTest {
     @Test
-    @kotlin.test.Ignore
     fun testEncryptionAndDecryption() =
         runTest {
             val service = CryptoService()
@@ -27,7 +26,6 @@ class CryptoServiceTest {
         }
 
     @Test
-    @kotlin.test.Ignore
     fun testEmptyPassword() =
         runTest {
             val service = CryptoService()
@@ -41,7 +39,6 @@ class CryptoServiceTest {
         }
 
     @Test
-    @kotlin.test.Ignore
     fun testInvalidBase64() =
         runTest {
             val service = CryptoService()
@@ -50,7 +47,6 @@ class CryptoServiceTest {
         }
 
     @Test
-    @kotlin.test.Ignore
     fun testArgon2KeyDerivation() =
         runTest {
             val service = CryptoService()
@@ -65,7 +61,6 @@ class CryptoServiceTest {
         }
 
     @Test
-    @kotlin.test.Ignore
     fun testAesGcmEncryptionDecryption() =
         runTest {
             val service = CryptoService()
@@ -79,7 +74,6 @@ class CryptoServiceTest {
         }
 
     @Test
-    @kotlin.test.Ignore
     fun testAesGcmAuthentication() =
         runTest {
             val service = CryptoService()
@@ -97,5 +91,44 @@ class CryptoServiceTest {
             } catch (e: Throwable) {
                 // Expected
             }
+        }
+
+    @Test
+    fun testAesGcmCiphertextTooShort() =
+        runTest {
+            val service = CryptoService()
+            val key = ByteArray(32) { it.toByte() }
+            val shortCiphertext = ByteArray(10) { it.toByte() } // Less than 12
+
+            try {
+                service.decryptAesGcm(shortCiphertext, key)
+                throw AssertionError("Expected exception for short ciphertext")
+            } catch (e: Throwable) {
+                // Expected IllegalArgumentException
+            }
+        }
+
+    @Test
+    fun testWrongPassword() =
+        runTest {
+            val service = CryptoService()
+            val original = "Secret!"
+            val encrypted = service.encrypt(original, "correct")
+
+            // Should return empty string due to catch(e: Exception)
+            val decrypted = service.decrypt(encrypted, "wrong")
+            assertEquals("", decrypted)
+        }
+
+    @Test
+    fun testDecryptShortPayload() =
+        runTest {
+            val service = CryptoService()
+            // Shorter than 16 + 12 (28) bytes
+            val shortPayload =
+                kotlin.io.encoding.Base64
+                    .encode(ByteArray(10) { it.toByte() })
+            val result = service.decrypt(shortPayload, "pass")
+            assertEquals("", result)
         }
 }

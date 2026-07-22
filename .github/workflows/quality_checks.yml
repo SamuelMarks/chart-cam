@@ -1,0 +1,39 @@
+name: Quality Checks
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Check KDoc Parameters and Returns
+        run: python3 scripts/check_param_return.py
+
+      - name: Check KDoc Coverage
+        run: python3 scripts/check_coverage.py
+
+      - name: Check Accessibility
+        run: python3 scripts/test_a11y.py
+
+      - name: Check I18N
+        run: python3 scripts/test_i18n.py
+
+      - name: Run Tests
+        run: ./gradlew allTests
+
+      - name: Generate Coverage Report
+        run: ./gradlew koverXmlReport
+
+      - name: Check Test Coverage
+        run: python3 scripts/test_cov.py

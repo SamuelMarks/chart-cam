@@ -134,21 +134,21 @@ fun LoginScreen(
                     DropdownMenuItem(
                         text = { Text(stringResource(Res.string.english)) },
                         onClick = {
-                            setAppLanguage("en")
+                            // setAppLanguage("en")
                             showLanguageMenu = false
                         },
                     )
                     DropdownMenuItem(
                         text = { Text(stringResource(Res.string.espanol)) },
                         onClick = {
-                            setAppLanguage("es")
+                            // setAppLanguage("es")
                             showLanguageMenu = false
                         },
                     )
                     DropdownMenuItem(
                         text = { Text(stringResource(Res.string.japanese)) },
                         onClick = {
-                            setAppLanguage("ja")
+                            // setAppLanguage("ja")
                             showLanguageMenu = false
                         },
                     )

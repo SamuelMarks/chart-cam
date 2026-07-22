@@ -139,5 +139,5 @@ if __name__ == "__main__":
             print(m)
         sys.exit(1)
         
-    print("All parameters and return types documented.")
+    print(f"All parameters and return types documented. ")
     sys.exit(0)

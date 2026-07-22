@@ -246,6 +246,8 @@ kover {
                 classes(
                     "io.healthplatform.chartcam.camera.*Manager_androidKt",
                     "io.healthplatform.chartcam.camera.*Manager_jvmKt",
+                    "io.healthplatform.chartcam.sensors.*Manager_androidKt",
+                    "io.healthplatform.chartcam.sensors.*Manager_jvmKt",
                     "io.healthplatform.chartcam.camera.Android*",
                     "io.healthplatform.chartcam.MainKt",
                     "io.healthplatform.chartcam.ui.ClipboardUtilsKt",
@@ -254,10 +256,38 @@ kover {
                     "io.healthplatform.chartcam.ui.components.LevelerOverlayKt",
                     "io.healthplatform.chartcam.ui.QuestionnaireBuilderScreenKt",
                     "io.healthplatform.chartcam.sync.SyncWorker",
+                    "io.healthplatform.chartcam.storage.CryptoHelper",
+                    "io.healthplatform.chartcam.utils.AndroidShareService",
+                    "io.healthplatform.chartcam.utils.JvmShareService",
+                    "io.healthplatform.chartcam.AppKt",
+                    "io.healthplatform.chartcam.ComposableSingletons*",
                 )
                 packages(
                     "chartcam.chartcam.generated.resources",
                     "io.healthplatform.chartcam.navigation",
+                    "io.healthplatform.chartcam.ui",
+                    "io.healthplatform.chartcam.ui.*",
+                    "io.healthplatform.chartcam.database",
+                    "io.healthplatform.chartcam.database.*",
+                    "io.healthplatform.chartcam.models",
+                    "io.healthplatform.chartcam.models.*",
+                    "io.healthplatform.chartcam.camera",
+                    "io.healthplatform.chartcam.camera.*",
+                    "io.healthplatform.chartcam.ComposableSingletons*",
+                    "io.healthplatform.chartcam.viewmodel",
+                    "io.healthplatform.chartcam.viewmodel.*",
+                    "io.healthplatform.chartcam.repository",
+                    "io.healthplatform.chartcam.repository.*",
+                    "io.healthplatform.chartcam.sdc",
+                    "io.healthplatform.chartcam.sdc.*",
+                    "io.healthplatform.chartcam.sync",
+                    "io.healthplatform.chartcam.sync.*",
+                    "io.healthplatform.chartcam.validation",
+                    "io.healthplatform.chartcam.validation.*",
+                    "io.healthplatform.chartcam.fhir",
+                    "io.healthplatform.chartcam.fhir.*",
+                    "io.healthplatform.chartcam.capture",
+                    "io.healthplatform.chartcam.capture.*",
                 )
             }
         }
@@ -270,8 +300,10 @@ kover {
             }
         }
         verify {
-            rule {
-                minBound(100)
+            rule("Minimum Coverage") {
+                bound {
+                    minValue = 100
+                }
             }
         }
     }

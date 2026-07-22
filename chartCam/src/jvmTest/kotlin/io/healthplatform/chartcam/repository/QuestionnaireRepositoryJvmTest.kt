@@ -1,9 +1,9 @@
-/**
- * @file QuestionnaireRepositoryJvmTest.kt
- * Contains declarations for QuestionnaireRepositoryJvmTest.kt.
- */
 package io.healthplatform.chartcam.repository
 
+import com.google.fhir.model.r4.Enumeration
+import com.google.fhir.model.r4.Questionnaire
+import com.google.fhir.model.r4.terminologies.PublicationStatus
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -11,34 +11,130 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class QuestionnaireRepositoryJvmTest {
+    class FakeFhirRepo :
+        FhirRepository(
+            io.healthplatform.chartcam.database.ChartCamDatabase(
+                app.cash.sqldelight.driver.jdbc.sqlite
+                    .JdbcSqliteDriver(app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver.IN_MEMORY),
+            ),
+        ) {
+        val savedResources = mutableMapOf<String, com.google.fhir.model.r4.Resource>()
+        val deletedResources = mutableListOf<String>()
+
+        override suspend fun saveResource(
+            type: String,
+            id: String,
+            resource: com.google.fhir.model.r4.Resource,
+            isLocalChange: Boolean,
+        ) {
+            savedResources[id] = resource
+        }
+
+        override suspend fun deleteResource(
+            type: String,
+            id: String,
+            isLocalChange: Boolean,
+        ) {
+            deletedResources.add(id)
+        }
+    }
+
     @Test
-    fun testQuestionnaireRepositoryJvm() =
+    fun testLoadDefaultForms() =
+        runTest {
+            val fhirRepo = FakeFhirRepo()
+            val qrRepo = QuestionnaireRepository(fhirRepo)
+
+            qrRepo.loadDefaultForms()
+
+            val q1 = qrRepo.getQuestionnaire("std-form")
+            val q2 = qrRepo.getQuestionnaire("basic-followup")
+
+            // Default forms should be loaded
+            assertNotNull(q1)
+            assertNotNull(q2)
+        }
+
+    @Test
+    fun testLoadDefaultFormsExceptions() =
+        runTest {
+            val nullRepo = QuestionnaireRepository(null)
+            nullRepo.loadDefaultForms() // Shouldn't crash
+            assertTrue(true)
+        }
+
+    @Test
+    fun testCreateQuestionnaire() {
+        val qrRepo = QuestionnaireRepository(null)
+        val q = qrRepo.createQuestionnaire("Test Title", 2, "Label A, Label B")
+
+        assertEquals("custom-test-title", q.id)
+        assertEquals("Test Title", q.title?.value)
+        assertEquals(3, q.item.size)
+        assertEquals("notes", q.item[0].linkId.value)
+        assertEquals("photo_1", q.item[1].linkId.value)
+        assertEquals("Label A", q.item[1].text?.value)
+        assertEquals("photo_2", q.item[2].linkId.value)
+        assertEquals("Label B", q.item[2].text?.value)
+    }
+
+    @Test
+    fun testCreateQuestionnaireWithFewerLabels() {
+        val qrRepo = QuestionnaireRepository(null)
+        val q = qrRepo.createQuestionnaire("Test 2", 2, "Label A")
+
+        assertEquals(3, q.item.size)
+        assertEquals("Label A", q.item[1].text?.value)
+        assertEquals("1", q.item[2].text?.value)
+    }
+
+    @Test
+    fun testGetAvailableQuestionnaires() {
+        val qrRepo = QuestionnaireRepository(null)
+        val q = qrRepo.createQuestionnaire("Test Title", 1)
+        val available = qrRepo.getAvailableQuestionnaires()
+
+        assertTrue(available.any { it.id == q.id })
+    }
+
+    @Test
+    fun testSaveAndGetQuestionnaire() =
         kotlinx.coroutines.runBlocking {
-            val repository = QuestionnaireRepository()
-            repository.loadDefaultForms()
+            val fhirRepo = FakeFhirRepo()
+            val qrRepo = QuestionnaireRepository(fhirRepo)
+            val q =
+                Questionnaire
+                    .Builder(Enumeration(value = PublicationStatus.Active))
+                    .apply {
+                        id = "q-save"
+                    }.build()
 
-            // Test fetching available predefined questionnaires
-            val available = repository.getAvailableQuestionnaires()
-            assertTrue(available.isNotEmpty())
+            qrRepo.saveQuestionnaire(q)
+            val retrieved = qrRepo.getQuestionnaire("q-save")
+            assertNotNull(retrieved)
 
-            // Test fetching a specific one
-            val stdForm = repository.getQuestionnaire("std-form")
-            assertNotNull(stdForm)
-            assertEquals("std-form", stdForm.id)
+            kotlinx.coroutines.delay(100)
+            assertEquals(q, fhirRepo.savedResources["q-save"])
+        }
 
-            // Test fetching non-existent
-            assertNull(repository.getQuestionnaire("does-not-exist"))
+    @Test
+    fun testDeleteQuestionnaire() =
+        kotlinx.coroutines.runBlocking {
+            val fhirRepo = FakeFhirRepo()
+            val qrRepo = QuestionnaireRepository(fhirRepo)
+            val q =
+                Questionnaire
+                    .Builder(Enumeration(value = PublicationStatus.Active))
+                    .apply {
+                        id = "q-delete"
+                    }.build()
+            qrRepo.saveQuestionnaire(q)
+            assertNotNull(qrRepo.getQuestionnaire("q-delete"))
 
-            // Test dynamic creation
-            val customForm = repository.createQuestionnaire("My Custom Form", 2, "Label 1, Label 2")
-            assertNotNull(customForm)
-            assertEquals("custom-my-custom-form", customForm.id)
+            qrRepo.deleteQuestionnaire("q-delete")
+            assertNull(qrRepo.getQuestionnaire("q-delete"))
 
-            // Fetch it back
-            val fetchedCustom = repository.getQuestionnaire("custom-my-custom-form")
-            assertNotNull(fetchedCustom)
-
-            // Total should now be 3
-            assertEquals(3, repository.getAvailableQuestionnaires().size)
+            kotlinx.coroutines.delay(100)
+            assertTrue(fhirRepo.deletedResources.contains("q-delete"))
         }
 }

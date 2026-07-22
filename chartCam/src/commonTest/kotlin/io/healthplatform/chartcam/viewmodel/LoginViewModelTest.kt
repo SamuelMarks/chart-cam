@@ -10,7 +10,9 @@
 package io.healthplatform.chartcam.viewmodel
 
 import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.incorrect_password
 import chartcam.chartcam.generated.resources.invalid_credentials
+import chartcam.chartcam.generated.resources.unknown_error
 import io.healthplatform.chartcam.network.NetworkClient
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.storage.SecureStorage
@@ -179,5 +181,43 @@ class LoginViewModelTest {
             assertFalse(viewModel.uiState.value.isLoggedIn)
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(Res.string.invalid_credentials, viewModel.uiState.value.errorMessage)
+        }
+
+    @Test
+    fun testLoginFailure_IncorrectPassword() =
+        runTest {
+            val client = NetworkClient.create(MockEngine { respond("OK") })
+            authRepository = AuthRepository(client, mockStorage)
+
+            authRepository.login("user", "correct")
+
+            val viewModel = LoginViewModel(authRepository)
+
+            viewModel.login("user", "wrong")
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.isLoggedIn)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertEquals(Res.string.incorrect_password, viewModel.uiState.value.errorMessage)
+        }
+
+    @Test
+    fun testLoginFailure_UnknownError() =
+        runTest {
+            val throwingRepo =
+                object : AuthRepository(NetworkClient.create(MockEngine { respond("OK") }), mockStorage) {
+                    override suspend fun login(
+                        username: String,
+                        password: String,
+                    ): Result<com.google.fhir.model.r4.Practitioner> = Result.failure(Exception("Some random network error"))
+                }
+            val viewModel = LoginViewModel(throwingRepo)
+
+            viewModel.login("user", "pass")
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.isLoggedIn)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertEquals(chartcam.chartcam.generated.resources.Res.string.unknown_error, viewModel.uiState.value.errorMessage)
         }
 }

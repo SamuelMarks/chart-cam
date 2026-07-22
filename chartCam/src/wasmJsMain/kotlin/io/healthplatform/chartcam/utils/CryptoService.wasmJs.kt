@@ -11,6 +11,16 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.js.Promise
 
+@JsModule("hash-wasm")
+external object HashWasm {
+    /**
+     * Argon2id hashing wrapper.
+     * @param options The options parameter for Argon2id.
+     * @return the promise of the derived hash.
+     */
+    fun argon2id(options: JsAny): Promise<JsAny>
+}
+
 /**
  * Retrieves the Web Crypto API object depending on the environment (browser or Node.js).
  *
@@ -18,7 +28,7 @@ import kotlin.js.Promise
  */
 private fun getWebCrypto(): JsAny? =
     js(
-        "typeof window !== 'undefined' && window.crypto ? window.crypto : (typeof global !== 'undefined' && global.crypto ? global.crypto : require('crypto').webcrypto)",
+        "typeof window !== 'undefined' && window.crypto ? window.crypto : (typeof global !== 'undefined' && global.crypto ? global.crypto : undefined)",
     )
 
 /**
@@ -28,27 +38,32 @@ private fun getWebCrypto(): JsAny? =
  * @param salt The cryptographic salt.
  * @return A promise containing the derived key as [JsAny].
  */
-private fun deriveKeyArgon2Js(
+private fun createArgon2Options(
     password: String,
     salt: Int8Array,
-): Promise<JsAny> =
+): JsAny =
     js(
         """
-    (async () => {
-        const hashWasm = require('hash-wasm');
-        const hash = await hashWasm.argon2id({
-            password: password,
-            salt: new Uint8Array(salt.buffer, salt.byteOffset, salt.length),
-            parallelism: 4,
-            iterations: 3,
-            memorySize: 65536,
-            hashLength: 32,
-            outputType: 'binary'
-        });
-        return new Int8Array(hash);
-    })()
+    ({
+        password: password,
+        salt: new Uint8Array(salt.buffer, salt.byteOffset, salt.length),
+        parallelism: 4,
+        iterations: 3,
+        memorySize: 65536,
+        hashLength: 32,
+        outputType: 'binary'
+    })
 """,
     )
+
+/**
+ * Converts a Javascript Uint8Array into a Javascript Int8Array.
+ *
+ * @param uint8Array The input Uint8Array as a [JsAny].
+ * @return The corresponding [Int8Array].
+ */
+private fun convertUint8ArrayToInt8Array(uint8Array: JsAny): Int8Array =
+    js("new Int8Array(uint8Array.buffer, uint8Array.byteOffset, uint8Array.length)")
 
 /**
  * Encrypts data using AES-GCM via the Web Crypto API.
@@ -164,8 +179,9 @@ actual class CryptoService actual constructor() {
         password: String,
         salt: ByteArray,
     ): ByteArray {
-        val resultJs = deriveKeyArgon2Js(password, salt.toInt8Array()).await()
-        return resultJs.unsafeCast<Int8Array>().toByteArray()
+        val options = createArgon2Options(password, salt.toInt8Array())
+        val hashJs = HashWasm.argon2id(options).await()
+        return convertUint8ArrayToInt8Array(hashJs).toByteArray()
     }
 
     /**

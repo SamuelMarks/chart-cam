@@ -155,4 +155,95 @@ class SdcEvaluatorTest {
         val result = SdcEvaluator.evaluateCalculatedExpressions(q, answers)
         assertTrue(!result.containsKey("target"))
     }
+
+    @Test
+    fun testEmptyExpression() {
+        val q = createQuestionnaireWithCalcExt("target", "   ")
+        val answers = mutableMapOf<String, Any>()
+        val result = SdcEvaluator.evaluateCalculatedExpressions(q, answers)
+        assertEquals(0f, result["target"])
+    }
+
+    @Test
+    fun testNestedItem() {
+        val calcExt =
+            Extension.Builder(url = "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression").apply {
+                extension.add(
+                    Extension.Builder(url = "expression").apply {
+                        value = Extension.Value.String(FhirString.Builder().apply { value = "%parent_val + 5" }.build())
+                    },
+                )
+            }
+
+        val nestedItem =
+            Questionnaire.Item
+                .Builder(
+                    linkId = FhirString.Builder().apply { value = "nested" },
+                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                ).apply {
+                    extension.add(calcExt)
+                }
+
+        val parentItem =
+            Questionnaire.Item
+                .Builder(
+                    linkId = FhirString.Builder().apply { value = "parent" },
+                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                ).apply {
+                    item.add(nestedItem)
+                }
+
+        val q =
+            Questionnaire
+                .Builder(status = Enumeration(value = PublicationStatus.Active))
+                .apply {
+                    item.add(parentItem)
+                }.build()
+
+        val answers = mutableMapOf<String, Any>("parent_val" to 10f)
+        val result = SdcEvaluator.evaluateCalculatedExpressions(q, answers)
+        assertEquals(15f, result["nested"])
+    }
+
+    @Test
+    fun testInvalidVariableType() {
+        val q = createQuestionnaireWithCalcExt("target", "%a + 2")
+        val answers = mutableMapOf<String, Any>("a" to "abc")
+        val result = SdcEvaluator.evaluateCalculatedExpressions(q, answers)
+        assertEquals(2f, result["target"])
+    }
+
+    @Test
+    fun testSubtractionAndDivision() {
+        val q = createQuestionnaireWithCalcExt("target", "10 - 4 / 2")
+        val answers = mutableMapOf<String, Any>()
+        val result = SdcEvaluator.evaluateCalculatedExpressions(q, answers)
+        assertEquals(8f, result["target"])
+    }
+
+    @Test
+    fun testMissingLinkId() {
+        val calcExt =
+            Extension.Builder(url = "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression").apply {
+                extension.add(
+                    Extension.Builder(url = "expression").apply {
+                        value = Extension.Value.String(FhirString.Builder().apply { value = "5 + 5" }.build())
+                    },
+                )
+            }
+
+        val itemB =
+            Questionnaire.Item
+                .Builder(
+                    linkId = FhirString.Builder(), // missing value
+                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                ).apply {
+                    extension.add(calcExt)
+                }
+
+        val q = Questionnaire.Builder(status = Enumeration(value = PublicationStatus.Active)).apply { item.add(itemB) }.build()
+        val answers = mutableMapOf<String, Any>()
+        val result = SdcEvaluator.evaluateCalculatedExpressions(q, answers)
+        assertTrue(result.isEmpty())
+    }
 }

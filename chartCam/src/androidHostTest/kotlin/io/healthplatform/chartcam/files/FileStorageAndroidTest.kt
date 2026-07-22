@@ -67,4 +67,39 @@ class FileStorageAndroidTest {
         val storage = createFileStorage()
         assertTrue(storage is AndroidFileStorage)
     }
+
+    @Test
+    fun testSaveImageOverwritesExisting() {
+        val fileName = "overwrite_image.jpg"
+        val testBytes1 = byteArrayOf(1, 2, 3)
+        val testBytes2 = byteArrayOf(4, 5, 6)
+
+        fileStorage.saveImage(fileName, testBytes1)
+        val path = fileStorage.saveImage(fileName, testBytes2)
+
+        val readBytes = fileStorage.readImage(path)
+        assertTrue(testBytes2.contentEquals(readBytes))
+    }
+
+    @Test
+    fun testClearCacheDeletesFiles() {
+        val fileName1 = "temp_image1.jpg"
+        val fileName2 = "temp_image2.jpg"
+        fileStorage.saveImage(fileName1, byteArrayOf(1))
+        fileStorage.saveImage(fileName2, byteArrayOf(2))
+
+        fileStorage.clearCache()
+
+        assertEquals(0, fileStorage.readImage(RuntimeEnvironment.getApplication().cacheDir.absolutePath + "/" + fileName1).size)
+    }
+
+    @Test
+    fun testReadInvalidData() {
+        // If file exists but is corrupted, should return empty array because of catch
+        val fileName = "corrupted.jpg"
+        val path = RuntimeEnvironment.getApplication().cacheDir.absolutePath + "/" + fileName
+        java.io.File(path).writeBytes(byteArrayOf(1, 2, 3)) // Not valid IV and ciphertext
+        val result = fileStorage.readImage(path)
+        assertEquals(0, result.size)
+    }
 }

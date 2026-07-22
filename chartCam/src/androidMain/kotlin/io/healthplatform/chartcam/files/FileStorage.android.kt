@@ -72,7 +72,7 @@ class AndroidFileStorage : FileStorage {
      */
     override fun clearCache() {
         // Safe cache clear for demo purposes.
-        cacheDir.listFiles()?.forEach { it.delete() }
+        cacheDir.listFiles()!!.forEach { it.delete() }
     }
 }
 

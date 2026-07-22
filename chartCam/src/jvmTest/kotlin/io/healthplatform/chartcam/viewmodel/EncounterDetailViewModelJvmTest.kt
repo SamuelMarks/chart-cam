@@ -3,7 +3,8 @@
  * Contains declarations for EncounterDetailViewModelJvmTest.kt.
  */
 package io.healthplatform.chartcam.viewmodel
-
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.recovered_form
 import com.google.fhir.model.r4.Canonical
 import com.google.fhir.model.r4.Date
 import com.google.fhir.model.r4.DateTime
@@ -536,6 +537,126 @@ class EncounterDetailViewModelJvmTest {
         }
 
     @Test
+    fun testOnFormUpdated() {
+        val newMap = mapOf("q1" to "a1")
+        viewModel.onFormUpdated(newMap, dummyQr)
+        assertEquals("a1", viewModel.uiState.value.answers["q1"])
+    }
+
+    @Test
+    fun testBuildDummyItemsRecursivelyCoverage() =
+        runTest {
+            // Trigger initialization with a QR that has no backing questionnaire
+            val encId = "enc_dummy"
+            val patId = "pat_dummy"
+            val patient = Patient.Builder().apply { id = patId }.build()
+            val encounter =
+                io.healthplatform.chartcam.models.createFhirEncounter(
+                    id = encId,
+                    patientId = patId,
+                    practitionerId = "prac1",
+                    dateStr = "2026-07-09",
+                    statusStr = "in-progress",
+                )
+            val qr =
+                QuestionnaireResponse
+                    .Builder(Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
+                    .apply {
+                        questionnaire = Canonical.Builder().apply { value = "non_existent_q" }
+                        val dummyItemStr =
+                            QuestionnaireResponse.Item.Builder(String.Builder().apply { value = "dummy_str" }).apply {
+                                answer.add(
+                                    QuestionnaireResponse.Item.Answer.Builder().apply {
+                                        value =
+                                            QuestionnaireResponse.Item.Answer.Value
+                                                .String(String.Builder().apply { value = "test" }.build())
+                                    },
+                                )
+                            }
+                        item.add(dummyItemStr)
+                    }.build()
+
+            `when`(fhirRepository.getPatient(patId)).thenReturn(patient)
+            `when`(fhirRepository.getEncounter(encId)).thenReturn(encounter)
+            `when`(fhirRepository.getPhotosForEncounter(encId)).thenReturn(emptyList())
+            `when`(fhirRepository.getQuestionnaireResponsesForEncounter(encId)).thenReturn(listOf(qr))
+            `when`(questionnaireRepository.getAvailableQuestionnaires()).thenReturn(emptyList())
+
+            viewModel.initialize(patId, encId, emptyMap())
+            advanceUntilIdle()
+
+            assertEquals("test", viewModel.uiState.value.answers["dummy_str"])
+            // If the dummy items were built successfully, a fallback questionnaire will be present in state
+            assertNotNull(viewModel.uiState.value.selectedQuestionnaire)
+            assertEquals(
+                org.jetbrains.compose.resources
+                    .getString(Res.string.recovered_form),
+                viewModel.uiState.value.selectedQuestionnaire
+                    ?.title
+                    ?.value,
+            )
+        }
+
+    @Test
+    fun testExtractAnswersRecursivelyList() =
+        runTest {
+            val encounter =
+                createFhirEncounter(
+                    id = "enc1",
+                    patientId = "pat1",
+                    practitionerId = "prac1",
+                    dateStr = "2026-07-09",
+                    statusStr = "in-progress",
+                )
+            val patient = Patient.Builder().apply { id = "pat1" }.build()
+
+            val itemMultiStr =
+                QuestionnaireResponse.Item.Builder(String.Builder().apply { value = "link_multi" }).apply {
+                    answer.add(
+                        QuestionnaireResponse.Item.Answer.Builder().apply {
+                            value =
+                                QuestionnaireResponse.Item.Answer.Value
+                                    .String(String.Builder().apply { value = "val1" }.build())
+                        },
+                    )
+                    answer.add(
+                        QuestionnaireResponse.Item.Answer.Builder().apply {
+                            value =
+                                QuestionnaireResponse.Item.Answer.Value
+                                    .String(String.Builder().apply { value = "val2" }.build())
+                        },
+                    )
+                }
+
+            val qr =
+                QuestionnaireResponse
+                    .Builder(Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
+                    .apply {
+                        questionnaire = Canonical.Builder().apply { value = "Questionnaire/q1" }
+                        item.add(itemMultiStr)
+                    }.build()
+
+            val dummyQ =
+                Questionnaire
+                    .Builder(Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active))
+                    .apply {
+                        id = "q1"
+                    }.build()
+
+            `when`(fhirRepository.getPatient("pat1")).thenReturn(patient)
+            `when`(fhirRepository.getEncounter("enc1")).thenReturn(encounter)
+            `when`(fhirRepository.getPhotosForEncounter("enc1")).thenReturn(emptyList())
+            `when`(fhirRepository.getQuestionnaireResponsesForEncounter("enc1")).thenReturn(listOf(qr))
+            `when`(questionnaireRepository.getAvailableQuestionnaires()).thenReturn(listOf(dummyQ))
+
+            viewModel.initialize("pat1", "enc1", emptyMap())
+            advanceUntilIdle()
+
+            val answers = viewModel.uiState.value.answers["link_multi"] as List<*>
+            assertEquals(listOf("val1", "val2"), answers)
+        }
+
+    @Test
     fun testReopenEncounter() =
         runTest {
             val encId = "enc-1"
@@ -605,4 +726,13 @@ class EncounterDetailViewModelJvmTest {
             assertEquals(com.google.fhir.model.r4.Encounter.EncounterStatus.In_Progress, state.encounter?.status?.value)
             assertEquals(false, state.isFinalized)
         }
+
+    @Test
+    fun testAddPhotosWithNulls() {
+        val photosMap = mapOf("Step1" to "path1")
+        // Enoucnter is null initially
+        viewModel.addPhotos(photosMap)
+        // Shouldn't crash, should just return
+        assertEquals(0, viewModel.uiState.value.photos.size)
+    }
 }

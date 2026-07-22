@@ -245,6 +245,35 @@ class PatientListViewModelTest {
             viewModel.clearError()
             assertEquals(null, viewModel.uiState.value.error)
         }
+
+    @Test
+    fun `createPatient handles error gracefully`() =
+        runTest(testDispatcher) {
+            mockFhirRepository.shouldThrowOnSave = true
+            var successCalled = false
+            viewModel.createPatient(
+                firstName = "Err",
+                lastName = "Patient",
+                mrn = "MRN",
+                dob = LocalDate(1980, 2, 2),
+                gender = "unknown",
+            ) {
+                successCalled = true
+            }
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertFalse(successCalled)
+        }
+
+    @Test
+    fun `exportData handles error gracefully`() =
+        runTest(testDispatcher) {
+            mockExportImportService.shouldThrow = true
+            viewModel.exportData("password123", true)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(null, viewModel.uiState.value.exportedData)
+        }
 }
 
 class MockFhirRepository(
@@ -252,6 +281,7 @@ class MockFhirRepository(
 ) : FhirRepository(database) {
     var patientsToReturn: List<Patient> = emptyList()
     var shouldThrow = false
+    var shouldThrowOnSave = false
     var lastSearchQuery = ""
     var lastShowAll = false
     var savedPatient: Patient? = null
@@ -279,6 +309,7 @@ class MockFhirRepository(
     }
 
     override suspend fun savePatient(patient: Patient) {
+        if (shouldThrowOnSave) throw Exception("Save Error")
         savedPatient = patient
     }
 
