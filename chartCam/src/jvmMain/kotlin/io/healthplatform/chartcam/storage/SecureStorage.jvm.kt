@@ -18,7 +18,7 @@ import javax.crypto.spec.SecretKeySpec
  * Uses standard Java [Preferences] backed by AES-GCM encryption
  * to securely store and retrieve preferences on Desktop targets.
  *
- * @property nodeName The node name used for categorizing the [Preferences]. Defaults to "io.healthplatform.chartcam.secure".
+ * @param nodeName The node name used for categorizing the [Preferences]. Defaults to "io.healthplatform.chartcam.secure".
  */
 class JvmSecureStorage(
     nodeName: String = "io.healthplatform.chartcam.secure",

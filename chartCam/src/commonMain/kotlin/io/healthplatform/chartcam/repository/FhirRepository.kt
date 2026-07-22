@@ -28,7 +28,7 @@ import io.healthplatform.chartcam.models.mrn
  * Repository responsible for CRUD operations on FHIR resources persisted locally.
  * Uses a generic Resource table and Index tables mimicking the FHIR Engine SDK.
  *
- * @property database The database instance used by this repository for executing queries.
+ * @param database The database instance used by this repository for executing queries.
  */
 open class FhirRepository(
     val database: ChartCamDatabase,

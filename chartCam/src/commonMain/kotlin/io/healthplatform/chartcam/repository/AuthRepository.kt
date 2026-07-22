@@ -25,8 +25,8 @@ import okio.ByteString.Companion.encodeUtf8
  * Functions may throw illegal state exceptions if operations are performed without valid session state.
  * Contains logic for OAuth2 Password Grant and storing the Practitioner context.
  *
- * @property client The Ktor HttpClient used for network requests.
- * @property storage The SecureStorage implementation used to store sensitive tokens and credentials.
+ * @param client The Ktor HttpClient used for network requests.
+ * @param storage The SecureStorage implementation used to store sensitive tokens and credentials.
  */
 open class AuthRepository(
     /**

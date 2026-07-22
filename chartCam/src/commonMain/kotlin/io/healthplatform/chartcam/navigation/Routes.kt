@@ -44,7 +44,7 @@ object TriageRoute
 /**
  * Represents the route for a specific patient's details.
  *
- * @property patientId The unique identifier of the patient.
+ * @param patientId The unique identifier of the patient.
  */
 @Serializable
 @SerialName("/patients/{patientId}")
@@ -58,7 +58,7 @@ data class PatientDetailRoute(
 /**
  * Represents the route for a specific patient's visits.
  *
- * @property patientId The unique identifier of the patient.
+ * @param patientId The unique identifier of the patient.
  */
 @Serializable
 @SerialName("/patients/{patientId}/visits")
@@ -72,8 +72,9 @@ data class PatientVisitsRoute(
 /**
  * Represents the route to capture data for a specific patient.
  *
- * @property patientId The unique identifier of the patient.
- * @property questionnaireId An optional identifier for a specific questionnaire to fill.
+ * @param patientId The unique identifier of the patient.
+ * @param questionnaireId An optional identifier for a specific questionnaire to fill.
+ * @param linkId An optional specific item linkId to capture photos for.
  */
 @Serializable
 @SerialName("/patients/{patientId}/capture/{questionnaireId}")
@@ -95,8 +96,8 @@ data class CaptureForPatientRoute(
 /**
  * Represents the route for a specific visit of a specific patient.
  *
- * @property patientId The unique identifier of the patient.
- * @property visitId The unique identifier of the visit.
+ * @param patientId The unique identifier of the patient.
+ * @param visitId The unique identifier of the visit.
  */
 @Serializable
 @SerialName("/patients/{patientId}/visits/{visitId}")
@@ -114,7 +115,7 @@ data class VisitDetailRoute(
 /**
  * Represents the route to create a new visit for a specific patient.
  *
- * @property patientId The unique identifier of the patient.
+ * @param patientId The unique identifier of the patient.
  */
 @Serializable
 @SerialName("/patients/{patientId}/visit")
@@ -128,7 +129,7 @@ data class NewVisitRoute(
 /**
  * Represents the route to build a new questionnaire.
  *
- * @property duplicateFromId Optional ID of an existing questionnaire to use as a starting point.
+ * @param duplicateFromId Optional ID of an existing questionnaire to use as a starting point.
  */
 @Serializable
 @SerialName("/questionnaires/build")

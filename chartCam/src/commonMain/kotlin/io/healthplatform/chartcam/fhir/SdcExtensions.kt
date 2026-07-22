@@ -11,9 +11,16 @@ import com.google.fhir.model.r4.Questionnaire
  * https://hl7.org/fhir/uv/sdc/
  */
 object SdcExtensions {
+    /** The itemControl extension URL. */
     const val ITEM_CONTROL = "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl"
+
+    /** The minValue extension URL. */
     const val MIN_VALUE = "http://hl7.org/fhir/StructureDefinition/minValue"
+
+    /** The maxValue extension URL. */
     const val MAX_VALUE = "http://hl7.org/fhir/StructureDefinition/maxValue"
+
+    /** The hidden extension URL. */
     const val HIDDEN = "http://hl7.org/fhir/StructureDefinition/questionnaire-hidden"
 }
 

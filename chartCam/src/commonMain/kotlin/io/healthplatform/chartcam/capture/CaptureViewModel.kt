@@ -20,8 +20,8 @@ import kotlinx.coroutines.launch
  * ViewModel managing the clinical photography workflow state machine.
  * Handles Camera interaction, step progression, and file persistence based on dynamically provided steps.
  *
- * @property cameraManager Wraps hardware camera calls to interface with device camera hardware.
- * @property fileStorage Handles filesystem IO operations to save captured photos.
+ * @param cameraManager Wraps hardware camera calls to interface with device camera hardware.
+ * @param fileStorage Handles filesystem IO operations to save captured photos.
  */
 class CaptureViewModel(
     private val cameraManager: CameraManager,

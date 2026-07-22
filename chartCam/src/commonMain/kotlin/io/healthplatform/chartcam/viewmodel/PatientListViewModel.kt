@@ -29,14 +29,14 @@ import org.jetbrains.compose.resources.StringResource
 /**
  * UI State definition for the Patient List Screen.
  *
- * @property patients The list of patients currently being displayed.
- * @property searchQuery The current query used to filter patients.
- * @property isCreatingPatient Flag indicating if the create patient dialog is visible.
- * @property isLoading Flag indicating whether patients are currently being loaded.
- * @property exportedData The JSON string containing exported patient data, if an export occurred.
- * @property exportPassword The password used for the exported data.
- * @property error An error message to display if an operation fails.
- * @property showAllPatients Flag indicating whether to show all patients or just the current practitioner's patients.
+ * @param patients The list of patients currently being displayed.
+ * @param searchQuery The current query used to filter patients.
+ * @param isCreatingPatient Flag indicating if the create patient dialog is visible.
+ * @param isLoading Flag indicating whether patients are currently being loaded.
+ * @param exportedData The JSON string containing exported patient data, if an export occurred.
+ * @param exportPassword The password used for the exported data.
+ * @param error An error message to display if an operation fails.
+ * @param showAllPatients Flag indicating whether to show all patients or just the current practitioner's patients.
  */
 data class PatientListUiState(
     val patients: List<Patient> = emptyList(),
@@ -54,9 +54,9 @@ data class PatientListUiState(
  * Bridges the UI events to the [FhirRepository] and [ExportImportService].
  * This ViewModel directly consumes and emits native FHIR R4 `Resource` models (e.g., `Patient`) without relying on intermediary DTOs.
  *
- * @property repository The source of FHIR patient data.
- * @property exportImportService Service to handle exporting and importing of data.
- * @property authRepository The source of authentication truth, used to get the current practitioner.
+ * @param repository The source of FHIR patient data.
+ * @param exportImportService Service to handle exporting and importing of data.
+ * @param authRepository The source of authentication truth, used to get the current practitioner.
  */
 class PatientListViewModel(
     private val repository: FhirRepository,

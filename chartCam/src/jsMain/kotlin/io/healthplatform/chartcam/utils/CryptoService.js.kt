@@ -11,6 +11,9 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.js.Promise
 
+/**
+ * External JS module for hash-wasm providing argon2id implementation.
+ */
 @JsModule("hash-wasm")
 @JsNonModule
 external object HashWasm {

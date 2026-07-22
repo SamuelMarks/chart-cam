@@ -21,9 +21,9 @@ import kotlinx.coroutines.launch
 /**
  * UI State definition for the Patient Detail Screen.
  *
- * @property patient The FHIR Patient object being displayed.
- * @property encounters The list of FHIR Encounters associated with the patient.
- * @property isLoading Flag indicating whether the patient details are currently being loaded.
+ * @param patient The FHIR Patient object being displayed.
+ * @param encounters The list of FHIR Encounters associated with the patient.
+ * @param isLoading Flag indicating whether the patient details are currently being loaded.
  */
 data class PatientDetailUiState(
     val patient: Patient? = null,
@@ -36,7 +36,7 @@ data class PatientDetailUiState(
  * Bridges the UI events to the [FhirRepository].
  * This ViewModel directly consumes and emits native FHIR R4 `Resource` models (e.g., `Patient`, `Encounter`) without relying on intermediary DTOs.
  *
- * @property fhirRepository The repository providing FHIR data access.
+ * @param fhirRepository The repository providing FHIR data access.
  */
 class PatientDetailViewModel(
     private val fhirRepository: FhirRepository,

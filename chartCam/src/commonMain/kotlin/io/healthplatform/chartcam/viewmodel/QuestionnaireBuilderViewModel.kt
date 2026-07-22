@@ -20,9 +20,10 @@ import kotlinx.coroutines.flow.update
 /**
  * Defines the state of the Questionnaire Builder.
  *
- * @property title The title of the questionnaire.
- * @property items The list of configured items for the questionnaire.
- * @property isPreviewMode Whether the builder is currently in preview mode.
+ * @param title The title of the questionnaire.
+ * @param items The list of configured items for the questionnaire.
+ * @param isPreviewMode Whether the builder is currently in preview mode.
+ * @param isDuplicateNameError Whether there is an error due to a duplicate item name.
  */
 data class QuestionnaireBuilderState(
     val title: kotlin.String = "",
@@ -34,11 +35,11 @@ data class QuestionnaireBuilderState(
 /**
  * Represents an item being built in the builder before converting to FHIR.
  *
- * @property linkId The unique ID for the item.
- * @property label The display text (instruction) for the item.
- * @property widgetType The type of Material 3 widget to render.
- * @property options Options for dropdowns, if applicable.
- * @property isError Whether the item has a validation error (e.g., empty label, missing options).
+ * @param linkId The unique ID for the item.
+ * @param label The display text (instruction) for the item.
+ * @param widgetType The type of Material 3 widget to render.
+ * @param options Options for dropdowns, if applicable.
+ * @param isError Whether the item has a validation error (e.g., empty label, missing options).
  */
 data class BuilderItem(
     val linkId: kotlin.String,
@@ -71,6 +72,7 @@ enum class WidgetType {
  * This ViewModel directly consumes and emits native FHIR R4 `Resource` models (e.g., `Questionnaire`) without relying on intermediary DTOs.
  *
  * @param repository The repository to save the resulting FHIR Questionnaire.
+ * @param duplicateFromId Optional ID of a questionnaire to duplicate from.
  */
 class QuestionnaireBuilderViewModel(
     private val repository: QuestionnaireRepository,

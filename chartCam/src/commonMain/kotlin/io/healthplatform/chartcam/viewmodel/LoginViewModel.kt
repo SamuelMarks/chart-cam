@@ -24,9 +24,9 @@ import org.jetbrains.compose.resources.StringResource
 /**
  * UI State definition for the Login Screen.
  *
- * @property isLoading Whether a network request or login processing is actively occurring.
- * @property errorMessage Localized error message if login fails, or null if there is no error.
- * @property isLoggedIn Flag indicating successful authentication.
+ * @param isLoading Whether a network request or login processing is actively occurring.
+ * @param errorMessage Localized error message if login fails, or null if there is no error.
+ * @param isLoggedIn Flag indicating successful authentication.
  */
 data class LoginUiState(
     val isLoading: Boolean = false,
@@ -38,7 +38,7 @@ data class LoginUiState(
  * ViewModel handling the business logic for the Login Screen.
  * Bridges the UI events to the [AuthRepository].
  *
- * @property authRepository The source of authentication truth and login operations.
+ * @param authRepository The source of authentication truth and login operations.
  */
 class LoginViewModel(
     private val authRepository: AuthRepository,

@@ -23,11 +23,11 @@ import kotlinx.datetime.LocalDate
 /**
  * UI State definition for the Triage Screen.
  *
- * @property capturedPhotoPaths A map holding paths of captured photos, mapping keys to URIs/paths.
- * @property searchQuery The current query used to search for a patient.
- * @property searchResults The list of patients matching the current search query.
- * @property isCreatingPatient Flag indicating if the create patient dialog is visible.
- * @property selectedPatient The currently selected patient to associate with the photos.
+ * @param capturedPhotoPaths A map holding paths of captured photos, mapping keys to URIs/paths.
+ * @param searchQuery The current query used to search for a patient.
+ * @param searchResults The list of patients matching the current search query.
+ * @param isCreatingPatient Flag indicating if the create patient dialog is visible.
+ * @param selectedPatient The currently selected patient to associate with the photos.
  */
 data class TriageUiState(
     val capturedPhotoPaths: Map<String, String> = emptyMap(),
@@ -41,7 +41,7 @@ data class TriageUiState(
  * ViewModel handling the business logic for the Triage Screen.
  * Bridges UI events to the [FhirRepository]. This ViewModel directly consumes and emits native FHIR R4 `Resource` models (e.g., `Patient`, `Encounter`) without relying on intermediary DTOs.
  *
- * @property fhirRepository The repository providing FHIR data access.
+ * @param fhirRepository The repository providing FHIR data access.
  */
 class TriageViewModel(
     private val fhirRepository: FhirRepository,

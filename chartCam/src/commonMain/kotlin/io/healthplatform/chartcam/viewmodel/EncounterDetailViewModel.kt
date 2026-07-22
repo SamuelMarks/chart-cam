@@ -44,16 +44,16 @@ import kotlinx.coroutines.launch
  * State for the Encounter Detail Screen.
  * Contains patient details, captured photos, and the state of the active questionnaire form.
  *
- * @property isLoading Indicates if initial data is being loaded.
- * @property patient The patient context for this encounter.
- * @property practitioner The currently authenticated practitioner.
- * @property encounter The FHIR Encounter resource being modified.
- * @property photos The captured clinical photos.
- * @property answers A map of questionnaire linkId to dynamic answer (String, Boolean, etc.).
- * @property availableQuestionnaires The list of available questionnaires.
- * @property selectedQuestionnaire The currently selected questionnaire.
- * @property isSyncing Indicates if data is currently syncing.
- * @property isFinalized Flag to signal the UI that finalization and syncing is complete.
+ * @param isLoading Indicates if initial data is being loaded.
+ * @param patient The patient context for this encounter.
+ * @param practitioner The currently authenticated practitioner.
+ * @param encounter The FHIR Encounter resource being modified.
+ * @param photos The captured clinical photos.
+ * @param answers A map of questionnaire linkId to dynamic answer (String, Boolean, etc.).
+ * @param availableQuestionnaires The list of available questionnaires.
+ * @param selectedQuestionnaire The currently selected questionnaire.
+ * @param isSyncing Indicates if data is currently syncing.
+ * @param isFinalized Flag to signal the UI that finalization and syncing is complete.
  */
 data class EncounterUiState(
     val isLoading: Boolean = true,
@@ -74,10 +74,10 @@ data class EncounterUiState(
  * taking clinical photos, and persisting responses to FHIR JSON and server.
  * This ViewModel directly consumes and emits native FHIR R4 `Resource` models (e.g., `Patient`, `Encounter`, `DocumentReference`) without relying on intermediary DTOs.
  *
- * @property fhirRepository The repository providing FHIR data access.
- * @property authRepository The repository providing authentication state.
- * @property syncWorker The worker handling synchronization of data.
- * @property questionnaireRepository The repository for managing and retrieving questionnaires.
+ * @param fhirRepository The repository providing FHIR data access.
+ * @param authRepository The repository providing authentication state.
+ * @param syncWorker The worker handling synchronization of data.
+ * @param questionnaireRepository The repository for managing and retrieving questionnaires.
  */
 class EncounterDetailViewModel(
     private val fhirRepository: FhirRepository,

@@ -33,12 +33,18 @@ sealed class SyncState {
     /** Actively syncing. */
     object Syncing : SyncState()
 
-    /** Error state. */
+    /**
+     * Error state.
+     * @property message The error message.
+     */
     data class Error(
         val message: String,
     ) : SyncState()
 
-    /** Offline state. */
+    /**
+     * Offline state.
+     * @property queuedChanges The number of queued changes.
+     */
     data class Offline(
         val queuedChanges: Int,
     ) : SyncState()
@@ -74,6 +80,8 @@ class SyncWorker(
 ) {
     private val fhirJson = FhirR4Json()
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
+
+    /** Public observable state of the sync worker. */
     val syncState: StateFlow<SyncState> = _syncState
 
     // Tracks the last successful sync time for delta downloads

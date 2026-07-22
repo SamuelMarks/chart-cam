@@ -18,8 +18,6 @@ import kotlin.coroutines.suspendCoroutine
  * Helper function to create JS video constraints.
  *
  * @param mode The facing mode (e.g., "user" or "environment").
- * @param video The video constraint flag (unused, but kept for compatibility).
- * @param facingMode The facing mode constraint (unused, but kept for compatibility).
  * @return A dynamic object representing the media constraints.
  */
 private fun getVideoConstraints(mode: String): dynamic = js("({ video: { facingMode: mode } })")
