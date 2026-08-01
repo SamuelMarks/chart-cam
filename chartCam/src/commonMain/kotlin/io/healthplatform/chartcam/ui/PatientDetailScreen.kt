@@ -116,6 +116,9 @@ fun PatientDetailScreen(
 
 /**
  * Internal helper.
+ * @param padding The padding.
+ * @param state The state.
+ * @param onVisitSelected The onVisitSelected.
  */
 @Composable
 private fun PatientDetailContent(
@@ -172,6 +175,8 @@ private fun PatientDetailContent(
 
 /**
  * Internal helper.
+ * @param onBack The onBack.
+ * @param onDeletePatient The onDeletePatient.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -231,6 +236,7 @@ private fun PatientDetailTopBar(
 
 /**
  * Internal helper.
+ * @param patient The patient.
  */
 @Composable
 private fun PatientInfo(patient: com.google.fhir.model.r4.Patient) {
@@ -256,6 +262,8 @@ private fun PatientInfo(patient: com.google.fhir.model.r4.Patient) {
 
 /**
  * Internal helper.
+ * @param onDismiss The onDismiss.
+ * @param onDeletePatient The onDeletePatient.
  */
 @Composable
 private fun DeleteConfirmDialog(

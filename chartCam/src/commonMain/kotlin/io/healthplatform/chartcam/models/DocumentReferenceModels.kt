@@ -17,6 +17,9 @@ import io.healthplatform.chartcam.terminology.TerminologyService
 
 /**
  * Helper function for document reference construction.
+ * @param mime The mime.
+ * @param urlPath The urlPath.
+ * @return The result.
  */
 internal fun buildDocumentReferenceContent(
     mime: kotlin.String,
@@ -34,6 +37,9 @@ internal fun buildDocumentReferenceContent(
 
 /**
  * Helper function for document reference construction.
+ * @param encounterId The encounterId.
+ * @param answerCode The answerCode.
+ * @return The result.
  */
 internal fun buildDocumentReferenceContext(
     encounterId: kotlin.String,
@@ -59,6 +65,8 @@ internal fun buildDocumentReferenceContext(
 
 /**
  * Helper function for document reference construction.
+ * @param notesText The notesText.
+ * @return The result.
  */
 internal fun buildClinicalNoteContent(notesText: kotlin.String): MutableList<DocumentReference.Content.Builder> =
     mutableListOf(
@@ -76,6 +84,7 @@ internal fun buildClinicalNoteContent(notesText: kotlin.String): MutableList<Doc
 
 /**
  * Helper function for document reference construction.
+ * @return The result.
  */
 internal fun buildClinicalNoteType(): com.google.fhir.model.r4.CodeableConcept.Builder =
     com.google.fhir.model.r4.CodeableConcept.Builder().apply {

@@ -260,6 +260,11 @@ kover {
                     "io.healthplatform.chartcam.utils.AndroidShareService",
                     "io.healthplatform.chartcam.utils.JvmShareService",
                     "io.healthplatform.chartcam.AppKt",
+                    "io.healthplatform.chartcam.InitDatabaseKt",
+                    "io.healthplatform.chartcam.utils.QuestionnaireUtils",
+                    "io.healthplatform.chartcam.storage.AndroidSecureStorage",
+                    "io.healthplatform.chartcam.files.AndroidFileStorage",
+                    "io.healthplatform.chartcam.sensors.AndroidSensorManagerKt",
                     "io.healthplatform.chartcam.ComposableSingletons*",
                 )
                 packages(

@@ -68,7 +68,10 @@ open class ExportImportService(
         return cryptoService.encrypt(jsonData, password)
     }
 
-    /** Helper for exporting. */
+    /**
+     * Helper for exporting.
+     * @param bundleBuilder The bundleBuilder.
+     */
     private suspend fun addBaseResources(bundleBuilder: Bundle.Builder) {
         fhirRepo.getAllDevices().forEach { resource ->
             bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
@@ -78,7 +81,12 @@ open class ExportImportService(
         }
     }
 
-    /** Helper for exporting. */
+    /**
+     * Helper for exporting.
+     * @param bundleBuilder The bundleBuilder.
+     * @param exportAll The exportAll.
+     * @param practitionerId The practitionerId.
+     */
     private suspend fun addPatients(
         bundleBuilder: Bundle.Builder,
         exportAll: Boolean,
@@ -100,7 +108,13 @@ open class ExportImportService(
         }
     }
 
-    /** Helper for exporting. */
+    /**
+     * Helper for exporting.
+     * @param bundleBuilder The bundleBuilder.
+     * @param exportAll The exportAll.
+     * @param practitionerId The practitionerId.
+     * @return The result.
+     */
     private suspend fun addEncounters(
         bundleBuilder: Bundle.Builder,
         exportAll: Boolean,
@@ -120,7 +134,13 @@ open class ExportImportService(
         return encounters
     }
 
-    /** Helper for exporting. */
+    /**
+     * Helper for exporting.
+     * @param bundleBuilder The bundleBuilder.
+     * @param exportAll The exportAll.
+     * @param practitionerId The practitionerId.
+     * @param encounters The encounters.
+     */
     private suspend fun addDocumentReferences(
         bundleBuilder: Bundle.Builder,
         exportAll: Boolean,
@@ -168,7 +188,13 @@ open class ExportImportService(
         }
     }
 
-    /** Helper for exporting. */
+    /**
+     * Helper for exporting.
+     * @param bundleBuilder The bundleBuilder.
+     * @param exportAll The exportAll.
+     * @param practitionerId The practitionerId.
+     * @param encounters The encounters.
+     */
     private suspend fun addQuestionnaireResponses(
         bundleBuilder: Bundle.Builder,
         exportAll: Boolean,
@@ -194,7 +220,12 @@ open class ExportImportService(
         }
     }
 
-    /** Helper for exporting. */
+    /**
+     * Helper for exporting.
+     * @param bundleBuilder The bundleBuilder.
+     * @param exportAll The exportAll.
+     * @param practitionerId The practitionerId.
+     */
     private suspend fun addProvenances(
         bundleBuilder: Bundle.Builder,
         exportAll: Boolean,
@@ -237,7 +268,10 @@ open class ExportImportService(
         }
     }
 
-    /** Helper for importing a specific resource. */
+    /**
+     * Helper for importing a specific resource.
+     * @param resource The resource.
+     */
     private suspend fun importResource(resource: com.google.fhir.model.r4.Resource) {
         when (resource) {
             is Device -> fhirRepo.saveDevice(resource)

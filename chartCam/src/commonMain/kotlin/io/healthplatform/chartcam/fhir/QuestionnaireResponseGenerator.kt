@@ -84,6 +84,9 @@ object QuestionnaireResponseGenerator {
 
     /**
      * Helper function for processing questionnaire answers.
+     * @param item The item.
+     * @param answerValue The answerValue.
+     * @param builder The builder.
      */
     private fun populateAnswers(
         item: Questionnaire.Item,
@@ -118,6 +121,8 @@ object QuestionnaireResponseGenerator {
 
     /**
      * Helper function for processing questionnaire answers.
+     * @param builder The builder.
+     * @param answerValue The answerValue.
      */
     private fun addStringAnswer(
         builder: QuestionnaireResponse.Item.Builder,
@@ -135,6 +140,8 @@ object QuestionnaireResponseGenerator {
 
     /**
      * Helper function for processing questionnaire answers.
+     * @param builder The builder.
+     * @param answerValue The answerValue.
      */
     private fun addBooleanAnswer(
         builder: QuestionnaireResponse.Item.Builder,
@@ -152,6 +159,8 @@ object QuestionnaireResponseGenerator {
 
     /**
      * Helper function for processing questionnaire answers.
+     * @param builder The builder.
+     * @param answerValue The answerValue.
      */
     private fun addDecimalAnswer(
         builder: QuestionnaireResponse.Item.Builder,
@@ -173,6 +182,8 @@ object QuestionnaireResponseGenerator {
 
     /**
      * Helper function for processing questionnaire answers.
+     * @param builder The builder.
+     * @param answerValue The answerValue.
      */
     private fun addIntegerAnswer(
         builder: QuestionnaireResponse.Item.Builder,
@@ -193,6 +204,8 @@ object QuestionnaireResponseGenerator {
 
     /**
      * Helper function for processing questionnaire answers.
+     * @param builder The builder.
+     * @param answerValue The answerValue.
      */
     private fun addDateAnswer(
         builder: QuestionnaireResponse.Item.Builder,
@@ -211,6 +224,8 @@ object QuestionnaireResponseGenerator {
 
     /**
      * Helper function for processing questionnaire answers.
+     * @param builder The builder.
+     * @param answerValue The answerValue.
      */
     private fun addDateTimeAnswer(
         builder: QuestionnaireResponse.Item.Builder,
@@ -229,6 +244,8 @@ object QuestionnaireResponseGenerator {
 
     /**
      * Helper function for processing questionnaire answers.
+     * @param builder The builder.
+     * @param answerValue The answerValue.
      */
     private fun addChoiceAnswer(
         builder: QuestionnaireResponse.Item.Builder,

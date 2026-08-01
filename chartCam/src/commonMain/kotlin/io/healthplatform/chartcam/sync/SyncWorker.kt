@@ -156,6 +156,8 @@ class SyncWorker(
 
     /**
      * Internal helper function.
+     * @param change The change.
+     * @return The result.
      */
     private suspend fun processLocalChange(change: io.healthplatform.chartcam.database.LocalChangeEntity): Boolean {
         return try {
@@ -187,6 +189,9 @@ class SyncWorker(
 
     /**
      * Internal helper function.
+     * @param response The response.
+     * @param change The change.
+     * @return The result.
      */
     private suspend fun handlePushResponse(
         response: HttpResponse,
@@ -248,6 +253,7 @@ class SyncWorker(
 
     /**
      * Internal helper function.
+     * @param bundle The bundle.
      */
     private suspend fun processBundle(bundle: Bundle) {
         for (entry in bundle.entry) {
@@ -297,6 +303,8 @@ class SyncWorker(
 
     /**
      * Internal helper function.
+     * @param bundle The bundle.
+     * @param questionnaireRepository The questionnaireRepository.
      */
     private suspend fun processQuestionnaireBundle(
         bundle: com.google.fhir.model.r4.Bundle,

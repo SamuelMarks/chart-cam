@@ -210,6 +210,9 @@ private fun LoginHeader() {
 @Composable
 /**
  * Internal helper.
+ * @param isLoading The isLoading.
+ * @param stateErrorMessage The stateErrorMessage.
+ * @param onLogin The onLogin.
  */
 private fun LoginCard(
     isLoading: Boolean,
@@ -282,6 +285,10 @@ private fun LoginCard(
 @Composable
 /**
  * Internal helper.
+ * @param username The username.
+ * @param onUsernameChange The onUsernameChange.
+ * @param isLoading The isLoading.
+ * @param isError The isError.
  */
 private fun UsernameField(
     username: String,
@@ -318,6 +325,11 @@ private fun UsernameField(
 @Composable
 /**
  * Internal helper.
+ * @param password The password.
+ * @param onPasswordChange The onPasswordChange.
+ * @param isLoading The isLoading.
+ * @param isError The isError.
+ * @param onLogin The onLogin.
  */
 private fun PasswordField(
     password: String,
@@ -383,6 +395,7 @@ private fun OfflineModeSwitch() {
 @Composable
 /**
  * Internal helper.
+ * @param text The text.
  */
 private fun ErrorMessage(text: String) {
     Text(
@@ -397,6 +410,7 @@ private fun ErrorMessage(text: String) {
 @Composable
 /**
  * Internal helper.
+ * @param onClick The onClick.
  */
 private fun LoginButton(onClick: () -> Unit) {
     androidx.compose.runtime.CompositionLocalProvider(

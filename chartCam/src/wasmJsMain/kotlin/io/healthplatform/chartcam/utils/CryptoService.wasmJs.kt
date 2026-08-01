@@ -63,6 +63,7 @@ external object HashWasm {
      * Argon2id hashing wrapper.
      *
      * @return the promise of the derived hash.
+     * @param ignored The ignored.
      */
     fun argon2id(ignored: JsAny): Promise<JsAny>
 }

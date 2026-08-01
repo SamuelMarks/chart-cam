@@ -82,6 +82,8 @@ import org.jetbrains.compose.resources.stringResource
 
 /**
  * Internal helper function.
+ * @param items The items.
+ * @return The result.
  */
 private fun extractSteps(items: List<Questionnaire.Item>): List<PhotoStep> {
     val result = mutableListOf<PhotoStep>()
@@ -99,6 +101,8 @@ private fun extractSteps(items: List<Questionnaire.Item>): List<PhotoStep> {
 @Composable
 /**
  * Internal helper function.
+ * @param onOpenSettings The onOpenSettings.
+ * @param onCancel The onCancel.
  */
 private fun PermissionDeniedScreen(
     onOpenSettings: () -> Unit,
@@ -216,6 +220,11 @@ fun CaptureScreen(
 @Composable
 /**
  * Internal helper function.
+ * @param questionnaireId The questionnaireId.
+ * @param linkId The linkId.
+ * @param questionnaireRepository The questionnaireRepository.
+ * @param onFinished The onFinished.
+ * @param onCancel The onCancel.
  */
 private fun CaptureScreenContent(
     questionnaireId: String,
@@ -278,6 +287,11 @@ private fun CaptureScreenContent(
 @Composable
 /**
  * Internal helper function.
+ * @param state The state.
+ * @param cameraManager The cameraManager.
+ * @param sensorManager The sensorManager.
+ * @param focusRequester The focusRequester.
+ * @param actions The actions.
  */
 private fun CaptureBox(
     state: CaptureUiState,
@@ -387,6 +401,9 @@ fun ControlsLayer(
 @Composable
 /**
  * Internal helper function.
+ * @param stepName The stepName.
+ * @param count The count.
+ * @param total The total.
  */
 private fun ControlsTopBar(
     stepName: String,
@@ -414,6 +431,11 @@ private fun ControlsTopBar(
 @Composable
 /**
  * Internal helper function.
+ * @param isCapturing The isCapturing.
+ * @param hasMultipleCameras The hasMultipleCameras.
+ * @param onCapture The onCapture.
+ * @param onCancel The onCancel.
+ * @param onToggleLens The onToggleLens.
  */
 private fun ControlsBottomBar(
     isCapturing: Boolean,

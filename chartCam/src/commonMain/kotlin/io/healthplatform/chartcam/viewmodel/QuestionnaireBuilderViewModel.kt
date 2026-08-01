@@ -317,6 +317,8 @@ class QuestionnaireBuilderViewModel(
 
     /**
      * Maps item to fhir.
+     * @param builderItem The builderItem.
+     * @return The result.
      */
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun mapBuilderItemToFhir(builderItem: BuilderItem): Questionnaire.Item.Builder {
@@ -337,6 +339,9 @@ class QuestionnaireBuilderViewModel(
 
     /**
      * Applies choice options.
+     * @param itemBuilder The itemBuilder.
+     * @param builderItem The builderItem.
+     * @param fhirType The fhirType.
      */
     private fun applyChoiceOptions(
         itemBuilder: Questionnaire.Item.Builder,
@@ -373,6 +378,8 @@ class QuestionnaireBuilderViewModel(
 
     /**
      * Applies item control.
+     * @param itemBuilder The itemBuilder.
+     * @param builderItem The builderItem.
      */
     private fun applyItemControl(
         itemBuilder: Questionnaire.Item.Builder,
@@ -415,6 +422,8 @@ class QuestionnaireBuilderViewModel(
 
     /**
      * Gets fhir item type.
+     * @param widgetType The widgetType.
+     * @return The result.
      */
     private fun getFhirItemType(widgetType: WidgetType): Questionnaire.QuestionnaireItemType =
         when (widgetType) {

@@ -81,7 +81,12 @@ open class FhirRepository(
         }
     }
 
-    /** Helper for indexing. */
+    /**
+     * Helper for indexing.
+     * @param resource The resource.
+     * @param resourceType The resourceType.
+     * @param resourceId The resourceId.
+     */
     private suspend fun indexPractitioner(
         resource: Practitioner,
         resourceType: String,
@@ -95,7 +100,12 @@ open class FhirRepository(
         dbQuery.insertTokenIndex(resourceType, resourceId, "active", null, (resource.active?.value ?: true).toString())
     }
 
-    /** Helper for indexing. */
+    /**
+     * Helper for indexing.
+     * @param resource The resource.
+     * @param resourceType The resourceType.
+     * @param resourceId The resourceId.
+     */
     private suspend fun indexPatient(
         resource: Patient,
         resourceType: String,
@@ -117,7 +127,12 @@ open class FhirRepository(
         }
     }
 
-    /** Helper for indexing. */
+    /**
+     * Helper for indexing.
+     * @param resource The resource.
+     * @param resourceType The resourceType.
+     * @param resourceId The resourceId.
+     */
     private suspend fun indexEncounter(
         resource: Encounter,
         resourceType: String,
@@ -133,7 +148,12 @@ open class FhirRepository(
         dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status?.value?.name ?: "")
     }
 
-    /** Helper for indexing. */
+    /**
+     * Helper for indexing.
+     * @param resource The resource.
+     * @param resourceType The resourceType.
+     * @param resourceId The resourceId.
+     */
     private suspend fun indexDocumentReference(
         resource: DocumentReference,
         resourceType: String,
@@ -149,7 +169,12 @@ open class FhirRepository(
         dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status?.value?.name ?: "")
     }
 
-    /** Helper for indexing. */
+    /**
+     * Helper for indexing.
+     * @param resource The resource.
+     * @param resourceType The resourceType.
+     * @param resourceId The resourceId.
+     */
     private suspend fun indexQuestionnaireResponse(
         resource: QuestionnaireResponse,
         resourceType: String,
@@ -168,7 +193,12 @@ open class FhirRepository(
         dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status?.value?.name ?: "")
     }
 
-    /** Helper for indexing. */
+    /**
+     * Helper for indexing.
+     * @param resource The resource.
+     * @param resourceType The resourceType.
+     * @param resourceId The resourceId.
+     */
     private suspend fun indexQuestionnaire(
         resource: Questionnaire,
         resourceType: String,
@@ -180,7 +210,13 @@ open class FhirRepository(
         dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status?.value?.name ?: "")
     }
 
-    /** Saves resource */
+    /**
+     * Saves resource
+     * @param resourceType The resourceType.
+     * @param resourceId The resourceId.
+     * @param resource The resource.
+     * @param isLocalChange The isLocalChange.
+     */
     open suspend fun saveResource(
         resourceType: String,
         resourceId: String,

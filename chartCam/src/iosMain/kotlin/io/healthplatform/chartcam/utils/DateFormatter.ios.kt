@@ -12,6 +12,8 @@ import platform.Foundation.currentLocale
 
 /**
  * Helper to parse date.
+ * @param fhirDate The fhirDate.
+ * @return The result.
  */
 private fun parseFhirDate(fhirDate: String): NSDate? {
     val iso = NSISO8601DateFormatter()

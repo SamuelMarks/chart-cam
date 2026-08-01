@@ -145,7 +145,11 @@ object SdcEvaluator {
         return s.toFloat()
     }
 
-    /** Helper */
+    /**
+     * Helper
+     * @param str The str.
+     * @return The result.
+     */
     private fun processMultiplicationAndDivision(str: String): String {
         var s = str
         val mulDivRegex = Regex("(-?\\d+\\.?\\d*)[*/](-?\\d+\\.?\\d*)")
@@ -162,7 +166,11 @@ object SdcEvaluator {
         return s
     }
 
-    /** Helper */
+    /**
+     * Helper
+     * @param str The str.
+     * @return The result.
+     */
     private fun processAdditionAndSubtraction(str: String): String {
         var s = str
         val addSubRegex = Regex("(-?\\d+\\.?\\d*)[+-](-?\\d+\\.?\\d*)")

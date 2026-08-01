@@ -129,6 +129,10 @@ class EncounterDetailViewModel(
 
     /**
      * Handles new encounter.
+     * @param patient The patient.
+     * @param practitioner The practitioner.
+     * @param questionnaires The questionnaires.
+     * @param photosMap The photosMap.
      */
     private suspend fun handleNewEncounter(
         patient: Patient,
@@ -191,6 +195,10 @@ class EncounterDetailViewModel(
 
     /**
      * Handles existing encounter.
+     * @param existingResponses The existingResponses.
+     * @param questionnaires The questionnaires.
+     * @param existingAnswers The existingAnswers.
+     * @return The result.
      */
     private suspend fun extractExistingAnswers(
         existingResponses: List<QuestionnaireResponse>,
@@ -212,6 +220,11 @@ class EncounterDetailViewModel(
 
     /**
      * Handles existing encounter.
+     * @param visitId The visitId.
+     * @param patient The patient.
+     * @param practitioner The practitioner.
+     * @param questionnaires The questionnaires.
+     * @param photosMap The photosMap.
      */
     private suspend fun handleExistingEncounter(
         visitId: String,
@@ -284,6 +297,8 @@ class EncounterDetailViewModel(
 
     /**
      * Creates recovered questionnaire.
+     * @param latestQr The latestQr.
+     * @return The result.
      */
     private suspend fun createRecoveredQuestionnaire(latestQr: QuestionnaireResponse): Questionnaire {
         val dummyItems =
@@ -529,6 +544,8 @@ class EncounterDetailViewModel(
 
     /**
      * Builds and saves a QuestionnaireResponse.
+     * @param q The q.
+     * @param enc The enc.
      */
     private suspend fun buildAndSaveQuestionnaireResponse(
         q: Questionnaire?,
@@ -591,6 +608,8 @@ class EncounterDetailViewModel(
 
     /**
      * Builds subject reference.
+     * @param enc The enc.
+     * @return The result.
      */
     private fun buildSubjectReference(enc: Encounter): Reference.Builder {
         val rawSubjectValue = enc.subject?.reference?.value ?: ""
@@ -606,6 +625,8 @@ class EncounterDetailViewModel(
 
     /**
      * Builds encounter reference.
+     * @param id The id.
+     * @return The result.
      */
     private fun buildEncounterReference(id: String): Reference.Builder {
         val encounterReference = if (id.startsWith("Encounter/")) id else "Encounter/$id"
@@ -619,6 +640,7 @@ class EncounterDetailViewModel(
 
     /**
      * Appends photos.
+     * @param items The items.
      */
     private fun appendPhotosToResponseItems(items: MutableList<QuestionnaireResponse.Item.Builder>) {
         _uiState.value.photos.forEach { photo ->
@@ -668,6 +690,8 @@ class EncounterDetailViewModel(
 
     /**
      * Updates the encounter with notes from the form.
+     * @param q The q.
+     * @param encounterId The encounterId.
      */
     private suspend fun updateEncounterWithNotes(
         q: Questionnaire?,

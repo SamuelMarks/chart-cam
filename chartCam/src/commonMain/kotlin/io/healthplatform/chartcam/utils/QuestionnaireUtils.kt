@@ -71,6 +71,9 @@ object QuestionnaireUtils {
 
     /**
      * Determines dummy item type.
+     * @param answer The answer.
+     * @param qrItem The qrItem.
+     * @return The result.
      */
     private fun determineDummyItemType(
         answer: QuestionnaireResponse.Item.Answer.Value?,
@@ -143,6 +146,10 @@ object QuestionnaireUtils {
 
     /**
      * Applies answer to item.
+     * @param itemBuilder The itemBuilder.
+     * @param answer The answer.
+     * @param qType The qType.
+     * @return The result.
      */
     private fun applyAnswerToItem(
         itemBuilder: QuestionnaireResponse.Item.Builder,
@@ -208,6 +215,9 @@ object QuestionnaireUtils {
 
     /**
      * Maps string answer.
+     * @param answer The answer.
+     * @param qType The qType.
+     * @return The result.
      */
     private fun mapStringAnswer(
         answer: String,
@@ -263,6 +273,9 @@ object QuestionnaireUtils {
 
     /**
      * Maps float answer.
+     * @param answer The answer.
+     * @param qType The qType.
+     * @return The result.
      */
     private fun mapFloatAnswer(
         answer: Float,
@@ -290,6 +303,8 @@ object QuestionnaireUtils {
 
     /**
      * Extracts answers recursively.
+     * @param items The items.
+     * @param existingAnswers The existingAnswers.
      */
     fun extractAnswersRecursively(
         items: List<QuestionnaireResponse.Item>,
@@ -311,6 +326,8 @@ object QuestionnaireUtils {
 
     /**
      * Extracts list answer.
+     * @param answers The answers.
+     * @return The result.
      */
     private fun extractListAnswer(answers: List<QuestionnaireResponse.Item.Answer>): List<String> =
         answers.mapNotNull { ans ->
@@ -320,6 +337,9 @@ object QuestionnaireUtils {
 
     /**
      * Extracts single answer.
+     * @param linkId The linkId.
+     * @param answer The answer.
+     * @param existingAnswers The existingAnswers.
      */
     private fun extractSingleAnswer(
         linkId: String,
@@ -333,6 +353,9 @@ object QuestionnaireUtils {
 
     /**
      * Extracts string or boolean.
+     * @param linkId The linkId.
+     * @param answer The answer.
+     * @param existingAnswers The existingAnswers.
      */
     private fun extractStringOrBoolean(
         linkId: String,
@@ -348,6 +371,9 @@ object QuestionnaireUtils {
 
     /**
      * Extracts number.
+     * @param linkId The linkId.
+     * @param answer The answer.
+     * @param existingAnswers The existingAnswers.
      */
     private fun extractNumber(
         linkId: String,
@@ -366,6 +392,9 @@ object QuestionnaireUtils {
 
     /**
      * Extracts date.
+     * @param linkId The linkId.
+     * @param answer The answer.
+     * @param existingAnswers The existingAnswers.
      */
     private fun extractDate(
         linkId: String,

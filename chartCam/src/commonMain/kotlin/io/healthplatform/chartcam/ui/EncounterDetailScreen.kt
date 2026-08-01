@@ -210,6 +210,10 @@ private data class EncounterEffectParams(
 @Composable
 /**
  * Internal helper.
+ * @param params The params.
+ * @param actions The actions.
+ * @param viewModel The viewModel.
+ * @param state The state.
  */
 private fun EncounterEffects(
     params: EncounterEffectParams,
@@ -254,6 +258,8 @@ private fun EncounterEffects(
 @Composable
 /**
  * Internal helper.
+ * @param onConfirm The onConfirm.
+ * @param onDismiss The onDismiss.
  */
 private fun DeleteConfirmDialog(
     onConfirm: () -> Unit,
@@ -285,6 +291,10 @@ private fun DeleteConfirmDialog(
 @Composable
 /**
  * Internal helper.
+ * @param state The state.
+ * @param actions The actions.
+ * @param viewModel The viewModel.
+ * @param onDeleteRequest The onDeleteRequest.
  */
 private fun EncounterTopBar(
     state: EncounterUiState,
@@ -343,6 +353,10 @@ private fun EncounterTopBar(
 @Composable
 /**
  * Internal helper.
+ * @param state The state.
+ * @param padding The padding.
+ * @param actions The actions.
+ * @param viewModel The viewModel.
  */
 private fun EncounterDetailContent(
     state: EncounterUiState,
@@ -400,6 +414,9 @@ private fun EncounterDetailContent(
 @Composable
 /**
  * Internal helper.
+ * @param state The state.
+ * @param actions The actions.
+ * @param viewModel The viewModel.
  */
 private fun EncounterDetailHeader(
     state: EncounterUiState,
@@ -416,6 +433,7 @@ private fun EncounterDetailHeader(
 @Composable
 /**
  * Internal helper.
+ * @param state The state.
  */
 private fun PatientAndPractitionerInfo(state: EncounterUiState) {
     state.patient?.let { patient ->
@@ -445,6 +463,9 @@ private fun PatientAndPractitionerInfo(state: EncounterUiState) {
 @Composable
 /**
  * Internal helper.
+ * @param state The state.
+ * @param actions The actions.
+ * @param viewModel The viewModel.
  */
 private fun QuestionnaireSelector(
     state: EncounterUiState,
@@ -505,6 +526,9 @@ private fun QuestionnaireSelector(
 @Composable
 /**
  * Internal helper.
+ * @param state The state.
+ * @param actions The actions.
+ * @param viewModel The viewModel.
  */
 private fun QuestionnaireFormArea(
     state: EncounterUiState,
@@ -609,6 +633,8 @@ fun PhotoGridItem(doc: DocumentReference) {
 
 /**
  * Internal helper.
+ * @param state The state.
+ * @return The result.
  */
 private fun canFinalizeEncounter(state: EncounterUiState): Boolean =
     !state.isLoading &&
