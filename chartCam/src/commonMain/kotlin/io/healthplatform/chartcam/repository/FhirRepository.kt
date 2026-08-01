@@ -16,6 +16,7 @@ import com.google.fhir.model.r4.FhirR4Json
 import com.google.fhir.model.r4.Patient
 import com.google.fhir.model.r4.Practitioner
 import com.google.fhir.model.r4.Provenance
+import com.google.fhir.model.r4.Questionnaire
 import com.google.fhir.model.r4.QuestionnaireResponse
 import com.google.fhir.model.r4.Resource
 import io.healthplatform.chartcam.database.ChartCamDatabase
@@ -56,6 +57,7 @@ open class FhirRepository(
      * @param resourceType The type of the resource.
      * @param resourceId The unique ID of the resource.
      */
+
     private suspend fun indexResource(
         resource: Resource,
         resourceType: String,
@@ -67,87 +69,118 @@ open class FhirRepository(
         dbQuery.deleteDateIndices(resourceType, resourceId)
 
         when (resource) {
-            is Practitioner -> {
-                val name = resource.name.firstOrNull()
-                if (name != null) {
-                    dbQuery.insertStringIndex(resourceType, resourceId, "family", name.familyName ?: "")
-                    dbQuery.insertStringIndex(resourceType, resourceId, "given", name.givenName ?: "")
-                }
-                dbQuery.insertTokenIndex(resourceType, resourceId, "active", null, (resource.active?.value ?: true).toString())
-            }
-            is Patient -> {
-                val name = resource.name.firstOrNull()
-                if (name != null) {
-                    dbQuery.insertStringIndex(resourceType, resourceId, "family", name.familyName ?: "")
-                    dbQuery.insertStringIndex(resourceType, resourceId, "given", name.givenName ?: "")
-                    dbQuery.insertStringIndex(resourceType, resourceId, "name", "${name.givenName} ${name.familyName}")
-                }
-                dbQuery.insertTokenIndex(resourceType, resourceId, "mrn", null, resource.mrn)
-                dbQuery.insertTokenIndex(resourceType, resourceId, "gender", null, resource.gender?.value?.name ?: "")
-                resource.birthDate?.value?.toString()?.let {
-                    dbQuery.insertDateIndex(resourceType, resourceId, "birthdate", it)
-                }
-                resource.managingOrganization?.reference?.value?.let {
-                    dbQuery.insertReferenceIndex(resourceType, resourceId, "organization", it)
-                }
-            }
-            is Encounter -> {
-                resource.subject?.reference?.value?.let {
-                    dbQuery.insertReferenceIndex(resourceType, resourceId, "subject", it)
-                    dbQuery.insertReferenceIndex(resourceType, resourceId, "patient", it)
-                }
-                resource.participant.firstOrNull()?.individual?.reference?.value?.let {
-                    dbQuery.insertReferenceIndex(resourceType, resourceId, "practitioner", it)
-                }
-                dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status.value?.name ?: "")
-                resource.period?.start?.value?.toString()?.let {
-                    dbQuery.insertDateIndex(resourceType, resourceId, "date", it)
-                }
-            }
-            is DocumentReference -> {
-                resource.context?.encounter?.firstOrNull()?.reference?.value?.let {
-                    dbQuery.insertReferenceIndex(resourceType, resourceId, "encounter", it)
-                }
-                resource.subject?.reference?.value?.let {
-                    dbQuery.insertReferenceIndex(resourceType, resourceId, "subject", it)
-                }
-                resource.date?.value?.toString()?.let {
-                    dbQuery.insertDateIndex(resourceType, resourceId, "date", it)
-                }
-            }
-            is QuestionnaireResponse -> {
-                resource.encounter?.reference?.value?.let {
-                    dbQuery.insertReferenceIndex(resourceType, resourceId, "encounter", it)
-                }
-                resource.subject?.reference?.value?.let {
-                    dbQuery.insertReferenceIndex(resourceType, resourceId, "subject", it)
-                }
-                resource.questionnaire?.value?.let {
-                    dbQuery.insertReferenceIndex(resourceType, resourceId, "questionnaire", it)
-                }
-                resource.authored?.value?.toString()?.let {
-                    dbQuery.insertDateIndex(resourceType, resourceId, "authored", it)
-                }
-            }
-            is Provenance -> {
-                resource.target.firstOrNull()?.reference?.value?.let {
-                    dbQuery.insertReferenceIndex(resourceType, resourceId, "target", it)
-                }
+            is Practitioner -> indexPractitioner(resource, resourceType, resourceId)
+            is Patient -> indexPatient(resource, resourceType, resourceId)
+            is Encounter -> indexEncounter(resource, resourceType, resourceId)
+            is DocumentReference -> indexDocumentReference(resource, resourceType, resourceId)
+            is QuestionnaireResponse -> indexQuestionnaireResponse(resource, resourceType, resourceId)
+            is Questionnaire -> indexQuestionnaire(resource, resourceType, resourceId)
+            else -> {
+                // Not indexed
             }
         }
     }
 
-/**
-     * Saves a generic FHIR resource to the local database.
-     *
-     * @param resourceType The type of the resource.
-     * @param resourceId The unique ID of the resource.
-     * @param resource The FHIR Resource.
-     * @param isLocalChange Whether this save is a local user mutation (default true).
-     * @throws kotlinx.serialization.SerializationException if the resource cannot be serialized.
-     * @throws Exception if a database operation fails.
-     */
-    @Suppress("ktlint:standard:function-signature")
+    /** Helper for indexing. */
+    private suspend fun indexPractitioner(
+        resource: Practitioner,
+        resourceType: String,
+        resourceId: String,
+    ) {
+        val name = resource.name.firstOrNull()
+        if (name != null) {
+            dbQuery.insertStringIndex(resourceType, resourceId, "family", name.familyName ?: "")
+            dbQuery.insertStringIndex(resourceType, resourceId, "given", name.givenName ?: "")
+        }
+        dbQuery.insertTokenIndex(resourceType, resourceId, "active", null, (resource.active?.value ?: true).toString())
+    }
+
+    /** Helper for indexing. */
+    private suspend fun indexPatient(
+        resource: Patient,
+        resourceType: String,
+        resourceId: String,
+    ) {
+        val name = resource.name.firstOrNull()
+        if (name != null) {
+            dbQuery.insertStringIndex(resourceType, resourceId, "family", name.familyName ?: "")
+            dbQuery.insertStringIndex(resourceType, resourceId, "given", name.givenName ?: "")
+            dbQuery.insertStringIndex(resourceType, resourceId, "name", "${name.givenName} ${name.familyName}")
+        }
+        dbQuery.insertTokenIndex(resourceType, resourceId, "mrn", null, resource.mrn)
+        dbQuery.insertTokenIndex(resourceType, resourceId, "gender", null, resource.gender?.value?.name ?: "")
+        resource.birthDate?.value?.toString()?.let {
+            dbQuery.insertDateIndex(resourceType, resourceId, "birthdate", it)
+        }
+        resource.managingOrganization?.reference?.value?.let {
+            dbQuery.insertReferenceIndex(resourceType, resourceId, "organization", it)
+        }
+    }
+
+    /** Helper for indexing. */
+    private suspend fun indexEncounter(
+        resource: Encounter,
+        resourceType: String,
+        resourceId: String,
+    ) {
+        resource.subject?.reference?.value?.let {
+            dbQuery.insertReferenceIndex(resourceType, resourceId, "subject", it)
+            dbQuery.insertReferenceIndex(resourceType, resourceId, "patient", it)
+        }
+        resource.participant.firstOrNull()?.individual?.reference?.value?.let {
+            dbQuery.insertReferenceIndex(resourceType, resourceId, "practitioner", it)
+        }
+        dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status?.value?.name ?: "")
+    }
+
+    /** Helper for indexing. */
+    private suspend fun indexDocumentReference(
+        resource: DocumentReference,
+        resourceType: String,
+        resourceId: String,
+    ) {
+        resource.subject?.reference?.value?.let {
+            dbQuery.insertReferenceIndex(resourceType, resourceId, "subject", it)
+            dbQuery.insertReferenceIndex(resourceType, resourceId, "patient", it)
+        }
+        resource.context?.encounter?.firstOrNull()?.reference?.value?.let {
+            dbQuery.insertReferenceIndex(resourceType, resourceId, "encounter", it)
+        }
+        dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status?.value?.name ?: "")
+    }
+
+    /** Helper for indexing. */
+    private suspend fun indexQuestionnaireResponse(
+        resource: QuestionnaireResponse,
+        resourceType: String,
+        resourceId: String,
+    ) {
+        resource.subject?.reference?.value?.let {
+            dbQuery.insertReferenceIndex(resourceType, resourceId, "subject", it)
+            dbQuery.insertReferenceIndex(resourceType, resourceId, "patient", it)
+        }
+        resource.encounter?.reference?.value?.let {
+            dbQuery.insertReferenceIndex(resourceType, resourceId, "encounter", it)
+        }
+        resource.questionnaire?.value?.let {
+            dbQuery.insertReferenceIndex(resourceType, resourceId, "questionnaire", it)
+        }
+        dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status?.value?.name ?: "")
+    }
+
+    /** Helper for indexing. */
+    private suspend fun indexQuestionnaire(
+        resource: Questionnaire,
+        resourceType: String,
+        resourceId: String,
+    ) {
+        resource.title?.value?.let {
+            dbQuery.insertStringIndex(resourceType, resourceId, "title", it)
+        }
+        dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status?.value?.name ?: "")
+    }
+
+    /** Saves resource */
     open suspend fun saveResource(
         resourceType: String,
         resourceId: String,
@@ -293,7 +326,13 @@ open class FhirRepository(
                 fhirJson.decodeFromString(it.serializedResource) as Patient
             }
         } else {
-            val encounters = dbQuery.searchResourcesByReference("Encounter", "practitioner", practitionerId).awaitAsList()
+            val encounters =
+                dbQuery
+                    .searchResourcesByReference(
+                        "Encounter",
+                        "practitioner",
+                        practitionerId,
+                    ).awaitAsList()
             val patientIds =
                 encounters
                     .mapNotNull {
@@ -318,7 +357,13 @@ open class FhirRepository(
         val allEntities = dbQuery.searchResourcesByString("Patient", "name", query).awaitAsList()
         var patients = allEntities.map { fhirJson.decodeFromString(it.serializedResource) as Patient }
         if (!showAll && practitionerId != null) {
-            val encounters = dbQuery.searchResourcesByReference("Encounter", "practitioner", practitionerId).awaitAsList()
+            val encounters =
+                dbQuery
+                    .searchResourcesByReference(
+                        "Encounter",
+                        "practitioner",
+                        practitionerId,
+                    ).awaitAsList()
             val patientIds =
                 encounters
                     .mapNotNull {
@@ -395,7 +440,10 @@ open class FhirRepository(
                         if (notes != null) {
                             this.text =
                                 com.google.fhir.model.r4.Narrative.Builder(
-                                    status = Enumeration(value = com.google.fhir.model.r4.Narrative.NarrativeStatus.Generated),
+                                    status =
+                                        Enumeration(
+                                            value = com.google.fhir.model.r4.Narrative.NarrativeStatus.Generated,
+                                        ),
                                     div =
                                         com.google.fhir.model.r4.Xhtml
                                             .Builder(value = "<div>$notes</div>"),
@@ -447,10 +495,12 @@ open class FhirRepository(
      */
     open suspend fun getQuestionnaireResponsesForEncounter(encounterId: String): List<QuestionnaireResponse> {
         val ref = if (encounterId.startsWith("Encounter/")) encounterId else "Encounter/$encounterId"
-        val refNoPrefix = if (encounterId.startsWith("Encounter/")) encounterId.removePrefix("Encounter/") else encounterId
+        val refNoPrefix =
+            if (encounterId.startsWith("Encounter/")) encounterId.removePrefix("Encounter/") else encounterId
 
         val withPrefix = dbQuery.searchResourcesByReferenceDesc("QuestionnaireResponse", "encounter", ref).awaitAsList()
-        val withoutPrefix = dbQuery.searchResourcesByReferenceDesc("QuestionnaireResponse", "encounter", refNoPrefix).awaitAsList()
+        val withoutPrefix =
+            dbQuery.searchResourcesByReferenceDesc("QuestionnaireResponse", "encounter", refNoPrefix).awaitAsList()
 
         val all = (withPrefix + withoutPrefix).distinctBy { it.resourceId }
 

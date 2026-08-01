@@ -9,26 +9,18 @@ package io.healthplatform.chartcam.ui
 
 import kotlin.js.toJsString
 
+private const val SET_NAVIGATOR_LANGUAGE_JS =
+    "(language) => { Object.defineProperty(navigator, 'language', { value: language, configurable: true }); " +
+        "Object.defineProperty(navigator, 'languages', { value: [language], configurable: true }); }"
+
 /**
  * Modifies the `navigator.language` and `navigator.languages` properties in the browser
  * environment to forcefully simulate a language change.
  *
  * @param language The new language code (e.g., "en", "es") represented as a [JsAny] JavaScript string.
  */
-private fun setNavigatorLanguage(language: JsAny) {
-    js(
-        """
-        Object.defineProperty(navigator, 'language', {
-            value: language,
-            configurable: true
-        });
-        Object.defineProperty(navigator, 'languages', {
-            value: [language],
-            configurable: true
-        });
-    """,
-    )
-}
+@JsFun(SET_NAVIGATOR_LANGUAGE_JS)
+private external fun setNavigatorLanguage(language: JsAny)
 
 /**
  * Changes the active language of the application on the Web (WasmJs) target.

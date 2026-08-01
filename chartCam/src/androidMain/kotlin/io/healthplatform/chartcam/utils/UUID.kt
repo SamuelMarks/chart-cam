@@ -1,6 +1,6 @@
 /**
- * @file UUID.android.kt
- * Contains declarations for UUID.android.kt.
+ * @file UUID.kt
+ * Contains declarations for UUID.kt.
  *
  * File defining the Android-specific implementation for generating UUIDs.
  */

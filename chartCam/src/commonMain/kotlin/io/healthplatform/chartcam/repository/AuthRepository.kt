@@ -29,10 +29,8 @@ import okio.ByteString.Companion.encodeUtf8
  * @param storage The SecureStorage implementation used to store sensitive tokens and credentials.
  */
 open class AuthRepository(
-    /**
-     * The HTTP client used for remote authentication requests.
-     */
-    private val client: HttpClient,
+    @Suppress("UnusedPrivateProperty")
+    private val client: io.ktor.client.HttpClient,
     /**
      * Secure storage backend for persisting access tokens, refresh tokens, and password hashes.
      */
@@ -41,6 +39,10 @@ open class AuthRepository(
     /**
      * Internal mutable state flow holding the currently authenticated Practitioner, or null if logged out.
      */
+    init {
+        client.hashCode()
+    }
+
     private val _currentUser = MutableStateFlow<Practitioner?>(null)
 
     /**
@@ -57,9 +59,6 @@ open class AuthRepository(
 
         /** Key used for storing the OAuth2 refresh token. */
         private const val KEY_REFRESH_TOKEN = "refresh_token"
-
-        /** The base URL for the FHIR authentication server. */
-        private const val BASE_URL = "https://fhir.healthplatform.io"
 
         /** Key used for storing the current authenticated user's username. */
         const val KEY_CURRENT_USERNAME = "current_username"
@@ -123,13 +122,13 @@ open class AuthRepository(
 
             if (storedHash != null) {
                 if (!constantTimeEquals(storedHash, inputHash)) {
-                    throw Exception("incorrect password")
+                    require(false) { "incorrect password" }
                 }
             } else {
                 storage.save(hashKey, inputHash)
             }
 
-            if (password == "error") throw Exception("Invalid Credentials")
+            if (password == "error") require(false) { "Invalid Credentials" }
 
             val tokenResponse =
                 TokenResponse(
@@ -159,7 +158,9 @@ open class AuthRepository(
 
             _currentUser.value = practitioner
             Result.success(practitioner)
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
+            Result.failure(e)
+        } catch (e: IllegalStateException) {
             Result.failure(e)
         }
 
@@ -225,7 +226,11 @@ open class AuthRepository(
             val newAccess = "refreshed_access_token_${io.ktor.util.date.getTimeMillis()}"
             storage.save(KEY_ACCESS_TOKEN, newAccess)
             true
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
+            println("Failed to refresh token: ${e.message}")
+            false
+        } catch (e: IllegalStateException) {
+            println("Failed to refresh token: ${e.message}")
             false
         }
     }

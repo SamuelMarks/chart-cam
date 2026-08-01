@@ -21,12 +21,12 @@ class JsSensorManager : SensorManager {
     /**
      * Starts listening to sensor updates. No-op on web.
      */
-    override fun startListening() {}
+    override fun startListening() { /* no-op */ }
 
     /**
      * Stops listening to sensor updates. No-op on web.
      */
-    override fun stopListening() {}
+    override fun stopListening() { /* no-op */ }
 }
 
 /**

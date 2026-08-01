@@ -64,124 +64,182 @@ object QuestionnaireResponseGenerator {
         val answerValue = answers[linkId]
         val nestedItemBuilders = item.item.mapNotNull { createResponseItemBuilder(it, answers) }
 
-        if (answerValue == null && nestedItemBuilders.isEmpty()) {
-            return null
-        }
-
-        val responseItemBuilder =
+        return if (answerValue == null && nestedItemBuilders.isEmpty()) {
+            null
+        } else {
             QuestionnaireResponse.Item
                 .Builder(
                     linkId = String.Builder().apply { value = linkId },
                 ).apply {
                     text = String.Builder().apply { value = item.text?.value ?: "" }
+                    if (answerValue != null) {
+                        populateAnswers(item, answerValue, this)
+                    }
+                    if (nestedItemBuilders.isNotEmpty()) {
+                        this.item.addAll(nestedItemBuilders)
+                    }
                 }
+        }
+    }
 
-        if (answerValue != null) {
-            when (item.type?.value) {
-                Questionnaire.QuestionnaireItemType.String, Questionnaire.QuestionnaireItemType.Text -> {
-                    responseItemBuilder.answer.add(
-                        QuestionnaireResponse.Item.Answer.Builder().apply {
-                            value =
-                                QuestionnaireResponse.Item.Answer.Value.String(
-                                    String.Builder().apply { value = answerValue as? kotlin.String ?: "" }.build(),
-                                )
-                        },
-                    )
-                }
-                Questionnaire.QuestionnaireItemType.Boolean -> {
-                    responseItemBuilder.answer.add(
-                        QuestionnaireResponse.Item.Answer.Builder().apply {
-                            value =
-                                QuestionnaireResponse.Item.Answer.Value.Boolean(
-                                    Boolean.Builder().apply { value = answerValue as? kotlin.Boolean ?: false }.build(),
-                                )
-                        },
-                    )
-                }
-                Questionnaire.QuestionnaireItemType.Decimal -> {
-                    val fl = (answerValue as? Float) ?: (answerValue as? kotlin.String)?.toFloatOrNull()
-                    if (fl != null) {
-                        responseItemBuilder.answer.add(
-                            QuestionnaireResponse.Item.Answer.Builder().apply {
-                                value =
-                                    QuestionnaireResponse.Item.Answer.Value.Decimal(
-                                        Decimal.Builder().apply { value = BigDecimal.parseString(fl.toString()) }.build(),
-                                    )
-                            },
-                        )
-                    }
-                }
-                Questionnaire.QuestionnaireItemType.Integer -> {
-                    val intVal = (answerValue as? Float)?.toInt() ?: (answerValue as? kotlin.String)?.toIntOrNull()
-                    if (intVal != null) {
-                        responseItemBuilder.answer.add(
-                            QuestionnaireResponse.Item.Answer.Builder().apply {
-                                value =
-                                    QuestionnaireResponse.Item.Answer.Value.Integer(
-                                        Integer.Builder().apply { value = intVal }.build(),
-                                    )
-                            },
-                        )
-                    }
-                }
-                Questionnaire.QuestionnaireItemType.Date -> {
-                    responseItemBuilder.answer.add(
-                        QuestionnaireResponse.Item.Answer.Builder().apply {
-                            value =
-                                QuestionnaireResponse.Item.Answer.Value.Date(
-                                    Date.Builder().apply { value = FhirDate.fromString(answerValue as? kotlin.String ?: "") }.build(),
-                                )
-                        },
-                    )
-                }
-                Questionnaire.QuestionnaireItemType.DateTime -> {
-                    responseItemBuilder.answer.add(
-                        QuestionnaireResponse.Item.Answer.Builder().apply {
-                            value =
-                                QuestionnaireResponse.Item.Answer.Value.DateTime(
-                                    DateTime
-                                        .Builder()
-                                        .apply {
-                                            value =
-                                                FhirDateTime.fromString(
-                                                    answerValue as? kotlin.String ?: "",
-                                                )
-                                        }.build(),
-                                )
-                        },
-                    )
-                }
-                Questionnaire.QuestionnaireItemType.Choice -> {
-                    if (answerValue is List<*>) {
-                        answerValue.filterIsInstance<kotlin.String>().forEach { opt ->
-                            responseItemBuilder.answer.add(
-                                QuestionnaireResponse.Item.Answer.Builder().apply {
-                                    value =
-                                        QuestionnaireResponse.Item.Answer.Value.String(
-                                            String.Builder().apply { value = opt }.build(),
-                                        )
-                                },
-                            )
-                        }
-                    } else if (answerValue is kotlin.String) {
-                        responseItemBuilder.answer.add(
-                            QuestionnaireResponse.Item.Answer.Builder().apply {
-                                value =
-                                    QuestionnaireResponse.Item.Answer.Value.String(
-                                        String.Builder().apply { value = answerValue }.build(),
-                                    )
-                            },
-                        )
-                    }
-                }
-                else -> {}
+    /**
+     * Helper function for processing questionnaire answers.
+     */
+    private fun populateAnswers(
+        item: Questionnaire.Item,
+        answerValue: Any,
+        builder: QuestionnaireResponse.Item.Builder,
+    ) {
+        when (item.type?.value) {
+            Questionnaire.QuestionnaireItemType.String, Questionnaire.QuestionnaireItemType.Text -> {
+                addStringAnswer(builder, answerValue as? kotlin.String ?: "")
             }
+            Questionnaire.QuestionnaireItemType.Boolean -> {
+                addBooleanAnswer(builder, answerValue as? kotlin.Boolean ?: false)
+            }
+            Questionnaire.QuestionnaireItemType.Decimal -> {
+                addDecimalAnswer(builder, answerValue)
+            }
+            Questionnaire.QuestionnaireItemType.Integer -> {
+                addIntegerAnswer(builder, answerValue)
+            }
+            Questionnaire.QuestionnaireItemType.Date -> {
+                addDateAnswer(builder, answerValue as? kotlin.String ?: "")
+            }
+            Questionnaire.QuestionnaireItemType.DateTime -> {
+                addDateTimeAnswer(builder, answerValue as? kotlin.String ?: "")
+            }
+            Questionnaire.QuestionnaireItemType.Choice -> {
+                addChoiceAnswer(builder, answerValue)
+            }
+            else -> {}
         }
+    }
 
-        if (nestedItemBuilders.isNotEmpty()) {
-            responseItemBuilder.item.addAll(nestedItemBuilders)
+    /**
+     * Helper function for processing questionnaire answers.
+     */
+    private fun addStringAnswer(
+        builder: QuestionnaireResponse.Item.Builder,
+        answerValue: kotlin.String,
+    ) {
+        builder.answer.add(
+            QuestionnaireResponse.Item.Answer.Builder().apply {
+                value =
+                    QuestionnaireResponse.Item.Answer.Value.String(
+                        String.Builder().apply { value = answerValue }.build(),
+                    )
+            },
+        )
+    }
+
+    /**
+     * Helper function for processing questionnaire answers.
+     */
+    private fun addBooleanAnswer(
+        builder: QuestionnaireResponse.Item.Builder,
+        answerValue: kotlin.Boolean,
+    ) {
+        builder.answer.add(
+            QuestionnaireResponse.Item.Answer.Builder().apply {
+                value =
+                    QuestionnaireResponse.Item.Answer.Value.Boolean(
+                        Boolean.Builder().apply { value = answerValue }.build(),
+                    )
+            },
+        )
+    }
+
+    /**
+     * Helper function for processing questionnaire answers.
+     */
+    private fun addDecimalAnswer(
+        builder: QuestionnaireResponse.Item.Builder,
+        answerValue: Any,
+    ) {
+        val fl = (answerValue as? Float) ?: (answerValue as? kotlin.String)?.toFloatOrNull()
+        if (fl != null) {
+            val decimalValue = BigDecimal.parseString(fl.toString())
+            builder.answer.add(
+                QuestionnaireResponse.Item.Answer.Builder().apply {
+                    value =
+                        QuestionnaireResponse.Item.Answer.Value.Decimal(
+                            Decimal.Builder().apply { value = decimalValue }.build(),
+                        )
+                },
+            )
         }
+    }
 
-        return responseItemBuilder
+    /**
+     * Helper function for processing questionnaire answers.
+     */
+    private fun addIntegerAnswer(
+        builder: QuestionnaireResponse.Item.Builder,
+        answerValue: Any,
+    ) {
+        val intVal = (answerValue as? Float)?.toInt() ?: (answerValue as? kotlin.String)?.toIntOrNull()
+        if (intVal != null) {
+            builder.answer.add(
+                QuestionnaireResponse.Item.Answer.Builder().apply {
+                    value =
+                        QuestionnaireResponse.Item.Answer.Value.Integer(
+                            Integer.Builder().apply { value = intVal }.build(),
+                        )
+                },
+            )
+        }
+    }
+
+    /**
+     * Helper function for processing questionnaire answers.
+     */
+    private fun addDateAnswer(
+        builder: QuestionnaireResponse.Item.Builder,
+        answerValue: kotlin.String,
+    ) {
+        val fhirDate = FhirDate.fromString(answerValue)
+        builder.answer.add(
+            QuestionnaireResponse.Item.Answer.Builder().apply {
+                value =
+                    QuestionnaireResponse.Item.Answer.Value.Date(
+                        Date.Builder().apply { value = fhirDate }.build(),
+                    )
+            },
+        )
+    }
+
+    /**
+     * Helper function for processing questionnaire answers.
+     */
+    private fun addDateTimeAnswer(
+        builder: QuestionnaireResponse.Item.Builder,
+        answerValue: kotlin.String,
+    ) {
+        val fhirDateTime = FhirDateTime.fromString(answerValue)
+        builder.answer.add(
+            QuestionnaireResponse.Item.Answer.Builder().apply {
+                value =
+                    QuestionnaireResponse.Item.Answer.Value.DateTime(
+                        DateTime.Builder().apply { value = fhirDateTime }.build(),
+                    )
+            },
+        )
+    }
+
+    /**
+     * Helper function for processing questionnaire answers.
+     */
+    private fun addChoiceAnswer(
+        builder: QuestionnaireResponse.Item.Builder,
+        answerValue: Any,
+    ) {
+        if (answerValue is List<*>) {
+            answerValue.filterIsInstance<kotlin.String>().forEach { opt ->
+                addStringAnswer(builder, opt)
+            }
+        } else if (answerValue is kotlin.String) {
+            addStringAnswer(builder, answerValue)
+        }
     }
 }

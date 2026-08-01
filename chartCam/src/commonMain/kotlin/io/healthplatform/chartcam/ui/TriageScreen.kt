@@ -76,6 +76,7 @@ import org.jetbrains.compose.resources.stringResource
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongMethod")
 fun TriageScreen(
     capturedPhotoPaths: Map<String, String>,
     fhirRepository: FhirRepository,
@@ -93,7 +94,12 @@ fun TriageScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.triage_select_patient), modifier = Modifier.semantics { heading() }) },
+                title = {
+                    Text(
+                        stringResource(Res.string.triage_select_patient),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
             )
         },
     ) { padding ->
@@ -112,7 +118,10 @@ fun TriageScreen(
                     },
                     trailingContent = {
                         IconButton(onClick = { onProceedToEncounter(patient.id ?: "", state.capturedPhotoPaths) }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = stringResource(Res.string.cd_proceed))
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = stringResource(Res.string.cd_proceed),
+                            )
                         }
                     },
                     modifier = Modifier.padding(8.dp),
@@ -133,7 +142,12 @@ fun TriageScreen(
                             expanded = false,
                             onExpandedChange = { },
                             placeholder = { Text(stringResource(Res.string.search_placeholder)) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.cd_search_icon)) },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = stringResource(Res.string.cd_search_icon),
+                                )
+                            },
                         )
                     },
                     expanded = false,

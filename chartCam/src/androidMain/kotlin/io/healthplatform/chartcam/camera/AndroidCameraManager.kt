@@ -1,6 +1,6 @@
 /**
- * @file CameraManager.android.kt
- * Contains declarations for CameraManager.android.kt.
+ * @file AndroidCameraManager.kt
+ * Contains declarations for AndroidCameraManager.kt.
  *
  * File defining the Android-specific implementation of [CameraManager] and its composable factory.
  */
@@ -109,15 +109,16 @@ class AndroidCameraManager(
                     preview,
                     imageCapture,
                 )
-        } catch (exc: Exception) {
-            // Handle binding errors (logs in real app)
+        } catch (exc: IllegalArgumentException) {
+            println("Camera binding failed: ${exc.message}")
         }
     }
 
     /**
      * Captures an image asynchronously using the bound [ImageCapture] use case.
      *
-     * @return A [ByteArray] containing the JPEG encoded image data, or `null` if the capture failed or no use case is bound.
+     * @return A [ByteArray] containing the JPEG encoded image data, or `null` if the
+     * capture failed or no use case is bound.
      */
     override suspend fun captureImage(): ByteArray? {
         val capture = imageCapture ?: return null
@@ -137,7 +138,14 @@ class AndroidCameraManager(
                             val bytes = ByteArray(buffer.capacity())
                             buffer.get(bytes)
                             continuation.resume(bytes)
-                        } catch (e: Exception) {
+                        } catch (e: java.nio.BufferUnderflowException) {
+                            println("Image buffer read failed: ${e.message}")
+                            continuation.resume(null)
+                        } catch (e: IllegalArgumentException) {
+                            println("Image buffer allocation failed: ${e.message}")
+                            continuation.resume(null)
+                        } catch (e: IllegalStateException) {
+                            println("Image plane access failed: ${e.message}")
                             continuation.resume(null)
                         } finally {
                             image.close()

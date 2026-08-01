@@ -51,7 +51,6 @@ class EncounterDetailScreenJvmTest {
                     patientId = "patient-1",
                     practitionerId = "prac1",
                     dateStr = "2026-07-09",
-                    statusStr = "in-progress",
                 )
             `when`(fhirRepository.getEncounter("enc-1")).thenReturn(enc)
             `when`(fhirRepository.getPhotosForEncounter("enc-1")).thenReturn(emptyList())
@@ -62,14 +61,20 @@ class EncounterDetailScreenJvmTest {
                 EncounterDetailScreen(
                     patientId = "patient-1",
                     visitId = "enc-1",
-                    photoSessionManager = photoSessionManager,
-                    fhirRepository = fhirRepository,
-                    authRepository = authRepository,
-                    syncWorker = syncWorker,
-                    questionnaireRepository = questionnaireRepository,
-                    onBack = {},
-                    onTakePhotos = { _, _ -> },
-                    onFinalized = {},
+                    dependencies =
+                        EncounterDetailDependencies(
+                            photoSessionManager = photoSessionManager,
+                            fhirRepository = fhirRepository,
+                            authRepository = authRepository,
+                            syncWorker = syncWorker,
+                            questionnaireRepository = questionnaireRepository,
+                        ),
+                    actions =
+                        EncounterDetailActions(
+                            onBack = {},
+                            onTakePhotos = { _, _ -> },
+                            onFinalized = {},
+                        ),
                 )
             }
 

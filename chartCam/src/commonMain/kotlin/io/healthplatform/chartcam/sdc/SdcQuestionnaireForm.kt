@@ -1,8 +1,6 @@
 /**
  * @file SdcQuestionnaireForm.kt
- * Contains declarations for SdcQuestionnaireForm.kt.
- *
- * Provides components for rendering dynamic FHIR Questionnaires as UI forms.
+ * Questionnaire Form component.
  */
 package io.healthplatform.chartcam.sdc
 
@@ -76,36 +74,82 @@ import io.healthplatform.chartcam.ui.components.FormBuilderTextArea
 import io.healthplatform.chartcam.ui.components.tabFocusNext
 import org.jetbrains.compose.resources.stringResource
 
+private const val ALPHA_DISABLED = 0.5f
+private const val ALPHA_ENABLED = 1.0f
+private const val SURFACE_ALPHA_VARIANT = 0.3f
+private const val PHOTO_GRID_ITEM_HEIGHT = 150
+private const val DEFAULT_MIN_VALUE = 0f
+private const val DEFAULT_MAX_VALUE = 100f
+
+/**
+ * Configuration options for rendering a Questionnaire form.
+ *
+ * @property readOnly Whether the form is completely read-only.
+ * @property showValidationErrors Whether to display validation errors immediately.
+ * @property hideDisabledItems Whether to hide items that are disabled by enableWhen.
+ * @property attachments Optional list of attachments for rendering inline image contexts.
+ */
+data class SdcFormConfig(
+    val readOnly: Boolean = false,
+    val showValidationErrors: Boolean = false,
+    val hideDisabledItems: Boolean = false,
+    val attachments: List<DocumentReference> = emptyList(),
+)
+
+/**
+ * State snapshot of the current Questionnaire form.
+ *
+ * @property answers The current map of answers keyed by linkId.
+ * @property touchedFields The set of fields the user has interacted with.
+ * @property config The form rendering configuration.
+ */
+data class SdcFormState(
+    val answers: Map<String, Any>,
+    val touchedFields: Set<String>,
+    val config: SdcFormConfig,
+)
+
+/**
+ * Context object bundling properties required to render form fields, reducing parameter lists.
+ */
+private data class RenderContext(
+    val item: Questionnaire.Item,
+    val type: Questionnaire.QuestionnaireItemType,
+    val linkId: String,
+    val displayLabel: String,
+    val isRequired: Boolean,
+    val isError: Boolean,
+    val errorMessage: String?,
+    val state: SdcFormState,
+    val focusManager: FocusManager,
+    val onAnswerChanged: (String, Any?) -> Unit,
+    val onTakePhotoRequested: (String) -> Unit,
+)
+
 /**
  * Dynamically renders a Questionnaire based on the resource items.
  * Acts as a KMP equivalent SDC engine supporting enableWhen, calculatedExpression,
  * and automatic QuestionnaireResponse generation.
  *
- * **State & Side Effects:**
- * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
- *
  * @param questionnaire The FHIR Questionnaire resource to render.
  * @param answers A map containing the current answers, keyed by linkId.
- * @param readOnly Whether the form should be rendered in read-only mode.
- * @param showValidationErrors Whether to display validation errors immediately.
- * @param hideDisabledItems Whether to completely hide disabled items.
- * @param attachments Optional list of attachments to display inline (e.g. photos).
- * @param onFormUpdated Callback invoked when the user interacts with the input, returning the updated answers map and the generated QuestionnaireResponse.
- * @param onTakePhotoRequested Callback invoked when the user taps to take a photo for a specific attachment item.
+ * @param config Form rendering configuration options.
+ * @param onFormUpdated Callback invoked when the user interacts with the input.
+ * @param onTakePhotoRequested Callback invoked when the user taps to take a photo.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SdcQuestionnaireForm(
     questionnaire: Questionnaire,
     answers: Map<String, Any>,
-    readOnly: Boolean = false,
-    showValidationErrors: Boolean = false,
-    hideDisabledItems: Boolean = false,
-    attachments: List<DocumentReference> = emptyList(),
+    config: SdcFormConfig = SdcFormConfig(),
     onFormUpdated: (Map<String, Any>, com.google.fhir.model.r4.QuestionnaireResponse) -> Unit,
     onTakePhotoRequested: (String) -> Unit = {},
 ) {
-    var touchedFields by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(setOf<String>()) }
+    var touchedFields by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf(setOf<String>())
+    }
+
     val handleAnswerChange: (String, Any?) -> Unit = { linkId, value ->
         touchedFields = touchedFields + linkId
         val updatedAnswers = answers.toMutableMap()
@@ -115,10 +159,11 @@ fun SdcQuestionnaireForm(
             updatedAnswers[linkId] = value
         }
 
-        // SDC Extension: Evaluate calculated expressions
-        val evaluatedAnswers = SdcEvaluator.evaluateCalculatedExpressions(questionnaire, updatedAnswers)
-
-        // Auto-generate QuestionnaireResponse directly from UI
+        val evaluatedAnswers =
+            SdcEvaluator.evaluateCalculatedExpressions(
+                questionnaire,
+                updatedAnswers,
+            )
         val response =
             io.healthplatform.chartcam.fhir.QuestionnaireResponseGenerator
                 .generate(questionnaire, evaluatedAnswers)
@@ -126,21 +171,16 @@ fun SdcQuestionnaireForm(
         onFormUpdated(evaluatedAnswers, response)
     }
 
-    /** Focus manager used to navigate form inputs. */
     val focusManager = LocalFocusManager.current
+    val formState = SdcFormState(answers, touchedFields, config)
     Column {
         questionnaire.item.forEach { item ->
             RenderQuestionnaireItem(
-                item,
-                answers,
-                readOnly,
-                showValidationErrors,
-                hideDisabledItems,
-                touchedFields,
-                handleAnswerChange,
-                focusManager,
-                attachments,
-                onTakePhotoRequested,
+                item = item,
+                state = formState,
+                onAnswerChanged = handleAnswerChange,
+                focusManager = focusManager,
+                onTakePhotoRequested = onTakePhotoRequested,
             )
         }
     }
@@ -151,62 +191,53 @@ fun SdcQuestionnaireForm(
  * Manages visibility based on FHIR SDC enableWhen logic, read-only formatting,
  * and widget delegation based on item type and extensions.
  *
- * Sibling items are stacked natively in a Column structure. Intentional spacing
- * handles separation instead of rigid explicit dividers between each item, keeping
- * the form visually uncluttered.
- *
- * **State & Side Effects:**
- * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
- *
  * @param item The specific Questionnaire Item to render.
- * @param answers The current map of answers.
- * @param readOnly Whether the field should be forced into a read-only state.
- * @param showValidationErrors Whether validation errors should be immediately visible.
- * @param hideDisabledItems Whether to completely hide disabled items or just grey them out.
- * @param touchedFields A set of linkIds that have been interacted with, to trigger validation.
- * @param onAnswerChanged Callback invoked when the user interacts with the input.
- * @param focusManager Compose focus manager to handle 'Next' actions on keyboards.
- * @param attachments A list of attached documents for rendering inline images in read-only mode.
- * @param onTakePhotoRequested Callback invoked when the user taps to take a photo for a specific attachment item.
+ * @param state State snapshot including answers, configuration, and touched fields.
+ * @param onAnswerChanged Callback invoked when the user updates an answer.
+ * @param focusManager Compose focus manager to handle 'Next' keyboard actions.
+ * @param onTakePhotoRequested Callback for when photo capture is requested.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RenderQuestionnaireItem(
     item: Questionnaire.Item,
-    answers: Map<String, Any>,
-    readOnly: Boolean,
-    showValidationErrors: Boolean,
-    hideDisabledItems: Boolean,
-    touchedFields: Set<String>,
+    state: SdcFormState,
     onAnswerChanged: (String, Any?) -> Unit,
     focusManager: FocusManager,
-    attachments: List<DocumentReference> = emptyList(),
     onTakePhotoRequested: (String) -> Unit = {},
 ) {
-    val linkId = item.linkId.value ?: return
-    val type = item.type.value ?: return
+    val linkId = item.linkId.value
+    val type = item.type.value
 
-    val fallbackLabel =
-        if (type == Questionnaire.QuestionnaireItemType.Group) {
-            stringResource(
-                Res.string.cd_unnamed_group,
-            )
+    if (linkId != null && type != null && !item.isHidden()) {
+        RenderQuestionnaireItemImpl(item, state, onAnswerChanged, focusManager, onTakePhotoRequested)
+    }
+}
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderQuestionnaireItemImpl(
+    item: Questionnaire.Item,
+    state: SdcFormState,
+    onAnswerChanged: (String, Any?) -> Unit,
+    focusManager: FocusManager,
+    onTakePhotoRequested: (String) -> Unit,
+) {
+    val linkId = item.linkId.value!!
+    val type = item.type.value!!
+    val displayLabel =
+        item.text?.value ?: if (type == Questionnaire.QuestionnaireItemType.Group) {
+            stringResource(Res.string.cd_unnamed_group)
         } else {
             stringResource(Res.string.cd_unnamed_item)
         }
-    val displayLabel = item.text?.value ?: fallbackLabel
 
-    // Instead of using just linkId for semantics, use the actual label text so screen readers read the question out loud!
-    val itemDesc = displayLabel
-
-    // SDC logic: enableWhen
-    if (item.isHidden()) return
-    val isEnabled = isItemEnabled(item, answers)
-
-    val shouldShow = !hideDisabledItems || isEnabled
+    val isEnabled = isItemEnabled(item, state.answers)
+    val shouldShow = !state.config.hideDisabledItems || isEnabled
 
     androidx.compose.runtime.LaunchedEffect(isEnabled) {
-        if (!isEnabled && answers.containsKey(linkId)) {
+        if (!isEnabled && state.answers.containsKey(linkId)) {
             onAnswerChanged(linkId, null)
         }
     }
@@ -216,596 +247,766 @@ fun RenderQuestionnaireItem(
         enter = fadeIn() + expandVertically(),
         exit = fadeOut() + shrinkVertically(),
     ) {
-        val effectiveReadOnly = readOnly || !isEnabled
-
         val isRequired = item.required?.value == true
-        val isTouched = touchedFields.contains(linkId)
-        val answerValue = answers[linkId]
-        val isMissingRequired =
-            isRequired &&
-                (
-                    answerValue == null ||
-                        (answerValue is String && answerValue.isBlank()) ||
-                        (answerValue is List<*> && answerValue.isEmpty())
-                )
-        val isError = !effectiveReadOnly && (showValidationErrors || isTouched) && isMissingRequired
+        val isTouched = state.touchedFields.contains(linkId)
+        val answerValue = state.answers[linkId]
+
+        val isMissingReq = isMissingRequired(answerValue, isRequired)
+        val effectiveReadOnly = state.config.readOnly || !isEnabled
+
+        var isError = false
+        if (!effectiveReadOnly) {
+            if (state.config.showValidationErrors || isTouched) {
+                if (isMissingReq) {
+                    isError = true
+                }
+            }
+        }
+
         val errorMessage = if (isError) stringResource(Res.string.error_required_field) else null
 
-        val alpha = if (isEnabled) 1.0f else 0.5f
-        androidx.compose.foundation.layout.Box(modifier = Modifier.alpha(alpha).fillMaxWidth()) {
+        val ctx =
+            RenderContext(
+                item = item,
+                type = type,
+                linkId = linkId,
+                displayLabel = displayLabel,
+                isRequired = isRequired,
+                isError = isError,
+                errorMessage = errorMessage,
+                state = state,
+                focusManager = focusManager,
+                onAnswerChanged = onAnswerChanged,
+                onTakePhotoRequested = onTakePhotoRequested,
+            )
+
+        val alpha = if (isEnabled) ALPHA_ENABLED else ALPHA_DISABLED
+        Box(modifier = Modifier.alpha(alpha).fillMaxWidth()) {
             if (type == Questionnaire.QuestionnaireItemType.Group) {
-                androidx.compose.material3.ElevatedCard(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                            .semantics {
-                                contentDescription = itemDesc
-                                heading()
-                            },
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = displayLabel,
-                            style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(bottom = 8.dp),
-                        )
-                        item.item.forEach { nestedItem ->
-                            RenderQuestionnaireItem(
-                                nestedItem,
-                                answers,
-                                readOnly,
-                                showValidationErrors,
-                                hideDisabledItems,
-                                touchedFields,
-                                onAnswerChanged,
-                                focusManager,
-                                attachments,
-                                onTakePhotoRequested,
-                            )
-                        }
-                    }
-                }
+                RenderGroupItem(ctx)
             } else {
-                if (effectiveReadOnly) {
-                    val labelText = displayLabel
-                    val answerDisplay =
-                        when (type) {
-                            Questionnaire.QuestionnaireItemType.String,
-                            Questionnaire.QuestionnaireItemType.Text,
-                            Questionnaire.QuestionnaireItemType.Date,
-                            Questionnaire.QuestionnaireItemType.DateTime,
-                            Questionnaire.QuestionnaireItemType.Decimal,
-                            -> answers[linkId] as? String ?: ""
-                            Questionnaire.QuestionnaireItemType.Boolean -> {
-                                val checked = answers[linkId] as? Boolean
-                                if (checked == null) {
-                                    ""
-                                } else if (checked) {
-                                    stringResource(Res.string.yes)
-                                } else {
-                                    stringResource(Res.string.no)
-                                }
-                            }
-                            Questionnaire.QuestionnaireItemType.Choice -> {
-                                if (item.repeats?.value == true) {
-                                    ((answers[linkId] as? List<*>)?.filterIsInstance<String>() ?: emptyList()).joinToString(", ")
-                                } else {
-                                    answers[linkId] as? String ?: ""
-                                }
-                            }
-                            Questionnaire.QuestionnaireItemType.Integer -> {
-                                val v = (answers[linkId] as? Float) ?: (answers[linkId] as? String)?.toFloatOrNull()
-                                v?.let { if (it % 1.0f == 0.0f) it.toInt().toString() else it.toString() } ?: ""
-                            }
-                            else -> answers[linkId]?.toString() ?: ""
-                        }
+                RenderInputItem(ctx, effectiveReadOnly)
+            }
+        }
+    }
+}
 
-                    if (type == Questionnaire.QuestionnaireItemType.Attachment) {
-                        val relatedAttachments =
-                            attachments.filter {
-                                val answerCode =
-                                    it.context
-                                        ?.related
-                                        ?.firstOrNull()
-                                        ?.identifier
-                                        ?.value
-                                        ?.value
-                                answerCode == linkId
-                            }
-                        if (relatedAttachments.isNotEmpty()) {
-                            Column(
-                                modifier =
-                                    Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics(mergeDescendants = true) {
-                                        contentDescription =
-                                            "$itemDesc: ${relatedAttachments.size} attachments"
-                                    },
-                            ) {
-                                Text(
-                                    text = labelText,
-                                    style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
-                                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
-                                )
-                                androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
-                                    columns =
-                                        androidx.compose.foundation.lazy.grid.GridCells
-                                            .Fixed(2),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .height(
-                                                (150 * ((relatedAttachments.size + 1) / 2)).dp,
-                                            ).padding(vertical = 8.dp),
-                                ) {
-                                    items(relatedAttachments) { photo ->
-                                        io.healthplatform.chartcam.ui
-                                            .PhotoGridItem(photo)
-                                    }
-                                }
-                            }
-                        } else {
-                            val notAnsweredString = stringResource(Res.string.not_answered)
-                            Column(
-                                modifier =
-                                    Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics(mergeDescendants = true) {
-                                        contentDescription =
-                                            "$itemDesc: $notAnsweredString"
-                                    },
-                            ) {
-                                Text(
-                                    text = labelText,
-                                    style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
-                                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
-                                )
-                                Text(
-                                    text = notAnsweredString,
-                                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
-                                    color = androidx.compose.material3.MaterialTheme.colorScheme.outline,
-                                )
-                            }
-                        }
-                    } else {
-                        val notAnsweredString = stringResource(Res.string.not_answered)
-                        Column(
-                            modifier =
-                                Modifier.fillMaxWidth().padding(vertical = 4.dp).semantics(mergeDescendants = true) {
-                                    contentDescription =
-                                        "$itemDesc: ${if (answerDisplay.isNotBlank()) answerDisplay else notAnsweredString}"
-                                },
-                        ) {
-                            Text(
-                                text = labelText,
-                                style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
-                                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
-                            )
-                            androidx.compose.material3.Surface(
-                                color =
-                                    androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant
-                                        .copy(alpha = 0.3f),
-                                shape = androidx.compose.material3.MaterialTheme.shapes.small,
-                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                            ) {
-                                if (answerDisplay.isNotBlank()) {
-                                    Text(
-                                        text = answerDisplay,
-                                        style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
-                                        modifier = Modifier.padding(8.dp),
-                                    )
-                                } else {
-                                    Text(
-                                        text = notAnsweredString,
-                                        style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
-                                        color = androidx.compose.material3.MaterialTheme.colorScheme.outline,
-                                        modifier = Modifier.padding(8.dp),
-                                    )
-                                }
-                            }
-                        }
-                    }
+/**
+ * Internal helper function.
+ */
+private fun isMissingRequired(
+    answerValue: Any?,
+    isRequired: Boolean,
+): Boolean {
+    if (!isRequired) return false
+    return answerValue == null ||
+        (answerValue is String && answerValue.isBlank()) ||
+        (answerValue is List<*> && answerValue.isEmpty())
+}
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderGroupItem(ctx: RenderContext) {
+    androidx.compose.material3.ElevatedCard(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .semantics {
+                    contentDescription = ctx.displayLabel
+                    heading()
+                },
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = ctx.displayLabel,
+                style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            ctx.item.item.forEach { nestedItem ->
+                RenderQuestionnaireItem(
+                    item = nestedItem,
+                    state = ctx.state,
+                    onAnswerChanged = ctx.onAnswerChanged,
+                    focusManager = ctx.focusManager,
+                    onTakePhotoRequested = ctx.onTakePhotoRequested,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderInputItem(
+    ctx: RenderContext,
+    effectiveReadOnly: Boolean,
+) {
+    if (effectiveReadOnly) {
+        RenderReadOnlyField(ctx)
+    } else {
+        RenderEditableField(ctx)
+    }
+
+    if (ctx.item.item.isNotEmpty()) {
+        Column(modifier = Modifier.padding(start = 16.dp)) {
+            ctx.item.item.forEach { nestedItem ->
+                RenderQuestionnaireItem(
+                    item = nestedItem,
+                    state = ctx.state,
+                    onAnswerChanged = ctx.onAnswerChanged,
+                    focusManager = ctx.focusManager,
+                    onTakePhotoRequested = ctx.onTakePhotoRequested,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderReadOnlyField(ctx: RenderContext) {
+    val answerDisplay = getAnswerDisplayText(ctx.type, ctx.item, ctx.linkId, ctx.state.answers)
+
+    if (ctx.type == Questionnaire.QuestionnaireItemType.Attachment) {
+        RenderReadOnlyAttachment(ctx)
+    } else {
+        val notAnsweredString = stringResource(Res.string.not_answered)
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+                    .semantics(mergeDescendants = true) {
+                        val disp = if (answerDisplay.isNotBlank()) answerDisplay else notAnsweredString
+                        contentDescription = "${ctx.displayLabel}: $disp"
+                    },
+        ) {
+            Text(
+                text = ctx.displayLabel,
+                style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+            )
+            androidx.compose.material3.Surface(
+                color =
+                    androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant
+                        .copy(alpha = SURFACE_ALPHA_VARIANT),
+                shape = androidx.compose.material3.MaterialTheme.shapes.small,
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            ) {
+                if (answerDisplay.isNotBlank()) {
+                    Text(
+                        text = answerDisplay,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(8.dp),
+                    )
                 } else {
-                    when (type) {
-                        Questionnaire.QuestionnaireItemType.String -> {
-                            val text = answers[linkId] as? String ?: ""
-                            io.healthplatform.chartcam.ui.components.FormBuilderTextInput(
-                                value = text,
-                                onValueChange = { onAnswerChanged(linkId, it) },
-                                label = displayLabel,
-                                isRequired = isRequired,
-                                isError = isError,
-                                errorMessage = errorMessage,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
-                                modifier =
-                                    Modifier
-                                        .padding(vertical = 8.dp)
-                                        .semantics(mergeDescendants = true) {
-                                            contentDescription = itemDesc
-                                            if (isError && errorMessage != null) {
-                                                error(errorMessage)
-                                            }
-                                        }.tabFocusNext(focusManager),
-                            )
-                        }
-                        Questionnaire.QuestionnaireItemType.Boolean -> {
-                            val checked = answers[linkId] as? Boolean ?: false
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .testTag("CheckboxRow $displayLabel")
-                                        .toggleable(
-                                            value = checked,
-                                            onValueChange = { onAnswerChanged(linkId, it) },
-                                            role = Role.Checkbox,
-                                        ).padding(vertical = 8.dp)
-                                        .semantics(mergeDescendants = true) {
-                                            contentDescription = itemDesc
-                                            if (isError && errorMessage != null) {
-                                                error(errorMessage)
-                                            }
-                                        },
-                            ) {
-                                Checkbox(
-                                    checked = checked,
-                                    onCheckedChange = null,
-                                )
-                                io.healthplatform.chartcam.ui.components.FormLabel(
-                                    text = displayLabel,
-                                    isRequired = isRequired,
-                                    modifier = Modifier.padding(start = 8.dp),
-                                )
-                            }
-                        }
-                        Questionnaire.QuestionnaireItemType.Choice -> {
-                            var expanded by remember { mutableStateOf(false) }
-                            val options =
-                                item.answerOption.mapNotNull { option ->
-                                    val stringValue =
-                                        option.value
-                                            ?.asString()
-                                            ?.value
-                                            ?.value
-                                    if (stringValue != null) return@mapNotNull stringValue
-
-                                    val codingValue = option.value?.asCoding()?.value
-                                    val display = codingValue?.display?.value
-                                    val code = codingValue?.code?.value
-                                    display ?: code
-                                }
-
-                            val itemControl = item.getItemControl()
-
-                            val isMultiSelect = item.repeats?.value == true
-
-                            if (isMultiSelect && itemControl != "check-box") {
-                                val selectedOptions = (answers[linkId] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
-                                FormBuilderMultiSelectDropdown(
-                                    selectedOptions = selectedOptions,
-                                    options = options,
-                                    onSelectionChanged = { onAnswerChanged(linkId, it) },
-                                    label = displayLabel,
-                                    isRequired = isRequired,
-                                    isError = isError,
-                                    errorMessage = errorMessage,
-                                    modifier =
-                                        Modifier.semantics(mergeDescendants = true) {
-                                            contentDescription = itemDesc
-                                            if (isError && errorMessage != null) {
-                                                error(errorMessage)
-                                                liveRegion = LiveRegionMode.Polite
-                                            }
-                                        },
-                                )
-                            } else if (itemControl == "radio-button" || itemControl == "check-box") {
-                                val isCheckboxes = itemControl == "check-box"
-                                val selectedOptions =
-                                    if (isMultiSelect) {
-                                        (answers[linkId] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
-                                    } else {
-                                        listOfNotNull(answers[linkId] as? String)
-                                    }
-
-                                Column(
-                                    modifier =
-                                        Modifier
-                                            .padding(vertical = 8.dp)
-                                            .semantics(mergeDescendants = true) {
-                                                contentDescription = itemDesc
-                                                if (isError && errorMessage != null) {
-                                                    error(errorMessage)
-                                                }
-                                            }.then(if (!isMultiSelect) Modifier.selectableGroup() else Modifier),
-                                ) {
-                                    io.healthplatform.chartcam.ui.components.FormLabel(
-                                        displayLabel,
-                                        isRequired,
-                                        modifier = Modifier.padding(bottom = 4.dp),
-                                    )
-                                    if (isError && errorMessage != null) {
-                                        Text(
-                                            errorMessage,
-                                            color = androidx.compose.material3.MaterialTheme.colorScheme.error,
-                                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                                            modifier = Modifier.padding(bottom = 4.dp),
-                                        )
-                                    }
-                                    options.forEach { option ->
-                                        val isSelected = selectedOptions.contains(option)
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier =
-                                                Modifier
-                                                    .fillMaxWidth()
-                                                    .then(
-                                                        if (isMultiSelect) {
-                                                            Modifier.toggleable(
-                                                                value = isSelected,
-                                                                onValueChange = { checked ->
-                                                                    val newSelections =
-                                                                        if (checked) {
-                                                                            selectedOptions + option
-                                                                        } else {
-                                                                            selectedOptions - option
-                                                                        }
-                                                                    onAnswerChanged(
-                                                                        linkId,
-                                                                        if (newSelections.isEmpty()) null else newSelections,
-                                                                    )
-                                                                },
-                                                                role = Role.Checkbox,
-                                                            )
-                                                        } else {
-                                                            Modifier.selectable(
-                                                                selected = isSelected,
-                                                                onClick = {
-                                                                    if (isSelected && isCheckboxes) {
-                                                                        onAnswerChanged(linkId, null)
-                                                                    } else {
-                                                                        onAnswerChanged(linkId, option)
-                                                                    }
-                                                                },
-                                                                role = if (isCheckboxes) Role.Checkbox else Role.RadioButton,
-                                                            )
-                                                        },
-                                                    ).padding(vertical = 4.dp),
-                                        ) {
-                                            if (isCheckboxes) {
-                                                androidx.compose.material3.Checkbox(
-                                                    checked = isSelected,
-                                                    onCheckedChange = null,
-                                                )
-                                            } else {
-                                                androidx.compose.material3.RadioButton(
-                                                    selected = isSelected,
-                                                    onClick = null,
-                                                )
-                                            }
-                                            Text(text = option, modifier = Modifier.padding(start = 8.dp))
-                                        }
-                                    }
-                                }
-                            } else {
-                                val selectedOption = answers[linkId] as? String ?: ""
-                                ExposedDropdownMenuBox(
-                                    expanded = expanded,
-                                    onExpandedChange = { expanded = it },
-                                    modifier =
-                                        Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics(mergeDescendants = true) {
-                                            contentDescription = itemDesc
-                                            if (isError && errorMessage != null) {
-                                                error(errorMessage)
-                                            }
-                                        },
-                                ) {
-                                    OutlinedTextField(
-                                        value = selectedOption.ifEmpty { stringResource(Res.string.select_an_option) },
-                                        onValueChange = {},
-                                        readOnly = true,
-                                        label = {
-                                            io.healthplatform.chartcam.ui.components
-                                                .FormLabel(displayLabel, isRequired)
-                                        },
-                                        isError = isError,
-                                        supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
-                                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                                        modifier =
-                                            Modifier
-                                                .menuAnchor(
-                                                    androidx.compose.material3.ExposedDropdownMenuAnchorType.PrimaryNotEditable,
-                                                ).fillMaxWidth()
-                                                .tabFocusNext(focusManager),
-                                    )
-                                    ExposedDropdownMenu(
-                                        expanded = expanded,
-                                        onDismissRequest = { expanded = false },
-                                    ) {
-                                        options.forEach { option ->
-                                            DropdownMenuItem(
-                                                text = { Text(option) },
-                                                onClick = {
-                                                    onAnswerChanged(linkId, option)
-                                                    expanded = false
-                                                },
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        Questionnaire.QuestionnaireItemType.Attachment -> {
-                            val relatedAttachments =
-                                attachments.filter {
-                                    val answerCode =
-                                        it.context
-                                            ?.related
-                                            ?.firstOrNull()
-                                            ?.identifier
-                                            ?.value
-                                            ?.value
-                                    answerCode == linkId
-                                }
-
-                            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                                io.healthplatform.chartcam.ui.components.FormLabel(
-                                    text = displayLabel,
-                                    isRequired = isRequired,
-                                    modifier =
-                                        Modifier.semantics(mergeDescendants = true) {
-                                            contentDescription = itemDesc
-                                        },
-                                )
-
-                                if (relatedAttachments.isNotEmpty()) {
-                                    androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
-                                        columns =
-                                            androidx.compose.foundation.lazy.grid.GridCells
-                                                .Fixed(2),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                                        modifier =
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .height(
-                                                    (150 * ((relatedAttachments.size + 1) / 2)).dp,
-                                                ).padding(vertical = 8.dp),
-                                    ) {
-                                        items(relatedAttachments) { photo ->
-                                            io.healthplatform.chartcam.ui
-                                                .PhotoGridItem(photo)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        Questionnaire.QuestionnaireItemType.Text -> {
-                            val text = answers[linkId] as? String ?: ""
-                            FormBuilderTextArea(
-                                value = text,
-                                onValueChange = { onAnswerChanged(linkId, it) },
-                                label = displayLabel,
-                                isRequired = isRequired,
-                                isError = isError,
-                                errorMessage = errorMessage,
-                                modifier =
-                                    Modifier.semantics(mergeDescendants = true) {
-                                        contentDescription = itemDesc
-                                        if (isError && errorMessage != null) {
-                                            error(errorMessage)
-                                            liveRegion = LiveRegionMode.Polite
-                                        }
-                                    },
-                            )
-                        }
-                        Questionnaire.QuestionnaireItemType.Date -> {
-                            val text = answers[linkId] as? String ?: ""
-                            FormBuilderDatePicker(
-                                value = text,
-                                onValueChange = { onAnswerChanged(linkId, it) },
-                                label = displayLabel,
-                                isRequired = isRequired,
-                                isError = isError,
-                                errorMessage = errorMessage,
-                                modifier =
-                                    Modifier.semantics(mergeDescendants = true) {
-                                        contentDescription = itemDesc
-                                        if (isError && errorMessage != null) {
-                                            error(errorMessage)
-                                            liveRegion = LiveRegionMode.Polite
-                                        }
-                                    },
-                            )
-                        }
-                        Questionnaire.QuestionnaireItemType.DateTime -> {
-                            val text = answers[linkId] as? String ?: ""
-                            FormBuilderDateTimePicker(
-                                value = text,
-                                onValueChange = { onAnswerChanged(linkId, it) },
-                                label = displayLabel,
-                                isRequired = isRequired,
-                                isError = isError,
-                                errorMessage = errorMessage,
-                                modifier =
-                                    Modifier.semantics(mergeDescendants = true) {
-                                        contentDescription = itemDesc
-                                        if (isError && errorMessage != null) {
-                                            error(errorMessage)
-                                            liveRegion = LiveRegionMode.Polite
-                                        }
-                                    },
-                            )
-                        }
-                        Questionnaire.QuestionnaireItemType.Decimal -> {
-                            val text = answers[linkId] as? String ?: ""
-                            FormBuilderNumericInput(
-                                value = text,
-                                onValueChange = { onAnswerChanged(linkId, it) },
-                                label = displayLabel,
-                                isRequired = isRequired,
-                                isError = isError,
-                                errorMessage = errorMessage,
-                                modifier =
-                                    Modifier.semantics(mergeDescendants = true) {
-                                        contentDescription = itemDesc
-                                        if (isError && errorMessage != null) {
-                                            error(errorMessage)
-                                            liveRegion = LiveRegionMode.Polite
-                                        }
-                                    },
-                            )
-                        }
-                        Questionnaire.QuestionnaireItemType.Integer -> {
-                            val minValue = item.getMinValue() ?: 0f
-                            val maxValue = item.getMaxValue() ?: 100f
-                            val value = (answers[linkId] as? Float) ?: (answers[linkId] as? String)?.toFloatOrNull() ?: minValue
-                            io.healthplatform.chartcam.ui.components.FormBuilderRangeSlider(
-                                value = value,
-                                valueRange = minValue..maxValue,
-                                onValueChange = { onAnswerChanged(linkId, it) },
-                                label = displayLabel,
-                                isRequired = isRequired,
-                                isError = isError,
-                                errorMessage = errorMessage,
-                                modifier =
-                                    Modifier.semantics(mergeDescendants = true) {
-                                        contentDescription = itemDesc
-                                        if (isError && errorMessage != null) {
-                                            error(errorMessage)
-                                            liveRegion = LiveRegionMode.Polite
-                                        }
-                                    },
-                            )
-                        }
-                        else -> {}
-                    }
-
-                    // Also render nested items if a non-group item has them
-                }
-
-                if (item.item.isNotEmpty()) {
-                    Column(modifier = Modifier.padding(start = 16.dp)) {
-                        item.item.forEach { nestedItem ->
-                            RenderQuestionnaireItem(
-                                nestedItem,
-                                answers,
-                                readOnly,
-                                showValidationErrors,
-                                hideDisabledItems,
-                                touchedFields,
-                                onAnswerChanged,
-                                focusManager,
-                                attachments,
-                                onTakePhotoRequested,
-                            )
-                        }
-                    }
+                    Text(
+                        text = notAnsweredString,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.padding(8.dp),
+                    )
                 }
             }
         }
     }
+}
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun getAnswerDisplayText(
+    type: Questionnaire.QuestionnaireItemType,
+    item: Questionnaire.Item,
+    linkId: String,
+    answers: Map<String, Any>,
+): String =
+    when (type) {
+        Questionnaire.QuestionnaireItemType.Boolean -> getBooleanAnswerText(answers[linkId] as? Boolean)
+        Questionnaire.QuestionnaireItemType.Choice -> getChoiceAnswerText(item, answers[linkId])
+        Questionnaire.QuestionnaireItemType.Integer -> getIntegerAnswerText(answers[linkId])
+        Questionnaire.QuestionnaireItemType.Attachment -> ""
+        else -> answers[linkId]?.toString() ?: ""
+    }
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun getBooleanAnswerText(checked: Boolean?): String {
+    if (checked == null) return ""
+    return if (checked) stringResource(Res.string.yes) else stringResource(Res.string.no)
+}
+
+/**
+ * Internal helper function.
+ */
+private fun getChoiceAnswerText(
+    item: Questionnaire.Item,
+    answer: Any?,
+): String {
+    if (item.repeats?.value == true) {
+        val list = (answer as? List<*>)?.filterIsInstance<String>()
+        return list?.joinToString(", ") ?: ""
+    }
+    return answer as? String ?: ""
+}
+
+/**
+ * Internal helper function.
+ */
+private fun getIntegerAnswerText(answer: Any?): String {
+    val v = (answer as? Float) ?: (answer as? String)?.toFloatOrNull()
+    return v?.let { if (it % 1.0f == 0.0f) it.toInt().toString() else it.toString() } ?: ""
+}
+
+/**
+ * Internal helper function.
+ */
+
+@Composable
+private fun RenderAttachmentGrid(relatedAttachments: List<com.google.fhir.model.r4.DocumentReference>) {
+    androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+        columns =
+            androidx.compose.foundation.lazy.grid.GridCells
+                .Fixed(2),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height((PHOTO_GRID_ITEM_HEIGHT * ((relatedAttachments.size + 1) / 2)).dp)
+                .padding(vertical = 8.dp),
+    ) {
+        items(relatedAttachments) { photo ->
+            io.healthplatform.chartcam.ui
+                .PhotoGridItem(photo)
+        }
+    }
+}
+
+/**
+ * Renders read only attachment.
+ */
+@Composable
+private fun RenderReadOnlyAttachment(ctx: RenderContext) {
+    val relatedAttachments =
+        ctx.state.config.attachments.filter {
+            it.context
+                ?.related
+                ?.firstOrNull()
+                ?.identifier
+                ?.value
+                ?.value == ctx.linkId
+        }
+    if (relatedAttachments.isNotEmpty()) {
+        Column(
+            modifier =
+                Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics(mergeDescendants = true) {
+                    contentDescription = "${ctx.displayLabel}: ${relatedAttachments.size} attachments"
+                },
+        ) {
+            Text(
+                text = ctx.displayLabel,
+                style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+            )
+            RenderAttachmentGrid(relatedAttachments)
+        }
+    } else {
+        val notAnsweredString = stringResource(Res.string.not_answered)
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = "${ctx.displayLabel}: $notAnsweredString"
+                    },
+        ) {
+            Text(
+                text = ctx.displayLabel,
+                style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = notAnsweredString,
+                style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.outline,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderEditableField(ctx: RenderContext) {
+    when (ctx.type) {
+        Questionnaire.QuestionnaireItemType.String -> RenderStringField(ctx)
+        Questionnaire.QuestionnaireItemType.Boolean -> RenderBooleanField(ctx)
+        Questionnaire.QuestionnaireItemType.Choice -> RenderChoiceField(ctx)
+        Questionnaire.QuestionnaireItemType.Attachment -> RenderAttachmentField(ctx)
+        Questionnaire.QuestionnaireItemType.Text -> RenderTextField(ctx)
+        Questionnaire.QuestionnaireItemType.Date -> RenderDateField(ctx)
+        Questionnaire.QuestionnaireItemType.DateTime -> RenderDateTimeField(ctx)
+        Questionnaire.QuestionnaireItemType.Decimal -> RenderDecimalField(ctx)
+        Questionnaire.QuestionnaireItemType.Integer -> RenderIntegerField(ctx)
+        else -> {}
+    }
+}
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderStringField(ctx: RenderContext) {
+    val text = ctx.state.answers[ctx.linkId] as? String ?: ""
+    io.healthplatform.chartcam.ui.components.FormBuilderTextInput(
+        value = text,
+        onValueChange = { ctx.onAnswerChanged(ctx.linkId, it) },
+        label = ctx.displayLabel,
+        isRequired = ctx.isRequired,
+        isError = ctx.isError,
+        errorMessage = ctx.errorMessage,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(onNext = { ctx.focusManager.moveFocus(FocusDirection.Next) }),
+        modifier =
+            Modifier
+                .padding(vertical = 8.dp)
+                .semantics(mergeDescendants = true) {
+                    contentDescription = ctx.displayLabel
+                    if (ctx.isError && ctx.errorMessage != null) {
+                        error(ctx.errorMessage)
+                    }
+                }.tabFocusNext(ctx.focusManager),
+    )
+}
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderBooleanField(ctx: RenderContext) {
+    val checked = ctx.state.answers[ctx.linkId] as? Boolean ?: false
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .testTag("CheckboxRow ${ctx.displayLabel}")
+                .toggleable(
+                    value = checked,
+                    onValueChange = { ctx.onAnswerChanged(ctx.linkId, it) },
+                    role = Role.Checkbox,
+                ).padding(vertical = 8.dp)
+                .semantics(mergeDescendants = true) {
+                    contentDescription = ctx.displayLabel
+                    if (ctx.isError && ctx.errorMessage != null) {
+                        error(ctx.errorMessage)
+                    }
+                },
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = null,
+        )
+        io.healthplatform.chartcam.ui.components.FormLabel(
+            text = ctx.displayLabel,
+            isRequired = ctx.isRequired,
+            modifier = Modifier.padding(start = 8.dp),
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderChoiceField(ctx: RenderContext) {
+    var expanded by remember { mutableStateOf(false) }
+    val options =
+        ctx.item.answerOption.mapNotNull { option ->
+            val v1 =
+                option.value
+                    ?.asString()
+                    ?.value
+                    ?.value
+            val v2 =
+                option.value
+                    ?.asCoding()
+                    ?.value
+                    ?.display
+                    ?.value
+            val v3 =
+                option.value
+                    ?.asCoding()
+                    ?.value
+                    ?.code
+                    ?.value
+            v1 ?: v2 ?: v3
+        }
+
+    val itemControl = ctx.item.getItemControl()
+    val isMultiSelect = ctx.item.repeats?.value == true
+
+    if (isMultiSelect && itemControl != "check-box") {
+        val selectedOptions =
+            (ctx.state.answers[ctx.linkId] as? List<*>)
+                ?.filterIsInstance<String>() ?: emptyList()
+        FormBuilderMultiSelectDropdown(
+            selectedOptions = selectedOptions,
+            options = options,
+            onSelectionChanged = { ctx.onAnswerChanged(ctx.linkId, it) },
+            label = ctx.displayLabel,
+            isRequired = ctx.isRequired,
+            isError = ctx.isError,
+            errorMessage = ctx.errorMessage,
+            modifier =
+                Modifier.semantics(mergeDescendants = true) {
+                    contentDescription = ctx.displayLabel
+                    if (ctx.isError && ctx.errorMessage != null) {
+                        error(ctx.errorMessage)
+                        liveRegion = LiveRegionMode.Polite
+                    }
+                },
+        )
+    } else if (itemControl == "radio-button" || itemControl == "check-box") {
+        RenderRadioOrCheckboxGroup(ctx, itemControl, isMultiSelect, options)
+    } else {
+        RenderDropdownField(ctx, options, expanded, { expanded = it })
+    }
+}
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderRadioOrCheckboxGroup(
+    ctx: RenderContext,
+    itemControl: String,
+    isMultiSelect: Boolean,
+    options: List<String>,
+) {
+    val isCheckboxes = itemControl == "check-box"
+    val selectedOptions =
+        if (isMultiSelect) {
+            (ctx.state.answers[ctx.linkId] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+        } else {
+            listOfNotNull(ctx.state.answers[ctx.linkId] as? String)
+        }
+
+    Column(
+        modifier =
+            Modifier
+                .padding(vertical = 8.dp)
+                .semantics(mergeDescendants = true) {
+                    contentDescription = ctx.displayLabel
+                    if (ctx.isError && ctx.errorMessage != null) {
+                        error(ctx.errorMessage)
+                    }
+                }.then(if (!isMultiSelect) Modifier.selectableGroup() else Modifier),
+    ) {
+        io.healthplatform.chartcam.ui.components.FormLabel(
+            ctx.displayLabel,
+            ctx.isRequired,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+        if (ctx.isError && ctx.errorMessage != null) {
+            Text(
+                ctx.errorMessage,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.error,
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+        }
+        options.forEach { option ->
+            RenderRadioOrCheckboxOption(ctx, option, isMultiSelect, isCheckboxes, selectedOptions)
+        }
+    }
+}
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderRadioOrCheckboxOption(
+    ctx: RenderContext,
+    option: String,
+    isMultiSelect: Boolean,
+    isCheckboxes: Boolean,
+    selectedOptions: List<String>,
+) {
+    val isSelected = selectedOptions.contains(option)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .then(
+                    if (isMultiSelect) {
+                        Modifier.toggleable(
+                            value = isSelected,
+                            onValueChange = { checked ->
+                                val newSelections =
+                                    if (checked) {
+                                        selectedOptions + option
+                                    } else {
+                                        selectedOptions - option
+                                    }
+                                val newVal = if (newSelections.isEmpty()) null else newSelections
+                                ctx.onAnswerChanged(ctx.linkId, newVal)
+                            },
+                            role = Role.Checkbox,
+                        )
+                    } else {
+                        Modifier.selectable(
+                            selected = isSelected,
+                            onClick = {
+                                if (isSelected && isCheckboxes) {
+                                    ctx.onAnswerChanged(ctx.linkId, null)
+                                } else {
+                                    ctx.onAnswerChanged(ctx.linkId, option)
+                                }
+                            },
+                            role = if (isCheckboxes) Role.Checkbox else Role.RadioButton,
+                        )
+                    },
+                ).padding(vertical = 4.dp),
+    ) {
+        if (isCheckboxes) {
+            androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = null)
+        } else {
+            androidx.compose.material3.RadioButton(selected = isSelected, onClick = null)
+        }
+        Text(text = option, modifier = Modifier.padding(start = 8.dp))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderDropdownField(
+    ctx: RenderContext,
+    options: List<String>,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+) {
+    val selectedOption = ctx.state.answers[ctx.linkId] as? String ?: ""
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = onExpandedChange,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .semantics(mergeDescendants = true) {
+                    contentDescription = ctx.displayLabel
+                    if (ctx.isError && ctx.errorMessage != null) error(ctx.errorMessage)
+                },
+    ) {
+        OutlinedTextField(
+            value = selectedOption.ifEmpty { stringResource(Res.string.select_an_option) },
+            onValueChange = {},
+            readOnly = true,
+            label = {
+                io.healthplatform.chartcam.ui.components
+                    .FormLabel(ctx.displayLabel, ctx.isRequired)
+            },
+            isError = ctx.isError,
+            supportingText = { if (ctx.isError && ctx.errorMessage != null) Text(ctx.errorMessage) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            modifier =
+                Modifier
+                    .menuAnchor(androidx.compose.material3.ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth()
+                    .tabFocusNext(ctx.focusManager),
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { onExpandedChange(false) },
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = {
+                        ctx.onAnswerChanged(ctx.linkId, option)
+                        onExpandedChange(false)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderAttachmentField(ctx: RenderContext) {
+    val relatedAttachments =
+        ctx.state.config.attachments.filter {
+            it.context
+                ?.related
+                ?.firstOrNull()
+                ?.identifier
+                ?.value
+                ?.value == ctx.linkId
+        }
+
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        io.healthplatform.chartcam.ui.components.FormLabel(
+            text = ctx.displayLabel,
+            isRequired = ctx.isRequired,
+            modifier =
+                Modifier.semantics(mergeDescendants = true) {
+                    contentDescription = ctx.displayLabel
+                },
+        )
+
+        if (relatedAttachments.isNotEmpty()) {
+            RenderAttachmentGrid(relatedAttachments)
+        }
+    }
+}
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderTextField(ctx: RenderContext) {
+    val text = ctx.state.answers[ctx.linkId] as? String ?: ""
+    FormBuilderTextArea(
+        value = text,
+        onValueChange = { ctx.onAnswerChanged(ctx.linkId, it) },
+        label = ctx.displayLabel,
+        isRequired = ctx.isRequired,
+        isError = ctx.isError,
+        errorMessage = ctx.errorMessage,
+        modifier =
+            Modifier.semantics(mergeDescendants = true) {
+                contentDescription = ctx.displayLabel
+                if (ctx.isError && ctx.errorMessage != null) {
+                    error(ctx.errorMessage)
+                    liveRegion = LiveRegionMode.Polite
+                }
+            },
+    )
+}
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderDateField(ctx: RenderContext) {
+    val text = ctx.state.answers[ctx.linkId] as? String ?: ""
+    FormBuilderDatePicker(
+        value = text,
+        onValueChange = { ctx.onAnswerChanged(ctx.linkId, it) },
+        label = ctx.displayLabel,
+        isRequired = ctx.isRequired,
+        isError = ctx.isError,
+        errorMessage = ctx.errorMessage,
+        modifier =
+            Modifier.semantics(mergeDescendants = true) {
+                contentDescription = ctx.displayLabel
+                if (ctx.isError && ctx.errorMessage != null) {
+                    error(ctx.errorMessage)
+                    liveRegion = LiveRegionMode.Polite
+                }
+            },
+    )
+}
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderDateTimeField(ctx: RenderContext) {
+    val text = ctx.state.answers[ctx.linkId] as? String ?: ""
+    FormBuilderDateTimePicker(
+        value = text,
+        onValueChange = { ctx.onAnswerChanged(ctx.linkId, it) },
+        label = ctx.displayLabel,
+        isRequired = ctx.isRequired,
+        isError = ctx.isError,
+        errorMessage = ctx.errorMessage,
+        modifier =
+            Modifier.semantics(mergeDescendants = true) {
+                contentDescription = ctx.displayLabel
+                if (ctx.isError && ctx.errorMessage != null) {
+                    error(ctx.errorMessage)
+                    liveRegion = LiveRegionMode.Polite
+                }
+            },
+    )
+}
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderDecimalField(ctx: RenderContext) {
+    val text = ctx.state.answers[ctx.linkId] as? String ?: ""
+    FormBuilderNumericInput(
+        value = text,
+        onValueChange = { ctx.onAnswerChanged(ctx.linkId, it) },
+        label = ctx.displayLabel,
+        isRequired = ctx.isRequired,
+        isError = ctx.isError,
+        errorMessage = ctx.errorMessage,
+        modifier =
+            Modifier.semantics(mergeDescendants = true) {
+                contentDescription = ctx.displayLabel
+                if (ctx.isError && ctx.errorMessage != null) {
+                    error(ctx.errorMessage)
+                    liveRegion = LiveRegionMode.Polite
+                }
+            },
+    )
+}
+
+@Composable
+/**
+ * Internal helper function.
+ */
+private fun RenderIntegerField(ctx: RenderContext) {
+    val minValue = ctx.item.getMinValue() ?: DEFAULT_MIN_VALUE
+    val maxValue = ctx.item.getMaxValue() ?: DEFAULT_MAX_VALUE
+    val val1 = ctx.state.answers[ctx.linkId] as? Float
+    val val2 = (ctx.state.answers[ctx.linkId] as? String)?.toFloatOrNull()
+    val value = val1 ?: val2 ?: minValue
+    io.healthplatform.chartcam.ui.components.FormBuilderRangeSlider(
+        value = value,
+        valueRange = minValue..maxValue,
+        onValueChange = { ctx.onAnswerChanged(ctx.linkId, it) },
+        label = ctx.displayLabel,
+        isRequired = ctx.isRequired,
+        isError = ctx.isError,
+        errorMessage = ctx.errorMessage,
+        modifier =
+            Modifier.semantics(mergeDescendants = true) {
+                contentDescription = ctx.displayLabel
+                if (ctx.isError && ctx.errorMessage != null) {
+                    error(ctx.errorMessage)
+                    liveRegion = LiveRegionMode.Polite
+                }
+            },
+    )
 }
 
 /**
@@ -819,44 +1020,68 @@ fun isItemEnabled(
     item: Questionnaire.Item,
     answers: Map<String, Any>,
 ): Boolean {
-    if (item.enableWhen.isEmpty()) return true
-
-    val behavior = item.enableBehavior?.value ?: Questionnaire.EnableWhenBehavior.Any
-
-    val conditions =
-        item.enableWhen.map { ew ->
-            val targetQuestion = ew.question.value ?: return@map false
-            val operator = ew.operator.value ?: return@map false
-            val targetAnswer = answers[targetQuestion]
-
-            val ewAnswer = ew.answer
-
-            when (operator) {
-                Questionnaire.QuestionnaireItemOperator.EqualTo -> {
-                    when {
-                        ewAnswer.asString() != null -> targetAnswer == ewAnswer.asString()?.value?.value
-                        ewAnswer.asBoolean() != null -> targetAnswer == ewAnswer.asBoolean()?.value?.value
-                        else -> false
-                    }
-                }
-                Questionnaire.QuestionnaireItemOperator.NotEqualTo -> {
-                    when {
-                        ewAnswer.asString() != null -> targetAnswer != ewAnswer.asString()?.value?.value
-                        ewAnswer.asBoolean() != null -> targetAnswer != ewAnswer.asBoolean()?.value?.value
-                        else -> false
-                    }
-                }
-                Questionnaire.QuestionnaireItemOperator.Exists -> {
-                    val exists = ewAnswer.asBoolean()?.value?.value ?: true
-                    if (exists) targetAnswer != null else targetAnswer == null
-                }
-                else -> false
+    var enabled = true
+    if (item.enableWhen.isNotEmpty()) {
+        val behavior = item.enableBehavior?.value ?: Questionnaire.EnableWhenBehavior.Any
+        val conditions = item.enableWhen.map { ew -> evaluateCondition(ew, answers) }
+        enabled =
+            if (behavior == Questionnaire.EnableWhenBehavior.All) {
+                conditions.all { it }
+            } else {
+                conditions.any { it }
             }
-        }
+    }
+    return enabled
+}
 
-    return if (behavior == Questionnaire.EnableWhenBehavior.All) {
-        conditions.all { it }
-    } else {
-        conditions.any { it }
+/**
+ * Internal helper function.
+ */
+private fun evaluateCondition(
+    ew: Questionnaire.Item.EnableWhen,
+    answers: Map<String, Any>,
+): Boolean {
+    val targetQuestion = ew.question.value
+    val operator = ew.operator.value
+
+    if (targetQuestion == null || operator == null) return false
+
+    val targetAnswer = answers[targetQuestion]
+    val ewAnswer = ew.answer
+
+    return when (operator) {
+        Questionnaire.QuestionnaireItemOperator.EqualTo -> evaluateEqualTo(ewAnswer, targetAnswer)
+        Questionnaire.QuestionnaireItemOperator.NotEqualTo -> evaluateNotEqualTo(ewAnswer, targetAnswer)
+        Questionnaire.QuestionnaireItemOperator.Exists -> {
+            val exists = ewAnswer.asBoolean()?.value?.value ?: true
+            if (exists) targetAnswer != null else targetAnswer == null
+        }
+        else -> false
     }
 }
+
+/**
+ * Internal helper function.
+ */
+private fun evaluateEqualTo(
+    ewAnswer: Questionnaire.Item.EnableWhen.Answer,
+    targetAnswer: Any?,
+): Boolean =
+    when {
+        ewAnswer.asString() != null -> targetAnswer == ewAnswer.asString()?.value?.value
+        ewAnswer.asBoolean() != null -> targetAnswer == ewAnswer.asBoolean()?.value?.value
+        else -> false
+    }
+
+/**
+ * Internal helper function.
+ */
+private fun evaluateNotEqualTo(
+    ewAnswer: Questionnaire.Item.EnableWhen.Answer,
+    targetAnswer: Any?,
+): Boolean =
+    when {
+        ewAnswer.asString() != null -> targetAnswer != ewAnswer.asString()?.value?.value
+        ewAnswer.asBoolean() != null -> targetAnswer != ewAnswer.asBoolean()?.value?.value
+        else -> false
+    }

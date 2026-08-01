@@ -90,6 +90,7 @@ import org.jetbrains.compose.resources.stringResource
  * @param modifier The modifier to be applied to the widget.
  */
 @Composable
+@Suppress("LongParameterList")
 fun FormBuilderTextInput(
     value: String,
     onValueChange: (String) -> Unit,
@@ -152,6 +153,7 @@ fun FormBuilderTextInput(
  * @param modifier The modifier to be applied to the widget.
  */
 @Composable
+@Suppress("LongParameterList")
 fun FormBuilderTextArea(
     value: String,
     onValueChange: (String) -> Unit,
@@ -203,6 +205,7 @@ fun FormBuilderTextArea(
  * @param modifier The modifier to be applied to the widget.
  */
 @Composable
+@Suppress("LongParameterList", "UnusedParameter")
 fun FormBuilderSwitch(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
@@ -256,6 +259,7 @@ fun FormBuilderSwitch(
  * @param modifier The modifier to be applied to the widget.
  */
 @Composable
+@Suppress("LongParameterList", "UnusedParameter")
 fun FormBuilderCheckbox(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
@@ -309,6 +313,7 @@ fun FormBuilderCheckbox(
  * @param modifier The modifier to be applied to the widget.
  */
 @Composable
+@Suppress("LongParameterList")
 fun FormBuilderNumericInput(
     value: String,
     onValueChange: (String) -> Unit,
@@ -372,6 +377,7 @@ fun FormBuilderNumericInput(
  * @param modifier The modifier to be applied to the widget.
  */
 @Composable
+@Suppress("LongParameterList", "UnusedParameter")
 fun FormBuilderRangeSlider(
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
@@ -382,7 +388,13 @@ fun FormBuilderRangeSlider(
     errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.padding(vertical = 8.dp).minimumInteractiveComponentSize().testTag("RangeSlider $label")) {
+    Column(
+        modifier =
+            modifier
+                .padding(vertical = 8.dp)
+                .minimumInteractiveComponentSize()
+                .testTag("RangeSlider $label"),
+    ) {
         Text(text = label, style = MaterialTheme.typography.bodyMedium)
         Slider(
             value = value,
@@ -410,6 +422,7 @@ fun FormBuilderRangeSlider(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongParameterList")
 fun FormBuilderDropdown(
     selectedOption: String,
     options: List<String>,
@@ -441,7 +454,10 @@ fun FormBuilderDropdown(
             supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-            modifier = Modifier.menuAnchor(androidx.compose.material3.ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+            modifier =
+                Modifier
+                    .menuAnchor(androidx.compose.material3.ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
         )
         ExposedDropdownMenu(
             expanded = expanded,
@@ -478,6 +494,7 @@ fun FormBuilderDropdown(
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
+@Suppress("LongParameterList")
 fun FormBuilderMultiSelectDropdown(
     selectedOptions: List<String>,
     options: List<String>,
@@ -546,6 +563,7 @@ fun FormBuilderMultiSelectDropdown(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongParameterList", "LongMethod")
 fun FormBuilderDatePicker(
     value: String,
     onValueChange: (String) -> Unit,
@@ -639,6 +657,7 @@ fun FormBuilderDatePicker(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongParameterList", "LongMethod")
 fun FormBuilderDateTimePicker(
     value: String,
     onValueChange: (String) -> Unit,
@@ -772,7 +791,11 @@ fun FormBuilderPhotoCamera(
                 .minimumInteractiveComponentSize()
                 .testTag("PhotoCamera $label"),
     ) {
-        Icon(Icons.Default.CameraAlt, contentDescription = stringResource(Res.string.cd_camera_icon), modifier = Modifier.size(24.dp))
+        Icon(
+            Icons.Default.CameraAlt,
+            contentDescription = stringResource(Res.string.cd_camera_icon),
+            modifier = Modifier.size(24.dp),
+        )
         Text(text = label, modifier = Modifier.padding(start = 8.dp))
     }
 }
@@ -802,7 +825,11 @@ fun FormBuilderVideoCamera(
                 .minimumInteractiveComponentSize()
                 .testTag("VideoCamera $label"),
     ) {
-        Icon(Icons.Default.Videocam, contentDescription = stringResource(Res.string.cd_video_icon), modifier = Modifier.size(24.dp))
+        Icon(
+            Icons.Default.Videocam,
+            contentDescription = stringResource(Res.string.cd_video_icon),
+            modifier = Modifier.size(24.dp),
+        )
         Text(text = label, modifier = Modifier.padding(start = 8.dp))
     }
 }

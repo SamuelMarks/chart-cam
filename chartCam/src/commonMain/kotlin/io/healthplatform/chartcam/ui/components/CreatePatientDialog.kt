@@ -66,13 +66,15 @@ import org.jetbrains.compose.resources.stringResource
  *
  * **State & Side Effects:**
  * Maintains internal form state (firstName, lastName, mrn, dob, gender, and errors).
- * Validates date parsing directly in the dialog logic. No explicit Modifier is exposed as this represents a top-level Dialog.
+ * Validates date parsing directly in the dialog logic.
+ * No explicit Modifier is exposed as this represents a top-level Dialog.
  *
  * @param onDismissRequest Callback invoked when the user dismisses the dialog without saving.
- * @param onConfirm Callback invoked when the user successfully saves the new patient data. It provides the following parameters: first name, last name, MRN, date of birth, and gender.
+ * @param onConfirm Callback invoked when the user successfully saves the new patient data.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongMethod", "CyclomaticComplexMethod", "TooGenericExceptionCaught")
 fun CreatePatientDialog(
     onDismissRequest: () -> Unit,
     onConfirm: (String, String, String, LocalDate, String) -> Unit,
@@ -159,6 +161,8 @@ fun CreatePatientDialog(
                 try {
                     LocalDate.parse(dobString.trim())
                 } catch (e: Exception) {
+                    println(e.message)
+
                     null
                 }
             if (dob == null) {
@@ -262,7 +266,10 @@ fun CreatePatientDialog(
                     placeholder = { Text(stringResource(Res.string.dob_placeholder)) },
                     trailingIcon = {
                         IconButton(onClick = { showDatePicker = true }) {
-                            Icon(imageVector = Icons.Default.DateRange, contentDescription = stringResource(Res.string.cd_select_date))
+                            Icon(
+                                imageVector = Icons.Default.DateRange,
+                                contentDescription = stringResource(Res.string.cd_select_date),
+                            )
                         }
                     },
                 )

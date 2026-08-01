@@ -69,7 +69,8 @@ enum class WidgetType {
 
 /**
  * ViewModel for managing the state of the Questionnaire Builder.
- * This ViewModel directly consumes and emits native FHIR R4 `Resource` models (e.g., `Questionnaire`) without relying on intermediary DTOs.
+ * This ViewModel directly consumes and emits native FHIR R4 `Resource` models
+ * (e.g., `Questionnaire`) without relying on intermediary DTOs.
  *
  * @param repository The repository to save the resulting FHIR Questionnaire.
  * @param duplicateFromId Optional ID of a questionnaire to duplicate from.
@@ -93,7 +94,7 @@ class QuestionnaireBuilderViewModel(
                         items =
                             source.item.map { fhirItem ->
                                 val widgetType =
-                                    when (val itemControl = fhirItem.getItemControl()) {
+                                    when (fhirItem.getItemControl()) {
                                         "photo" -> WidgetType.PHOTO_CAMERA
                                         "video" -> WidgetType.VIDEO_CAMERA
                                         "switch" -> WidgetType.SWITCH
@@ -108,8 +109,10 @@ class QuestionnaireBuilderViewModel(
                                             }
                                         else ->
                                             when (fhirItem.type?.value) {
-                                                Questionnaire.QuestionnaireItemType.Attachment -> WidgetType.PHOTO_CAMERA
-                                                Questionnaire.QuestionnaireItemType.Boolean -> WidgetType.SWITCH
+                                                Questionnaire.QuestionnaireItemType.Attachment ->
+                                                    WidgetType.PHOTO_CAMERA
+                                                Questionnaire.QuestionnaireItemType.Boolean ->
+                                                    WidgetType.SWITCH
                                                 Questionnaire.QuestionnaireItemType.Choice ->
                                                     if (fhirItem.repeats?.value ==
                                                         true
@@ -118,13 +121,20 @@ class QuestionnaireBuilderViewModel(
                                                     } else {
                                                         WidgetType.SINGLE_SELECT
                                                     }
-                                                Questionnaire.QuestionnaireItemType.String -> WidgetType.SINGLE_LINE_TEXT
-                                                Questionnaire.QuestionnaireItemType.Text -> WidgetType.MULTI_LINE_TEXT
-                                                Questionnaire.QuestionnaireItemType.Date -> WidgetType.DATE
-                                                Questionnaire.QuestionnaireItemType.DateTime -> WidgetType.DATETIME
-                                                Questionnaire.QuestionnaireItemType.Decimal -> WidgetType.NUMERIC
-                                                Questionnaire.QuestionnaireItemType.Integer -> WidgetType.RANGE
-                                                else -> WidgetType.SINGLE_LINE_TEXT
+                                                Questionnaire.QuestionnaireItemType.String ->
+                                                    WidgetType.SINGLE_LINE_TEXT
+                                                Questionnaire.QuestionnaireItemType.Text ->
+                                                    WidgetType.MULTI_LINE_TEXT
+                                                Questionnaire.QuestionnaireItemType.Date ->
+                                                    WidgetType.DATE
+                                                Questionnaire.QuestionnaireItemType.DateTime ->
+                                                    WidgetType.DATETIME
+                                                Questionnaire.QuestionnaireItemType.Decimal ->
+                                                    WidgetType.NUMERIC
+                                                Questionnaire.QuestionnaireItemType.Integer ->
+                                                    WidgetType.RANGE
+                                                else ->
+                                                    WidgetType.SINGLE_LINE_TEXT
                                             }
                                     }
 
@@ -203,7 +213,10 @@ class QuestionnaireBuilderViewModel(
                             val isError =
                                 newLabel.isBlank() ||
                                     (
-                                        (item.widgetType == WidgetType.SINGLE_SELECT || item.widgetType == WidgetType.MULTI_SELECT) &&
+                                        (
+                                            item.widgetType == WidgetType.SINGLE_SELECT ||
+                                                item.widgetType == WidgetType.MULTI_SELECT
+                                        ) &&
                                             newOptions.isEmpty()
                                     )
                             item.copy(label = newLabel, options = newOptions, isError = isError)
@@ -291,99 +304,7 @@ class QuestionnaireBuilderViewModel(
         val currentState = _state.value
         val id = "custom-${currentState.title.lowercase().replace(Regex("[^a-z0-9]+"), "-")}"
 
-        val fhirItems =
-            currentState.items.map { builderItem ->
-                val fhirType =
-                    when (builderItem.widgetType) {
-                        WidgetType.PHOTO_CAMERA, WidgetType.VIDEO_CAMERA -> Questionnaire.QuestionnaireItemType.Attachment
-                        WidgetType.SWITCH, WidgetType.CHECKBOX -> Questionnaire.QuestionnaireItemType.Boolean
-                        WidgetType.SINGLE_SELECT, WidgetType.MULTI_SELECT -> Questionnaire.QuestionnaireItemType.Choice
-                        WidgetType.SINGLE_LINE_TEXT -> Questionnaire.QuestionnaireItemType.String
-                        WidgetType.MULTI_LINE_TEXT -> Questionnaire.QuestionnaireItemType.Text
-                        WidgetType.DATE -> Questionnaire.QuestionnaireItemType.Date
-                        WidgetType.DATETIME -> Questionnaire.QuestionnaireItemType.DateTime
-                        WidgetType.NUMERIC -> Questionnaire.QuestionnaireItemType.Decimal
-                        WidgetType.RANGE -> Questionnaire.QuestionnaireItemType.Integer
-                    }
-
-                val itemBuilder =
-                    Questionnaire.Item
-                        .Builder(
-                            String.Builder().apply { value = builderItem.linkId },
-                            Enumeration(value = fhirType),
-                        ).apply {
-                            text = String.Builder().apply { value = builderItem.label }
-                            required = Boolean.Builder().apply { value = false }
-                        }
-
-                // Map options for Choice types
-                if (fhirType == Questionnaire.QuestionnaireItemType.Choice) {
-                    if (builderItem.widgetType == WidgetType.MULTI_SELECT) {
-                        itemBuilder.repeats = Boolean.Builder().apply { value = true }
-                    }
-                    builderItem.options.forEachIndexed { index, optionValue ->
-                        itemBuilder.answerOption.add(
-                            Questionnaire.Item.AnswerOption.Builder(
-                                Questionnaire.Item.AnswerOption.Value.Coding(
-                                    com.google.fhir.model.r4.Coding
-                                        .Builder()
-                                        .apply {
-                                            system =
-                                                com.google.fhir.model.r4.Uri
-                                                    .Builder()
-                                                    .apply { value = "http://chartcam.local/custom-options" }
-                                            code =
-                                                com.google.fhir.model.r4.Code
-                                                    .Builder()
-                                                    .apply { value = "opt-$index" }
-                                            display = String.Builder().apply { value = optionValue }
-                                        }.build(),
-                                ),
-                            ),
-                        )
-                    }
-                }
-
-                // Map extensions/itemControls to differentiate visually similar items
-                // e.g. PHOTO vs VIDEO
-                val itemControlCode =
-                    when (builderItem.widgetType) {
-                        WidgetType.VIDEO_CAMERA -> "video"
-                        WidgetType.PHOTO_CAMERA -> "photo"
-                        WidgetType.SWITCH -> "switch"
-                        WidgetType.RANGE -> "slider"
-                        WidgetType.SINGLE_SELECT -> "check-box" // Use check-box for single select as requested
-                        WidgetType.MULTI_SELECT -> "check-box"
-                        else -> null
-                    }
-
-                if (itemControlCode != null) {
-                    itemBuilder.extension.add(
-                        com.google.fhir.model.r4.Extension
-                            .Builder(
-                                url = "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
-                            ).apply {
-                                value =
-                                    com.google.fhir.model.r4.Extension.Value.CodeableConcept(
-                                        com.google.fhir.model.r4.CodeableConcept
-                                            .Builder()
-                                            .apply {
-                                                coding.add(
-                                                    com.google.fhir.model.r4.Coding.Builder().apply {
-                                                        code =
-                                                            com.google.fhir.model.r4.Code
-                                                                .Builder()
-                                                                .apply { value = itemControlCode }
-                                                    },
-                                                )
-                                            }.build(),
-                                    )
-                            },
-                    )
-                }
-
-                itemBuilder
-            }
+        val fhirItems = currentState.items.map { mapBuilderItemToFhir(it) }
 
         return Questionnaire
             .Builder(Enumeration(value = PublicationStatus.Active))
@@ -395,28 +316,141 @@ class QuestionnaireBuilderViewModel(
     }
 
     /**
+     * Maps item to fhir.
+     */
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
+    private fun mapBuilderItemToFhir(builderItem: BuilderItem): Questionnaire.Item.Builder {
+        val fhirType = getFhirItemType(builderItem.widgetType)
+        val itemBuilder =
+            Questionnaire.Item
+                .Builder(
+                    String.Builder().apply { value = builderItem.linkId },
+                    Enumeration(value = fhirType),
+                ).apply {
+                    text = String.Builder().apply { value = builderItem.label }
+                    required = Boolean.Builder().apply { value = false }
+                }
+        applyChoiceOptions(itemBuilder, builderItem, fhirType)
+        applyItemControl(itemBuilder, builderItem)
+        return itemBuilder
+    }
+
+    /**
+     * Applies choice options.
+     */
+    private fun applyChoiceOptions(
+        itemBuilder: Questionnaire.Item.Builder,
+        builderItem: BuilderItem,
+        fhirType: Questionnaire.QuestionnaireItemType,
+    ) {
+        if (fhirType == Questionnaire.QuestionnaireItemType.Choice) {
+            if (builderItem.widgetType == WidgetType.MULTI_SELECT) {
+                itemBuilder.repeats = Boolean.Builder().apply { value = true }
+            }
+            builderItem.options.forEachIndexed { index, optionValue ->
+                itemBuilder.answerOption.add(
+                    Questionnaire.Item.AnswerOption.Builder(
+                        Questionnaire.Item.AnswerOption.Value.Coding(
+                            com.google.fhir.model.r4.Coding
+                                .Builder()
+                                .apply {
+                                    system =
+                                        com.google.fhir.model.r4.Uri
+                                            .Builder()
+                                            .apply { value = "http://chartcam.local/custom-options" }
+                                    code =
+                                        com.google.fhir.model.r4.Code
+                                            .Builder()
+                                            .apply { value = "opt-$index" }
+                                    display = String.Builder().apply { value = optionValue }
+                                }.build(),
+                        ),
+                    ),
+                )
+            }
+        }
+    }
+
+    /**
+     * Applies item control.
+     */
+    private fun applyItemControl(
+        itemBuilder: Questionnaire.Item.Builder,
+        builderItem: BuilderItem,
+    ) {
+        val itemControlCode =
+            when (builderItem.widgetType) {
+                WidgetType.VIDEO_CAMERA -> "video"
+                WidgetType.PHOTO_CAMERA -> "photo"
+                WidgetType.SWITCH -> "switch"
+                WidgetType.RANGE -> "slider"
+                WidgetType.SINGLE_SELECT, WidgetType.MULTI_SELECT -> "check-box"
+                else -> null
+            }
+        if (itemControlCode != null) {
+            itemBuilder.extension.add(
+                com.google.fhir.model.r4.Extension
+                    .Builder(
+                        url = "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                    ).apply {
+                        value =
+                            com.google.fhir.model.r4.Extension.Value.CodeableConcept(
+                                com.google.fhir.model.r4.CodeableConcept
+                                    .Builder()
+                                    .apply {
+                                        coding.add(
+                                            com.google.fhir.model.r4.Coding.Builder().apply {
+                                                code =
+                                                    com.google.fhir.model.r4.Code
+                                                        .Builder()
+                                                        .apply { value = itemControlCode }
+                                            },
+                                        )
+                                    }.build(),
+                            )
+                    },
+            )
+        }
+    }
+
+    /**
+     * Gets fhir item type.
+     */
+    private fun getFhirItemType(widgetType: WidgetType): Questionnaire.QuestionnaireItemType =
+        when (widgetType) {
+            WidgetType.PHOTO_CAMERA, WidgetType.VIDEO_CAMERA -> Questionnaire.QuestionnaireItemType.Attachment
+            WidgetType.SWITCH, WidgetType.CHECKBOX -> Questionnaire.QuestionnaireItemType.Boolean
+            WidgetType.SINGLE_SELECT, WidgetType.MULTI_SELECT -> Questionnaire.QuestionnaireItemType.Choice
+            WidgetType.SINGLE_LINE_TEXT -> Questionnaire.QuestionnaireItemType.String
+            WidgetType.MULTI_LINE_TEXT -> Questionnaire.QuestionnaireItemType.Text
+            WidgetType.DATE -> Questionnaire.QuestionnaireItemType.Date
+            WidgetType.DATETIME -> Questionnaire.QuestionnaireItemType.DateTime
+            WidgetType.NUMERIC -> Questionnaire.QuestionnaireItemType.Decimal
+            WidgetType.RANGE -> Questionnaire.QuestionnaireItemType.Integer
+        }
+
+    /**
      * Saves the current builder state as a FHIR Questionnaire in the repository.
      * @return The ID of the newly created Questionnaire, or null if validation failed.
      */
     fun saveQuestionnaire(): kotlin.String? {
-        if (!validate()) return null
+        var finalId: kotlin.String? = null
 
-        val questionnaire = buildQuestionnaire()
-        val currentId = questionnaire.id
+        if (validate()) {
+            val questionnaire = buildQuestionnaire()
+            val currentId = questionnaire.id
 
-        // Ensure uniqueness
-        if (currentId != null) {
-            val existing = repository.getQuestionnaire(currentId)
-            // If we are creating a new one or duplicating, we shouldn't overwrite existing ones
-            // Since we don't have a specific "isEditing" flag, we consider it a duplicate error
-            // if an existing questionnaire has this ID.
+            // Ensure uniqueness
+            val existing = currentId?.let { repository.getQuestionnaire(it) }
+
             if (existing != null) {
                 _state.update { it.copy(isDuplicateNameError = true) }
-                return null
+            } else {
+                repository.saveQuestionnaire(questionnaire)
+                finalId = questionnaire.id ?: ""
             }
         }
 
-        repository.saveQuestionnaire(questionnaire)
-        return questionnaire.id ?: ""
+        return finalId
     }
 }

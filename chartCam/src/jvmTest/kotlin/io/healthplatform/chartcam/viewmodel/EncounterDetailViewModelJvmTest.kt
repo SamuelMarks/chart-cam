@@ -19,6 +19,7 @@ import com.google.fhir.model.r4.Practitioner
 import com.google.fhir.model.r4.Questionnaire
 import com.google.fhir.model.r4.QuestionnaireResponse
 import com.google.fhir.model.r4.String
+import io.healthplatform.chartcam.models.DocumentReferenceCreationParams
 import io.healthplatform.chartcam.models.createFhirEncounter
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
@@ -69,16 +70,18 @@ class EncounterDetailViewModelJvmTest {
     private lateinit var viewModel: EncounterDetailViewModel
 
     private val dummyEncounter =
-        createFhirEncounter(id = "enc1", patientId = "pat1", practitionerId = "prac1", dateStr = "2026-07-09", statusStr = "in-progress")
+        createFhirEncounter(id = "enc1", patientId = "pat1", practitionerId = "prac1", dateStr = "2026-07-09")
     private val dummyDoc =
         io.healthplatform.chartcam.models.createFhirDocumentReference(
-            id = "doc1",
-            patientId = "pat1",
-            encounterId = "enc1",
-            dateStr = "2026-07-09",
-            desc = "desc",
-            mime = "image/jpeg",
-            urlPath = "path",
+            DocumentReferenceCreationParams(
+                id = "doc1",
+                patientId = "pat1",
+                encounterId = "enc1",
+                dateStr = "2026-07-09",
+                desc = "desc",
+                mime = "image/jpeg",
+                urlPath = "path",
+            ),
         )
     private val dummyQr =
         QuestionnaireResponse
@@ -195,7 +198,6 @@ class EncounterDetailViewModelJvmTest {
                     patientId = "pat1",
                     practitionerId = "prac1",
                     dateStr = "2026-07-09",
-                    statusStr = "in-progress",
                 )
             val patient = Patient.Builder().apply { id = "pat1" }.build()
             `when`(fhirRepository.getPatient("pat1")).thenReturn(patient)
@@ -219,7 +221,6 @@ class EncounterDetailViewModelJvmTest {
                     patientId = "pat1",
                     practitionerId = "prac1",
                     dateStr = "2026-07-09",
-                    statusStr = "in-progress",
                 )
             val patient = Patient.Builder().apply { id = "pat1" }.build()
             `when`(fhirRepository.getPatient("pat1")).thenReturn(patient)
@@ -264,7 +265,6 @@ class EncounterDetailViewModelJvmTest {
                     patientId = "pat1",
                     practitionerId = "prac1",
                     dateStr = "2026-07-09",
-                    statusStr = "in-progress",
                 )
             val patient = Patient.Builder().apply { id = "pat1" }.build()
             val nestedItem =
@@ -390,7 +390,6 @@ class EncounterDetailViewModelJvmTest {
                     patientId = "pat1",
                     practitionerId = "prac1",
                     dateStr = "2026-07-09",
-                    statusStr = "in-progress",
                 )
             val patient = Patient.Builder().apply { id = "pat1" }.build()
 
@@ -539,7 +538,7 @@ class EncounterDetailViewModelJvmTest {
     @Test
     fun testOnFormUpdated() {
         val newMap = mapOf("q1" to "a1")
-        viewModel.onFormUpdated(newMap, dummyQr)
+        viewModel.onFormUpdated(newMap)
         assertEquals("a1", viewModel.uiState.value.answers["q1"])
     }
 
@@ -556,7 +555,6 @@ class EncounterDetailViewModelJvmTest {
                     patientId = patId,
                     practitionerId = "prac1",
                     dateStr = "2026-07-09",
-                    statusStr = "in-progress",
                 )
             val qr =
                 QuestionnaireResponse
@@ -606,7 +604,6 @@ class EncounterDetailViewModelJvmTest {
                     patientId = "pat1",
                     practitionerId = "prac1",
                     dateStr = "2026-07-09",
-                    statusStr = "in-progress",
                 )
             val patient = Patient.Builder().apply { id = "pat1" }.build()
 
@@ -666,7 +663,6 @@ class EncounterDetailViewModelJvmTest {
                     patientId = "patient-1",
                     practitionerId = "prac1",
                     dateStr = "2026-07-09",
-                    statusStr = "finished",
                 )
 
             val dummyPatient = Patient.Builder().apply { id = "patient-1" }.build()
@@ -710,7 +706,6 @@ class EncounterDetailViewModelJvmTest {
                     patientId = "patient-1",
                     practitionerId = "prac1",
                     dateStr = "2026-07-09",
-                    statusStr = "in-progress",
                 )
             `when`(fhirRepository.getEncounter(encId)).thenReturn(reopenedEncounter)
 

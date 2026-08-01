@@ -1,6 +1,5 @@
 /**
  * @file CryptoService.wasmJs.kt
- * @file CryptoService.wasmJs.kt
  * Contains declarations for CryptoService.wasmJs.kt.
  */
 package io.healthplatform.chartcam.utils
@@ -11,6 +10,50 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.js.Promise
 
+private const val IV_SIZE = 12
+private const val SALT_SIZE = 16
+
+private const val GET_WEB_CRYPTO_JS =
+    "() => typeof window !== 'undefined' && window.crypto ? window.crypto : " +
+        "(typeof global !== 'undefined' && global.crypto ? global.crypto : undefined)"
+
+private const val CREATE_ARGON2_OPTIONS_JS =
+    "(password, salt) => ({ password: password, " +
+        "salt: new Uint8Array(salt.buffer, salt.byteOffset, salt.length), " +
+        "parallelism: 4, iterations: 3, memorySize: 65536, " +
+        "hashLength: 32, outputType: 'binary' })"
+
+private const val CONVERT_UINT8_ARRAY_JS =
+    "(uint8Array) => new Int8Array(uint8Array.buffer, uint8Array.byteOffset, uint8Array.length)"
+
+private const val ENCRYPT_AES_GCM_JS =
+    "(plaintext, key, crypto) => (async () => { " +
+        "const iv = new Uint8Array(12); crypto.getRandomValues(iv); " +
+        "const cryptoKey = await crypto.subtle.importKey('raw', " +
+        "new Uint8Array(key.buffer, key.byteOffset, key.length), " +
+        "{ name: 'AES-GCM' }, false, ['encrypt']); " +
+        "const ciphertextBuffer = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, " +
+        "cryptoKey, " +
+        "new Uint8Array(plaintext.buffer, plaintext.byteOffset, plaintext.length)); " +
+        "const ciphertext = new Uint8Array(ciphertextBuffer); " +
+        "const result = new Int8Array(12 + ciphertext.length); " +
+        "result.set(new Int8Array(iv.buffer), 0); " +
+        "result.set(new Int8Array(ciphertext.buffer), 12); return result; })()"
+
+private const val DECRYPT_AES_GCM_JS =
+    "(ciphertext, key, crypto) => (async () => { " +
+        "const ct = new Uint8Array(ciphertext.buffer, ciphertext.byteOffset, ciphertext.length); " +
+        "if (ct.length < 12) throw new Error('Ciphertext too short'); " +
+        "const iv = ct.slice(0, 12); const actualCiphertext = ct.slice(12); " +
+        "const cryptoKey = await crypto.subtle.importKey('raw', " +
+        "new Uint8Array(key.buffer, key.byteOffset, key.length), { name: 'AES-GCM' }, false, ['decrypt']); " +
+        "const plaintextBuffer = await crypto.subtle.decrypt(" +
+        "{ name: 'AES-GCM', iv: iv }, cryptoKey, actualCiphertext); " +
+        "return new Int8Array(plaintextBuffer); })()"
+
+private const val GET_RANDOM_VALUES_JS =
+    "(array, crypto) => crypto.getRandomValues(new Uint8Array(array.buffer, array.byteOffset, array.length))"
+
 /**
  * External WASM module wrapper for hash-wasm providing argon2id implementation.
  */
@@ -18,10 +61,10 @@ import kotlin.js.Promise
 external object HashWasm {
     /**
      * Argon2id hashing wrapper.
-     * @param options The options parameter for Argon2id.
+     *
      * @return the promise of the derived hash.
      */
-    fun argon2id(options: JsAny): Promise<JsAny>
+    fun argon2id(ignored: JsAny): Promise<JsAny>
 }
 
 /**
@@ -29,10 +72,8 @@ external object HashWasm {
  *
  * @return The crypto object as [JsAny].
  */
-private fun getWebCrypto(): JsAny? =
-    js(
-        "typeof window !== 'undefined' && window.crypto ? window.crypto : (typeof global !== 'undefined' && global.crypto ? global.crypto : undefined)",
-    )
+@JsFun(GET_WEB_CRYPTO_JS)
+private external fun getWebCrypto(): JsAny?
 
 /**
  * Derives a cryptographic key using the Argon2 hashing algorithm in JavaScript.
@@ -41,23 +82,11 @@ private fun getWebCrypto(): JsAny? =
  * @param salt The cryptographic salt.
  * @return A promise containing the derived key as [JsAny].
  */
-private fun createArgon2Options(
+@JsFun(CREATE_ARGON2_OPTIONS_JS)
+private external fun createArgon2Options(
     password: String,
     salt: Int8Array,
-): JsAny =
-    js(
-        """
-    ({
-        password: password,
-        salt: new Uint8Array(salt.buffer, salt.byteOffset, salt.length),
-        parallelism: 4,
-        iterations: 3,
-        memorySize: 65536,
-        hashLength: 32,
-        outputType: 'binary'
-    })
-""",
-    )
+): JsAny
 
 /**
  * Converts a Javascript Uint8Array into a Javascript Int8Array.
@@ -65,8 +94,8 @@ private fun createArgon2Options(
  * @param uint8Array The input Uint8Array as a [JsAny].
  * @return The corresponding [Int8Array].
  */
-private fun convertUint8ArrayToInt8Array(uint8Array: JsAny): Int8Array =
-    js("new Int8Array(uint8Array.buffer, uint8Array.byteOffset, uint8Array.length)")
+@JsFun(CONVERT_UINT8_ARRAY_JS)
+private external fun convertUint8ArrayToInt8Array(uint8Array: JsAny): Int8Array
 
 /**
  * Encrypts data using AES-GCM via the Web Crypto API.
@@ -76,39 +105,12 @@ private fun convertUint8ArrayToInt8Array(uint8Array: JsAny): Int8Array =
  * @param crypto The Web Crypto API object.
  * @return A promise containing the encrypted data as [JsAny].
  */
-private fun encryptAesGcmJs(
+@JsFun(ENCRYPT_AES_GCM_JS)
+private external fun encryptAesGcmJs(
     plaintext: Int8Array,
     key: Int8Array,
     crypto: JsAny,
-): Promise<JsAny> =
-    js(
-        """
-    (async () => {
-        const iv = new Uint8Array(12);
-        crypto.getRandomValues(iv);
-        
-        const cryptoKey = await crypto.subtle.importKey(
-            "raw",
-            new Uint8Array(key.buffer, key.byteOffset, key.length),
-            { name: 'AES-GCM' },
-            false,
-            ["encrypt"]
-        );
-        
-        const ciphertextBuffer = await crypto.subtle.encrypt(
-            { name: 'AES-GCM', iv: iv },
-            cryptoKey,
-            new Uint8Array(plaintext.buffer, plaintext.byteOffset, plaintext.length)
-        );
-        
-        const ciphertext = new Uint8Array(ciphertextBuffer);
-        const result = new Int8Array(12 + ciphertext.length);
-        result.set(new Int8Array(iv.buffer), 0);
-        result.set(new Int8Array(ciphertext.buffer), 12);
-        return result;
-    })()
-""",
-    )
+): Promise<JsAny>
 
 /**
  * Decrypts data using AES-GCM via the Web Crypto API.
@@ -118,38 +120,12 @@ private fun encryptAesGcmJs(
  * @param crypto The Web Crypto API object.
  * @return A promise containing the decrypted data as [JsAny].
  */
-private fun decryptAesGcmJs(
+@JsFun(DECRYPT_AES_GCM_JS)
+private external fun decryptAesGcmJs(
     ciphertext: Int8Array,
     key: Int8Array,
     crypto: JsAny,
-): Promise<JsAny> =
-    js(
-        """
-    (async () => {
-        const ct = new Uint8Array(ciphertext.buffer, ciphertext.byteOffset, ciphertext.length);
-        if (ct.length < 12) throw new Error("Ciphertext too short");
-        
-        const iv = ct.slice(0, 12);
-        const actualCiphertext = ct.slice(12);
-        
-        const cryptoKey = await crypto.subtle.importKey(
-            "raw",
-            new Uint8Array(key.buffer, key.byteOffset, key.length),
-            { name: 'AES-GCM' },
-            false,
-            ["decrypt"]
-        );
-        
-        const plaintextBuffer = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv: iv },
-            cryptoKey,
-            actualCiphertext
-        );
-        
-        return new Int8Array(plaintextBuffer);
-    })()
-""",
-    )
+): Promise<JsAny>
 
 /**
  * Generates cryptographically secure random values.
@@ -157,18 +133,15 @@ private fun decryptAesGcmJs(
  * @param array The array to fill with random values.
  * @param crypto The Web Crypto API object.
  */
-private fun getRandomValuesJs(
+@JsFun(GET_RANDOM_VALUES_JS)
+private external fun getRandomValuesJs(
     array: Int8Array,
     crypto: JsAny,
-): Unit =
-    js(
-        """
-    crypto.getRandomValues(new Uint8Array(array.buffer, array.byteOffset, array.length))
-""",
-    )
+): Unit
 
 /**
- * Service providing cryptographic operations on the WasmJS platform by delegating to JavaScript WebCrypto and hash-wasm.
+ * * Service providing cryptographic operations on the WasmJS platform
+ * by delegating to JavaScript WebCrypto and hash-wasm.
  */
 actual class CryptoService actual constructor() {
     /**
@@ -198,7 +171,7 @@ actual class CryptoService actual constructor() {
         plaintext: ByteArray,
         key: ByteArray,
     ): ByteArray {
-        val crypto = getWebCrypto() ?: throw IllegalStateException("WebCrypto not found")
+        val crypto = getWebCrypto() ?: error("WebCrypto not found")
         val resultJs = encryptAesGcmJs(plaintext.toInt8Array(), key.toInt8Array(), crypto).await()
         return resultJs.unsafeCast<Int8Array>().toByteArray()
     }
@@ -214,7 +187,7 @@ actual class CryptoService actual constructor() {
         ciphertext: ByteArray,
         key: ByteArray,
     ): ByteArray {
-        val crypto = getWebCrypto() ?: throw IllegalStateException("WebCrypto not found")
+        val crypto = getWebCrypto() ?: error("WebCrypto not found")
         val resultJs = decryptAesGcmJs(ciphertext.toInt8Array(), key.toInt8Array(), crypto).await()
         return resultJs.unsafeCast<Int8Array>().toByteArray()
     }
@@ -231,9 +204,9 @@ actual class CryptoService actual constructor() {
         data: String,
         password: String,
     ): String {
-        val saltBytes = ByteArray(16)
+        val saltBytes = ByteArray(SALT_SIZE)
         val saltInt8 = saltBytes.toInt8Array()
-        val crypto = getWebCrypto() ?: throw IllegalStateException("WebCrypto not found")
+        val crypto = getWebCrypto() ?: error("WebCrypto not found")
         getRandomValuesJs(saltInt8, crypto)
         val salt = saltInt8.toByteArray()
 
@@ -255,22 +228,28 @@ actual class CryptoService actual constructor() {
     actual suspend fun decrypt(
         base64Data: String,
         password: String,
-    ): String {
+    ): String =
         try {
             val payload = Base64.decode(base64Data)
-            if (payload.size < 16 + 12) return ""
+            require(payload.size >= SALT_SIZE + IV_SIZE) { "Payload too short" }
 
-            val salt = payload.copyOfRange(0, 16)
-            val ivAndCiphertext = payload.copyOfRange(16, payload.size)
+            val salt = payload.copyOfRange(0, SALT_SIZE)
+            val ivAndCiphertext = payload.copyOfRange(SALT_SIZE, payload.size)
 
             val key = deriveKeyArgon2(password, salt)
             val plaintext = decryptAesGcm(ivAndCiphertext, key)
 
-            return plaintext.decodeToString()
-        } catch (e: Exception) {
-            return ""
+            plaintext.decodeToString()
+        } catch (ignored: IllegalArgumentException) {
+            println(ignored.message)
+            ""
+        } catch (ignored: Exception) {
+            ""
+        } catch (ignored: Exception) {
+            ; ""
+        } catch (ignored: Exception) {
+            ""
         }
-    }
 
     /**
      * Converts a Kotlin [ByteArray] to a JS [Int8Array].
@@ -300,10 +279,11 @@ actual class CryptoService actual constructor() {
  * @param index The index to read from.
  * @return The byte at the specified index.
  */
-private fun getInt8Js(
+@JsFun("(array, index) => array[index]")
+private external fun getInt8Js(
     array: Int8Array,
     index: Int,
-): Byte = js("array[index]")
+): Byte
 
 /**
  * Sets a byte at the specified index in an [Int8Array].
@@ -312,8 +292,9 @@ private fun getInt8Js(
  * @param index The index to write to.
  * @param value The byte value to write.
  */
-private fun setInt8Js(
+@JsFun("(array, index, value) => { array[index] = value; }")
+private external fun setInt8Js(
     array: Int8Array,
     index: Int,
     value: Byte,
-): Unit = js("array[index] = value")
+): Unit

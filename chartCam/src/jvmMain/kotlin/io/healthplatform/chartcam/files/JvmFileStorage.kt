@@ -59,7 +59,7 @@ class JvmFileStorage : FileStorage {
     /**
      * Clears the file cache. This is currently a no-op on the JVM platform.
      */
-    override fun clearCache() {}
+    override fun clearCache() { /* no-op */ }
 }
 
 /**

@@ -26,12 +26,12 @@ class WasmJsSensorManager : SensorManager {
     /**
      * Starts listening to sensor updates. No-op on the web target.
      */
-    override fun startListening() {}
+    override fun startListening() { /* no-op */ }
 
     /**
      * Stops listening to sensor updates. No-op on the web target.
      */
-    override fun stopListening() {}
+    override fun stopListening() { /* no-op */ }
 }
 
 /**

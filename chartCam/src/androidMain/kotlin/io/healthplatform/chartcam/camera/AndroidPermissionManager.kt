@@ -1,6 +1,6 @@
 /**
- * @file PermissionManager.android.kt
- * Contains declarations for PermissionManager.android.kt.
+ * @file AndroidPermissionManager.kt
+ * Contains declarations for AndroidPermissionManager.kt.
  *
  * File defining the Android-specific implementation of [PermissionManager] and its composable factory.
  */
@@ -29,7 +29,8 @@ import kotlin.coroutines.resume
  * Handles checking, requesting, and routing to system settings for camera permissions.
  *
  * @param context The Android [android.content.Context] used to check permissions and start activities.
- * @param requestLauncher A lambda function responsible for initiating the permission request via the Activity Result API.
+ * @param requestLauncher A lambda function responsible for initiating the permission
+ * request via the Activity Result API.
  */
 class AndroidPermissionManager(
     private val context: android.content.Context,

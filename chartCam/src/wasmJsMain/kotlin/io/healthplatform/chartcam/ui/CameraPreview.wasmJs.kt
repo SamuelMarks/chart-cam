@@ -31,6 +31,18 @@ import org.jetbrains.compose.resources.decodeToImageBitmap
 import org.jetbrains.compose.resources.stringResource
 import org.w3c.dom.HTMLVideoElement
 
+private const val FRAME_DELAY_MS = 66L
+
+private const val GET_BASE64_IMAGE_FAST_JS =
+    "(video) => { if (video.videoWidth === 0 || video.videoHeight === 0) return null; " +
+        "const canvas = document.createElement('canvas'); " +
+        "canvas.width = video.videoWidth; " +
+        "canvas.height = video.videoHeight; " +
+        "const ctx = canvas.getContext('2d'); " +
+        "ctx.drawImage(video, 0, 0, canvas.width, canvas.height); " +
+        "const dataUrl = canvas.toDataURL('image/jpeg', 0.6); " +
+        "const base64 = dataUrl.split(',')[1]; return base64 || null; }"
+
 /**
  * Executes raw JavaScript to extract a frame from an [HTMLVideoElement] and encodes it
  * as a base64-encoded JPEG image string.
@@ -39,22 +51,8 @@ import org.w3c.dom.HTMLVideoElement
  * @return A base64-encoded string representation of the captured JPEG image,
  *         or null if the capture fails (e.g., if video dimensions are zero).
  */
-private fun getBase64ImageFast(video: HTMLVideoElement): String? =
-    js(
-        """
-    (() => {
-        if (video.videoWidth === 0 || video.videoHeight === 0) return null;
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-        const base64 = dataUrl.split(',')[1];
-        return base64 || null;
-    })()
-""",
-    )
+@JsFun(GET_BASE64_IMAGE_FAST_JS)
+private external fun getBase64ImageFast(video: HTMLVideoElement): String?
 
 /**
  * A WebAssembly (WasmJs) specific implementation of the [CameraPreview] composable.
@@ -88,11 +86,12 @@ actual fun CameraPreview(
                             }
                         }
                     }
-                } catch (e: Throwable) {
+                } catch (e: IllegalStateException) {
+                    println(e.message)
                     // Ignore errors during frame capture
                 }
                 // roughly 15 fps
-                delay(66)
+                delay(FRAME_DELAY_MS)
             }
         }
 

@@ -10,18 +10,22 @@ package io.healthplatform.chartcam.ui
  * @param language The locale identifier to set (e.g., "en", "es").
  */
 private fun setNavigatorLanguage(language: String) {
-    js(
-        """
-        Object.defineProperty(navigator, 'language', {
-            value: language,
-            configurable: true
-        });
-        Object.defineProperty(navigator, 'languages', {
-            value: [language],
-            configurable: true
-        });
-    """,
-    )
+    val applyLang: dynamic =
+        js(
+            """
+            (function(lang) {
+                Object.defineProperty(navigator, 'language', {
+                    value: lang,
+                    configurable: true
+                });
+                Object.defineProperty(navigator, 'languages', {
+                    value: [lang],
+                    configurable: true
+                });
+            })
+            """,
+        )
+    applyLang(language)
 }
 
 /**

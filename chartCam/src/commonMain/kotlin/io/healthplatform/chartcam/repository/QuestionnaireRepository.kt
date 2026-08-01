@@ -42,8 +42,10 @@ class QuestionnaireRepository(
                         .readBytes("files/default_templates/std-form.json")
                 val stdQ = fhirJson.decodeFromString(stdBytes.decodeToString()) as Questionnaire
                 inMemoryForms["std-form"] = stdQ
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } catch (e: IllegalArgumentException) {
+                println("Error: ${e.message}")
+            } catch (e: IllegalStateException) {
+                println("Error: ${e.message}")
             }
 
             try {
@@ -52,29 +54,29 @@ class QuestionnaireRepository(
                         .readBytes("files/default_templates/basic-followup.json")
                 val basicQ = fhirJson.decodeFromString(basicBytes.decodeToString()) as Questionnaire
                 inMemoryForms["basic-followup"] = basicQ
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } catch (e: IllegalArgumentException) {
+                println("Error: ${e.message}")
+            } catch (e: IllegalStateException) {
+                println("Error: ${e.message}")
             }
         }
 
-        try {
-            fhirRepository?.let { repo ->
-                val entities =
-                    repo.database.chartCamQueries
-                        .getAllResourcesByType("Questionnaire")
-                        .awaitAsList()
-                for (entity in entities) {
-                    try {
-                        val q = fhirJson.decodeFromString(entity.serializedResource) as Questionnaire
-                        q.id?.let { inMemoryForms[it] = q }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+        kotlin
+            .runCatching {
+                fhirRepository?.let { repo ->
+                    val entities =
+                        repo.database.chartCamQueries
+                            .getAllResourcesByType("Questionnaire")
+                            .awaitAsList()
+                    for (entity in entities) {
+                        kotlin
+                            .runCatching {
+                                val q = fhirJson.decodeFromString(entity.serializedResource) as Questionnaire
+                                q.id?.let { inMemoryForms[it] = q }
+                            }.onFailure { println("Error: ${it.message}") }
                     }
                 }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+            }.onFailure { println("Error: ${it.message}") }
     }
 
     /**
@@ -163,11 +165,26 @@ class QuestionnaireRepository(
         labels: kotlin.String = "",
     ): Questionnaire {
         val id = "custom-${title.lowercase().replace(" ", "-")}"
-        val items = mutableListOf(createItem("notes", "Clinical Notes", Questionnaire.QuestionnaireItemType.String, required = false))
+        val items =
+            mutableListOf(
+                createItem(
+                    "notes",
+                    "Clinical Notes",
+                    Questionnaire.QuestionnaireItemType.String,
+                    required = false,
+                ),
+            )
         val parsedLabels = labels.split(",").map { it.trim() }.filter { it.isNotEmpty() }
         for (i in 1..photos) {
             val labelStr = parsedLabels.getOrNull(i - 1) ?: (i - 1).toString()
-            items.add(createItem("photo_$i", labelStr, Questionnaire.QuestionnaireItemType.Attachment, required = true))
+            items.add(
+                createItem(
+                    "photo_$i",
+                    labelStr,
+                    Questionnaire.QuestionnaireItemType.Attachment,
+                    required = true,
+                ),
+            )
         }
         val q = createFhirQuestionnaire(id, title, items)
         saveQuestionnaire(q)

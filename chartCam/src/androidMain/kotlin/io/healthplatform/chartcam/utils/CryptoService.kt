@@ -1,6 +1,6 @@
 /**
- * @file CryptoService.android.kt
- * Contains declarations for CryptoService.android.kt.
+ * @file CryptoService.kt
+ * Contains declarations for CryptoService.kt.
  */
 package io.healthplatform.chartcam.utils
 
@@ -19,6 +19,16 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * Service providing cryptographic operations on the Android platform using BouncyCastle and javax.crypto.
  */
 actual class CryptoService actual constructor() {
+    companion object {
+        private const val ARGON2_ITERATIONS = 3
+        private const val ARGON2_MEMORY_KB = 65536
+        private const val ARGON2_PARALLELISM = 4
+        private const val KEY_SIZE_BYTES = 32
+        private const val IV_SIZE_BYTES = 12
+        private const val GCM_TAG_LENGTH = 128
+        private const val SALT_SIZE_BYTES = 16
+    }
+
     /**
      * Derives a cryptographic key using the Argon2 hashing algorithm.
      *
@@ -35,16 +45,16 @@ actual class CryptoService actual constructor() {
                 Argon2Parameters
                     .Builder(Argon2Parameters.ARGON2_id)
                     .withVersion(Argon2Parameters.ARGON2_VERSION_13)
-                    .withIterations(3)
-                    .withMemoryAsKB(65536)
-                    .withParallelism(4)
+                    .withIterations(ARGON2_ITERATIONS)
+                    .withMemoryAsKB(ARGON2_MEMORY_KB)
+                    .withParallelism(ARGON2_PARALLELISM)
                     .withSalt(salt)
                     .build()
 
             val generator = Argon2BytesGenerator()
             generator.init(parameters)
 
-            val key = ByteArray(32) // 256-bit key
+            val key = ByteArray(KEY_SIZE_BYTES) // 256-bit key
             generator.generateBytes(password.encodeToByteArray(), key, 0, key.size)
             key
         }
@@ -62,12 +72,12 @@ actual class CryptoService actual constructor() {
     ): ByteArray =
         withContext(Dispatchers.Default) {
             val secureRandom = SecureRandom()
-            val iv = ByteArray(12)
+            val iv = ByteArray(IV_SIZE_BYTES)
             secureRandom.nextBytes(iv)
 
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             val keySpec = SecretKeySpec(key, "AES")
-            val gcmSpec = GCMParameterSpec(128, iv)
+            val gcmSpec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
 
             cipher.init(Cipher.ENCRYPT_MODE, keySpec, gcmSpec)
             val ciphertext = cipher.doFinal(plaintext)
@@ -87,13 +97,13 @@ actual class CryptoService actual constructor() {
         key: ByteArray,
     ): ByteArray =
         withContext(Dispatchers.Default) {
-            if (ciphertext.size < 12) throw IllegalArgumentException("Ciphertext too short")
-            val iv = ciphertext.copyOfRange(0, 12)
-            val actualCiphertext = ciphertext.copyOfRange(12, ciphertext.size)
+            require(ciphertext.size >= IV_SIZE_BYTES) { "Ciphertext too short" }
+            val iv = ciphertext.copyOfRange(0, IV_SIZE_BYTES)
+            val actualCiphertext = ciphertext.copyOfRange(IV_SIZE_BYTES, ciphertext.size)
 
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             val keySpec = SecretKeySpec(key, "AES")
-            val gcmSpec = GCMParameterSpec(128, iv)
+            val gcmSpec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
 
             cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec)
             cipher.doFinal(actualCiphertext)
@@ -112,7 +122,7 @@ actual class CryptoService actual constructor() {
         password: String,
     ): String =
         withContext(Dispatchers.Default) {
-            val salt = ByteArray(16)
+            val salt = ByteArray(SALT_SIZE_BYTES)
             SecureRandom().nextBytes(salt)
 
             val key = deriveKeyArgon2(password, salt)
@@ -137,16 +147,20 @@ actual class CryptoService actual constructor() {
         withContext(Dispatchers.Default) {
             try {
                 val payload = Base64.decode(base64Data)
-                if (payload.size < 16 + 12) return@withContext ""
+                if (payload.size < SALT_SIZE_BYTES + IV_SIZE_BYTES) return@withContext ""
 
-                val salt = payload.copyOfRange(0, 16)
-                val ivAndCiphertext = payload.copyOfRange(16, payload.size)
+                val salt = payload.copyOfRange(0, SALT_SIZE_BYTES)
+                val ivAndCiphertext = payload.copyOfRange(SALT_SIZE_BYTES, payload.size)
 
                 val key = deriveKeyArgon2(password, salt)
                 val plaintext = decryptAesGcm(ivAndCiphertext, key)
 
                 plaintext.decodeToString()
-            } catch (e: Exception) {
+            } catch (e: IllegalArgumentException) {
+                println("Decryption failed: ${e.message}")
+                ""
+            } catch (e: java.security.GeneralSecurityException) {
+                println("Security failure: ${e.message}")
                 ""
             }
         }

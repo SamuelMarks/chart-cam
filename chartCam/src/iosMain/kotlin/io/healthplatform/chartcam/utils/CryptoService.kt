@@ -1,7 +1,9 @@
+@file:Suppress("ktlint:standard:no-wildcard-imports", "WildcardImport")
 /**
  * @file CryptoService.ios.kt
  * Contains declarations for CryptoService.ios.kt.
  */
+
 package io.healthplatform.chartcam.utils
 
 import argon2.*
@@ -11,7 +13,6 @@ import kotlinx.coroutines.withContext
 import platform.CoreCrypto.*
 import platform.Security.SecRandomCopyBytes
 import platform.Security.kSecRandomDefault
-import platform.posix.size_t
 import platform.posix.size_tVar
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -20,7 +21,48 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * Service providing cryptographic operations on the iOS platform using CommonCrypto and argon2 C-interop.
  */
 @OptIn(ExperimentalForeignApi::class)
+private const val GCM_IV_LENGTH = 12
+private const val GCM_IV_LENGTH_U = 12UL
+private const val GCM_TAG_LENGTH = 16
+private const val GCM_TAG_LENGTH_U = 16UL
+private const val ARGON2_SALT_LEN = 16
+private const val ARGON2_HASH_LEN = 32
+
+/**
+ * CryptoService implementation for iOS.
+ */
+@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 actual class CryptoService actual constructor() {
+    @OptIn(ExperimentalForeignApi::class)
+    /**
+     * Inits cryptor.
+     */
+    private fun MemScope.initCryptor(
+        op: platform.CoreCrypto.CCOperation,
+        key: ByteArray,
+    ): CCCryptorRefVar {
+        val cryptor = alloc<CCCryptorRefVar>()
+        val status =
+            key.usePinned { keyPinned ->
+                CCCryptorCreateWithMode(
+                    op,
+                    kCCModeGCM.convert(),
+                    kCCAlgorithmAES,
+                    ccNoPadding,
+                    null,
+                    keyPinned.addressOf(0),
+                    key.size.convert(),
+                    null,
+                    0u,
+                    0,
+                    0u,
+                    cryptor.ptr,
+                )
+            }
+        if (status != kCCSuccess) error("CCCryptorCreateWithMode failed: $status")
+        return cryptor
+    }
+
     /**
      * Derives a cryptographic key using the Argon2 hashing algorithm.
      *
@@ -34,7 +76,7 @@ actual class CryptoService actual constructor() {
     ): ByteArray =
         withContext(Dispatchers.Default) {
             val pwdBytes = password.encodeToByteArray()
-            val key = ByteArray(32)
+            val key = ByteArray(ARGON2_HASH_LEN)
 
             val result =
                 pwdBytes.usePinned { pwdPinned ->
@@ -59,7 +101,7 @@ actual class CryptoService actual constructor() {
                     }
                 }
             if (result != argon2.ARGON2_OK) {
-                throw IllegalStateException("Argon2 key derivation failed with error code: $result")
+                error("Argon2 key derivation failed with error code: $result")
             }
             key
         }
@@ -76,47 +118,27 @@ actual class CryptoService actual constructor() {
         key: ByteArray,
     ): ByteArray =
         withContext(Dispatchers.Default) {
-            val iv = ByteArray(12)
+            val iv = ByteArray(GCM_IV_LENGTH)
             iv.usePinned { ivPinned ->
-                SecRandomCopyBytes(kSecRandomDefault, 12u, ivPinned.addressOf(0))
+                SecRandomCopyBytes(kSecRandomDefault, GCM_IV_LENGTH_U, ivPinned.addressOf(0))
             }
 
             val ciphertext = ByteArray(plaintext.size)
-            val tag = ByteArray(16)
+            val tag = ByteArray(GCM_TAG_LENGTH)
 
             memScoped {
-                val cryptor = alloc<CCCryptorRefVar>()
-
-                var status =
-                    key.usePinned { keyPinned ->
-                        CCCryptorCreateWithMode(
-                            kCCEncrypt,
-                            kCCModeGCM.convert(),
-                            kCCAlgorithmAES,
-                            ccNoPadding,
-                            null, // IV is added later
-                            keyPinned.addressOf(0),
-                            key.size.convert(),
-                            null,
-                            0u,
-                            0,
-                            0u,
-                            cryptor.ptr,
-                        )
-                    }
-
-                if (status != kCCSuccess) throw IllegalStateException("CCCryptorCreateWithMode failed: $status")
+                val cryptor = initCryptor(kCCEncrypt, key)
+                var status = kCCSuccess
 
                 val cryptorRef = cryptor.value!!
 
                 try {
                     status =
                         iv.usePinned { ivPinned ->
-                            CCCryptorGCMAddIV(cryptorRef, ivPinned.addressOf(0), 12u)
+                            CCCryptorGCMAddIV(cryptorRef, ivPinned.addressOf(0), GCM_IV_LENGTH_U)
                         }
-                    if (status != kCCSuccess) throw IllegalStateException("CCCryptorGCMAddIV failed: $status")
+                    if (status != kCCSuccess) error("CCCryptorGCMAddIV failed: $status")
 
-                    var moved: size_t = 0u
                     if (plaintext.isNotEmpty()) {
                         status =
                             plaintext.usePinned { ptPinned ->
@@ -127,20 +149,20 @@ actual class CryptoService actual constructor() {
                                         plaintext.size.convert(),
                                         ctPinned.addressOf(0),
                                         ciphertext.size.convert(),
-                                        alloc<platform.posix.size_tVar>().ptr, // Discard moved for now, since ccNoPadding
+                                        alloc<platform.posix.size_tVar>().ptr,
                                     )
                                 }
                             }
-                        if (status != kCCSuccess) throw IllegalStateException("CCCryptorUpdate failed: $status")
+                        if (status != kCCSuccess) error("CCCryptorUpdate failed: $status")
                     }
 
                     status =
                         tag.usePinned { tagPinned ->
                             val tagLenVar = alloc<platform.posix.size_tVar>()
-                            tagLenVar.value = 16u
+                            tagLenVar.value = GCM_TAG_LENGTH_U
                             CCCryptorGCMFinal(cryptorRef, tagPinned.addressOf(0), tagLenVar.ptr)
                         }
-                    if (status != kCCSuccess) throw IllegalStateException("CCCryptorGCMFinal failed: $status")
+                    if (status != kCCSuccess) error("CCCryptorGCMFinal failed: $status")
                 } finally {
                     CCCryptorRelease(cryptorRef)
                 }
@@ -161,45 +183,26 @@ actual class CryptoService actual constructor() {
         key: ByteArray,
     ): ByteArray =
         withContext(Dispatchers.Default) {
-            if (ciphertext.size < 12 + 16) throw IllegalArgumentException("Ciphertext too short")
+            if (ciphertext.size < GCM_IV_LENGTH + GCM_TAG_LENGTH) require(false) { "Ciphertext too short" }
 
-            val iv = ciphertext.copyOfRange(0, 12)
-            val actualCiphertext = ciphertext.copyOfRange(12, ciphertext.size - 16)
-            val expectedTag = ciphertext.copyOfRange(ciphertext.size - 16, ciphertext.size)
+            val iv = ciphertext.copyOfRange(0, GCM_IV_LENGTH)
+            val actualCiphertext = ciphertext.copyOfRange(GCM_IV_LENGTH, ciphertext.size - GCM_TAG_LENGTH)
+            val expectedTag = ciphertext.copyOfRange(ciphertext.size - GCM_TAG_LENGTH, ciphertext.size)
 
             val plaintext = ByteArray(actualCiphertext.size)
 
             memScoped {
-                val cryptor = alloc<CCCryptorRefVar>()
-
-                var status =
-                    key.usePinned { keyPinned ->
-                        CCCryptorCreateWithMode(
-                            kCCDecrypt,
-                            kCCModeGCM.convert(),
-                            kCCAlgorithmAES,
-                            ccNoPadding,
-                            null,
-                            keyPinned.addressOf(0),
-                            key.size.convert(),
-                            null,
-                            0u,
-                            0,
-                            0u,
-                            cryptor.ptr,
-                        )
-                    }
-
-                if (status != kCCSuccess) throw IllegalStateException("CCCryptorCreateWithMode failed: $status")
+                val cryptor = initCryptor(kCCDecrypt, key)
+                var status = kCCSuccess
 
                 val cryptorRef = cryptor.value!!
 
                 try {
                     status =
                         iv.usePinned { ivPinned ->
-                            CCCryptorGCMAddIV(cryptorRef, ivPinned.addressOf(0), 12u)
+                            CCCryptorGCMAddIV(cryptorRef, ivPinned.addressOf(0), GCM_IV_LENGTH_U)
                         }
-                    if (status != kCCSuccess) throw IllegalStateException("CCCryptorGCMAddIV failed: $status")
+                    if (status != kCCSuccess) error("CCCryptorGCMAddIV failed: $status")
 
                     if (actualCiphertext.isNotEmpty()) {
                         status =
@@ -215,25 +218,25 @@ actual class CryptoService actual constructor() {
                                     )
                                 }
                             }
-                        if (status != kCCSuccess) throw IllegalStateException("CCCryptorUpdate failed: $status")
+                        if (status != kCCSuccess) error("CCCryptorUpdate failed: $status")
                     }
 
-                    val tagOut = ByteArray(16)
+                    val tagOut = ByteArray(GCM_TAG_LENGTH)
                     status =
                         tagOut.usePinned { tagOutPinned ->
                             val tagLenVar = alloc<platform.posix.size_tVar>()
-                            tagLenVar.value = 16u
+                            tagLenVar.value = GCM_TAG_LENGTH_U
                             CCCryptorGCMFinal(cryptorRef, tagOutPinned.addressOf(0), tagLenVar.ptr)
                         }
-                    if (status != kCCSuccess) throw IllegalStateException("CCCryptorGCMFinal failed: $status")
+                    if (status != kCCSuccess) error("CCCryptorGCMFinal failed: $status")
 
                     // Compare tags
                     var tagMatches = true
-                    for (i in 0 until 16) {
+                    for (i in 0 until GCM_TAG_LENGTH) {
                         if (tagOut[i] != expectedTag[i]) tagMatches = false
                     }
                     if (!tagMatches) {
-                        throw IllegalStateException("Authentication failed (tag mismatch)")
+                        error("Authentication failed (tag mismatch)")
                     }
                 } finally {
                     CCCryptorRelease(cryptorRef)
@@ -256,9 +259,9 @@ actual class CryptoService actual constructor() {
         password: String,
     ): String =
         withContext(Dispatchers.Default) {
-            val salt = ByteArray(16)
+            val salt = ByteArray(GCM_TAG_LENGTH)
             salt.usePinned { saltPinned ->
-                SecRandomCopyBytes(kSecRandomDefault, 16u, saltPinned.addressOf(0))
+                SecRandomCopyBytes(kSecRandomDefault, GCM_TAG_LENGTH_U, saltPinned.addressOf(0))
             }
 
             val key = deriveKeyArgon2(password, salt)
@@ -283,16 +286,17 @@ actual class CryptoService actual constructor() {
         withContext(Dispatchers.Default) {
             try {
                 val payload = Base64.decode(base64Data)
-                if (payload.size < 16 + 12 + 16) return@withContext ""
+                if (payload.size < ARGON2_SALT_LEN + GCM_IV_LENGTH + GCM_TAG_LENGTH) return@withContext ""
 
-                val salt = payload.copyOfRange(0, 16)
-                val ivAndCiphertextAndTag = payload.copyOfRange(16, payload.size)
+                val salt = payload.copyOfRange(0, GCM_TAG_LENGTH)
+                val ivAndCiphertextAndTag = payload.copyOfRange(ARGON2_SALT_LEN, payload.size)
 
                 val key = deriveKeyArgon2(password, salt)
                 val plaintext = decryptAesGcm(ivAndCiphertextAndTag, key)
 
                 plaintext.decodeToString()
-            } catch (e: Exception) {
+            } catch (ignored: Exception) {
+                println(ignored.message)
                 ""
             }
         }

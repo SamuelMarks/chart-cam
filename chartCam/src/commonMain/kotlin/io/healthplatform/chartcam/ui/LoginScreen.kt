@@ -103,14 +103,11 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
-    val focusManager = LocalFocusManager.current
 
     // Side effect check: if user is logged in, navigate
     if (state.isLoggedIn) {
         onLoginSuccess()
     }
-
-    val currentLanguage by currentLanguageState.collectAsState()
 
     Box(
         modifier =
@@ -122,38 +119,7 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             contentAlignment = Alignment.TopEnd,
         ) {
-            Box {
-                var showLanguageMenu by remember { mutableStateOf(false) }
-                IconButton(onClick = { showLanguageMenu = true }) {
-                    Icon(Icons.Default.Translate, contentDescription = stringResource(Res.string.cd_switch_language))
-                }
-                DropdownMenu(
-                    expanded = showLanguageMenu,
-                    onDismissRequest = { showLanguageMenu = false },
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.english)) },
-                        onClick = {
-                            // setAppLanguage("en")
-                            showLanguageMenu = false
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.espanol)) },
-                        onClick = {
-                            // setAppLanguage("es")
-                            showLanguageMenu = false
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.japanese)) },
-                        onClick = {
-                            // setAppLanguage("ja")
-                            showLanguageMenu = false
-                        },
-                    )
-                }
-            }
+            LanguageMenu()
         }
         Column(
             modifier =
@@ -164,195 +130,311 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // Logo
-            Image(
-                painter = painterResource(Res.drawable.logo),
-                contentDescription = null, // Decorative logo; app title is read out directly below
-                modifier = Modifier.size(120.dp).padding(bottom = 16.dp),
+            LoginHeader()
+
+            val stateErrorMessageStr = state.errorMessage?.let { stringResource(it) }
+            LoginCard(
+                isLoading = state.isLoading,
+                stateErrorMessage = stateErrorMessageStr,
+                onLogin = { username, password -> viewModel.login(username, password) },
             )
-
-            // Title
-            Text(
-                text = stringResource(Res.string.app_name_title),
-                style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-
-            // Slogan
-            Text(
-                text = stringResource(Res.string.app_slogan),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 32.dp),
-            )
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    var username by remember { mutableStateOf("") }
-                    var password by remember { mutableStateOf("") }
-                    var formError by remember { mutableStateOf<String?>(null) }
-                    val allFieldsRequiredMsg = stringResource(Res.string.all_fields_required)
-                    val isLoading = state.isLoading
-
-                    OutlinedTextField(
-                        value = username,
-                        onValueChange = {
-                            username = it
-                            formError = null
-                        },
-                        label = { Text(stringResource(Res.string.username)) },
-                        modifier =
-                            Modifier.fillMaxWidth().padding(bottom = 16.dp).onKeyEvent {
-                                if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                    focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
-                                    true
-                                } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                                    focusManager.moveFocus(FocusDirection.Next)
-                                    true
-                                } else {
-                                    false
-                                }
-                            },
-                        singleLine = true,
-                        enabled = !isLoading,
-                        isError = formError != null,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
-                    )
-
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = {
-                            password = it
-                            formError = null
-                        },
-                        label = { Text(stringResource(Res.string.password)) },
-                        modifier =
-                            Modifier.fillMaxWidth().padding(bottom = 24.dp).onKeyEvent {
-                                if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                    focusManager.moveFocus(if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
-                                    true
-                                } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                                    focusManager.clearFocus()
-                                    if (username.isNotBlank() && password.isNotBlank()) {
-                                        viewModel.login(username, password)
-                                    } else {
-                                        formError = allFieldsRequiredMsg
-                                    }
-                                    true
-                                } else {
-                                    false
-                                }
-                            },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        isError = formError != null,
-                        keyboardOptions =
-                            KeyboardOptions(
-                                keyboardType = KeyboardType.Password,
-                                imeAction = ImeAction.Done,
-                            ),
-                        keyboardActions =
-                            KeyboardActions(onDone = {
-                                focusManager.clearFocus()
-                                if (username.isNotBlank() && password.isNotBlank()) {
-                                    viewModel.login(username, password)
-                                } else {
-                                    formError = allFieldsRequiredMsg
-                                }
-                            }),
-                        enabled = !isLoading,
-                    )
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            text = stringResource(Res.string.offline_mode),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Switch(
-                            checked = false,
-                            onCheckedChange = null,
-                            enabled = false,
-                        )
-                    }
-
-                    val stateErrorMessageStr = state.errorMessage?.let { stringResource(it) }
-                    val displayError = stateErrorMessageStr ?: formError
-                    if (displayError != null) {
-                        Text(
-                            text = displayError,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth(),
-                        )
-                    }
-
-                    if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.padding(top = 8.dp))
-                    } else {
-                        androidx.compose.runtime.CompositionLocalProvider(
-                            androidx.compose.material3.LocalTextStyle provides
-                                androidx.compose.material3.LocalTextStyle.current
-                                    .copy(fontWeight = FontWeight.Normal),
-                        ) {
-                            Button(
-                                onClick = {
-                                    focusManager.clearFocus()
-                                    if (username.isNotBlank() && password.isNotBlank()) {
-                                        viewModel.login(username, password)
-                                    } else {
-                                        formError = allFieldsRequiredMsg
-                                    }
-                                },
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(56.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors =
-                                    ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary,
-                                        contentColor = androidx.compose.ui.graphics.Color.White,
-                                    ),
-                            ) {
-                                Text(
-                                    text = stringResource(Res.string.login_signup),
-                                    color = androidx.compose.ui.graphics.Color.White,
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Normal),
-                                )
-                            }
-                        }
-                    }
-                }
-            }
 
             Spacer(modifier = Modifier.height(48.dp))
+            FeaturesRow()
+        }
+    }
+}
 
-            // Features Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-            ) {
-                FeatureIcon(Icons.Default.CameraAlt, stringResource(Res.string.feature_capture))
-                FeatureIcon(Icons.Default.Security, stringResource(Res.string.feature_secure))
-                FeatureIcon(Icons.Default.CloudSync, stringResource(Res.string.feature_sync))
+@Composable
+/**
+ * Internal helper.
+ */
+private fun LanguageMenu() {
+    Box {
+        var showLanguageMenu by remember { mutableStateOf(false) }
+        IconButton(onClick = { showLanguageMenu = true }) {
+            Icon(Icons.Default.Translate, contentDescription = stringResource(Res.string.cd_switch_language))
+        }
+        DropdownMenu(
+            expanded = showLanguageMenu,
+            onDismissRequest = { showLanguageMenu = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.english)) },
+                onClick = {
+                    showLanguageMenu = false
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.espanol)) },
+                onClick = {
+                    showLanguageMenu = false
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.japanese)) },
+                onClick = {
+                    showLanguageMenu = false
+                },
+            )
+        }
+    }
+}
+
+@Composable
+/**
+ * Internal helper.
+ */
+private fun LoginHeader() {
+    Image(
+        painter = painterResource(Res.drawable.logo),
+        contentDescription = null, // Decorative logo; app title is read out directly below
+        modifier = Modifier.size(120.dp).padding(bottom = 16.dp),
+    )
+
+    Text(
+        text = stringResource(Res.string.app_name_title),
+        style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(bottom = 8.dp),
+    )
+
+    Text(
+        text = stringResource(Res.string.app_slogan),
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(bottom = 32.dp),
+    )
+}
+
+@Composable
+/**
+ * Internal helper.
+ */
+private fun LoginCard(
+    isLoading: Boolean,
+    stateErrorMessage: String?,
+    onLogin: (String, String) -> Unit,
+) {
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var formError by remember { mutableStateOf<String?>(null) }
+
+    val focusManager = LocalFocusManager.current
+    val allFieldsRequiredMsg = stringResource(Res.string.all_fields_required)
+
+    val attemptLogin = {
+        focusManager.clearFocus()
+        if (username.isNotBlank() && password.isNotBlank()) {
+            onLogin(username, password)
+        } else {
+            formError = allFieldsRequiredMsg
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            UsernameField(
+                username = username,
+                onUsernameChange = {
+                    username = it
+                    formError = null
+                },
+                isLoading = isLoading,
+                isError = formError != null,
+            )
+
+            PasswordField(
+                password = password,
+                onPasswordChange = {
+                    password = it
+                    formError = null
+                },
+                isLoading = isLoading,
+                isError = formError != null,
+                onLogin = attemptLogin,
+            )
+
+            OfflineModeSwitch()
+
+            val displayError = stateErrorMessage ?: formError
+            if (displayError != null) {
+                ErrorMessage(displayError)
+            }
+
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.padding(top = 8.dp))
+            } else {
+                LoginButton(onClick = attemptLogin)
             }
         }
+    }
+}
+
+@Composable
+/**
+ * Internal helper.
+ */
+private fun UsernameField(
+    username: String,
+    onUsernameChange: (String) -> Unit,
+    isLoading: Boolean,
+    isError: Boolean,
+) {
+    val focusManager = LocalFocusManager.current
+    OutlinedTextField(
+        value = username,
+        onValueChange = onUsernameChange,
+        label = { Text(stringResource(Res.string.username)) },
+        modifier =
+            Modifier.fillMaxWidth().padding(bottom = 16.dp).onKeyEvent {
+                if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                    val dir = if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next
+                    focusManager.moveFocus(dir)
+                    true
+                } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+                    focusManager.moveFocus(FocusDirection.Next)
+                    true
+                } else {
+                    false
+                }
+            },
+        singleLine = true,
+        enabled = !isLoading,
+        isError = isError,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
+    )
+}
+
+@Composable
+/**
+ * Internal helper.
+ */
+private fun PasswordField(
+    password: String,
+    onPasswordChange: (String) -> Unit,
+    isLoading: Boolean,
+    isError: Boolean,
+    onLogin: () -> Unit,
+) {
+    val focusManager = LocalFocusManager.current
+    OutlinedTextField(
+        value = password,
+        onValueChange = onPasswordChange,
+        label = { Text(stringResource(Res.string.password)) },
+        modifier =
+            Modifier.fillMaxWidth().padding(bottom = 24.dp).onKeyEvent {
+                if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                    val dir = if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next
+                    focusManager.moveFocus(dir)
+                    true
+                } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+                    onLogin()
+                    true
+                } else {
+                    false
+                }
+            },
+        singleLine = true,
+        visualTransformation = PasswordVisualTransformation(),
+        isError = isError,
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done,
+            ),
+        keyboardActions = KeyboardActions(onDone = { onLogin() }),
+        enabled = !isLoading,
+    )
+}
+
+@Composable
+/**
+ * Internal helper.
+ */
+private fun OfflineModeSwitch() {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = stringResource(Res.string.offline_mode),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Switch(
+            checked = false,
+            onCheckedChange = null,
+            enabled = false,
+        )
+    }
+}
+
+@Composable
+/**
+ * Internal helper.
+ */
+private fun ErrorMessage(text: String) {
+    Text(
+        text = text,
+        color = MaterialTheme.colorScheme.error,
+        style = MaterialTheme.typography.bodySmall,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth(),
+    )
+}
+
+@Composable
+/**
+ * Internal helper.
+ */
+private fun LoginButton(onClick: () -> Unit) {
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.material3.LocalTextStyle provides
+            androidx.compose.material3.LocalTextStyle.current
+                .copy(fontWeight = FontWeight.Normal),
+    ) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = androidx.compose.ui.graphics.Color.White,
+                ),
+        ) {
+            Text(
+                text = stringResource(Res.string.login_signup),
+                color = androidx.compose.ui.graphics.Color.White,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Normal),
+            )
+        }
+    }
+}
+
+@Composable
+/**
+ * Internal helper.
+ */
+private fun FeaturesRow() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        FeatureIcon(Icons.Default.CameraAlt, stringResource(Res.string.feature_capture))
+        FeatureIcon(Icons.Default.Security, stringResource(Res.string.feature_secure))
+        FeatureIcon(Icons.Default.CloudSync, stringResource(Res.string.feature_sync))
     }
 }
 
@@ -370,7 +452,10 @@ fun FeatureIcon(
     icon: ImageVector,
     label: String,
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.semantics(mergeDescendants = true) {}) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.semantics(mergeDescendants = true) {},
+    ) {
         Icon(
             imageVector = icon,
             contentDescription = label,

@@ -24,12 +24,12 @@ class JvmSensorManager : SensorManager {
     /**
      * Starts listening to sensor updates. This is a no-op on desktop platforms.
      */
-    override fun startListening() {}
+    override fun startListening() { /* no-op */ }
 
     /**
      * Stops listening to sensor updates. This is a no-op on desktop platforms.
      */
-    override fun stopListening() {}
+    override fun stopListening() { /* no-op */ }
 }
 
 /**

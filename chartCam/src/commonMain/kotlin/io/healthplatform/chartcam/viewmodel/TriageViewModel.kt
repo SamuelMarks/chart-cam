@@ -39,7 +39,9 @@ data class TriageUiState(
 
 /**
  * ViewModel handling the business logic for the Triage Screen.
- * Bridges UI events to the [FhirRepository]. This ViewModel directly consumes and emits native FHIR R4 `Resource` models (e.g., `Patient`, `Encounter`) without relying on intermediary DTOs.
+ * Bridges UI events to the [FhirRepository]. This ViewModel directly consumes
+ * and emits native FHIR R4 `Resource` models (e.g., Patient, Encounter)
+ * without relying on intermediary DTOs.
  *
  * @param fhirRepository The repository providing FHIR data access.
  */
@@ -118,6 +120,7 @@ class TriageViewModel(
         dob: LocalDate,
         gender: String,
     ) {
+        println(gender)
         viewModelScope.launch {
             val newPatient =
                 createFhirPatient(
@@ -126,7 +129,6 @@ class TriageViewModel(
                     lastName = lastName,
                     dob = dob,
                     mrnValue = mrn,
-                    genderStr = gender,
                 )
             fhirRepository.savePatient(newPatient)
             selectPatient(newPatient)

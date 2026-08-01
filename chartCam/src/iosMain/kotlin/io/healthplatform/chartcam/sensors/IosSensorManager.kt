@@ -59,7 +59,7 @@ class IosSensorManager : SensorManager {
     @OptIn(ExperimentalForeignApi::class)
     override fun startListening() {
         if (motionManager.accelerometerAvailable) {
-            motionManager.accelerometerUpdateInterval = 0.1
+            motionManager.accelerometerUpdateInterval = UPDATE_INTERVAL_SECONDS
             motionManager.startAccelerometerUpdatesToQueue(queue) { data, error ->
                 if (data != null) {
                     data.acceleration.useContents {
@@ -67,8 +67,8 @@ class IosSensorManager : SensorManager {
                         val y = this.y
                         val z = this.z
 
-                        val roll = kotlin.math.atan2(x, kotlin.math.sqrt(y * y + z * z)) * (180 / kotlin.math.PI)
-                        val pitch = kotlin.math.atan2(y, kotlin.math.sqrt(x * x + z * z)) * (180 / kotlin.math.PI)
+                        val roll = kotlin.math.atan2(x, kotlin.math.sqrt(y * y + z * z)) * RADIANS_TO_DEGREES
+                        val pitch = kotlin.math.atan2(y, kotlin.math.sqrt(x * x + z * z)) * RADIANS_TO_DEGREES
 
                         _orientation.tryEmit(OrientationData(pitch, roll))
                     }
@@ -85,6 +85,11 @@ class IosSensorManager : SensorManager {
      */
     override fun stopListening() {
         motionManager.stopAccelerometerUpdates()
+    }
+
+    companion object {
+        private const val UPDATE_INTERVAL_SECONDS = 0.1
+        private const val RADIANS_TO_DEGREES = 180 / kotlin.math.PI
     }
 }
 

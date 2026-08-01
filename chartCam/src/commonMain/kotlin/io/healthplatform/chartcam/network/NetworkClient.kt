@@ -32,7 +32,8 @@ object NetworkClient {
      * Installs [ContentNegotiation] with Kotlinx Serialization tuned for FHIR JSON parsing
      * (lenient, pretty-printed, ignoring unknown keys).
      *
-     * @param engine An optional specific engine (useful for testing with MockEngine or specifying a platform-specific engine).
+     * @param engine An optional specific engine (useful for testing with MockEngine or specifying
+     * a platform-specific engine).
      *               If null, it uses the platform default engine resolved via ServiceLoader.
      * @return A fully configured [HttpClient] ready to make network requests.
      */

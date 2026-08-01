@@ -12,13 +12,17 @@ import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
+private const val IV_SIZE = 12
+private const val GCM_TAG_LENGTH = 128
+
 /**
  * JVM-specific implementation of [SecureStorage].
  *
  * Uses standard Java [Preferences] backed by AES-GCM encryption
  * to securely store and retrieve preferences on Desktop targets.
  *
- * @param nodeName The node name used for categorizing the [Preferences]. Defaults to "io.healthplatform.chartcam.secure".
+ * @param nodeName The node name used for categorizing the [Preferences].
+ * Defaults to "io.healthplatform.chartcam.secure".
  */
 class JvmSecureStorage(
     nodeName: String = "io.healthplatform.chartcam.secure",
@@ -30,7 +34,8 @@ class JvmSecureStorage(
 
     /**
      * The symmetric secret key derived from a static string, used for AES encryption.
-     * Note: In a production HIPAA environment, this key should be properly derived from a user password or OS keystore.
+     * Note: In a production HIPAA environment, this key should be properly derived
+     * from a user password or OS keystore.
      */
     private val secretKey: SecretKeySpec by lazy {
         val digest = MessageDigest.getInstance("SHA-256")
@@ -46,9 +51,9 @@ class JvmSecureStorage(
      */
     private fun encrypt(value: String): String {
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        val iv = ByteArray(12)
+        val iv = ByteArray(IV_SIZE)
         SecureRandom().nextBytes(iv)
-        val spec = GCMParameterSpec(128, iv)
+        val spec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
         cipher.init(Cipher.ENCRYPT_MODE, secretKey, spec)
         val encrypted = cipher.doFinal(value.toByteArray(Charsets.UTF_8))
 
@@ -66,10 +71,10 @@ class JvmSecureStorage(
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         val decoded = Base64.getDecoder().decode(value)
 
-        val iv = decoded.copyOfRange(0, 12)
-        val encrypted = decoded.copyOfRange(12, decoded.size)
+        val iv = decoded.copyOfRange(0, IV_SIZE)
+        val encrypted = decoded.copyOfRange(IV_SIZE, decoded.size)
 
-        val spec = GCMParameterSpec(128, iv)
+        val spec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
         cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
         val decrypted = cipher.doFinal(encrypted)
         return String(decrypted, Charsets.UTF_8)

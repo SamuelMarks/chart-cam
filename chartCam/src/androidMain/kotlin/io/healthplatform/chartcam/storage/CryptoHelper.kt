@@ -19,6 +19,8 @@ import javax.crypto.spec.GCMParameterSpec
 internal object CryptoHelper {
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
     private const val ALIAS = "ChartCamKeyAlias"
+    private const val KEY_SIZE = 128
+    private const val GCM_TAG_LENGTH = 128
 
     private var robolectricKey: SecretKey? = null
 
@@ -32,26 +34,27 @@ internal object CryptoHelper {
         if (android.os.Build.FINGERPRINT == "robolectric") {
             if (robolectricKey == null) {
                 val keyGenerator = KeyGenerator.getInstance("AES")
-                keyGenerator.init(128)
+                keyGenerator.init(KEY_SIZE)
                 robolectricKey = keyGenerator.generateKey()
             }
             return robolectricKey!!
         }
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
         keyStore.load(null)
-        keyStore.getKey(ALIAS, null)?.let { return it as SecretKey }
 
-        val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
-        val spec =
-            KeyGenParameterSpec
-                .Builder(
-                    ALIAS,
-                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
-                ).setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .build()
-        keyGenerator.init(spec)
-        return keyGenerator.generateKey()
+        return (keyStore.getKey(ALIAS, null) as? SecretKey) ?: run {
+            val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
+            val spec =
+                KeyGenParameterSpec
+                    .Builder(
+                        ALIAS,
+                        KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+                    ).setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                    .build()
+            keyGenerator.init(spec)
+            keyGenerator.generateKey()
+        }
     }
 
     /**
@@ -80,7 +83,7 @@ internal object CryptoHelper {
         val iv = data.copyOfRange(1, 1 + ivSize)
         val encrypted = data.copyOfRange(1 + ivSize, data.size)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, getSecretKey(), GCMParameterSpec(128, iv))
+        cipher.init(Cipher.DECRYPT_MODE, getSecretKey(), GCMParameterSpec(GCM_TAG_LENGTH, iv))
         return cipher.doFinal(encrypted)
     }
 }

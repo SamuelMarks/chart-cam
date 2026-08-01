@@ -52,12 +52,14 @@ data class PatientListUiState(
 /**
  * ViewModel handling the business logic for the Patient List Screen.
  * Bridges the UI events to the [FhirRepository] and [ExportImportService].
- * This ViewModel directly consumes and emits native FHIR R4 `Resource` models (e.g., `Patient`) without relying on intermediary DTOs.
+ * This ViewModel directly consumes and emits native FHIR R4 `Resource` models
+ * (e.g., Patient) without relying on intermediary DTOs.
  *
  * @param repository The source of FHIR patient data.
  * @param exportImportService Service to handle exporting and importing of data.
  * @param authRepository The source of authentication truth, used to get the current practitioner.
  */
+@Suppress("TooGenericExceptionCaught", "SwallowedException")
 class PatientListViewModel(
     private val repository: FhirRepository,
     private val exportImportService: ExportImportService,
@@ -96,6 +98,7 @@ class PatientListViewModel(
                     }
                 _uiState.update { it.copy(patients = results, isLoading = false) }
             } catch (e: Exception) {
+                println(e.message)
                 _uiState.update { it.copy(isLoading = false, error = Res.string.failed_to_load_patients) }
             }
         }
@@ -137,7 +140,6 @@ class PatientListViewModel(
      * @param lastName The patient's last name.
      * @param mrn The patient's medical record number.
      * @param dob The patient's date of birth.
-     * @param gender The patient's gender.
      * @param onSuccess Callback triggered when the patient is successfully created, providing the new patient ID.
      */
     fun createPatient(
@@ -145,7 +147,6 @@ class PatientListViewModel(
         lastName: String,
         mrn: String,
         dob: LocalDate,
-        gender: String,
         onSuccess: (String) -> Unit,
     ) {
         viewModelScope.launch {
@@ -157,7 +158,6 @@ class PatientListViewModel(
                         lastName = lastName,
                         dob = dob,
                         mrnValue = mrn,
-                        genderStr = gender,
                     )
                 repository.savePatient(newPatient)
                 setCreateDialogVisible(false)
@@ -165,7 +165,7 @@ class PatientListViewModel(
                 onSuccess(newPatient.id ?: "")
             } catch (e: Exception) {
                 // Ignoring error in production, log system can handle
-                e.printStackTrace()
+                println(e.message)
             }
         }
     }
@@ -187,7 +187,7 @@ class PatientListViewModel(
                 _uiState.update { it.copy(exportedData = data, exportPassword = password) }
             } catch (e: Exception) {
                 // Ignoring error in production, log system can handle
-                e.printStackTrace()
+                println(e.message)
             }
         }
     }
@@ -218,7 +218,7 @@ class PatientListViewModel(
                 _uiState.update { it.copy(error = null) }
                 onSuccess()
             } catch (e: Exception) {
-                e.printStackTrace()
+                println(e.message)
                 _uiState.update { it.copy(error = Res.string.failed_to_import) }
             }
         }

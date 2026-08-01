@@ -1,6 +1,6 @@
 /**
- * @file Platform.android.kt
- * Contains declarations for Platform.android.kt.
+ * @file AndroidPlatform.kt
+ * Contains declarations for AndroidPlatform.kt.
  *
  * File defining the Android-specific platform identification.
  */

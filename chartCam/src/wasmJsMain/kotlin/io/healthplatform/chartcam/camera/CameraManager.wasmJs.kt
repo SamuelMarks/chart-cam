@@ -24,13 +24,29 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.js.toJsString
 
+private const val GET_VIDEO_CONSTRAINTS_JS = "(mode) => ({ video: { facingMode: mode } })"
+private const val CONSOLE_ERROR_JS = "(msg, err) => console.error(msg, err)"
+private const val STOP_MEDIA_TRACKS_JS =
+    "(stream) => { if (stream && stream.getTracks) { stream.getTracks().forEach(t => t.stop()); } }"
+
+private const val GET_BASE64_IMAGE_JS =
+    "(video) => { const canvas = document.createElement('canvas'); " +
+        "canvas.width = video.videoWidth || 640; " +
+        "canvas.height = video.videoHeight || 480; " +
+        "const ctx = canvas.getContext('2d'); " +
+        "ctx.drawImage(video, 0, 0, canvas.width, canvas.height); " +
+        "const dataUrl = canvas.toDataURL('image/jpeg', 0.9); " +
+        "const base64 = dataUrl.split(',')[1]; " +
+        "if (!base64) throw new Error('Could not get base64 data'); return base64; }"
+
 /**
  * Creates JavaScript `MediaStreamConstraints` configured for video with a specific facing mode.
  *
  * @param mode The facing mode (e.g., "user" for front camera, "environment" for rear camera) as a [JsAny].
  * @return A configured [org.w3c.dom.mediacapture.MediaStreamConstraints] object.
  */
-private fun getVideoConstraints(mode: JsAny): org.w3c.dom.mediacapture.MediaStreamConstraints = js("({ video: { facingMode: mode } })")
+@JsFun(GET_VIDEO_CONSTRAINTS_JS)
+private external fun getVideoConstraints(mode: JsAny): org.w3c.dom.mediacapture.MediaStreamConstraints
 
 /**
  * Logs an error message to the browser console.
@@ -38,21 +54,19 @@ private fun getVideoConstraints(mode: JsAny): org.w3c.dom.mediacapture.MediaStre
  * @param msg The error message to log.
  * @param err An optional JavaScript error object to include in the log.
  */
-private fun consoleError(
+@JsFun(CONSOLE_ERROR_JS)
+private external fun consoleError(
     msg: String,
     err: JsAny?,
-) {
-    js("console.error(msg, err)")
-}
+)
 
 /**
  * Stops all tracks associated with a given media stream.
  *
  * @param stream The media stream (e.g., [org.w3c.dom.mediacapture.MediaStream]) represented as a [JsAny].
  */
-private fun stopMediaTracks(stream: JsAny?) {
-    js("if (stream && stream.getTracks) { stream.getTracks().forEach(t => t.stop()); }")
-}
+@JsFun(STOP_MEDIA_TRACKS_JS)
+private external fun stopMediaTracks(stream: JsAny?)
 
 /**
  * Captures the current frame from an [HTMLVideoElement] and returns it as a base64 encoded JPEG string.
@@ -60,22 +74,8 @@ private fun stopMediaTracks(stream: JsAny?) {
  * @param video The HTML video element to capture.
  * @return A base64-encoded string representing the captured frame.
  */
-private fun getBase64Image(video: HTMLVideoElement): String =
-    js(
-        """
-    (() => {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-        const base64 = dataUrl.split(',')[1];
-        if (!base64) throw new Error("Could not get base64 data");
-        return base64;
-    })()
-""",
-    )
+@JsFun(GET_BASE64_IMAGE_JS)
+private external fun getBase64Image(video: HTMLVideoElement): String
 
 /**
  * WebAssembly (WasmJs) specific implementation of [CameraManager].
@@ -133,7 +133,7 @@ class JsCameraManager : CameraManager {
                 } else {
                     continuation.resume(null)
                 }
-            } catch (e: Throwable) {
+            } catch (e: IllegalStateException) {
                 consoleError("Error capturing image: ", e.message?.toJsString())
                 continuation.resume(null)
             }
@@ -145,7 +145,7 @@ class JsCameraManager : CameraManager {
      *
      * @param on True to enable the flash, false to disable it.
      */
-    override fun setFlash(on: Boolean) {}
+    override fun setFlash(on: Boolean) { /* no-op */ }
 
     /**
      * Switches the active camera between the front-facing and rear-facing lenses.
@@ -203,7 +203,7 @@ class JsPermissionManager : PermissionManager {
     /**
      * Opens application settings. This is a no-op on the web platform.
      */
-    override fun openSettings() {}
+    override fun openSettings() { /* no-op */ }
 }
 
 /**

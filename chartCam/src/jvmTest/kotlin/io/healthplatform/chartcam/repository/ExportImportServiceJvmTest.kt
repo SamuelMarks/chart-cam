@@ -9,6 +9,7 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.google.fhir.model.r4.Practitioner
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.FileStorage
+import io.healthplatform.chartcam.models.DocumentReferenceCreationParams
 import io.healthplatform.chartcam.utils.CryptoService
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -32,7 +33,7 @@ class ExportImportServiceJvmTest {
         db = ChartCamDatabase(driver)
         fileStorage = MockFileStorage()
         cryptoService = CryptoService()
-        service = ExportImportService(db, fileStorage, cryptoService)
+        service = ExportImportService(db, fileStorage)
     }
 
     @After
@@ -70,7 +71,7 @@ class ExportImportServiceJvmTest {
             val driver2 = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
             ChartCamDatabase.Schema.synchronous().create(driver2)
             val db2 = ChartCamDatabase(driver2)
-            val service2 = ExportImportService(db2, fileStorage, cryptoService)
+            val service2 = ExportImportService(db2, fileStorage)
 
             service2.importData(encryptedData, password)
 
@@ -122,13 +123,15 @@ class ExportImportServiceJvmTest {
             val fhirRepo = FhirRepository(db)
             val docRef =
                 io.healthplatform.chartcam.models.createFhirDocumentReference(
-                    id = "doc1",
-                    patientId = "pat1",
-                    encounterId = "enc1",
-                    dateStr = "2026-07-09T00:00:00Z",
-                    desc = "desc",
-                    mime = "image/jpeg",
-                    urlPath = "missing.jpg",
+                    DocumentReferenceCreationParams(
+                        id = "doc1",
+                        patientId = "pat1",
+                        encounterId = "enc1",
+                        dateStr = "2026-07-09T00:00:00Z",
+                        desc = "desc",
+                        mime = "image/jpeg",
+                        urlPath = "missing.jpg",
+                    ),
                 )
             fhirRepo.saveDocumentReference(docRef)
 
@@ -147,7 +150,7 @@ class ExportImportServiceJvmTest {
             return fileName
         }
 
-        override fun readImage(path: String): ByteArray = files[path] ?: throw Exception("File not found")
+        override fun readImage(path: String): ByteArray = files[path] ?: throw IllegalArgumentException("File not found")
 
         override fun clearCache() {
             files.clear()

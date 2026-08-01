@@ -15,9 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import io.healthplatform.chartcam.database.DatabaseDriverFactory
 import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.network.NetworkClient
@@ -27,59 +25,6 @@ import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.storage.createSecureStorage
 import io.healthplatform.chartcam.sync.SyncWorker
-import io.healthplatform.chartcam.ui.CaptureScreen
-import io.healthplatform.chartcam.ui.EncounterDetailScreen
-import io.healthplatform.chartcam.ui.LoginScreen
-import io.healthplatform.chartcam.ui.PatientDetailScreen
-import io.healthplatform.chartcam.ui.PatientListScreen
-import io.healthplatform.chartcam.ui.QuestionnaireListScreen
-import io.healthplatform.chartcam.ui.TriageScreen
-import io.healthplatform.chartcam.viewmodel.LoginViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-
-/**
- * A manager class responsible for handling temporary photo session data during navigation.
- */
-class PhotoSessionManager {
-    /**
-     * A private mutable state flow holding the pending photos as a map of photo IDs to file paths.
-     */
-    private val _pendingPhotos = MutableStateFlow<Map<String, String>>(emptyMap())
-
-    /**
-     * A public read-only state flow representing the current pending photos.
-     */
-    val pendingPhotos = _pendingPhotos.asStateFlow()
-
-    /**
-     * Sets the pending photos for the current session.
-     *
-     * @param photos A map of photo IDs to their corresponding file paths.
-     */
-    fun setPhotos(photos: Map<String, String>) {
-        _pendingPhotos.value = photos
-    }
-
-    /**
-     * Retrieves the current pending photos and clears the session state.
-     *
-     * @return A map of photo IDs to their file paths that were previously set.
-     */
-    fun getAndClear(): Map<String, String> {
-        val p = _pendingPhotos.value
-        _pendingPhotos.value = emptyMap()
-        return p
-    }
-
-    /**
-     * Retrieves the current pending photos without clearing the session state.
-     *
-     * @return A map of photo IDs to their file paths.
-     */
-    fun get(): Map<String, String> = _pendingPhotos.value
-}
 
 /**
  * The main entry point for the application's UI navigation graph.
@@ -88,7 +33,6 @@ class PhotoSessionManager {
  * and defines the navigation routes and their corresponding composable screens.
  * **State & Side Effects:**
  * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
- *
  */
 @Composable
 fun AppNavigation() {
@@ -112,6 +56,18 @@ fun AppNavigation() {
 
     val photoSessionManager = remember { PhotoSessionManager() }
 
+    val dependencies =
+        remember {
+            AppDependencies(
+                authRepository = authRepository,
+                fhirRepository = fhirRepository,
+                questionnaireRepository = questionnaireRepository,
+                exportImportService = exportImportService,
+                syncWorker = syncWorker,
+                photoSessionManager = photoSessionManager,
+            )
+        }
+
     val user by authRepository.currentUser.collectAsState()
     val currentLang by io.healthplatform.chartcam.ui.currentLanguageState
         .collectAsState()
@@ -129,246 +85,16 @@ fun AppNavigation() {
     }
 
     NavHost(navController = navController, startDestination = Routes.LOGIN) {
-        composable(Routes.LOGIN) {
-            val viewModel =
-                androidx.lifecycle.viewmodel.compose
-                    .viewModel { LoginViewModel(authRepository) }
-            androidx.compose.runtime.key(currentLang) {
-                LoginScreen(viewModel = viewModel, onLoginSuccess = {
-                    navController.navigate(Routes.PATIENT_LIST) { popUpTo(Routes.LOGIN) { inclusive = true } }
-                })
-            }
-        }
-
-        composable(Routes.CAPTURE) {
-            androidx.compose.runtime.key(currentLang) {
-                CaptureScreen(
-                    questionnaireId = "std-form",
-                    questionnaireRepository = questionnaireRepository,
-                    onFinished = { outputPathsMap ->
-                        if (outputPathsMap.isEmpty()) {
-                            navController.navigate(Routes.PATIENT_LIST)
-                        } else {
-                            photoSessionManager.setPhotos(outputPathsMap)
-                            navController.navigate(TriageRoute)
-                        }
-                    },
-                    onCancel = {
-                        navController.navigate(Routes.PATIENT_LIST) {
-                            popUpTo(Routes.CAPTURE) { inclusive = true }
-                        }
-                    },
-                )
-            }
-        }
-
-        composable<CaptureForPatientRoute> { entry ->
-            val route = entry.toRoute<CaptureForPatientRoute>()
-            val patientId = route.patientId
-            androidx.compose.runtime.key(currentLang) {
-                CaptureScreen(
-                    questionnaireId = route.questionnaireId ?: "std-form",
-                    linkId = route.linkId,
-                    questionnaireRepository = questionnaireRepository,
-                    onFinished = { outputPathsMap ->
-                        if (outputPathsMap.isEmpty()) {
-                            scope.launch { navController.popBackStack() }
-                        } else {
-                            photoSessionManager.setPhotos(outputPathsMap)
-                            scope.launch { navController.popBackStack() }
-                        }
-                    },
-                    onCancel = {
-                        scope.launch { navController.popBackStack() }
-                    },
-                )
-            }
-        }
-
-        composable<TriageRoute> { entry ->
-            androidx.compose.runtime.key(currentLang) {
-                TriageScreen(
-                    capturedPhotoPaths = photoSessionManager.get(),
-                    fhirRepository = fhirRepository,
-                    onProceedToEncounter = { patientId, photos ->
-                        scope.launch { navController.navigate(NewVisitRoute(patientId)) }
-                    },
-                )
-            }
-        }
-
-        composable<NewVisitRoute> { entry ->
-            val route = entry.toRoute<NewVisitRoute>()
-            val patientId = route.patientId
-            val newlyCreatedQuestionnaireId by entry.savedStateHandle.getStateFlow<String?>("createdQuestionnaireId", null).collectAsState()
-
-            androidx.compose.runtime.key(currentLang) {
-                EncounterDetailScreen(
-                    patientId = patientId,
-                    visitId = "new",
-                    photoSessionManager = photoSessionManager,
-                    fhirRepository = fhirRepository,
-                    authRepository = authRepository,
-                    syncWorker = syncWorker,
-                    questionnaireRepository = questionnaireRepository,
-                    newlyCreatedQuestionnaireId = newlyCreatedQuestionnaireId,
-                    onBack = { scope.launch { navController.popBackStack() } },
-                    onTakePhotos = { qId, linkId ->
-                        scope.launch { navController.navigate(CaptureForPatientRoute(patientId, qId, linkId)) }
-                    },
-                    onCreateNewQuestionnaire = {
-                        navController.navigate(
-                            io.healthplatform.chartcam.navigation
-                                .QuestionnaireBuilderRoute(),
-                        )
-                    },
-                    onFinalized = {
-                        navController.navigate(PatientDetailRoute(patientId)) {
-                            popUpTo(PatientDetailRoute(patientId)) { inclusive = true }
-                        }
-                    },
-                    onVisitCreated = { newId ->
-                        navController.navigate(VisitDetailRoute(patientId, newId)) {
-                            popUpTo<NewVisitRoute> { inclusive = true }
-                        }
-                    },
-                    onNewlyCreatedQuestionnaireHandled = {
-                        entry.savedStateHandle.remove<String>("createdQuestionnaireId")
-                    },
-                )
-            }
-        }
-
-        composable<VisitDetailRoute> { entry ->
-            val route = entry.toRoute<VisitDetailRoute>()
-            val patientId = route.patientId
-            val visitId = route.visitId
-            val newlyCreatedQuestionnaireId by entry.savedStateHandle.getStateFlow<String?>("createdQuestionnaireId", null).collectAsState()
-
-            androidx.compose.runtime.key(currentLang) {
-                EncounterDetailScreen(
-                    patientId = patientId,
-                    visitId = visitId,
-                    photoSessionManager = photoSessionManager,
-                    fhirRepository = fhirRepository,
-                    authRepository = authRepository,
-                    syncWorker = syncWorker,
-                    questionnaireRepository = questionnaireRepository,
-                    newlyCreatedQuestionnaireId = newlyCreatedQuestionnaireId,
-                    onBack = { scope.launch { navController.popBackStack() } },
-                    onTakePhotos = { qId, linkId ->
-                        scope.launch { navController.navigate(CaptureForPatientRoute(patientId, qId, linkId)) }
-                    },
-                    onCreateNewQuestionnaire = {
-                        navController.navigate(
-                            io.healthplatform.chartcam.navigation
-                                .QuestionnaireBuilderRoute(),
-                        )
-                    },
-                    onFinalized = {
-                        navController.navigate(PatientDetailRoute(patientId)) {
-                            popUpTo(PatientDetailRoute(patientId)) { inclusive = true }
-                        }
-                    },
-                    onNewlyCreatedQuestionnaireHandled = {
-                        entry.savedStateHandle.remove<String>("createdQuestionnaireId")
-                    },
-                )
-            }
-        }
-
-        composable(Routes.PATIENT_LIST) {
-            androidx.compose.runtime.key(currentLang) {
-                PatientListScreen(
-                    authRepository = authRepository,
-                    fhirRepository = fhirRepository,
-                    exportImportService = exportImportService,
-                    onPatientSelected = { patientId ->
-                        navController.navigate(PatientDetailRoute(patientId))
-                    },
-                    onNavigateToQuestionnaires = {
-                        scope.launch { navController.navigate(Routes.QUESTIONNAIRE_LIST) }
-                    },
-                    onLogout = {
-                        authRepository.logout()
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    },
-                )
-            }
-        }
-
-        composable<io.healthplatform.chartcam.navigation.QuestionnaireBuilderRoute> { backStackEntry ->
-            val route = backStackEntry.toRoute<io.healthplatform.chartcam.navigation.QuestionnaireBuilderRoute>()
-            val viewModel =
-                androidx.lifecycle.viewmodel.compose.viewModel(key = route.duplicateFromId ?: "new") {
-                    io.healthplatform.chartcam.viewmodel
-                        .QuestionnaireBuilderViewModel(questionnaireRepository, route.duplicateFromId)
-                }
-            androidx.compose.runtime.key(currentLang) {
-                io.healthplatform.chartcam.ui.QuestionnaireBuilderScreen(
-                    viewModel = viewModel,
-                    onBack = { scope.launch { navController.popBackStack() } },
-                    onSaved = { savedId ->
-                        navController.previousBackStackEntry?.savedStateHandle?.set("createdQuestionnaireId", savedId)
-                        scope.launch { navController.popBackStack() }
-                    },
-                )
-            }
-        }
-
-        composable(Routes.QUESTIONNAIRE_LIST) {
-            androidx.compose.runtime.key(currentLang) {
-                QuestionnaireListScreen(
-                    questionnaireRepository = questionnaireRepository,
-                    onBack = { scope.launch { navController.popBackStack() } },
-                    onNavigateToBuilder = { duplicateId ->
-                        scope.launch {
-                            navController.navigate(
-                                io.healthplatform.chartcam.navigation
-                                    .QuestionnaireBuilderRoute(duplicateFromId = duplicateId),
-                            )
-                        }
-                    },
-                )
-            }
-        }
-
-        composable<PatientDetailRoute> { entry ->
-            val route = entry.toRoute<PatientDetailRoute>()
-            val patientId = route.patientId
-            androidx.compose.runtime.key(currentLang) {
-                PatientDetailScreen(
-                    patientId = patientId,
-                    fhirRepository = fhirRepository,
-                    onBack = { scope.launch { navController.popBackStack() } },
-                    onNewVisit = {
-                        scope.launch { navController.navigate(NewVisitRoute(patientId)) }
-                    },
-                    onVisitSelected = { visitId ->
-                        scope.launch { navController.navigate(VisitDetailRoute(patientId, visitId)) }
-                    },
-                )
-            }
-        }
-
-        composable<PatientVisitsRoute> { entry ->
-            val route = entry.toRoute<PatientVisitsRoute>()
-            val patientId = route.patientId
-            androidx.compose.runtime.key(currentLang) {
-                PatientDetailScreen(
-                    patientId = patientId,
-                    fhirRepository = fhirRepository,
-                    onBack = { scope.launch { navController.popBackStack() } },
-                    onNewVisit = {
-                        scope.launch { navController.navigate(NewVisitRoute(patientId)) }
-                    },
-                    onVisitSelected = { visitId ->
-                        scope.launch { navController.navigate(VisitDetailRoute(patientId, visitId)) }
-                    },
-                )
-            }
-        }
+        loginDestination(navController, dependencies, currentLang)
+        captureDestination(navController, dependencies, currentLang)
+        captureForPatientDestination(navController, scope, dependencies, currentLang)
+        triageDestination(navController, scope, dependencies, currentLang)
+        newVisitDestination(navController, scope, dependencies, currentLang)
+        visitDetailDestination(navController, scope, dependencies, currentLang)
+        patientListDestination(navController, scope, dependencies, currentLang)
+        patientDetailDestination(navController, scope, dependencies, currentLang)
+        patientVisitsDestination(navController, scope, dependencies, currentLang)
+        questionnaireBuilderDestination(navController, scope, dependencies, currentLang)
+        questionnaireListDestination(navController, scope, dependencies, currentLang)
     }
 }

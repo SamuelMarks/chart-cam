@@ -32,7 +32,7 @@ class EncounterDetailCoverageTest {
         val pat = Patient.Builder().apply { id = "pat1" }.build()
         val enc =
             io.healthplatform.chartcam.models
-                .createFhirEncounter("enc1", "pat1", "prac1", "2026-07-09", "in-progress")
+                .createFhirEncounter("enc1", "pat1", "prac1", "2026-07-09")
 
         val qr =
             QuestionnaireResponse
@@ -231,10 +231,7 @@ class EncounterDetailCoverageTest {
         val syncWorker = Mockito.mock(SyncWorker::class.java)
 
         val vm = EncounterDetailViewModel(fhirRepository, authRepository, syncWorker, qrRepo)
-        vm.onFormUpdated(
-            mapOf("test" to "test"),
-            QuestionnaireResponse.Builder(Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed)).build(),
-        )
+        vm.onFormUpdated(mapOf("test" to "test"))
     }
 
     @Test

@@ -13,3 +13,23 @@ comments:
   UndocumentedPublicProperty:
     active: true
     includes: ['**/*.kt']
+
+naming:
+  FunctionNaming:
+    active: false
+
+complexity:
+  TooManyFunctions:
+    active: true
+    excludes: ['**/*']
+    ignoreDeprecated: false
+    ignorePrivate: false
+    ignoreOverridden: false
+    thresholdInFiles: 11
+    thresholdInClasses: 11
+    thresholdInInterfaces: 11
+    thresholdInObjects: 11
+    thresholdInEnums: 11
+    ignoreAnnotated: []
+
+

@@ -57,7 +57,6 @@ class ExistingVisitE2EJvmTest {
                     lastName = "Doe",
                     dob = kotlinx.datetime.LocalDate(1980, 1, 1),
                     mrnValue = "MRN123",
-                    genderStr = "male",
                 )
             fhirRepository.savePatient(patient)
 
@@ -69,7 +68,6 @@ class ExistingVisitE2EJvmTest {
                         patientId = "patient-1",
                         practitionerId = "prac1",
                         dateStr = "2026-07-09",
-                        statusStr = "finished",
                     ).toBuilder()
                     .apply {
                         status =
@@ -105,14 +103,20 @@ class ExistingVisitE2EJvmTest {
                 EncounterDetailScreen(
                     patientId = "patient-1",
                     visitId = "enc-1",
-                    photoSessionManager = photoSessionManager,
-                    fhirRepository = fhirRepository,
-                    authRepository = authRepository,
-                    syncWorker = syncWorker,
-                    questionnaireRepository = questionnaireRepository,
-                    onBack = {},
-                    onTakePhotos = { _, _ -> },
-                    onFinalized = {},
+                    dependencies =
+                        EncounterDetailDependencies(
+                            photoSessionManager = photoSessionManager,
+                            fhirRepository = fhirRepository,
+                            authRepository = authRepository,
+                            syncWorker = syncWorker,
+                            questionnaireRepository = questionnaireRepository,
+                        ),
+                    actions =
+                        EncounterDetailActions(
+                            onBack = {},
+                            onTakePhotos = { _, _ -> },
+                            onFinalized = {},
+                        ),
                 )
             }
 

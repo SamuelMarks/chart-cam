@@ -19,7 +19,6 @@ class FhirModelsTest {
                 lastName = "Doe",
                 dob = dob,
                 mrnValue = "MRN-555",
-                genderStr = "male",
             )
         assertEquals("pat_123", patient.id)
         assertEquals("Doe", patient.name.first().familyName)
@@ -53,7 +52,6 @@ class FhirModelsTest {
                 patientId = "Patient/pat_123",
                 practitionerId = "Practitioner/prac_456",
                 dateStr = "2023-10-27T10:00:00Z",
-                statusStr = "in-progress",
             )
         assertEquals("enc_789", encounter.id)
         assertEquals("Patient/pat_123", encounter.subject?.reference?.value)
@@ -72,13 +70,15 @@ class FhirModelsTest {
     fun testCreateFhirDocumentReference() {
         val docRef =
             createFhirDocumentReference(
-                id = "doc_111",
-                patientId = "Patient/pat_123",
-                encounterId = "Encounter/enc_789",
-                dateStr = "2023-10-27T10:05:00Z",
-                desc = "Front View",
-                mime = "image/jpeg",
-                urlPath = "file:///path/to/image.jpg",
+                DocumentReferenceCreationParams(
+                    id = "doc_111",
+                    patientId = "Patient/pat_123",
+                    encounterId = "Encounter/enc_789",
+                    dateStr = "2023-10-27T10:05:00Z",
+                    desc = "Front View",
+                    mime = "image/jpeg",
+                    urlPath = "file:///path/to/image.jpg",
+                ),
             )
         assertEquals("doc_111", docRef.id)
         assertEquals("Patient/pat_123", docRef.subject?.reference?.value)

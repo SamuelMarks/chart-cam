@@ -82,7 +82,7 @@ class AuthRepositoryJvmTest {
                     override fun save(
                         key: String,
                         value: String,
-                    ): Unit = throw Exception("Storage error")
+                    ): Unit = throw IllegalArgumentException("Storage error")
 
                     override fun getString(key: String): String? = "dummy_refresh_token"
 

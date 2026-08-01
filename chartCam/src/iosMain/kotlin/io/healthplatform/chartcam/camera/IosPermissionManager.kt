@@ -58,13 +58,15 @@ class IosPermissionManager : PermissionManager {
      */
     override suspend fun requestCameraPermission(): Boolean {
         val status = getCameraPermissionStatus()
-        if (status == PermissionStatus.GRANTED) return true
-        if (status == PermissionStatus.DENIED) return false // iOS doesn't allow re-asking easily
-
-        return suspendCoroutine { continuation ->
-            AVCaptureDevice.requestAccessForMediaType(AVMediaTypeVideo) { granted ->
-                continuation.resume(granted)
-            }
+        return when (status) {
+            PermissionStatus.GRANTED -> true
+            PermissionStatus.DENIED -> false
+            else ->
+                suspendCoroutine { continuation ->
+                    AVCaptureDevice.requestAccessForMediaType(AVMediaTypeVideo) { granted ->
+                        continuation.resume(granted)
+                    }
+                }
         }
     }
 

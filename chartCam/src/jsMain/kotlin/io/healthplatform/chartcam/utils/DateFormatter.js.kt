@@ -24,7 +24,8 @@ actual fun formatLocalizedDate(fhirDate: String): String {
         } else {
             date.toLocaleDateString()
         }
-    } catch (e: Exception) {
+    } catch (e: IllegalStateException) {
+        println(e.message)
         fhirDate
     }
 }

@@ -68,9 +68,14 @@ fun LevelerOverlay(
     tolerance: Float = 3.0f,
 ) {
     val isLevel = abs(pitch) < tolerance && abs(roll) < tolerance
-    val color = if (isLevel) Color(0xFF52854C) else Color.White
+    val color = if (isLevel) Color(LevelerConstants.LEVEL_COLOR_HEX) else Color.White
 
-    val statusText = if (isLevel) stringResource(Res.string.level_status_level) else stringResource(Res.string.level_status_tilted)
+    val statusText =
+        if (isLevel) {
+            stringResource(Res.string.level_status_level)
+        } else {
+            stringResource(Res.string.level_status_tilted)
+        }
     val cdStatus = stringResource(Res.string.cd_leveler_status, statusText)
 
     Box(
@@ -111,7 +116,7 @@ fun LevelerOverlay(
 
             // The "Bubble"
             // We map pitch/roll to X/Y offset limited to the circle radius
-            val maxDeflection = 20.0 // Degrees that map to edge of circle
+            val maxDeflection = LevelerConstants.MAX_DEFLECTION // Degrees that map to edge of circle
             val radiusPx = 40.dp.toPx()
 
             val offsetX = (roll / maxDeflection).coerceIn(-1.0, 1.0) * radiusPx
@@ -125,4 +130,12 @@ fun LevelerOverlay(
             )
         }
     }
+}
+
+/**
+ * Constants used in LevelerOverlay.
+ */
+private object LevelerConstants {
+    const val LEVEL_COLOR_HEX = 0xFF52854C
+    const val MAX_DEFLECTION = 20.0
 }

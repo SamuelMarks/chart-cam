@@ -116,7 +116,6 @@ class E2EWorkflowJvmTest {
                 lastName = "Doe",
                 mrn = "MRN-12345",
                 dob = LocalDate(1980, 1, 1),
-                gender = "male",
             ) { id ->
                 newPatientId = id
             }

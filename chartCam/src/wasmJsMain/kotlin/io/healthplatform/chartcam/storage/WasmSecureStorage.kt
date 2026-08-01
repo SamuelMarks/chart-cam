@@ -64,8 +64,8 @@ external interface EncObj : JsAny {
     /**
      * Represents the UTF-8 encoding type.
      */
-    @Suppress("ktlint:standard:property-naming")
-    val Utf8: JsAny
+    @JsName("Utf8")
+    val utf8: JsAny
 }
 
 /**
@@ -144,7 +144,7 @@ class WasmSecureStorage : SecureStorage {
         val stored = localStorage.getItem(key) ?: return null
         return try {
             val wa = CryptoJS.AES.decrypt(stored, secretKey)
-            val result = waToString(wa, CryptoJS.enc.Utf8)
+            val result = waToString(wa, CryptoJS.enc.utf8)
             if (result.isEmpty()) stored else result // fallback if decryption yields empty
         } catch (_: Throwable) {
             stored

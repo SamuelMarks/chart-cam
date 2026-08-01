@@ -22,7 +22,9 @@ suspend fun initDatabase(driver: SqlDriver) {
         // We handle exceptions if schema already exists, but some driver implementations
         // throw Throwable instead of Exception, causing it to crash the app.
         ChartCamDatabase.Schema.awaitCreate(driver)
-    } catch (e: Throwable) {
-        // usually fails if already created or synchronous driver handles it
+    } catch (e: IllegalStateException) {
+        println("Schema creation failed or already exists: ${e.message}")
+    } catch (e: IllegalArgumentException) {
+        println("Runtime schema creation error: ${e.message}")
     }
 }

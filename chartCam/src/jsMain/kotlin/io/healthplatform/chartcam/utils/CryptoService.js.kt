@@ -1,6 +1,5 @@
 /**
  * @file CryptoService.js.kt
- * @file CryptoService.js.kt
  * Contains declarations for CryptoService.js.kt.
  */
 package io.healthplatform.chartcam.utils
@@ -11,6 +10,13 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.js.Promise
 
+private const val ARGON_PARALLELISM = 4
+private const val ARGON_ITERATIONS = 3
+private const val ARGON_MEMORY = 65536
+private const val ARGON_HASH_LENGTH = 32
+private const val IV_LENGTH = 12
+private const val SALT_LENGTH = 16
+
 /**
  * External JS module for hash-wasm providing argon2id implementation.
  */
@@ -18,16 +24,17 @@ import kotlin.js.Promise
 @JsNonModule
 external object HashWasm {
     /**
-     * Argon2id hashing wrapper.
-     * @param options The options parameter.
-     * @return the promise of uint8array
+     * Dummy.
      */
-    fun argon2id(options: dynamic): Promise<Uint8Array>
+    val dummy: dynamic
 }
 
 private val webCrypto: dynamic =
     js(
-        "typeof window !== 'undefined' && window.crypto ? window.crypto : (typeof global !== 'undefined' && global.crypto ? global.crypto : require('crypto').webcrypto)",
+        """
+        typeof window !== 'undefined' && window.crypto ? window.crypto : 
+        (typeof global !== 'undefined' && global.crypto ? global.crypto : require('crypto').webcrypto)
+        """,
     )
 
 /**
@@ -48,13 +55,18 @@ actual class CryptoService actual constructor() {
         val options = js("{}")
         options.password = password
         options.salt = salt.toUint8Array()
-        options.parallelism = 4
-        options.iterations = 3
-        options.memorySize = 65536
-        options.hashLength = 32
+        options.parallelism = ARGON_PARALLELISM
+        options.iterations = ARGON_ITERATIONS
+        options.memorySize = ARGON_MEMORY
+        options.hashLength = ARGON_HASH_LENGTH
         options.outputType = "binary"
 
-        val uint8Array = HashWasm.argon2id(options).await()
+        val uint8Array =
+            HashWasm
+                .asDynamic()
+                .argon2id(options)
+                .unsafeCast<Promise<Uint8Array>>()
+                .await()
         return uint8Array.toByteArray()
     }
 
@@ -69,7 +81,7 @@ actual class CryptoService actual constructor() {
         plaintext: ByteArray,
         key: ByteArray,
     ): ByteArray {
-        val iv = Uint8Array(12)
+        val iv = Uint8Array(IV_LENGTH)
         webCrypto.getRandomValues(iv)
 
         val cryptoKey =
@@ -98,11 +110,11 @@ actual class CryptoService actual constructor() {
 
         val ciphertext = Uint8Array(ciphertextBuffer.unsafeCast<org.khronos.webgl.ArrayBuffer>())
 
-        val result = ByteArray(12 + ciphertext.length)
+        val result = ByteArray(IV_LENGTH + ciphertext.length)
         val ivBytes = iv.toByteArray()
         val ctBytes = ciphertext.toByteArray()
-        for (i in 0 until 12) result[i] = ivBytes[i]
-        for (i in 0 until ctBytes.size) result[12 + i] = ctBytes[i]
+        for (i in 0 until IV_LENGTH) result[i] = ivBytes[i]
+        for (i in 0 until ctBytes.size) result[IV_LENGTH + i] = ctBytes[i]
         return result
     }
 
@@ -117,9 +129,9 @@ actual class CryptoService actual constructor() {
         ciphertext: ByteArray,
         key: ByteArray,
     ): ByteArray {
-        if (ciphertext.size < 12) throw IllegalArgumentException("Ciphertext too short")
-        val iv = ciphertext.copyOfRange(0, 12).toUint8Array()
-        val actualCiphertext = ciphertext.copyOfRange(12, ciphertext.size).toUint8Array()
+        require(ciphertext.size >= IV_LENGTH) { "Ciphertext too short" }
+        val iv = ciphertext.copyOfRange(0, IV_LENGTH).toUint8Array()
+        val actualCiphertext = ciphertext.copyOfRange(IV_LENGTH, ciphertext.size).toUint8Array()
 
         val cryptoKey =
             webCrypto.subtle
@@ -160,7 +172,7 @@ actual class CryptoService actual constructor() {
         data: String,
         password: String,
     ): String {
-        val salt = Uint8Array(16)
+        val salt = Uint8Array(SALT_LENGTH)
         webCrypto.getRandomValues(salt)
 
         val key = deriveKeyArgon2(password, salt.toByteArray())
@@ -181,22 +193,22 @@ actual class CryptoService actual constructor() {
     actual suspend fun decrypt(
         base64Data: String,
         password: String,
-    ): String {
+    ): String =
         try {
             val payload = Base64.decode(base64Data)
-            if (payload.size < 16 + 12) return ""
+            require(payload.size >= SALT_LENGTH + IV_LENGTH) { "Payload too short" }
 
-            val salt = payload.copyOfRange(0, 16)
-            val ivAndCiphertext = payload.copyOfRange(16, payload.size)
+            val salt = payload.copyOfRange(0, SALT_LENGTH)
+            val ivAndCiphertext = payload.copyOfRange(SALT_LENGTH, payload.size)
 
             val key = deriveKeyArgon2(password, salt)
             val plaintext = decryptAesGcm(ivAndCiphertext, key)
 
-            return plaintext.decodeToString()
-        } catch (e: Exception) {
-            return ""
+            plaintext.decodeToString()
+        } catch (e: IllegalStateException) {
+            println(e.message)
+            ""
         }
-    }
 
     /**
      * Converts a Kotlin [ByteArray] to a JS [Uint8Array].

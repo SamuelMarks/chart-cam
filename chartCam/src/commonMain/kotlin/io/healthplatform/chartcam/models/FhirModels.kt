@@ -6,7 +6,6 @@
  */
 package io.healthplatform.chartcam.models
 
-import com.google.fhir.model.r4.Attachment
 import com.google.fhir.model.r4.Base64Binary
 import com.google.fhir.model.r4.Binary
 import com.google.fhir.model.r4.Boolean
@@ -30,30 +29,8 @@ import com.google.fhir.model.r4.Provenance
 import com.google.fhir.model.r4.Reference
 import com.google.fhir.model.r4.String
 import com.google.fhir.model.r4.Uri
-import com.google.fhir.model.r4.Url
 import com.google.fhir.model.r4.terminologies.DocumentReferenceStatus
 import kotlinx.datetime.LocalDate
-import kotlinx.serialization.Serializable
-
-/**
- * Represents the response received when authenticating, containing tokens.
- *
- * @property accessToken The token used to access protected resources.
- * @property refreshToken The token used to refresh the access token.
- * @property expiresIn The duration in seconds until the access token expires.
- * @property tokenType The type of the token, usually "Bearer".
- */
-@Serializable
-data class TokenResponse(
-    /** The token used to access protected resources. */
-    val accessToken: kotlin.String,
-    /** The token used to refresh the access token. */
-    val refreshToken: kotlin.String,
-    /** The duration in seconds until the access token expires. */
-    val expiresIn: Int,
-    /** The type of the token, usually "Bearer". */
-    val tokenType: kotlin.String,
-)
 
 /**
  * Creates a FHIR Patient resource.
@@ -63,7 +40,6 @@ data class TokenResponse(
  * @param lastName The last name of the patient.
  * @param dob The date of birth of the patient.
  * @param mrnValue The Medical Record Number (MRN) of the patient.
- * @param genderStr The gender of the patient as a string.
  * @return A populated FHIR [Patient] object.
  */
 fun createFhirPatient(
@@ -72,7 +48,6 @@ fun createFhirPatient(
     lastName: kotlin.String,
     dob: LocalDate,
     mrnValue: kotlin.String,
-    genderStr: kotlin.String,
 ): Patient =
     Patient
         .Builder()
@@ -170,7 +145,6 @@ fun createFhirPractitioner(
  * @param patientId The reference ID of the associated patient.
  * @param practitionerId The reference ID of the associated practitioner.
  * @param dateStr The date and time of the encounter as a string.
- * @param statusStr The status of the encounter as a string.
  * @return A populated FHIR [Encounter] object.
  */
 fun createFhirEncounter(
@@ -178,7 +152,6 @@ fun createFhirEncounter(
     patientId: kotlin.String,
     practitionerId: kotlin.String,
     dateStr: kotlin.String,
-    statusStr: kotlin.String,
 ): Encounter =
     Encounter
         .Builder(
@@ -190,10 +163,16 @@ fun createFhirEncounter(
                 },
         ).apply {
             this.id = id
-            subject = Reference.Builder().apply { reference = String.Builder().apply { value = patientId } }
+            subject =
+                Reference.Builder().apply {
+                    reference = String.Builder().apply { value = patientId }
+                }
             participant.add(
                 Encounter.Participant.Builder().apply {
-                    individual = Reference.Builder().apply { reference = String.Builder().apply { value = practitionerId } }
+                    individual =
+                        Reference.Builder().apply {
+                            reference = String.Builder().apply { value = practitionerId }
+                        }
                 },
             )
             period =
@@ -209,65 +188,54 @@ val Encounter.encounterDate: kotlin.String
     get() = period?.start?.value?.toString() ?: ""
 
 /**
- * Creates a FHIR DocumentReference resource for an attachment or generic document.
+ * Parameters for creating a FHIR DocumentReference.
  *
- * @param id The unique identifier of the document reference.
- * @param patientId The reference ID of the associated patient.
- * @param encounterId The reference ID of the associated encounter.
- * @param dateStr The date and time of the document creation as a string.
- * @param desc An optional description of the document.
- * @param mime The MIME type of the document content.
- * @param urlPath The URL or path to access the document content.
- * @param answerCode The answer code
- * @return A populated FHIR [DocumentReference] object.
+ * @property id The unique identifier.
+ * @property patientId The patient ID.
+ * @property encounterId The encounter ID.
+ * @property dateStr The date string.
+ * @property desc The description.
+ * @property mime The MIME type.
+ * @property urlPath The URL path.
+ * @property answerCode The optional answer code.
  */
-fun createFhirDocumentReference(
-    id: kotlin.String,
-    patientId: kotlin.String,
-    encounterId: kotlin.String,
-    dateStr: kotlin.String,
-    desc: kotlin.String?,
-    mime: kotlin.String,
-    urlPath: kotlin.String,
-    answerCode: kotlin.String? = null,
-): DocumentReference =
+data class DocumentReferenceCreationParams(
+    val id: kotlin.String,
+    val patientId: kotlin.String,
+    val encounterId: kotlin.String,
+    val dateStr: kotlin.String,
+    val desc: kotlin.String?,
+    val mime: kotlin.String,
+    val urlPath: kotlin.String,
+    val answerCode: kotlin.String? = null,
+)
+
+/**
+ * Creates a FHIR DocumentReference.
+ *
+ * @param params The creation parameters.
+ * @return A populated FHIR [DocumentReference].
+ */
+fun createFhirDocumentReference(params: DocumentReferenceCreationParams): DocumentReference =
     DocumentReference
         .Builder(
             status = Enumeration(value = DocumentReferenceStatus.Current),
-            content =
-                mutableListOf(
-                    DocumentReference.Content.Builder(
-                        attachment =
-                            Attachment.Builder().apply {
-                                contentType = Code.Builder().apply { value = mime }
-                                url = Url.Builder().apply { value = urlPath }
-                            },
-                    ),
-                ),
+            content = buildDocumentReferenceContent(params.mime, params.urlPath),
         ).apply {
-            this.id = id
-            subject = Reference.Builder().apply { reference = String.Builder().apply { value = patientId } }
-            context =
-                DocumentReference.Context.Builder().apply {
-                    encounter.add(Reference.Builder().apply { reference = String.Builder().apply { value = encounterId } })
-                    if (answerCode != null) {
-                        related.add(
-                            Reference.Builder().apply {
-                                identifier =
-                                    Identifier.Builder().apply {
-                                        value = String.Builder().apply { value = answerCode }
-                                    }
-                            },
-                        )
-                    }
+            this.id = params.id
+            subject =
+                Reference.Builder().apply {
+                    reference = String.Builder().apply { value = params.patientId }
                 }
+            context = buildDocumentReferenceContext(params.encounterId, params.answerCode)
             try {
-                // we ignore the date parse error just in case dateStr is wrong format
-                date = Instant.Builder().apply { value = FhirDateTime.fromString(dateStr) }
-            } catch (e: Exception) {
+                // we ignore the date parse error just in case params.dateStr is wrong format
+                date = Instant.Builder().apply { value = FhirDateTime.fromString(params.dateStr) }
+            } catch (e: IllegalArgumentException) {
+                println(e.message)
             }
-            if (!desc.isNullOrBlank()) {
-                description = String.Builder().apply { value = desc }
+            if (!params.desc.isNullOrBlank()) {
+                description = String.Builder().apply { value = params.desc }
             }
         }.build()
 
@@ -291,37 +259,26 @@ fun createFhirClinicalNote(
     DocumentReference
         .Builder(
             status = Enumeration(value = DocumentReferenceStatus.Current),
-            content =
-                mutableListOf(
-                    DocumentReference.Content.Builder(
-                        attachment =
-                            Attachment.Builder().apply {
-                                contentType = Code.Builder().apply { value = "text/plain" }
-                                // Using data URI for text content to avoid protobuf ByteString dependency in commonMain
-                                url = Url.Builder().apply { value = "data:text/plain;charset=utf-8,$notesText" }
-                            },
-                    ),
-                ),
+            content = buildClinicalNoteContent(notesText),
         ).apply {
             this.id = id
-            subject = Reference.Builder().apply { reference = String.Builder().apply { value = patientId } }
+            subject =
+                Reference.Builder().apply {
+                    reference = String.Builder().apply { value = patientId }
+                }
             context =
                 DocumentReference.Context.Builder().apply {
-                    encounter.add(Reference.Builder().apply { reference = String.Builder().apply { value = encounterId } })
-                }
-            type =
-                com.google.fhir.model.r4.CodeableConcept.Builder().apply {
-                    coding.add(
-                        Coding.Builder().apply {
-                            system = Uri.Builder().apply { value = io.healthplatform.chartcam.terminology.TerminologyService.loincUri }
-                            code = Code.Builder().apply { value = "11488-4" }
-                            display = String.Builder().apply { value = "Consultation note" }
+                    encounter.add(
+                        Reference.Builder().apply {
+                            reference = String.Builder().apply { value = encounterId }
                         },
                     )
                 }
+            type = buildClinicalNoteType()
             try {
                 date = Instant.Builder().apply { value = FhirDateTime.fromString(dateStr) }
-            } catch (e: Exception) {
+            } catch (e: IllegalArgumentException) {
+                println("Failed to parse clinical note date: ${e.message}")
             }
         }.build()
 
@@ -368,13 +325,21 @@ fun createFhirProvenance(
 ): Provenance =
     Provenance
         .Builder(
-            target = mutableListOf(Reference.Builder().apply { reference = String.Builder().apply { value = targetResourceId } }),
+            target =
+                mutableListOf(
+                    Reference.Builder().apply {
+                        reference = String.Builder().apply { value = targetResourceId }
+                    },
+                ),
             recorded = Instant.Builder().apply { value = FhirDateTime.fromString(dateStr) },
             agent =
                 mutableListOf(
                     Provenance.Agent
                         .Builder(
-                            who = Reference.Builder().apply { reference = String.Builder().apply { value = practitionerId } },
+                            who =
+                                Reference.Builder().apply {
+                                    reference = String.Builder().apply { value = practitionerId }
+                                },
                         ).apply {
                             type =
                                 com.google.fhir.model.r4.CodeableConcept.Builder().apply {
@@ -383,7 +348,8 @@ fun createFhirProvenance(
                                             system =
                                                 Uri.Builder().apply {
                                                     value =
-                                                        "http://terminology.hl7.org/CodeSystem/provenance-participant-type"
+                                                        "http://terminology.hl7.org/CodeSystem/" +
+                                                        "provenance-participant-type"
                                                 }
                                             code = Code.Builder().apply { value = "author" }
                                         },

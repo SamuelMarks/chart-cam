@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.time.Clock
 
+private const val HTTP_PRECONDITION_FAILED = 412
+
 /**
  * Represents the current state of the synchronization worker.
  */
@@ -99,7 +101,12 @@ class SyncWorker(
             if (!uploadSuccess) {
                 // If upload fails (e.g. network error), we transition to offline/error state.
                 val queuedCount = fhirRepository.getPendingLocalChangesCount()
-                _syncState.value = if (queuedCount > 0) SyncState.Offline(queuedCount) else SyncState.Error("Upload failed")
+                _syncState.value =
+                    if (queuedCount > 0) {
+                        SyncState.Offline(queuedCount)
+                    } else {
+                        SyncState.Error("Upload failed")
+                    }
                 return
             }
 
@@ -110,12 +117,17 @@ class SyncWorker(
             }
 
             _syncState.value = SyncState.Completed
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
             val queuedCount = fhirRepository.getPendingLocalChangesCount()
             val errorMsg =
                 e.message ?: org.jetbrains.compose.resources
                     .getString(Res.string.unknown_error)
-            _syncState.value = if (queuedCount > 0) SyncState.Offline(queuedCount) else SyncState.Error(errorMsg)
+            _syncState.value =
+                if (queuedCount > 0) {
+                    SyncState.Offline(queuedCount)
+                } else {
+                    SyncState.Error(errorMsg)
+                }
         } finally {
             if (_syncState.value is SyncState.Completed) {
                 _syncState.value = SyncState.Idle
@@ -134,49 +146,8 @@ class SyncWorker(
         var allSuccess = true
 
         for (change in changes) {
-            try {
-                val url = "$baseUrl/${change.resourceType}/${change.resourceId}"
-                val response: HttpResponse
-
-                if (change.type == "DELETE") {
-                    // Simply skip if delete is requested; FHIR engine would handle it
-                    // if configured for bidirectional deletion.
-                    // Delete not yet supported via SyncWorker
-                    fhirRepository.deleteLocalChange(change.id)
-                    continue
-                }
-
-                // RESTful PUT for UPSERT
-                response =
-                    httpClient.put(url) {
-                        contentType(ContentType.Application.Json)
-                        setBody(change.payload)
-                        // Apply ETag for robust conflict resolution (optimistic concurrency)
-                        if (!change.versionId.isNullOrBlank()) {
-                            header("If-Match", "W/\"${change.versionId}\"")
-                        }
-                    }
-
-                if (response.status.isSuccess()) {
-                    // Extract new ETag from response to update local versionId
-                    val newETag = response.headers["ETag"]?.removePrefix("W/\"")?.removeSuffix("\"")
-
-                    // Mark change as processed
-                    fhirRepository.deleteLocalChange(change.id)
-
-                    if (newETag != null) {
-                        // In a real implementation we would update the meta.versionId of the resource
-                    }
-                } else if (response.status.value == 412) { // Precondition Failed (Conflict)
-                    // Handle conflict: server has a newer version.
-                    // Conflict detected for ${change.resourceType}/${change.resourceId}
-                    // Fallback to fetch latest and then retry later.
-                    allSuccess = false
-                } else {
-                    allSuccess = false
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+            val success = processLocalChange(change)
+            if (!success) {
                 allSuccess = false
             }
         }
@@ -184,11 +155,70 @@ class SyncWorker(
     }
 
     /**
+     * Internal helper function.
+     */
+    private suspend fun processLocalChange(change: io.healthplatform.chartcam.database.LocalChangeEntity): Boolean {
+        return try {
+            if (change.type == "DELETE") {
+                // Simply skip if delete is requested; FHIR engine would handle it
+                // if configured for bidirectional deletion.
+                // Delete not yet supported via SyncWorker
+                fhirRepository.deleteLocalChange(change.id)
+                return true
+            }
+
+            val url = "$baseUrl/${change.resourceType}/${change.resourceId}"
+            val response: HttpResponse =
+                httpClient.put(url) {
+                    contentType(ContentType.Application.Json)
+                    setBody(change.payload)
+                    // Apply ETag for robust conflict resolution (optimistic concurrency)
+                    if (!change.versionId.isNullOrBlank()) {
+                        header("If-Match", "W/\"${change.versionId}\"")
+                    }
+                }
+
+            handlePushResponse(response, change)
+        } catch (e: IllegalArgumentException) {
+            println("Error: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Internal helper function.
+     */
+    private suspend fun handlePushResponse(
+        response: HttpResponse,
+        change: io.healthplatform.chartcam.database.LocalChangeEntity,
+    ): Boolean =
+        if (response.status.isSuccess()) {
+            // Extract new ETag from response to update local versionId
+            val newETag = response.headers["ETag"]?.removePrefix("W/\"")?.removeSuffix("\"")
+
+            // Mark change as processed
+            fhirRepository.deleteLocalChange(change.id)
+
+            if (newETag != null) {
+                // In a real implementation we would update the meta.versionId of the resource
+            }
+            true
+        } else if (response.status.value == HTTP_PRECONDITION_FAILED) {
+            // Handle conflict: server has a newer version.
+            // Conflict detected for ${change.resourceType}/${change.resourceId}
+            // Fallback to fetch latest and then retry later.
+            false
+        } else {
+            false
+        }
+
+    /**
      * Pulls remote changes from the FHIR server using delta-sync (lastUpdated filter).
      *
      * @return True if remote changes were pulled and stored successfully, false otherwise.
      */
     private suspend fun pullRemoteChanges(): Boolean {
+        var success = false
         try {
             // Delta-sync request to fetch only recent changes
             var url = "$baseUrl/Patient/\$everything"
@@ -201,23 +231,35 @@ class SyncWorker(
                     contentType(ContentType.Application.Json)
                 }
 
-            if (!response.status.isSuccess()) return false
-
-            val bundle = fhirJson.decodeFromString(response.bodyAsText()) as? Bundle ?: return false
-
-            for (entry in bundle.entry) {
-                val resource = entry.resource ?: continue
-                val resourceType = resource::class.simpleName ?: continue
-                // Save without creating a new local change record
-                fhirRepository.saveResourceFromSync(resourceType, resource.id ?: continue, resource)
+            if (response.status.isSuccess()) {
+                val bundle = fhirJson.decodeFromString(response.bodyAsText()) as? Bundle
+                if (bundle != null) {
+                    processBundle(bundle)
+                    // Update last updated timestamp
+                    lastUpdated = Clock.System.now().toString()
+                    success = true
+                }
             }
+        } catch (e: IllegalArgumentException) {
+            println("Error: ${e.message}")
+        }
+        return success
+    }
 
-            // Update last updated timestamp
-            lastUpdated = Clock.System.now().toString()
-            return true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return false
+    /**
+     * Internal helper function.
+     */
+    private suspend fun processBundle(bundle: Bundle) {
+        for (entry in bundle.entry) {
+            val resource = entry.resource
+            if (resource != null) {
+                val resourceType = resource::class.simpleName
+                val id = resource.id
+                if (resourceType != null && id != null) {
+                    // Save without creating a new local change record
+                    fhirRepository.saveResourceFromSync(resourceType, id, resource)
+                }
+            }
         }
     }
 
@@ -230,6 +272,7 @@ class SyncWorker(
     suspend fun fetchLocalizedQuestionnaires(
         questionnaireRepository: io.healthplatform.chartcam.repository.QuestionnaireRepository,
     ): Boolean {
+        var success = false
         try {
             val locale = io.healthplatform.chartcam.ui.currentLanguageState.value
             val url = "$baseUrl/Questionnaire?_language=$locale"
@@ -239,18 +282,29 @@ class SyncWorker(
                     contentType(ContentType.Application.Json)
                 }
 
-            if (!response.status.isSuccess()) return false
-
-            val bundle = fhirJson.decodeFromString(response.bodyAsText()) as? com.google.fhir.model.r4.Bundle ?: return false
-
-            for (entry in bundle.entry) {
-                val resource = entry.resource as? com.google.fhir.model.r4.Questionnaire ?: continue
-                questionnaireRepository.saveQuestionnaire(resource)
+            if (response.status.isSuccess()) {
+                val bundle = fhirJson.decodeFromString(response.bodyAsText()) as? com.google.fhir.model.r4.Bundle
+                if (bundle != null) {
+                    processQuestionnaireBundle(bundle, questionnaireRepository)
+                    success = true
+                }
             }
-            return true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return false
+        } catch (e: IllegalArgumentException) {
+            println("Error: ${e.message}")
+        }
+        return success
+    }
+
+    /**
+     * Internal helper function.
+     */
+    private suspend fun processQuestionnaireBundle(
+        bundle: com.google.fhir.model.r4.Bundle,
+        questionnaireRepository: io.healthplatform.chartcam.repository.QuestionnaireRepository,
+    ) {
+        for (entry in bundle.entry) {
+            val resource = entry.resource as? com.google.fhir.model.r4.Questionnaire ?: continue
+            questionnaireRepository.saveQuestionnaire(resource)
         }
     }
 }

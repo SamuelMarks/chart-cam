@@ -324,8 +324,8 @@ dokka {
 tasks.named("jsBrowserTest").configure { enabled = false }
 
 detekt {
-    buildUponDefaultConfig = false
-    allRules = false
+    buildUponDefaultConfig = true
+    allRules = true
     config.setFrom(file("../detekt.yml"))
     source.setFrom(
         "src/commonMain/kotlin",

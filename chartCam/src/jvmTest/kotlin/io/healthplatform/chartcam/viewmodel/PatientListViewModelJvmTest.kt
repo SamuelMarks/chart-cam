@@ -105,7 +105,7 @@ class PatientListViewModelTest {
     @Test
     fun `loadPatients sets patients in state`() =
         runTest(testDispatcher) {
-            val patient = createFhirPatient("1", "John", "Doe", LocalDate(1990, 1, 1), "mrn1", "male")
+            val patient = createFhirPatient("1", "John", "Doe", LocalDate(1990, 1, 1), "mrn1")
             mockFhirRepository.patientsToReturn = listOf(patient)
 
             viewModel.loadPatients()
@@ -162,7 +162,6 @@ class PatientListViewModelTest {
                 lastName = "Patient",
                 mrn = "MRN2",
                 dob = LocalDate(1980, 2, 2),
-                gender = "female",
             ) { id ->
                 createdId = id
             }
@@ -220,7 +219,7 @@ class PatientListViewModelTest {
     @Test
     fun `deleteAccount deletes practitioner and patients`() =
         runTest(testDispatcher) {
-            val patient = createFhirPatient("p1", "Jane", "Doe", LocalDate(1990, 1, 1), "mrn", "female")
+            val patient = createFhirPatient("p1", "Jane", "Doe", LocalDate(1990, 1, 1), "mrn")
             mockFhirRepository.patientsToReturn = listOf(patient)
 
             var successCalled = false
@@ -256,7 +255,6 @@ class PatientListViewModelTest {
                 lastName = "Patient",
                 mrn = "MRN",
                 dob = LocalDate(1980, 2, 2),
-                gender = "unknown",
             ) {
                 successCalled = true
             }
@@ -292,7 +290,7 @@ class MockFhirRepository(
         showAll: Boolean,
         practitionerId: String?,
     ): List<Patient> {
-        if (shouldThrow) throw Exception("DB Error")
+        if (shouldThrow) throw RuntimeException("DB Error")
         lastShowAll = showAll
         return patientsToReturn
     }
@@ -302,14 +300,14 @@ class MockFhirRepository(
         showAll: Boolean,
         practitionerId: String?,
     ): List<Patient> {
-        if (shouldThrow) throw Exception("DB Error")
+        if (shouldThrow) throw RuntimeException("DB Error")
         lastSearchQuery = query
         lastShowAll = showAll
         return patientsToReturn
     }
 
     override suspend fun savePatient(patient: Patient) {
-        if (shouldThrowOnSave) throw Exception("Save Error")
+        if (shouldThrowOnSave) throw RuntimeException("Save Error")
         savedPatient = patient
     }
 
@@ -334,7 +332,7 @@ class MockExportImportService(
         exportAll: Boolean,
         practitionerId: String?,
     ): String {
-        if (shouldThrow) throw Exception("Export error")
+        if (shouldThrow) throw RuntimeException("Export error")
         return "exported-data"
     }
 
@@ -342,7 +340,7 @@ class MockExportImportService(
         encryptedData: String,
         password: String,
     ) {
-        if (shouldThrow) throw Exception("Import error")
+        if (shouldThrow) throw RuntimeException("Import error")
         lastImportData = encryptedData
     }
 }

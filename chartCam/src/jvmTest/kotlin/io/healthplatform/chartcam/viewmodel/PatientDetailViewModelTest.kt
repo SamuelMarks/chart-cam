@@ -79,9 +79,9 @@ class PatientDetailViewModelTest {
     fun testPatientDetailLoad() =
         runTest {
             val patientId = "pat-1"
-            repo.savePatient(createFhirPatient(patientId, "John", "Doe", kotlinx.datetime.LocalDate(1990, 1, 1), "123", "male"))
+            repo.savePatient(createFhirPatient(patientId, "John", "Doe", kotlinx.datetime.LocalDate(1990, 1, 1), "123"))
 
-            repo.saveEncounter(createFhirEncounter("enc-1", patientId, "prac-1", "2023-10-25T10:00:00+00:00", "finished"))
+            repo.saveEncounter(createFhirEncounter("enc-1", patientId, "prac-1", "2023-10-25T10:00:00+00:00"))
 
             val vm = PatientDetailViewModel(repo)
             vm.loadPatientData(patientId)
@@ -106,7 +106,7 @@ class PatientDetailViewModelTest {
     fun testEmptyEncounters() =
         runTest {
             val patientId = "pat-empty"
-            repo.savePatient(createFhirPatient(patientId, "Guy", "Empty", kotlinx.datetime.LocalDate(1990, 1, 1), "321", "male"))
+            repo.savePatient(createFhirPatient(patientId, "Guy", "Empty", kotlinx.datetime.LocalDate(1990, 1, 1), "321"))
 
             val vm = PatientDetailViewModel(repo)
             vm.loadPatientData(patientId)
@@ -124,7 +124,7 @@ class PatientDetailViewModelTest {
     fun testPatientDeleteSuccess() =
         runTest {
             val patientId = "pat-del"
-            repo.savePatient(createFhirPatient(patientId, "Guy", "Del", kotlinx.datetime.LocalDate(1990, 1, 1), "444", "male"))
+            repo.savePatient(createFhirPatient(patientId, "Guy", "Del", kotlinx.datetime.LocalDate(1990, 1, 1), "444"))
 
             val vm = PatientDetailViewModel(repo)
             vm.loadPatientData(patientId)

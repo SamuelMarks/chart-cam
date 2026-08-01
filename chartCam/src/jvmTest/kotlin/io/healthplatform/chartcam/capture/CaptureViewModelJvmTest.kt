@@ -350,7 +350,7 @@ class MockCameraManager : CameraManager {
         captureCount++
         if (throwExceptionNextTime) {
             throwExceptionNextTime = false
-            throw Exception("Simulated camera failure")
+            throw IllegalStateException("Simulated camera failure")
         }
         if (returnNullNextTime) {
             returnNullNextTime = false
@@ -401,7 +401,7 @@ class MockFileStorage : FileStorage {
     ): String {
         if (throwExceptionNextTime) {
             throwExceptionNextTime = false
-            throw Exception("Simulated storage full error")
+            throw IllegalStateException("Simulated storage full error")
         }
         savedFiles[fileName] = bytes
         return "mock_path/$fileName"

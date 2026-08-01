@@ -39,5 +39,7 @@ object AndroidAppInit {
      * @return The previously captured Application [Context].
      */
     fun getContext(): Context =
-        context ?: throw IllegalStateException("AndroidAppInit.init(context) must be called before using platform features.")
+        checkNotNull(context) {
+            "AndroidAppInit.init(context) must be called before using platform features."
+        }
 }

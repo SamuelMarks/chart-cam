@@ -18,10 +18,10 @@ import com.google.fhir.model.r4.terminologies.PublicationStatus
  */
 object TerminologyService {
     /** The canonical URI for the LOINC code system. */
-    val loincUri: kotlin.String = "http://loinc.org"
+    const val LOINC_URI: kotlin.String = "http://loinc.org"
 
     /** The canonical URI for the SNOMED CT code system. */
-    val snomedUri: kotlin.String = "http://snomed.info/sct"
+    const val SNOMED_URI: kotlin.String = "http://snomed.info/sct"
 
     /**
      * Retrieves the basic [CodeSystem] resource definition for LOINC.
@@ -34,7 +34,7 @@ object TerminologyService {
                 status = Enumeration(value = PublicationStatus.Active),
                 content = Enumeration(value = CodeSystem.CodeSystemContentMode.Complete),
             ).apply {
-                url = Uri.Builder().apply { value = loincUri }
+                url = Uri.Builder().apply { value = LOINC_URI }
                 name = String.Builder().apply { value = "LOINC" }
                 title = String.Builder().apply { value = "Logical Observation Identifiers Names and Codes" }
             }.build()
@@ -50,7 +50,7 @@ object TerminologyService {
                 status = Enumeration(value = PublicationStatus.Active),
                 content = Enumeration(value = CodeSystem.CodeSystemContentMode.Complete),
             ).apply {
-                url = Uri.Builder().apply { value = snomedUri }
+                url = Uri.Builder().apply { value = SNOMED_URI }
                 name = String.Builder().apply { value = "SNOMED CT" }
                 title = String.Builder().apply { value = "Systematized Nomenclature of Medicine Clinical Terms" }
             }.build()
@@ -69,7 +69,7 @@ object TerminologyService {
         Coding
             .Builder()
             .apply {
-                system = Uri.Builder().apply { value = loincUri }
+                system = Uri.Builder().apply { value = LOINC_URI }
                 code = Code.Builder().apply { value = codeVal }
                 if (displayVal != null) {
                     display = String.Builder().apply { value = displayVal }

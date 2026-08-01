@@ -1,8 +1,9 @@
 /**
  * @file ExportImportService.kt
- * Service responsible for exporting and importing the entire application database state.
- * The exported JSON structure is defined by the AppData wrapper class, which encrypts
- * internal states. Imported JSON must conform to this expected AppData schema.
+ * Contains declarations for ExportImportService.kt.
+ *
+ * Provides functionality to export and import FHIR resources and associated binaries
+ * (like photos) to and from a password-encrypted JSON payload.
  */
 package io.healthplatform.chartcam.repository
 
@@ -12,7 +13,6 @@ import com.google.fhir.model.r4.Device
 import com.google.fhir.model.r4.DocumentReference
 import com.google.fhir.model.r4.Encounter
 import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.FhirR4Json
 import com.google.fhir.model.r4.Patient
 import com.google.fhir.model.r4.Practitioner
 import com.google.fhir.model.r4.Provenance
@@ -26,22 +26,24 @@ import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
 
 /**
- * Service responsible for exporting and importing ChartCam data as a secure, encrypted FHIR Bundle.
+ * Service responsible for creating a full or partial export of local FHIR data into
+ * an encrypted Bundle, and conversely importing an encrypted Bundle into the local database.
  *
- * @param database The ChartCam database containing the local resources.
- * @param fileStorage Storage mechanism used for reading and writing binary data (like images).
- * @param cryptoService Service used to encrypt and decrypt the FHIR bundle JSON string.
  */
 open class ExportImportService(
+    /** The underlying database. */
     val database: ChartCamDatabase,
+    /** The storage manager for reading/writing raw image files. */
     private val fileStorage: FileStorage,
-    private val cryptoService: CryptoService = CryptoService(),
 ) {
-    private val fhirJson = FhirR4Json()
     private val fhirRepo = FhirRepository(database)
+    private val cryptoService = CryptoService()
+    private val fhirJson =
+        com.google.fhir.model.r4
+            .FhirR4Json()
 
     /**
-     * Exports local FHIR data into an encrypted FHIR Bundle.
+     * Exports local FHIR resources and associated binaries to an encrypted JSON string.
      *
      * @param password The password used to encrypt the resulting string.
      * @param exportAll Whether to export all data, or limit it to the data associated with [practitionerId].
@@ -54,16 +56,56 @@ open class ExportImportService(
         practitionerId: String? = null,
     ): String {
         val bundleBuilder = Bundle.Builder(Enumeration(value = Bundle.BundleType.Collection))
+        addBaseResources(bundleBuilder)
+        addPatients(bundleBuilder, exportAll, practitionerId)
+        val encounters = addEncounters(bundleBuilder, exportAll, practitionerId)
+        addDocumentReferences(bundleBuilder, exportAll, practitionerId, encounters)
+        addQuestionnaireResponses(bundleBuilder, exportAll, practitionerId, encounters)
+        addProvenances(bundleBuilder, exportAll, practitionerId)
 
+        val bundle = bundleBuilder.build()
+        val jsonData = fhirJson.encodeToString(bundle)
+        return cryptoService.encrypt(jsonData, password)
+    }
+
+    /** Helper for exporting. */
+    private suspend fun addBaseResources(bundleBuilder: Bundle.Builder) {
         fhirRepo.getAllDevices().forEach { resource ->
             bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
         }
         fhirRepo.getAllPractitioners().forEach { resource ->
             bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
         }
-        fhirRepo.getAllPatients(exportAll, practitionerId).forEach { resource ->
+    }
+
+    /** Helper for exporting. */
+    private suspend fun addPatients(
+        bundleBuilder: Bundle.Builder,
+        exportAll: Boolean,
+        practitionerId: String?,
+    ) {
+        val patients =
+            if (exportAll || practitionerId == null) {
+                fhirRepo.getAllPatients()
+            } else {
+                fhirRepo.getAllPatients().filter {
+                    it.managingOrganization
+                        ?.reference
+                        ?.value
+                        ?.contains(practitionerId) == true
+                }
+            }
+        patients.forEach { resource ->
             bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
         }
+    }
+
+    /** Helper for exporting. */
+    private suspend fun addEncounters(
+        bundleBuilder: Bundle.Builder,
+        exportAll: Boolean,
+        practitionerId: String?,
+    ): List<Encounter> {
         val encounters =
             if (exportAll || practitionerId == null) {
                 fhirRepo.getAllEncounters()
@@ -75,7 +117,16 @@ open class ExportImportService(
         encounters.forEach { resource ->
             bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
         }
+        return encounters
+    }
 
+    /** Helper for exporting. */
+    private suspend fun addDocumentReferences(
+        bundleBuilder: Bundle.Builder,
+        exportAll: Boolean,
+        practitionerId: String?,
+        encounters: List<Encounter>,
+    ) {
         val documentReferences =
             if (exportAll || practitionerId == null) {
                 fhirRepo.getAllDocumentReferences()
@@ -91,30 +142,39 @@ open class ExportImportService(
                     )
                 }
             }
-        documentReferences.forEach { docRef ->
-            bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = docRef.toBuilder() })
+        documentReferences.forEach { resource ->
+            bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
             try {
                 val filePath =
-                    docRef.content
+                    resource.content
                         .firstOrNull()
                         ?.attachment
                         ?.url
                         ?.value ?: return@forEach
+                val bytes = fileStorage.readImage(filePath)
+                val base64Data = bytes.toByteString().base64()
                 val mimeType =
-                    docRef.content
+                    resource.content
                         .firstOrNull()
                         ?.attachment
                         ?.contentType
                         ?.value ?: "image/jpeg"
-                val bytes = fileStorage.readImage(filePath)
-                val base64Data = bytes.toByteString().base64()
                 val fileName = filePath.substringAfterLast("/")
                 val binary = createFhirBinary(id = fileName, contentTypeStr = mimeType, base64Data = base64Data)
                 bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = binary.toBuilder() })
-            } catch (e: Exception) {
+            } catch (e: IllegalArgumentException) {
+                println("Failed to export binary: ${e.message}")
             }
         }
+    }
 
+    /** Helper for exporting. */
+    private suspend fun addQuestionnaireResponses(
+        bundleBuilder: Bundle.Builder,
+        exportAll: Boolean,
+        practitionerId: String?,
+        encounters: List<Encounter>,
+    ) {
         val questionnaireResponses =
             if (exportAll || practitionerId == null) {
                 fhirRepo.getAllQuestionnaireResponses()
@@ -132,64 +192,70 @@ open class ExportImportService(
         questionnaireResponses.forEach { resource ->
             bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
         }
+    }
 
+    /** Helper for exporting. */
+    private suspend fun addProvenances(
+        bundleBuilder: Bundle.Builder,
+        exportAll: Boolean,
+        practitionerId: String?,
+    ) {
         val provenances =
             if (exportAll || practitionerId == null) {
                 fhirRepo.getAllProvenances()
             } else {
-                // Very simplified for export
                 fhirRepo.getAllProvenances()
             }
         provenances.forEach { resource ->
             bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
         }
-
-        val bundle = bundleBuilder.build()
-        val jsonData = fhirJson.encodeToString(bundle)
-        return cryptoService.encrypt(jsonData, password)
     }
 
     /**
-     * Imports FHIR data from an encrypted JSON string and saves the resources to the local database.
-     *
-     * Expected Schema:
-     * The decrypted string MUST be a valid FHIR R4 `Bundle` JSON object of type `collection` (or similar).
-     * The `entry` array should contain `resource` objects. Supported resources for import are:
-     * `Device`, `Practitioner`, `Patient`, `Encounter`, `DocumentReference`, `QuestionnaireResponse`,
+     * Decrypts the provided JSON string and imports the contained FHIR Bundle into the local database.
+     * Supported resources include `Device`, `Practitioner`, `Patient`, `Encounter`, `DocumentReference`,
      * `Provenance`, and `Binary`.
      * `Binary` resources are specifically used to carry raw image bytes (Base64 encoded) and will be
      * decoded and written to the local [FileStorage].
      *
      * @param encryptedData The password-encrypted JSON string representing a FHIR Bundle.
      * @param password The password used to decrypt the data.
-     * @throws IllegalArgumentException if the decryption fails, the JSON is malformed, or it is not a valid FHIR Bundle.
+     * @throws IllegalArgumentException if the decryption fails, the JSON is malformed,
+     * or it is not a valid FHIR Bundle.
      */
     open suspend fun importData(
         encryptedData: String,
         password: String,
     ) {
         val jsonData = cryptoService.decrypt(encryptedData, password)
-        if (jsonData.isEmpty()) throw IllegalArgumentException("Decryption failed or data is empty.")
+        require(jsonData.isNotEmpty()) { "Decryption failed or data is empty." }
         val bundle = fhirJson.decodeFromString(jsonData) as Bundle
 
         for (entry in bundle.entry) {
             val resource = entry.resource ?: continue
-            when (resource) {
-                is Device -> fhirRepo.saveDevice(resource)
-                is Practitioner -> fhirRepo.savePractitioner(resource)
-                is Patient -> fhirRepo.savePatient(resource)
-                is Encounter -> fhirRepo.saveEncounter(resource)
-                is DocumentReference -> fhirRepo.saveDocumentReference(resource)
-                is QuestionnaireResponse -> fhirRepo.saveQuestionnaireResponse(resource)
-                is Provenance -> fhirRepo.saveProvenance(resource)
-                is Binary -> {
-                    val bytes =
-                        resource.data
-                            ?.value
-                            ?.decodeBase64()
-                            ?.toByteArray()
-                    if (bytes != null) fileStorage.saveImage(resource.id!!, bytes)
-                }
+            importResource(resource)
+        }
+    }
+
+    /** Helper for importing a specific resource. */
+    private suspend fun importResource(resource: com.google.fhir.model.r4.Resource) {
+        when (resource) {
+            is Device -> fhirRepo.saveDevice(resource)
+            is Practitioner -> fhirRepo.savePractitioner(resource)
+            is Patient -> fhirRepo.savePatient(resource)
+            is Encounter -> fhirRepo.saveEncounter(resource)
+            is DocumentReference -> fhirRepo.saveDocumentReference(resource)
+            is QuestionnaireResponse -> fhirRepo.saveQuestionnaireResponse(resource)
+            is Provenance -> fhirRepo.saveProvenance(resource)
+            is Binary -> {
+                val bytes =
+                    resource.data
+                        ?.value
+                        ?.let { it.decodeBase64()?.toByteArray() }
+                if (bytes != null) fileStorage.saveImage(resource.id!!, bytes)
+            }
+            else -> {
+                // Ignore unknown resources for now
             }
         }
     }

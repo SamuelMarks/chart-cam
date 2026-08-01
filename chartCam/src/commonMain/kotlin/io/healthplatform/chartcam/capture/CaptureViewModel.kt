@@ -85,8 +85,11 @@ class CaptureViewModel(
                 } else {
                     _uiState.update { it.copy(isCapturing = false) }
                 }
-            } catch (e: Exception) {
-                // E.g. permission permanently denied
+            } catch (e: IllegalStateException) {
+                println("Capture error: ${e.message}")
+                _uiState.update { it.copy(isCapturing = false) }
+            } catch (e: IllegalArgumentException) {
+                println("Capture error: ${e.message}")
                 _uiState.update { it.copy(isCapturing = false) }
             }
         }
@@ -128,9 +131,11 @@ class CaptureViewModel(
                     )
                 }
             }
-        } catch (e: Exception) {
-            // E.g. file storage full
-            // Do not advance step, clear review bytes so they can retry
+        } catch (e: IllegalStateException) {
+            println("Storage error: ${e.message}")
+            _uiState.update { it.copy(reviewImageBytes = null) }
+        } catch (e: IllegalArgumentException) {
+            println("Argument error: ${e.message}")
             _uiState.update { it.copy(reviewImageBytes = null) }
         }
     }

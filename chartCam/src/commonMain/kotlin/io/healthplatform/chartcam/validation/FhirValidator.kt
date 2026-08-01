@@ -51,8 +51,7 @@ object FhirValidator {
      * @return True if valid, false otherwise.
      */
     private fun validateQuestionnaire(questionnaire: Questionnaire): Boolean {
-        if (questionnaire.title?.value?.isEmpty() != false) return false
-        if (questionnaire.item.isEmpty()) return false
+        if (questionnaire.title?.value?.isEmpty() != false || questionnaire.item.isEmpty()) return false
 
         val linkIds = mutableSetOf<String>()
 

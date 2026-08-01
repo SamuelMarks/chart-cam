@@ -1,6 +1,6 @@
 /**
- * @file SensorManager.android.kt
- * Contains declarations for SensorManager.android.kt.
+ * @file AndroidSensorManager.kt
+ * Contains declarations for AndroidSensorManager.kt.
  *
  * File containing the Android implementation of [SensorManager] and its composable factory function.
  */
@@ -31,6 +31,10 @@ class AndroidSensorManager(
     context: Context,
 ) : SensorManager,
     SensorEventListener {
+    companion object {
+        private const val RAD_TO_DEG = 180.0 / Math.PI
+    }
+
     /**
      * The internal Android [android.hardware.SensorManager] used to register sensor listeners.
      */
@@ -85,8 +89,8 @@ class AndroidSensorManager(
                 val z = it.values[2]
 
                 // Simple Pitch/Roll calculation from Accelerometer
-                val roll = atan2(x.toDouble(), sqrt(y.toDouble().pow(2) + z.toDouble().pow(2))) * (180 / Math.PI)
-                val pitch = atan2(y.toDouble(), sqrt(x.toDouble().pow(2) + z.toDouble().pow(2))) * (180 / Math.PI)
+                val roll = atan2(x.toDouble(), sqrt(y.toDouble().pow(2) + z.toDouble().pow(2))) * RAD_TO_DEG
+                val pitch = atan2(y.toDouble(), sqrt(x.toDouble().pow(2) + z.toDouble().pow(2))) * RAD_TO_DEG
 
                 _orientation.tryEmit(OrientationData(pitch, roll))
             }

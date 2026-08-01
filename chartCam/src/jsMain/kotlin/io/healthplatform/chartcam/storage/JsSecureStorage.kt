@@ -11,47 +11,7 @@ import kotlinx.browser.localStorage
  */
 @JsModule("crypto-js")
 @JsNonModule
-external object CryptoJS {
-    /**
-     * Advanced Encryption Standard module.
-     */
-    object AES {
-        /**
-         * Encrypts a message using a secret key.
-         *
-         * @param message The plaintext message to encrypt.
-         * @param key The secret key used for encryption.
-         * @return A dynamic object representing the encrypted ciphertext.
-         */
-        fun encrypt(
-            message: String,
-            key: String,
-        ): dynamic
-
-        /**
-         * Decrypts ciphertext back to the original message.
-         *
-         * @param ciphertext The encrypted string.
-         * @param key The secret key used for decryption.
-         * @return A dynamic object representing the decrypted plaintext words.
-         */
-        fun decrypt(
-            ciphertext: String,
-            key: String,
-        ): dynamic
-    }
-
-    /**
-     * Encoding module.
-     */
-    @Suppress("ktlint:standard:class-naming")
-    object enc {
-        /**
-         * Utf8 encoding format.
-         */
-        val Utf8: dynamic
-    }
-}
+external val CryptoJS: dynamic
 
 /**
  * JS-specific implementation of [SecureStorage].

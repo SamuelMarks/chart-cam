@@ -18,26 +18,39 @@ import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.noto_sans_jp
 import org.jetbrains.compose.resources.Font
 
+/** Theme colors used across the app */
+private object ThemeColors {
+    const val CRIMSON = 0xFFA51C30
+    const val BLACK = 0xFF1E1E1E
+    const val PARCHMENT = 0xFFF3F3F1
+    const val SLATE = 0xFF8996A0
+    const val SHADE = 0xFFBAC5C6
+    const val INDIGO = 0xFF293352
+    const val BLUE_BONNET = 0xFF4E84C4
+    const val LIGHTER_CRIMSON = 0xFFC9364C
+    const val SURFACE_DARK = 0xFF2C2C2C
+}
+
 /** Harvard Crimson brand color used as primary color. */
-private val HarvardCrimson = Color(0xFFA51C30)
+private val HarvardCrimson = Color(ThemeColors.CRIMSON)
 
 /** Harvard Black brand color used for text and dark elements. */
-private val HarvardBlack = Color(0xFF1E1E1E)
+private val HarvardBlack = Color(ThemeColors.BLACK)
 
 /** Harvard Parchment brand color used for backgrounds and light surfaces. */
-private val HarvardParchment = Color(0xFFF3F3F1)
+private val HarvardParchment = Color(ThemeColors.PARCHMENT)
 
 /** Harvard Slate brand color used for secondary elements and borders. */
-private val HarvardSlate = Color(0xFF8996A0)
+private val HarvardSlate = Color(ThemeColors.SLATE)
 
 /** Harvard Shade brand color used as an alternative secondary color. */
-private val HarvardShade = Color(0xFFBAC5C6)
+private val HarvardShade = Color(ThemeColors.SHADE)
 
 /** Harvard Indigo brand accent color used for tertiary elements. */
-private val HarvardIndigo = Color(0xFF293352)
+private val HarvardIndigo = Color(ThemeColors.INDIGO)
 
 /** Harvard BlueBonnet brand accent color used for tertiary elements. */
-private val HarvardBlueBonnet = Color(0xFF4E84C4)
+private val HarvardBlueBonnet = Color(ThemeColors.BLUE_BONNET)
 
 /** Color scheme applied when the system is in light mode. */
 private val LightColors =
@@ -57,7 +70,7 @@ private val LightColors =
 /** Color scheme applied when the system is in dark mode. */
 private val DarkColors =
     darkColorScheme(
-        primary = Color(0xFFC9364C), // Lighter crimson for better contrast in dark mode
+        primary = Color(ThemeColors.LIGHTER_CRIMSON), // Lighter crimson for better contrast in dark mode
         onPrimary = Color.White,
         secondary = HarvardShade,
         onSecondary = HarvardBlack,
@@ -65,7 +78,7 @@ private val DarkColors =
         onTertiary = HarvardBlack,
         background = HarvardBlack,
         onBackground = HarvardParchment,
-        surface = Color(0xFF2C2C2C), // Slightly lighter than background for card separation
+        surface = Color(ThemeColors.SURFACE_DARK), // Slightly lighter than background for card separation
         onSurface = HarvardParchment,
     )
 

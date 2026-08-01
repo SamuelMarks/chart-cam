@@ -1,6 +1,6 @@
 /**
- * @file ShareService.android.kt
- * Contains declarations for ShareService.android.kt.
+ * @file AndroidShareService.kt
+ * Contains declarations for AndroidShareService.kt.
  *
  * File defining the Android-specific implementation for the [ShareService] interface.
  */

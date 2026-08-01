@@ -24,7 +24,16 @@ actual suspend fun Clipboard.getPlainText(): String? {
         } else {
             null
         }
-    } catch (e: Exception) {
+    } catch (
+        e: java.awt.datatransfer.UnsupportedFlavorException,
+    ) {
+        println(e.message)
+        null
+    } catch (e: java.io.IOException) {
+        println(e.message)
+        null
+    } catch (e: IllegalStateException) {
+        println(e.message)
         null
     }
 }

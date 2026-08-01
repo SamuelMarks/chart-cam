@@ -81,7 +81,7 @@ class SyncWorkerJvmTest {
             val syncWorker = SyncWorker(repository, client)
 
             // Queue local change
-            val patient = createFhirPatient("123", "John", "Doe", kotlinx.datetime.LocalDate(1990, 1, 1), "mrn1", "male")
+            val patient = createFhirPatient("123", "John", "Doe", kotlinx.datetime.LocalDate(1990, 1, 1), "mrn1")
             repository.saveResource("Patient", "123", patient, isLocalChange = true)
 
             assertEquals(1, repository.getPendingLocalChangesCount())
@@ -109,7 +109,7 @@ class SyncWorkerJvmTest {
             val syncWorker = SyncWorker(repository, client)
 
             // Queue local change
-            val patient = createFhirPatient("123", "John", "Doe", kotlinx.datetime.LocalDate(1990, 1, 1), "mrn1", "male")
+            val patient = createFhirPatient("123", "John", "Doe", kotlinx.datetime.LocalDate(1990, 1, 1), "mrn1")
             repository.saveResource("Patient", "123", patient, isLocalChange = true)
 
             // Execute sync
@@ -151,7 +151,7 @@ class SyncWorkerJvmTest {
             val syncWorker = SyncWorker(repository, client)
 
             // Queue local change
-            val patient = createFhirPatient("123", "John", "Doe", kotlinx.datetime.LocalDate(1990, 1, 1), "mrn1", "male")
+            val patient = createFhirPatient("123", "John", "Doe", kotlinx.datetime.LocalDate(1990, 1, 1), "mrn1")
             repository.saveResource("Patient", "123", patient, isLocalChange = true)
 
             syncWorker.sync()

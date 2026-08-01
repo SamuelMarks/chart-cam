@@ -1,6 +1,6 @@
 /**
- * @file FileStorage.android.kt
- * Contains declarations for FileStorage.android.kt.
+ * @file AndroidFileStorage.kt
+ * Contains declarations for AndroidFileStorage.kt.
  *
  * File defining the Android-specific implementation of the [FileStorage] interface.
  */
@@ -61,7 +61,11 @@ class AndroidFileStorage : FileStorage {
         val encryptedBytes = file.readBytes()
         return try {
             CryptoHelper.decrypt(encryptedBytes)
-        } catch (e: Exception) {
+        } catch (e: java.security.GeneralSecurityException) {
+            println("Failed to decrypt file: ${e.message}")
+            ByteArray(0)
+        } catch (e: IllegalArgumentException) {
+            println("Invalid encrypted file data: ${e.message}")
             ByteArray(0)
         }
     }

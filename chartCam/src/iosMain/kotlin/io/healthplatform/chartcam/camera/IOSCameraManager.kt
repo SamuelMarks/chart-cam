@@ -1,4 +1,10 @@
-@file:Suppress("UNCHECKED_CAST", "CAST_NEVER_SUCCEEDS", "USELESS_CAST")
+@file:Suppress(
+    "WildcardImport",
+    "ktlint:standard:no-wildcard-imports",
+    "UNCHECKED_CAST",
+    "CAST_NEVER_SUCCEEDS",
+    "USELESS_CAST",
+)
 /**
  * iOS implementation of the camera manager.
  */
@@ -136,7 +142,8 @@ class IOSCameraManager : CameraManager {
 
             try {
                 photoOutput.capturePhotoWithSettings(settings, delegate)
-            } catch (e: Exception) {
+            } catch (e: IllegalStateException) {
+                println(e.message)
                 activeDelegate = null
                 continuation.resume(null)
             }
@@ -154,7 +161,8 @@ class IOSCameraManager : CameraManager {
                 device.lockForConfiguration(null)
                 device.torchMode = if (on) AVCaptureTorchModeOn else AVCaptureTorchModeOff
                 device.unlockForConfiguration()
-            } catch (e: Exception) {
+            } catch (e: IllegalStateException) {
+                println(e.message)
                 // Handle error
             }
         }

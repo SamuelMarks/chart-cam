@@ -50,7 +50,7 @@ class CaptureViewModelTest {
             fileName: String,
             bytes: ByteArray,
         ): String {
-            if (simulateFailure) throw RuntimeException("Storage full")
+            if (simulateFailure) throw IllegalStateException("Storage full")
             files[fileName] = bytes
             return "path/to/$fileName"
         }
@@ -121,7 +121,7 @@ class CaptureViewModelTest {
     @Test
     fun testOnCaptureException() =
         runTest {
-            val camera = MockCameraManager().apply { exceptionToThrow = RuntimeException("Camera crashed") }
+            val camera = MockCameraManager().apply { exceptionToThrow = IllegalStateException("Camera crashed") }
             val vm = CaptureViewModel(camera, MockFileStorage())
             vm.initSteps(listOf(PhotoStep("1", "A")))
 

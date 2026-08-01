@@ -98,7 +98,7 @@ class CreatePatientJvmTest {
             val vm = PatientListViewModel(repo, exportImportService, authRepository)
 
             var successId: String? = null
-            vm.createPatient("John", "Doe", "123", LocalDate.parse("1990-01-01"), "male") {
+            vm.createPatient("John", "Doe", "123", LocalDate.parse("1990-01-01")) {
                 successId = it
             }
 

@@ -23,4 +23,4 @@ actual suspend fun Clipboard.getPlainText(): String? = null
  * @receiver The [Clipboard] instance.
  * @param text The plain text string to be copied.
  */
-actual suspend fun Clipboard.setPlainText(text: String) {}
+actual suspend fun Clipboard.setPlainText(text: String) { /* no-op */ }

@@ -30,8 +30,8 @@ fun main() {
                 taskbar.iconImage = image
             }
         }
-    } catch (e: Exception) {
-        e.printStackTrace()
+    } catch (e: IllegalStateException) {
+        println(e.message)
     }
 
     application {

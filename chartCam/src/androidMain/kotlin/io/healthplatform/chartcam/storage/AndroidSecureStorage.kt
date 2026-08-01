@@ -1,6 +1,6 @@
 /**
- * @file SecureStorage.android.kt
- * Contains declarations for SecureStorage.android.kt.
+ * @file AndroidSecureStorage.kt
+ * Contains declarations for AndroidSecureStorage.kt.
  *
  * File defining the Android-specific implementation of the [SecureStorage] interface.
  */
@@ -46,7 +46,11 @@ class AndroidSecureStorage : SecureStorage {
         return try {
             val encrypted = Base64.decode(base64, Base64.DEFAULT)
             String(CryptoHelper.decrypt(encrypted), Charsets.UTF_8)
-        } catch (e: Exception) {
+        } catch (e: java.security.GeneralSecurityException) {
+            println("Decryption failed: ${e.message}")
+            null
+        } catch (e: IllegalArgumentException) {
+            println("Base64 decoding failed: ${e.message}")
             null
         }
     }

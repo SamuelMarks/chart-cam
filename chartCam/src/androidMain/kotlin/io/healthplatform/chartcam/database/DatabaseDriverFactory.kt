@@ -1,6 +1,6 @@
 /**
- * @file DatabaseDriverFactory.android.kt
- * Contains declarations for DatabaseDriverFactory.android.kt.
+ * @file DatabaseDriverFactory.kt
+ * Contains declarations for DatabaseDriverFactory.kt.
  *
  * File defining the Android-specific implementation of the [DatabaseDriverFactory].
  */
@@ -22,6 +22,10 @@ import java.security.SecureRandom
  * The passphrase is generated cryptographically securely and stored using Android Keystore.
  */
 actual class DatabaseDriverFactory actual constructor() {
+    companion object {
+        private const val PASSPHRASE_LENGTH = 32
+    }
+
     /**
      * Creates an encrypted AndroidSqliteDriver using the app context and SQLCipher SupportFactory.
      * Requires [AndroidAppInit] to be initialized.
@@ -38,7 +42,7 @@ actual class DatabaseDriverFactory actual constructor() {
         // Retrieve or generate a 32-byte secure passphrase for SQLCipher
         var encodedPassphrase = prefs.getString("db_passphrase_v2", null)
         if (encodedPassphrase == null) {
-            val bytes = ByteArray(32)
+            val bytes = ByteArray(PASSPHRASE_LENGTH)
             SecureRandom().nextBytes(bytes)
             val encryptedBytes = CryptoHelper.encrypt(bytes)
             encodedPassphrase = Base64.encodeToString(encryptedBytes, Base64.DEFAULT)

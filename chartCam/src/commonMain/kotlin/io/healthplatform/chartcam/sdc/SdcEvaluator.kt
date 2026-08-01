@@ -10,6 +10,8 @@ import com.google.fhir.model.r4.Questionnaire
  * Basic evaluator for SDC expressions and constraints.
  */
 object SdcEvaluator {
+    private const val MAX_ITERATIONS = 5
+
     /**
      * Evaluates SDC calculatedExpression extensions across the Questionnaire and updates the answer map.
      * Iterates repeatedly to allow cascading calculations (e.g. A = 1, B = A + 1) to settle.
@@ -32,7 +34,7 @@ object SdcEvaluator {
                 changed = changed or evaluateItem(item, updatedAnswers)
             }
             iterations++
-        } while (changed && iterations < 5)
+        } while (changed && iterations < MAX_ITERATIONS)
 
         return updatedAnswers
     }
@@ -103,7 +105,11 @@ object SdcEvaluator {
 
         return try {
             evalSimpleMath(expr)
-        } catch (e: Exception) {
+        } catch (e: NumberFormatException) {
+            println("Math evaluation error: ${e.message}")
+            null
+        } catch (e: IllegalArgumentException) {
+            println("Math evaluation error: ${e.message}")
             null
         }
     }
@@ -115,61 +121,72 @@ object SdcEvaluator {
      * @param str The fully substituted mathematical expression.
      * @return The evaluated Float result.
      */
-    private fun evalSimpleMath(str: String): Float {
-        /**
-         * Parses a string expression into a Float value.
-         * Currently stubbed out to return 0f.
-         * @param str Parameter str
-         * @return the parsed float
-         */
-        fun parse(str: String): Float {
-            var s = str.replace(" ", "")
-            if (s.isEmpty()) return 0f
+    private fun evalSimpleMath(str: String): Float = parseSimpleMath(str)
 
-            while (s.contains("(")) {
-                val end = s.indexOf(')')
-                val start = s.substring(0, end).lastIndexOf('(')
-                val inner = s.substring(start + 1, end)
-                val res = parse(inner)
-                s = s.substring(0, start) + res + s.substring(end + 1)
-            }
+    /**
+     * Parses a string expression into a Float value.
+     * @param str Parameter str
+     * @return the parsed float
+     */
+    private fun parseSimpleMath(str: String): Float {
+        var s = str.replace(" ", "")
+        if (s.isEmpty()) return 0f
 
-            val mulDivRegex = Regex("(-?\\d+\\.?\\d*)[*/](-?\\d+\\.?\\d*)")
-            while (s.contains("*") || s.contains("/")) {
-                val match = mulDivRegex.find(s) ?: break
-                val op = match.value
-                val parts = op.split("*", "/")
-                val isMul = op.contains("*")
-                val a = parts[0].toFloat()
-                val b = parts[1].toFloat()
-                val res = if (isMul) a * b else a / b
-                s = s.replaceFirst(op, res.toString())
-            }
-
-            val addSubRegex = Regex("(-?\\d+\\.?\\d*)[+-](-?\\d+\\.?\\d*)")
-            while (s.contains("+") || s.drop(1).contains("-")) {
-                var opMatch: MatchResult? = null
-                var startIndex = 0
-                while (startIndex < s.length) {
-                    val m = addSubRegex.find(s, startIndex) ?: break
-                    if (m.range.first > 0 || (s.length > m.range.last + 1 && s[m.range.last + 1] in listOf('+', '-'))) {
-                        opMatch = m
-                        break
-                    }
-                    startIndex = m.range.last
-                }
-
-                val match = opMatch ?: addSubRegex.find(s) ?: break
-                val op = match.value
-                val opIdx = op.drop(1).indexOfFirst { it == '+' || it == '-' } + 1
-                val a = op.substring(0, opIdx).toFloat()
-                val b = op.substring(opIdx + 1).toFloat()
-                val isAdd = op[opIdx] == '+'
-                val res = if (isAdd) a + b else a - b
-                s = s.replaceFirst(op, res.toString())
-            }
-            return s.toFloat()
+        while (s.contains("(")) {
+            val endIdx = s.indexOf(')')
+            val startIdx = s.substring(0, endIdx).lastIndexOf('(')
+            val inner = s.substring(startIdx + 1, endIdx)
+            val res = parseSimpleMath(inner)
+            s = s.substring(0, startIdx) + res + s.substring(endIdx + 1)
         }
-        return parse(str)
+
+        s = processMultiplicationAndDivision(s)
+        s = processAdditionAndSubtraction(s)
+        return s.toFloat()
+    }
+
+    /** Helper */
+    private fun processMultiplicationAndDivision(str: String): String {
+        var s = str
+        val mulDivRegex = Regex("(-?\\d+\\.?\\d*)[*/](-?\\d+\\.?\\d*)")
+        while (s.contains("*") || s.contains("/")) {
+            val match = mulDivRegex.find(s) ?: break
+            val op = match.value
+            val parts = op.split("*", "/")
+            val isMul = op.contains("*")
+            val a = parts[0].toFloat()
+            val b = parts[1].toFloat()
+            val res = if (isMul) a * b else a / b
+            s = s.replaceFirst(op, res.toString())
+        }
+        return s
+    }
+
+    /** Helper */
+    private fun processAdditionAndSubtraction(str: String): String {
+        var s = str
+        val addSubRegex = Regex("(-?\\d+\\.?\\d*)[+-](-?\\d+\\.?\\d*)")
+        while (s.contains("+") || s.drop(1).contains("-")) {
+            var opMatch: MatchResult? = null
+            var startIndex = 0
+            var m = addSubRegex.find(s, startIndex)
+            while (m != null && startIndex < s.length && opMatch == null) {
+                if (m.range.first > 0 || (s.length > m.range.last + 1 && s[m.range.last + 1] in listOf('+', '-'))) {
+                    opMatch = m
+                } else {
+                    startIndex = m.range.last
+                    m = addSubRegex.find(s, startIndex)
+                }
+            }
+
+            val match = opMatch ?: addSubRegex.find(s) ?: break
+            val op = match.value
+            val opIdx = op.drop(1).indexOfFirst { it == '+' || it == '-' } + 1
+            val a = op.substring(0, opIdx).toFloat()
+            val b = op.substring(opIdx + 1).toFloat()
+            val res = if (op[opIdx] == '+') a + b else a - b
+            s = s.replaceFirst(op, res.toString())
+        }
+        return s
     }
 }

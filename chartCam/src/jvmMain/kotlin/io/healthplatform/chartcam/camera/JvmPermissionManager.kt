@@ -29,7 +29,7 @@ class JvmPermissionManager : PermissionManager {
     /**
      * Opens the system settings screen for permissions. This is a no-op on JVM.
      */
-    override fun openSettings() {}
+    override fun openSettings() { /* no-op */ }
 }
 
 /**

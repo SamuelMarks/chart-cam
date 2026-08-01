@@ -59,7 +59,6 @@ import chartcam.chartcam.generated.resources.cancel
 import chartcam.chartcam.generated.resources.cd_back
 import chartcam.chartcam.generated.resources.cd_delete
 import chartcam.chartcam.generated.resources.cd_duplicate
-import chartcam.chartcam.generated.resources.clipboard_is_empty
 import chartcam.chartcam.generated.resources.copy_to_clipboard
 import chartcam.chartcam.generated.resources.create
 import chartcam.chartcam.generated.resources.create_questionnaire
@@ -102,6 +101,7 @@ import org.jetbrains.compose.resources.stringResource
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongMethod", "CyclomaticComplexMethod", "TooGenericExceptionCaught")
 fun QuestionnaireListScreen(
     questionnaireRepository: QuestionnaireRepository,
     onBack: () -> Unit,
@@ -132,15 +132,26 @@ fun QuestionnaireListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.questionnaires), modifier = Modifier.semantics { heading() }) },
+                title = {
+                    Text(
+                        stringResource(Res.string.questionnaires),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.cd_back))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(Res.string.cd_back),
+                        )
                     }
                 },
                 actions = {
                     IconButton(onClick = { showImportOptions = true }) {
-                        Icon(Icons.Default.Download, contentDescription = stringResource(Res.string.import_questionnaire))
+                        Icon(
+                            Icons.Default.Download,
+                            contentDescription = stringResource(Res.string.import_questionnaire),
+                        )
                     }
                 },
             )
@@ -185,7 +196,10 @@ fun QuestionnaireListScreen(
                             IconButton(onClick = {
                                 selectedQuestionnaireForShare = q
                             }) {
-                                Icon(Icons.Default.Share, contentDescription = stringResource(Res.string.share_questionnaire))
+                                Icon(
+                                    Icons.Default.Share,
+                                    contentDescription = stringResource(Res.string.share_questionnaire),
+                                )
                             }
                         },
                     )
@@ -216,7 +230,10 @@ fun QuestionnaireListScreen(
                         },
                         navigationIcon = {
                             IconButton(onClick = { selectedQuestionnaireForView = null }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.cancel))
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(Res.string.cancel),
+                                )
                             }
                         },
                         actions = {
@@ -226,7 +243,10 @@ fun QuestionnaireListScreen(
                                     onNavigateToBuilder(id)
                                 }
                             }) {
-                                Icon(Icons.Default.FileCopy, contentDescription = stringResource(Res.string.cd_duplicate))
+                                Icon(
+                                    Icons.Default.FileCopy,
+                                    contentDescription = stringResource(Res.string.cd_duplicate),
+                                )
                             }
                             IconButton(onClick = {
                                 q.id?.let { id ->
@@ -249,7 +269,9 @@ fun QuestionnaireListScreen(
                         io.healthplatform.chartcam.sdc.SdcQuestionnaireForm(
                             questionnaire = q,
                             answers = emptyMap(),
-                            readOnly = true,
+                            config =
+                                io.healthplatform.chartcam.sdc
+                                    .SdcFormConfig(readOnly = true),
                             onFormUpdated = { _, _ -> },
                         )
                     }
@@ -282,14 +304,15 @@ fun QuestionnaireListScreen(
                                 try {
                                     val text = clipboard.getPlainText() ?: ""
                                     if (text.isNotBlank()) {
-                                        previewQuestionnaire = questionnaireSharingService.deserializeQuestionnaire(text)
+                                        previewQuestionnaire =
+                                            questionnaireSharingService.deserializeQuestionnaire(text)
                                         importError = null
                                     } else {
-                                        importError =
-                                            org.jetbrains.compose.resources
-                                                .getString(Res.string.clipboard_is_empty)
+                                        importError = "Empty"
                                     }
                                 } catch (e: Exception) {
+                                    println(e.message)
+
                                     importError =
                                         org.jetbrains.compose.resources
                                             .getString(Res.string.invalid_fhir_format)
@@ -320,12 +343,21 @@ fun QuestionnaireListScreen(
     previewQuestionnaire?.let { q ->
         AlertDialog(
             onDismissRequest = { previewQuestionnaire = null },
-            title = { Text(stringResource(Res.string.import_questionnaire), modifier = Modifier.semantics { heading() }) },
+            title = {
+                Text(
+                    stringResource(Res.string.import_questionnaire),
+                    modifier = Modifier.semantics { heading() },
+                )
+            },
             text = {
                 Column {
-                    Text(stringResource(Res.string.title_format, q.title?.value ?: q.id ?: stringResource(Res.string.unknown)))
-                    Text(stringResource(Res.string.number_of_items_format, q.item.size.toString()))
-                    Text(stringResource(Res.string.import_confirmation))
+                    val qTitle = q.title?.value ?: q.id ?: "Unknown"
+                    Text(stringResource(Res.string.title_format, qTitle))
+                    val sizeStr = q.item.size.toString()
+                    Text(stringResource(Res.string.number_of_items_format, sizeStr))
+                    Text(
+                        stringResource(Res.string.import_confirmation),
+                    )
                 }
             },
             confirmButton = {
@@ -370,6 +402,8 @@ fun QuestionnaireListScreen(
                                     val json = questionnaireSharingService.serializeQuestionnaire(q)
                                     clipboard.setPlainText(json)
                                 } catch (e: Exception) {
+                                    println(e.message)
+
                                     // Handle error
                                 }
                                 bottomSheetState.hide()
@@ -390,6 +424,8 @@ fun QuestionnaireListScreen(
                             val json = questionnaireSharingService.serializeQuestionnaire(q)
                             shareService.shareText(json)
                         } catch (e: Exception) {
+                            println(e.message)
+
                             // Handle error
                         }
                         coroutineScope.launch { bottomSheetState.hide() }.invokeOnCompletion {
@@ -417,7 +453,12 @@ fun QuestionnaireListScreen(
     if (showCreateDialog) {
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
-            title = { Text(stringResource(Res.string.create_questionnaire), modifier = Modifier.semantics { heading() }) },
+            title = {
+                Text(
+                    stringResource(Res.string.create_questionnaire),
+                    modifier = Modifier.semantics { heading() },
+                )
+            },
             text = {
                 Column {
                     OutlinedTextField(
@@ -432,7 +473,9 @@ fun QuestionnaireListScreen(
                         value = newPhotosCount,
                         onValueChange = { newPhotosCount = it },
                         label = { Text(stringResource(Res.string.number_of_photos)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number).copy(imeAction = ImeAction.Next),
+                        keyboardOptions =
+                            KeyboardOptions(keyboardType = KeyboardType.Number)
+                                .copy(imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).tabFocusNext(focusManager),
                         keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
                     )

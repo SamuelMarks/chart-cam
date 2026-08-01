@@ -13,6 +13,9 @@ import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.HTMLVideoElement
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlin.js.json
+
+private const val JPEG_QUALITY = 0.9
 
 /**
  * Helper function to create JS video constraints.
@@ -20,7 +23,7 @@ import kotlin.coroutines.suspendCoroutine
  * @param mode The facing mode (e.g., "user" or "environment").
  * @return A dynamic object representing the media constraints.
  */
-private fun getVideoConstraints(mode: String): dynamic = js("({ video: { facingMode: mode } })")
+private fun getVideoConstraints(mode: String): dynamic = json("video" to json("facingMode" to mode))
 
 /**
  * Wrapper for logging errors to the JS console.
@@ -121,7 +124,7 @@ class JsCameraManager : CameraManager {
 
                 drawImageToCanvas(ctx, videoElement, canvas.width.toDouble(), canvas.height.toDouble())
 
-                val dataUrl = canvas.toDataURL("image/jpeg", 0.9)
+                val dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY)
                 val base64 = dataUrl.substringAfter("base64,")
 
                 val decoded = window.atob(base64)
@@ -130,7 +133,8 @@ class JsCameraManager : CameraManager {
                     bytes[i] = decoded[i].code.toByte()
                 }
                 continuation.resume(bytes)
-            } catch (e: Exception) {
+            } catch (e: IllegalStateException) {
+                println(e.message)
                 continuation.resume(null)
             }
         }
@@ -141,7 +145,7 @@ class JsCameraManager : CameraManager {
      *
      * @param on True to turn the flash on, false to turn it off.
      */
-    override fun setFlash(on: Boolean) {}
+    override fun setFlash(on: Boolean) { /* no-op */ }
 
     /**
      * Toggles between the front and rear cameras, if available.
@@ -198,7 +202,7 @@ class JsPermissionManager : PermissionManager {
     /**
      * Opens system settings. No-op on web platforms.
      */
-    override fun openSettings() {}
+    override fun openSettings() { /* no-op */ }
 }
 
 /**

@@ -35,14 +35,17 @@ class CaptureScreenJvmTest {
         runComposeUiTest {
             setContent {
                 ControlsLayer(
-                    stepName = "Test Step",
-                    count = 1,
-                    total = 3,
-                    isCapturing = false,
+                    state =
+                        ControlsState(
+                            stepName = "Test Step",
+                            count = 1,
+                            total = 3,
+                            isCapturing = false,
+                            hasMultipleCameras = true,
+                        ),
                     onCapture = {},
                     onToggleLens = {},
                     onCancel = {},
-                    hasMultipleCameras = true,
                 )
             }
             onRoot().assertExists()

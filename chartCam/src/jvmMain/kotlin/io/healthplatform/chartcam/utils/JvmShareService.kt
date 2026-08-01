@@ -40,8 +40,8 @@ class JvmShareService : ShareService {
                 if (!isTesting()) {
                     JOptionPane.showMessageDialog(null, "File saved to: ${file.absolutePath}")
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } catch (e: IllegalStateException) {
+                println(e.message)
             }
         }
     }

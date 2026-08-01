@@ -102,60 +102,7 @@ fun PatientDetailScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(Res.string.patient_detail), modifier = Modifier.semantics { heading() }) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.cd_back))
-                    }
-                },
-                actions = {
-                    /** Controls the visibility of the action overflow menu (three dots). */
-                    var showMenu by remember { mutableStateOf(false) }
-
-                    /** Controls the visibility of the dialog confirming patient deletion. */
-                    var showDeleteConfirm by remember { mutableStateOf(false) }
-
-                    IconButton(onClick = { showMenu = !showMenu }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(Res.string.cd_more))
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false },
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.delete_patient), color = MaterialTheme.colorScheme.error) },
-                            onClick = {
-                                showMenu = false
-                                showDeleteConfirm = true
-                            },
-                        )
-                    }
-
-                    if (showDeleteConfirm) {
-                        AlertDialog(
-                            onDismissRequest = { showDeleteConfirm = false },
-                            title = { Text(stringResource(Res.string.delete_patient), modifier = Modifier.semantics { heading() }) },
-                            text = { Text(stringResource(Res.string.delete_patient_message)) },
-                            confirmButton = {
-                                TextButton(onClick = {
-                                    showDeleteConfirm = false
-                                    viewModel.deletePatient {
-                                        onBack()
-                                    }
-                                }) {
-                                    Text(stringResource(Res.string.delete), color = MaterialTheme.colorScheme.error)
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { showDeleteConfirm = false }) {
-                                    Text(stringResource(Res.string.cancel))
-                                }
-                            },
-                        )
-                    }
-                },
-            )
+            PatientDetailTopBar(onBack = onBack, onDeletePatient = { viewModel.deletePatient { onBack() } })
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onNewVisit) {
@@ -163,66 +110,179 @@ fun PatientDetailScreen(
             }
         },
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            state.patient?.let { patient ->
-                Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                    Text(
-                        text = patient.fullName,
-                        style = MaterialTheme.typography.headlineMedium,
-                    )
-                    Text(
-                        text =
-                            stringResource(
-                                Res.string.mrn_dob_format,
-                                patient.mrn,
-                                io.healthplatform.chartcam.utils
-                                    .formatLocalizedDate(patient.customBirthDate),
-                            ),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
+        PatientDetailContent(padding, state, onVisitSelected)
+    }
+}
+
+/**
+ * Internal helper.
+ */
+@Composable
+private fun PatientDetailContent(
+    padding: androidx.compose.foundation.layout.PaddingValues,
+    state: io.healthplatform.chartcam.viewmodel.PatientDetailUiState,
+    onVisitSelected: (String) -> Unit,
+) {
+    Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+        state.patient?.let { PatientInfo(it) }
+
+        HorizontalDivider()
+
+        Text(
+            text = stringResource(Res.string.visit_history),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(16.dp),
+        )
+
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(state.encounters) { encounter ->
+                ListItem(
+                    headlineContent = { Text(encounter.encounterDate) },
+                    supportingContent = {
+                        Text(
+                            encounter.text
+                                ?.div
+                                ?.value
+                                ?.removePrefix("<div>")
+                                ?.removeSuffix("</div>") ?: stringResource(Res.string.no_notes),
+                        )
+                    },
+                    modifier =
+                        Modifier
+                            .minimumInteractiveComponentSize()
+                            .semantics(mergeDescendants = true) {}
+                            .clickable(role = Role.Button) { onVisitSelected(encounter.id ?: "") },
+                )
+                HorizontalDivider()
             }
 
-            HorizontalDivider()
-
-            Text(
-                text = stringResource(Res.string.visit_history),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(16.dp),
-            )
-
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(state.encounters) { encounter ->
-                    ListItem(
-                        headlineContent = { Text(encounter.encounterDate) },
-                        supportingContent = {
-                            Text(
-                                encounter.text
-                                    ?.div
-                                    ?.value
-                                    ?.removePrefix("<div>")
-                                    ?.removeSuffix("</div>") ?: stringResource(Res.string.no_notes),
-                            )
-                        },
-                        modifier =
-                            Modifier
-                                .minimumInteractiveComponentSize()
-                                .semantics(mergeDescendants = true) {}
-                                .clickable(role = Role.Button) { onVisitSelected(encounter.id ?: "") },
-                    )
-                    HorizontalDivider()
-                }
-
-                if (state.encounters.isEmpty()) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            Text(stringResource(Res.string.no_visits_found), color = MaterialTheme.colorScheme.secondary)
-                        }
+            if (state.encounters.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        Text(
+                            stringResource(Res.string.no_visits_found),
+                            color = MaterialTheme.colorScheme.secondary,
+                        )
                     }
                 }
             }
         }
     }
+}
+
+/**
+ * Internal helper.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PatientDetailTopBar(
+    onBack: () -> Unit,
+    onDeletePatient: () -> Unit,
+) {
+    TopAppBar(
+        title = {
+            Text(
+                stringResource(Res.string.patient_detail),
+                modifier = Modifier.semantics { heading() },
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(Res.string.cd_back),
+                )
+            }
+        },
+        actions = {
+            var showMenu by remember { mutableStateOf(false) }
+            var showDeleteConfirm by remember { mutableStateOf(false) }
+
+            IconButton(onClick = { showMenu = !showMenu }) {
+                Icon(Icons.Default.MoreVert, contentDescription = stringResource(Res.string.cd_more))
+            }
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false },
+            ) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            stringResource(Res.string.delete_patient),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    },
+                    onClick = {
+                        showMenu = false
+                        showDeleteConfirm = true
+                    },
+                )
+            }
+
+            if (showDeleteConfirm) {
+                DeleteConfirmDialog(
+                    onDismiss = { showDeleteConfirm = false },
+                    onDeletePatient = onDeletePatient,
+                )
+            }
+        },
+    )
+}
+
+/**
+ * Internal helper.
+ */
+@Composable
+private fun PatientInfo(patient: com.google.fhir.model.r4.Patient) {
+    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Text(
+            text = patient.fullName,
+            style = MaterialTheme.typography.headlineMedium,
+        )
+        Text(
+            text =
+                stringResource(
+                    Res.string.mrn_dob_format,
+                    patient.mrn,
+                    io.healthplatform.chartcam.utils
+                        .formatLocalizedDate(patient.customBirthDate),
+                ),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+    }
+}
+
+/**
+ * Internal helper.
+ */
+@Composable
+private fun DeleteConfirmDialog(
+    onDismiss: () -> Unit,
+    onDeletePatient: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                stringResource(Res.string.delete_patient),
+                modifier = Modifier.semantics { heading() },
+            )
+        },
+        text = { Text(stringResource(Res.string.delete_patient_message)) },
+        confirmButton = {
+            TextButton(onClick = {
+                onDismiss()
+                onDeletePatient()
+            }) {
+                Text(stringResource(Res.string.delete), color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(Res.string.cancel))
+            }
+        },
+    )
 }

@@ -29,7 +29,8 @@ actual fun formatLocalizedDate(fhirDate: String): String {
             val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.getDefault())
             date.format(formatter)
         }
-    } catch (e: Exception) {
+    } catch (e: java.time.format.DateTimeParseException) {
+        println(e.message)
         fhirDate
     }
 }

@@ -31,7 +31,8 @@ class JvmCameraManager : CameraManager {
                 try {
                     Webcam.setDriver(NativeDriver())
                     System.setProperty("io.healthplatform.chartcam.camera.nativedriver.initialized", "true")
-                } catch (t: Throwable) {
+                } catch (t: IllegalStateException) {
+                    println(t.message)
                     // Driver might already be set or failed to initialize
                 }
             }
@@ -57,7 +58,8 @@ class JvmCameraManager : CameraManager {
             if (webcam == null) {
                 try {
                     webcam = Webcam.getDefault()
-                } catch (t: Throwable) {
+                } catch (t: IllegalStateException) {
+                    println(t.message)
                     // Return null safely if webcam lookup or native driver loading fails
                     webcam = null
                 }
@@ -78,7 +80,8 @@ class JvmCameraManager : CameraManager {
                     cam.open()
                 }
                 cam.image
-            } catch (e: Exception) {
+            } catch (e: IllegalStateException) {
+                println(e.message)
                 null
             }
         }
@@ -86,7 +89,8 @@ class JvmCameraManager : CameraManager {
     /**
      * Captures a still image from the active desktop webcam.
      *
-     * @return A [ByteArray] representing the image (PNG encoded), or null if the capture failed or the webcam is not available.
+     * @return A [ByteArray] representing the image (PNG encoded),
+     *         or null if the capture failed or the webcam is not available.
      */
     override suspend fun captureImage(): ByteArray? =
         withContext(Dispatchers.IO) {
@@ -96,7 +100,8 @@ class JvmCameraManager : CameraManager {
                 // Sarxos image format is typically PNG or JPG; using PNG to be safe
                 ImageIO.write(image, "PNG", baos)
                 baos.toByteArray()
-            } catch (e: Exception) {
+            } catch (e: IllegalStateException) {
+                println(e.message)
                 // Ignore exception to prevent crash
                 null
             }
@@ -127,7 +132,8 @@ class JvmCameraManager : CameraManager {
         get() =
             try {
                 Webcam.getWebcams().size > 1
-            } catch (e: Exception) {
+            } catch (e: IllegalStateException) {
+                println(e.message)
                 false
             }
 
@@ -139,7 +145,8 @@ class JvmCameraManager : CameraManager {
             if (webcam?.isOpen == true) {
                 webcam?.close()
             }
-        } catch (e: Exception) {
+        } catch (e: IllegalStateException) {
+            println(e.message)
             // Ignore exception to prevent crash
         }
     }

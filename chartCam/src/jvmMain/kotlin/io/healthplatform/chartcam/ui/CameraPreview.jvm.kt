@@ -1,7 +1,8 @@
 /**
  * @file CameraPreview.jvm.kt
  * Camera preview implementation for the JVM platform.
- * Serves as a placeholder or mock UI, as native camera capture is not natively supported directly via Compose Desktop in this module.
+ * Serves as a placeholder or mock UI, as native camera capture is not natively
+ * supported directly via Compose Desktop in this module.
  */
 package io.healthplatform.chartcam.ui
 
@@ -39,6 +40,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import org.jetbrains.compose.resources.stringResource
 
+private const val TIMEOUT_MS = 5000L
+private const val POLL_INTERVAL_MS = 100L
+private const val STREAM_INTERVAL_MS = 33L
+
 /**
  * A Composable function that displays a live camera preview.
  *
@@ -68,14 +73,14 @@ actual fun CameraPreview(
         if (cameraManager is JvmCameraManager) {
             // Wait up to 5 seconds for the first frame
             val initSuccess =
-                kotlinx.coroutines.withTimeoutOrNull(5000) {
+                kotlinx.coroutines.withTimeoutOrNull(TIMEOUT_MS) {
                     while (isActive && imageBitmap == null) {
                         val img = cameraManager.getPreviewImage()
                         if (img != null) {
                             imageBitmap = img.toComposeImageBitmap()
                             return@withTimeoutOrNull true
                         }
-                        delay(100) // Poll for the first frame
+                        delay(POLL_INTERVAL_MS) // Poll for the first frame
                     }
                     true
                 }
@@ -92,7 +97,7 @@ actual fun CameraPreview(
                         // If streaming suddenly drops frames consistently, we could set hasError,
                         // but usually it's just a skipped frame.
                     }
-                    delay(33)
+                    delay(STREAM_INTERVAL_MS)
                 }
             }
         } else {
@@ -110,8 +115,16 @@ actual fun CameraPreview(
             )
         } else if (hasError) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.Warning, contentDescription = stringResource(Res.string.error), tint = Color.White)
-                Text(stringResource(Res.string.camera_unavailable), color = Color.White, modifier = Modifier.padding(top = 8.dp))
+                Icon(
+                    Icons.Default.Warning,
+                    contentDescription = stringResource(Res.string.error),
+                    tint = Color.White,
+                )
+                Text(
+                    stringResource(Res.string.camera_unavailable),
+                    color = Color.White,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
             }
         } else {
             Text(stringResource(Res.string.initializing_camera), color = Color.White)

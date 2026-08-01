@@ -122,29 +122,23 @@ import org.jetbrains.compose.resources.stringResource
  * **State & Side Effects:**
  * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
- * @param fhirRepository Repository used to access patient data. (Injected side-effect)
- * @param exportImportService Service to handle exporting/importing the database.
- * @param authRepository Repository used for practitioner authentication and deletion.
- * @param onPatientSelected Callback triggered when a patient is selected, receiving the patient's ID.
- * @param onNavigateToQuestionnaires Callback triggered to navigate to the questionnaire list.
- * @param onLogout Callback triggered when the user chooses to log out.
+ * @param dependencies Collection of repositories and services needed by the view model.
+ * @param actions Actions triggered from the screen.
  */
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongMethod", "CyclomaticComplexMethod", "TooGenericExceptionCaught")
 fun PatientListScreen(
-    fhirRepository: FhirRepository,
-    exportImportService: ExportImportService,
-    authRepository: AuthRepository,
-    onPatientSelected: (String) -> Unit,
-    onNavigateToQuestionnaires: () -> Unit,
-    onLogout: () -> Unit = {},
+    dependencies: PatientListDependencies,
+    actions: PatientListActions,
 ) {
     val viewModel =
         androidx.lifecycle.viewmodel.compose.viewModel {
             PatientListViewModel(
-                fhirRepository,
-                exportImportService,
-                authRepository,
+                dependencies.fhirRepository,
+                dependencies.exportImportService,
+                dependencies.authRepository,
             )
         }
     val state by viewModel.uiState.collectAsState()
@@ -171,12 +165,20 @@ fun PatientListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.patient_directory), modifier = Modifier.semantics { heading() }) },
+                title = {
+                    Text(
+                        stringResource(Res.string.patient_directory),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 actions = {
                     var showLanguageMenu by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { showLanguageMenu = true }) {
-                            Icon(Icons.Default.Translate, contentDescription = stringResource(Res.string.cd_switch_language))
+                            Icon(
+                                Icons.Default.Translate,
+                                contentDescription = stringResource(Res.string.cd_switch_language),
+                            )
                         }
                         DropdownMenu(
                             expanded = showLanguageMenu,
@@ -206,7 +208,10 @@ fun PatientListScreen(
                         }
                     }
                     IconButton(onClick = { showMenu = !showMenu }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(Res.string.cd_more))
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = stringResource(Res.string.cd_more),
+                        )
                     }
                     DropdownMenu(
                         expanded = showMenu,
@@ -230,7 +235,11 @@ fun PatientListScreen(
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.export_data)) },
+                            text = {
+                                Text(
+                                    stringResource(Res.string.export_data),
+                                )
+                            },
                             onClick = {
                                 showExportPasswordDialog = true
                                 showMenu = false
@@ -247,25 +256,38 @@ fun PatientListScreen(
                             text = { Text(stringResource(Res.string.logout)) },
                             onClick = {
                                 showMenu = false
-                                onLogout()
+                                actions.onLogout()
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.questionnaires)) },
+                            text = {
+                                Text(
+                                    stringResource(Res.string.questionnaires),
+                                )
+                            },
                             onClick = {
                                 showMenu = false
-                                onNavigateToQuestionnaires()
+                                actions.onNavigateToQuestionnaires()
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.about)) },
+                            text = {
+                                Text(
+                                    stringResource(Res.string.about),
+                                )
+                            },
                             onClick = {
                                 showMenu = false
                                 showAboutDialog = true
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.delete_my_account), color = MaterialTheme.colorScheme.error) },
+                            text = {
+                                Text(
+                                    stringResource(Res.string.delete_my_account),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            },
                             onClick = {
                                 showMenu = false
                                 showDeleteConfirm = true
@@ -296,7 +318,12 @@ fun PatientListScreen(
                         expanded = false,
                         onExpandedChange = { },
                         placeholder = { Text(stringResource(Res.string.search_placeholder)) },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.cd_search_icon)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = stringResource(Res.string.cd_search_icon),
+                            )
+                        },
                     )
                 },
                 expanded = false,
@@ -311,14 +338,17 @@ fun PatientListScreen(
                 items(state.patients) { patient ->
                     PatientListItem(
                         patient = patient,
-                        onClick = { onPatientSelected(patient.id ?: "") },
+                        onClick = { actions.onPatientSelected(patient.id ?: "") },
                     )
                     HorizontalDivider()
                 }
                 if (state.patients.isEmpty()) {
                     item {
                         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            Text(stringResource(Res.string.no_patients_found), color = MaterialTheme.colorScheme.secondary)
+                            Text(
+                                stringResource(Res.string.no_patients_found),
+                                color = MaterialTheme.colorScheme.secondary,
+                            )
                         }
                     }
                 }
@@ -330,8 +360,8 @@ fun PatientListScreen(
         CreatePatientDialog(
             onDismissRequest = { viewModel.setCreateDialogVisible(false) },
             onConfirm = { f, l, mrn, dob, g ->
-                viewModel.createPatient(f, l, mrn, dob, g) { newPatientId ->
-                    onPatientSelected(newPatientId)
+                viewModel.createPatient(f, l, mrn, dob) { newPatientId ->
+                    actions.onPatientSelected(newPatientId)
                 }
             },
         )
@@ -340,14 +370,20 @@ fun PatientListScreen(
     if (showExportPasswordDialog) {
         AlertDialog(
             onDismissRequest = { showExportPasswordDialog = false },
-            title = { Text(stringResource(Res.string.export_password_title), modifier = Modifier.semantics { heading() }) },
+            title = {
+                Text(
+                    stringResource(Res.string.export_password_title),
+                    modifier = Modifier.semantics { heading() },
+                )
+            },
             text = {
                 Column {
                     TextField(
                         value = exportPassword,
                         onValueChange = { exportPassword = it },
                         label = { Text(stringResource(Res.string.export_password_label)) },
-                        visualTransformation = PasswordVisualTransformation(),
+                        visualTransformation =
+                            PasswordVisualTransformation(),
                         modifier =
                             Modifier
                                 .fillMaxWidth()
@@ -380,10 +416,14 @@ fun PatientListScreen(
                     )
                     Row(
                         modifier =
-                            Modifier.fillMaxWidth().padding(top = 16.dp).minimumInteractiveComponentSize().clickable(role = Role.Checkbox) {
-                                exportAllVisits =
-                                    !exportAllVisits
-                            },
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp)
+                                .minimumInteractiveComponentSize()
+                                .clickable(role = Role.Checkbox) {
+                                    exportAllVisits =
+                                        !exportAllVisits
+                                },
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Checkbox(
@@ -415,7 +455,12 @@ fun PatientListScreen(
     if (state.exportedData != null) {
         AlertDialog(
             onDismissRequest = { viewModel.clearExportData() },
-            title = { Text(stringResource(Res.string.data_exported_title), modifier = Modifier.semantics { heading() }) },
+            title = {
+                Text(
+                    stringResource(Res.string.data_exported_title),
+                    modifier = Modifier.semantics { heading() },
+                )
+            },
             text = {
                 Column {
                     Text(stringResource(Res.string.data_exported_message))
@@ -448,7 +493,6 @@ fun PatientListScreen(
             onDismissRequest = { showAboutDialog = false },
             title = { Text(stringResource(Res.string.about_title), modifier = Modifier.semantics { heading() }) },
             text = {
-                val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
                 val fullText = stringResource(Res.string.version_text, "0.0.1 — https://healthplatform.io")
                 val url = "https://healthplatform.io"
                 val startIndex = fullText.indexOf(url)
@@ -493,13 +537,18 @@ fun PatientListScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text(stringResource(Res.string.delete_account_title), modifier = Modifier.semantics { heading() }) },
+            title = {
+                Text(
+                    stringResource(Res.string.delete_account_title),
+                    modifier = Modifier.semantics { heading() },
+                )
+            },
             text = { Text(stringResource(Res.string.delete_account_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm = false
                     viewModel.deleteAccount {
-                        onLogout()
+                        actions.onLogout()
                     }
                 }) {
                     Text(stringResource(Res.string.delete), color = MaterialTheme.colorScheme.error)
@@ -516,7 +565,12 @@ fun PatientListScreen(
     if (showImportDialog) {
         AlertDialog(
             onDismissRequest = { showImportDialog = false },
-            title = { Text(stringResource(Res.string.import_title), modifier = Modifier.semantics { heading() }) },
+            title = {
+                Text(
+                    stringResource(Res.string.import_title),
+                    modifier = Modifier.semantics { heading() },
+                )
+            },
             text = {
                 Column {
                     TextField(
@@ -530,7 +584,8 @@ fun PatientListScreen(
                         value = importPassword,
                         onValueChange = { importPassword = it },
                         label = { Text(stringResource(Res.string.password)) },
-                        visualTransformation = PasswordVisualTransformation(),
+                        visualTransformation =
+                            PasswordVisualTransformation(),
                         modifier =
                             Modifier
                                 .fillMaxWidth()
@@ -565,7 +620,11 @@ fun PatientListScreen(
                         singleLine = true,
                     )
                     state.error?.let { err ->
-                        Text(stringResource(err), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+                        Text(
+                            stringResource(err),
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
                     }
                 }
             },
@@ -626,3 +685,29 @@ fun PatientListItem(
                 .clickable(role = Role.Button) { onClick() },
     )
 }
+
+/**
+ * Actions for the PatientListScreen.
+ *
+ * @property onPatientSelected Callback triggered when a patient is selected, receiving the patient's ID.
+ * @property onNavigateToQuestionnaires Callback triggered to navigate to the questionnaire list.
+ * @property onLogout Callback triggered when the user chooses to log out.
+ */
+data class PatientListActions(
+    val onPatientSelected: (String) -> Unit,
+    val onNavigateToQuestionnaires: () -> Unit,
+    val onLogout: () -> Unit = {},
+)
+
+/**
+ * Dependencies for the PatientListScreen.
+ *
+ * @property fhirRepository Repository used to access patient data.
+ * @property exportImportService Service to handle exporting/importing the database.
+ * @property authRepository Repository used for practitioner authentication and deletion.
+ */
+data class PatientListDependencies(
+    val fhirRepository: FhirRepository,
+    val exportImportService: ExportImportService,
+    val authRepository: AuthRepository,
+)

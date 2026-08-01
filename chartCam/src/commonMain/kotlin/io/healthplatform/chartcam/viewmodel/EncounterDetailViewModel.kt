@@ -26,6 +26,7 @@ import com.google.fhir.model.r4.Practitioner
 import com.google.fhir.model.r4.Questionnaire
 import com.google.fhir.model.r4.QuestionnaireResponse
 import com.google.fhir.model.r4.Reference
+import io.healthplatform.chartcam.models.DocumentReferenceCreationParams
 import io.healthplatform.chartcam.models.createFhirDocumentReference
 import io.healthplatform.chartcam.models.createFhirEncounter
 import io.healthplatform.chartcam.models.createFhirProvenance
@@ -72,7 +73,8 @@ data class EncounterUiState(
  * ViewModel for viewing and finalizing an Encounter.
  * Handles loading existing encounters, recording form answers dynamically,
  * taking clinical photos, and persisting responses to FHIR JSON and server.
- * This ViewModel directly consumes and emits native FHIR R4 `Resource` models (e.g., `Patient`, `Encounter`, `DocumentReference`) without relying on intermediary DTOs.
+ * This ViewModel directly consumes and emits native FHIR R4 `Resource` models
+ * (e.g., `Patient`, `Encounter`, `DocumentReference`) without relying on intermediary DTOs.
  *
  * @param fhirRepository The repository providing FHIR data access.
  * @param authRepository The repository providing authentication state.
@@ -115,146 +117,192 @@ class EncounterDetailViewModel(
 
             if (patient != null && practitioner != null) {
                 if (visitId == "new") {
-                    val now =
-                        kotlin.time.Clock.System
-                            .now()
-                    val encounterId = UUID.randomUUID()
-
-                    val newEncounter =
-                        createFhirEncounter(
-                            id = encounterId,
-                            patientId = patient.id ?: "",
-                            practitionerId = practitioner.id ?: "",
-                            dateStr = now.toString(),
-                            statusStr = "in-progress",
-                        )
-
-                    fhirRepository.saveEncounter(newEncounter)
-
-                    val docs =
-                        photosMap.map { (stepName, path) ->
-                            val label =
-                                questionnaires.firstOrNull()?.item?.let { items ->
-                                    findItemRecursively(items, stepName)?.text?.value
-                                } ?: stepName
-
-                            createFhirDocumentReference(
-                                id = UUID.randomUUID(),
-                                patientId = patient.id ?: "",
-                                encounterId = encounterId,
-                                dateStr = now.toString(),
-                                desc = label,
-                                mime = "image/jpeg",
-                                urlPath = path,
-                                answerCode = stepName,
-                            ).also {
-                                fhirRepository.saveDocumentReference(it)
-                            }
-                        }
-
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            patient = patient,
-                            practitioner = practitioner,
-                            encounter = newEncounter,
-                            photos = docs,
-                            answers = emptyMap(),
-                            availableQuestionnaires = questionnaires,
-                            selectedQuestionnaire = questionnaires.firstOrNull(),
-                        )
-                    }
+                    handleNewEncounter(patient, practitioner, questionnaires, photosMap)
                 } else {
-                    val existingEncounter = fhirRepository.getEncounter(visitId)
-                    val existingDocs = fhirRepository.getPhotosForEncounter(visitId).toMutableList()
-                    val existingResponses = fhirRepository.getQuestionnaireResponsesForEncounter(visitId)
-
-                    var existingAnswers = mutableMapOf<String, Any>()
-                    var existingSelectedQ: Questionnaire? = null
-
-                    if (existingResponses.isNotEmpty()) {
-                        val latestQr = existingResponses.first()
-
-                        // Parse FHIR Canonical URI to match local Resource ID
-                        // The Questionnaire reference may be an absolute URI, a relative path (e.g., 'Questionnaire/q-id'),
-                        // or just the raw ID. We substring after the last slash to normalize it to the base ID.
-                        val rawCanonical = latestQr.questionnaire?.value ?: ""
-                        val resolvedQId = rawCanonical.substringAfterLast("/")
-
-                        existingSelectedQ = questionnaires.find { it.id == resolvedQId }
-
-                        if (existingSelectedQ == null) {
-                            val dummyItems = buildDummyItemsRecursively(latestQr.item)
-                            val recoveredFormStr =
-                                org.jetbrains.compose.resources
-                                    .getString(Res.string.recovered_form)
-                            existingSelectedQ =
-                                Questionnaire
-                                    .Builder(
-                                        Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active),
-                                    ).apply {
-                                        this.id = latestQr.questionnaire?.value ?: "unknown"
-                                        this.title =
-                                            com.google.fhir.model.r4.String
-                                                .Builder()
-                                                .apply { value = recoveredFormStr }
-                                        this.item.addAll(dummyItems)
-                                    }.build()
-                        }
-
-                        extractAnswersRecursively(latestQr.item, existingAnswers)
-                    }
-
-                    if (existingEncounter != null) {
-                        val now =
-                            kotlin.time.Clock.System
-                                .now()
-                        val newDocs =
-                            photosMap.map { (stepName, path) ->
-                                val label =
-                                    existingSelectedQ?.item?.let { items ->
-                                        findItemRecursively(items, stepName)?.text?.value
-                                    } ?: (
-                                        questionnaires.firstOrNull()?.item?.let { items ->
-                                            findItemRecursively(items, stepName)?.text?.value
-                                        } ?: stepName
-                                    )
-
-                                createFhirDocumentReference(
-                                    id = UUID.randomUUID(),
-                                    patientId = patient.id ?: "",
-                                    encounterId = existingEncounter.id ?: "",
-                                    dateStr = now.toString(),
-                                    desc = label,
-                                    mime = "image/jpeg",
-                                    urlPath = path,
-                                    answerCode = stepName,
-                                ).also {
-                                    fhirRepository.saveDocumentReference(it)
-                                }
-                            }
-                        existingDocs.addAll(newDocs)
-
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                patient = patient,
-                                practitioner = practitioner,
-                                encounter = existingEncounter,
-                                photos = existingDocs,
-                                answers = existingAnswers,
-                                availableQuestionnaires = questionnaires,
-                                selectedQuestionnaire = existingSelectedQ ?: questionnaires.firstOrNull(),
-                            )
-                        }
-                    } else {
-                        _uiState.update { it.copy(isLoading = false) }
-                    }
+                    handleExistingEncounter(visitId, patient, practitioner, questionnaires, photosMap)
                 }
             } else {
                 _uiState.update { it.copy(isLoading = false) }
             }
         }
+    }
+
+    /**
+     * Handles new encounter.
+     */
+    private suspend fun handleNewEncounter(
+        patient: Patient,
+        practitioner: Practitioner,
+        questionnaires: List<Questionnaire>,
+        photosMap: Map<String, String>,
+    ) {
+        val now =
+            kotlin.time.Clock.System
+                .now()
+        val encounterId = UUID.randomUUID()
+
+        val newEncounter =
+            createFhirEncounter(
+                id = encounterId,
+                patientId = patient.id ?: "",
+                practitionerId = practitioner.id ?: "",
+                dateStr = now.toString(),
+            )
+
+        fhirRepository.saveEncounter(newEncounter)
+
+        val docs =
+            photosMap.map { (stepName, path) ->
+                val label =
+                    questionnaires.firstOrNull()?.item?.let { items ->
+                        io.healthplatform.chartcam.utils.QuestionnaireUtils
+                            .findItemRecursively(items, stepName)
+                            ?.text
+                            ?.value
+                    } ?: stepName
+
+                createFhirDocumentReference(
+                    DocumentReferenceCreationParams(
+                        id = UUID.randomUUID(),
+                        patientId = patient.id ?: "",
+                        encounterId = encounterId,
+                        dateStr = now.toString(),
+                        desc = label,
+                        mime = "image/jpeg",
+                        urlPath = path,
+                        answerCode = stepName,
+                    ),
+                ).also { fhirRepository.saveDocumentReference(it) }
+            }
+
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                patient = patient,
+                practitioner = practitioner,
+                encounter = newEncounter,
+                photos = docs,
+                answers = emptyMap(),
+                availableQuestionnaires = questionnaires,
+                selectedQuestionnaire = questionnaires.firstOrNull(),
+            )
+        }
+    }
+
+    /**
+     * Handles existing encounter.
+     */
+    private suspend fun extractExistingAnswers(
+        existingResponses: List<QuestionnaireResponse>,
+        questionnaires: List<Questionnaire>,
+        existingAnswers: MutableMap<String, Any>,
+    ): Questionnaire? {
+        if (existingResponses.isEmpty()) return null
+        val latestQr = existingResponses.first()
+        val rawCanonical = latestQr.questionnaire?.value ?: ""
+        val resolvedQId = rawCanonical.substringAfterLast("/")
+        var existingSelectedQ = questionnaires.find { it.id == resolvedQId }
+        if (existingSelectedQ == null) {
+            existingSelectedQ = createRecoveredQuestionnaire(latestQr)
+        }
+        io.healthplatform.chartcam.utils.QuestionnaireUtils
+            .extractAnswersRecursively(latestQr.item, existingAnswers)
+        return existingSelectedQ
+    }
+
+    /**
+     * Handles existing encounter.
+     */
+    private suspend fun handleExistingEncounter(
+        visitId: String,
+        patient: Patient,
+        practitioner: Practitioner,
+        questionnaires: List<Questionnaire>,
+        photosMap: Map<String, String>,
+    ) {
+        val existingEncounter = fhirRepository.getEncounter(visitId)
+        val existingDocs = fhirRepository.getPhotosForEncounter(visitId).toMutableList()
+        val existingResponses = fhirRepository.getQuestionnaireResponsesForEncounter(visitId)
+
+        val existingAnswers = mutableMapOf<String, Any>()
+        var existingSelectedQ: Questionnaire? =
+            extractExistingAnswers(existingResponses, questionnaires, existingAnswers)
+
+        if (existingEncounter != null) {
+            val now =
+                kotlin.time.Clock.System
+                    .now()
+            val newDocs =
+                photosMap.map { (stepName, path) ->
+                    var label = stepName
+                    existingSelectedQ?.item?.let { items ->
+                        label = io.healthplatform.chartcam.utils.QuestionnaireUtils
+                            .findItemRecursively(items, stepName)
+                            ?.text
+                            ?.value ?: label
+                    }
+                    if (label == stepName) {
+                        questionnaires.firstOrNull()?.item?.let { items ->
+                            label = io.healthplatform.chartcam.utils.QuestionnaireUtils
+                                .findItemRecursively(items, stepName)
+                                ?.text
+                                ?.value ?: label
+                        }
+                    }
+
+                    createFhirDocumentReference(
+                        DocumentReferenceCreationParams(
+                            id = UUID.randomUUID(),
+                            patientId = patient.id ?: "",
+                            encounterId = existingEncounter.id ?: "",
+                            dateStr = now.toString(),
+                            desc = label,
+                            mime = "image/jpeg",
+                            urlPath = path,
+                            answerCode = stepName,
+                        ),
+                    ).also { fhirRepository.saveDocumentReference(it) }
+                }
+            existingDocs.addAll(newDocs)
+
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    patient = patient,
+                    practitioner = practitioner,
+                    encounter = existingEncounter,
+                    photos = existingDocs,
+                    answers = existingAnswers,
+                    availableQuestionnaires = questionnaires,
+                    selectedQuestionnaire = existingSelectedQ ?: questionnaires.firstOrNull(),
+                )
+            }
+        } else {
+            _uiState.update { it.copy(isLoading = false) }
+        }
+    }
+
+    /**
+     * Creates recovered questionnaire.
+     */
+    private suspend fun createRecoveredQuestionnaire(latestQr: QuestionnaireResponse): Questionnaire {
+        val dummyItems =
+            io.healthplatform.chartcam.utils.QuestionnaireUtils
+                .buildDummyItemsRecursively(latestQr.item)
+        val recoveredFormStr =
+            org.jetbrains.compose.resources
+                .getString(Res.string.recovered_form)
+        return Questionnaire
+            .Builder(
+                Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active),
+            ).apply {
+                this.id = latestQr.questionnaire?.value ?: "unknown"
+                this.title =
+                    com.google.fhir.model.r4.String
+                        .Builder()
+                        .apply { value = recoveredFormStr }
+                this.item.addAll(dummyItems)
+            }.build()
     }
 
     /**
@@ -282,12 +330,8 @@ class EncounterDetailViewModel(
      * Updates the form answers and the generated QuestionnaireResponse.
      *
      * @param newAnswers The evaluated answers map.
-     * @param newResponse The generated QuestionnaireResponse resource.
      */
-    fun onFormUpdated(
-        newAnswers: Map<String, Any>,
-        newResponse: com.google.fhir.model.r4.QuestionnaireResponse,
-    ) {
+    fun onFormUpdated(newAnswers: Map<String, Any>) {
         _uiState.update {
             it.copy(answers = newAnswers)
         }
@@ -372,158 +416,8 @@ class EncounterDetailViewModel(
             _uiState.update { it.copy(isSyncing = true) }
 
             // Build and save QuestionnaireResponse
-            if (q != null) {
-                val qrId = UUID.randomUUID()
-                val answers = _uiState.value.answers
-                val qr =
-                    QuestionnaireResponse
-                        .Builder(Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
-                        .apply {
-                            this.id = qrId
-
-                            val rawSubjectValue = enc.subject?.reference?.value ?: ""
-                            val subjectReference =
-                                if (rawSubjectValue.startsWith(
-                                        "Patient/",
-                                    )
-                                ) {
-                                    rawSubjectValue
-                                } else {
-                                    "Patient/$rawSubjectValue"
-                                }
-                            subject =
-                                Reference.Builder().apply {
-                                    reference =
-                                        com.google.fhir.model.r4.String
-                                            .Builder()
-                                            .apply { value = subjectReference }
-                                }
-
-                            val encounterReference = if (id.startsWith("Encounter/")) id else "Encounter/$id"
-                            encounter =
-                                Reference.Builder().apply {
-                                    reference =
-                                        com.google.fhir.model.r4.String
-                                            .Builder()
-                                            .apply { value = encounterReference }
-                                }
-
-                            questionnaire = Canonical.Builder().apply { value = q.id ?: "" }
-                            try {
-                                authored =
-                                    DateTime.Builder().apply {
-                                        value =
-                                            FhirDateTime.fromString(
-                                                kotlin.time.Clock.System
-                                                    .now()
-                                                    .toString(),
-                                            )
-                                    }
-                            } catch (e: Exception) {
-                            }
-
-                            if (q.item.isNotEmpty()) {
-                                item.addAll(buildResponseItemsRecursively(q.item, answers))
-                            }
-
-                            _uiState.value.photos.forEach { photo ->
-                                val stepName =
-                                    photo.context
-                                        ?.related
-                                        ?.firstOrNull()
-                                        ?.identifier
-                                        ?.value
-                                        ?.value
-                                        ?: photo.description?.value
-                                        ?: return@forEach
-                                val urlPath =
-                                    photo.content
-                                        .firstOrNull()
-                                        ?.attachment
-                                        ?.url
-                                        ?.value ?: return@forEach
-
-                                item.add(
-                                    QuestionnaireResponse.Item
-                                        .Builder(
-                                            com.google.fhir.model.r4.String
-                                                .Builder()
-                                                .apply { value = stepName },
-                                        ).apply {
-                                            answer.add(
-                                                QuestionnaireResponse.Item.Answer.Builder().apply {
-                                                    value =
-                                                        com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Attachment(
-                                                            com.google.fhir.model.r4.Attachment
-                                                                .Builder()
-                                                                .apply {
-                                                                    url =
-                                                                        com.google.fhir.model.r4.Url
-                                                                            .Builder()
-                                                                            .apply { value = urlPath }
-                                                                }.build(),
-                                                        )
-                                                },
-                                            )
-                                        },
-                                )
-                            }
-                        }.build()
-                fhirRepository.saveQuestionnaireResponse(qr)
-                val prov =
-                    createFhirProvenance(
-                        id =
-                            io.healthplatform.chartcam.utils.UUID
-                                .randomUUID(),
-                        targetResourceId = qr.id!!,
-                        practitionerId = "Practitioner/${_uiState.value.practitioner?.id}",
-                        dateStr =
-                            kotlin.time.Clock.System
-                                .now()
-                                .toString(),
-                    )
-                fhirRepository.saveProvenance(prov, _uiState.value.encounter?.id)
-            }
-
-            val allAnswers = _uiState.value.answers
-            val notesBuilder = StringBuilder()
-            allAnswers.forEach { (linkId, answer) ->
-                val questionItem = q?.item?.let { findItemRecursively(it, linkId) }
-                val questionTitle = questionItem?.text?.value ?: linkId
-                when (answer) {
-                    is String -> if (answer.isNotBlank()) notesBuilder.append("$questionTitle: $answer. ")
-                    is Boolean ->
-                        notesBuilder.append(
-                            "$questionTitle: ${if (answer) {
-                                org.jetbrains.compose.resources.getString(
-                                    Res.string.yes,
-                                )
-                            } else {
-                                org.jetbrains.compose.resources
-                                    .getString(Res.string.no)
-                            }}. ",
-                        )
-                    is List<*> -> {
-                        val strList = answer.filterIsInstance<String>()
-                        if (strList.isNotEmpty()) {
-                            notesBuilder.append("$questionTitle: ${strList.joinToString(", ")}. ")
-                        }
-                    }
-                    is Float -> notesBuilder.append("$questionTitle: $answer. ")
-                }
-            }
-            val notesStr = notesBuilder.toString().trim()
-
-            fhirRepository.updateEncounterStatus(
-                id,
-                "finished",
-                notesStr.ifBlank {
-                    org.jetbrains.compose.resources
-                        .getString(Res.string.no_notes)
-                },
-            )
-
-            // Ignore result to support offline persistence
+            buildAndSaveQuestionnaireResponse(q, enc)
+            updateEncounterWithNotes(q, id)
             syncWorker.sync()
 
             _uiState.update {
@@ -590,20 +484,25 @@ class EncounterDetailViewModel(
                 photosMap.map { (stepName, path) ->
                     val label =
                         _uiState.value.selectedQuestionnaire?.item?.let { items ->
-                            findItemRecursively(items, stepName)?.text?.value
+                            io.healthplatform.chartcam.utils.QuestionnaireUtils
+                                .findItemRecursively(items, stepName)
+                                ?.text
+                                ?.value
                         } ?: stepName
 
                     createFhirDocumentReference(
-                        id =
-                            io.healthplatform.chartcam.utils.UUID
-                                .randomUUID(),
-                        patientId = patient.id ?: "",
-                        encounterId = enc.id ?: "",
-                        dateStr = now.toString(),
-                        desc = label,
-                        mime = "image/jpeg",
-                        urlPath = path,
-                        answerCode = stepName,
+                        DocumentReferenceCreationParams(
+                            id =
+                                io.healthplatform.chartcam.utils.UUID
+                                    .randomUUID(),
+                            patientId = patient.id ?: "",
+                            encounterId = enc.id ?: "",
+                            dateStr = now.toString(),
+                            desc = label,
+                            mime = "image/jpeg",
+                            urlPath = path,
+                            answerCode = stepName,
+                        ),
                     ).also {
                         fhirRepository.saveDocumentReference(it)
                     }
@@ -629,314 +528,193 @@ class EncounterDetailViewModel(
     }
 
     /**
-     * Recursively searches for a Questionnaire.Item by its linkId.
-     *
-     * @param items The list of items to search.
-     * @param linkId The linkId to search for.
-     * @return The found item or null.
+     * Builds and saves a QuestionnaireResponse.
      */
-    private fun findItemRecursively(
-        items: List<Questionnaire.Item>,
-        linkId: String,
-    ): Questionnaire.Item? {
-        for (item in items) {
-            if (item.linkId.value == linkId) return item
-            val found = findItemRecursively(item.item, linkId)
-            if (found != null) return found
-        }
-        return null
+    private suspend fun buildAndSaveQuestionnaireResponse(
+        q: Questionnaire?,
+        enc: Encounter,
+    ) {
+        val id = enc.id ?: return
+        if (q == null) return
+
+        val qrId = UUID.randomUUID()
+        val answers = _uiState.value.answers
+
+        val qr =
+            QuestionnaireResponse
+                .Builder(
+                    Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                ).apply {
+                    this.id = qrId
+                    this.subject = buildSubjectReference(enc)
+                    this.encounter = buildEncounterReference(id)
+                    this.questionnaire = Canonical.Builder().apply { value = q.id ?: "" }
+
+                    try {
+                        this.authored =
+                            DateTime.Builder().apply {
+                                value =
+                                    FhirDateTime.fromString(
+                                        kotlin.time.Clock.System
+                                            .now()
+                                            .toString(),
+                                    )
+                            }
+                    } catch (ignored: RuntimeException) {
+                        // Ignored
+                    }
+
+                    if (q.item.isNotEmpty()) {
+                        this.item.addAll(
+                            io.healthplatform.chartcam.utils.QuestionnaireUtils
+                                .buildResponseItemsRecursively(q.item, answers),
+                        )
+                    }
+
+                    appendPhotosToResponseItems(this.item)
+                }.build()
+
+        fhirRepository.saveQuestionnaireResponse(qr)
+
+        val prov =
+            createFhirProvenance(
+                id = UUID.randomUUID(),
+                targetResourceId = qr.id!!,
+                practitionerId = "Practitioner/${_uiState.value.practitioner?.id}",
+                dateStr =
+                    kotlin.time.Clock.System
+                        .now()
+                        .toString(),
+            )
+        fhirRepository.saveProvenance(prov, _uiState.value.encounter?.id)
     }
 
     /**
-     * Recursively builds dummy Questionnaire.Item.Builders from a QuestionnaireResponse.Item tree.
-     *
-     * @param qrItems The items from a QuestionnaireResponse.
-     * @return A list of generated Questionnaire.Item.Builder instances.
+     * Builds subject reference.
      */
-    private fun buildDummyItemsRecursively(qrItems: List<QuestionnaireResponse.Item>): List<Questionnaire.Item.Builder> {
-        val dummyItems = mutableListOf<Questionnaire.Item.Builder>()
-        qrItems.forEach { qrItem ->
-            val linkId = qrItem.linkId.value ?: return@forEach
-            val answer = qrItem.answer.firstOrNull()?.value
-            val qItemType =
-                if (answer != null) {
-                    when (answer) {
-                        is QuestionnaireResponse.Item.Answer.Value.String ->
-                            Questionnaire.QuestionnaireItemType.String
-                        is QuestionnaireResponse.Item.Answer.Value.Boolean ->
-                            Questionnaire.QuestionnaireItemType.Boolean
-                        is QuestionnaireResponse.Item.Answer.Value.Attachment ->
-                            Questionnaire.QuestionnaireItemType.Attachment
-                        is QuestionnaireResponse.Item.Answer.Value.Decimal ->
-                            Questionnaire.QuestionnaireItemType.Decimal
-                        is QuestionnaireResponse.Item.Answer.Value.Integer ->
-                            Questionnaire.QuestionnaireItemType.Integer
-                        is QuestionnaireResponse.Item.Answer.Value.Date ->
-                            Questionnaire.QuestionnaireItemType.Date
-                        is QuestionnaireResponse.Item.Answer.Value.DateTime ->
-                            Questionnaire.QuestionnaireItemType.DateTime
-                        else -> Questionnaire.QuestionnaireItemType.String
-                    }
-                } else if (qrItem.item.isNotEmpty()) {
-                    Questionnaire.QuestionnaireItemType.Group
-                } else {
-                    Questionnaire.QuestionnaireItemType.String
-                }
-
-            val builder =
-                Questionnaire.Item
-                    .Builder(
-                        com.google.fhir.model.r4.String
-                            .Builder()
-                            .apply { value = linkId },
-                        Enumeration(value = qItemType),
-                    ).apply {
-                        this.text =
-                            com.google.fhir.model.r4.String
-                                .Builder()
-                                .apply { value = linkId.replaceFirstChar { it.uppercase() } }
-                        if (qrItem.item.isNotEmpty()) {
-                            this.item.addAll(buildDummyItemsRecursively(qrItem.item))
-                        }
-                    }
-            dummyItems.add(builder)
+    private fun buildSubjectReference(enc: Encounter): Reference.Builder {
+        val rawSubjectValue = enc.subject?.reference?.value ?: ""
+        val subjectReference =
+            if (rawSubjectValue.startsWith("Patient/")) rawSubjectValue else "Patient/$rawSubjectValue"
+        return Reference.Builder().apply {
+            reference =
+                com.google.fhir.model.r4.String
+                    .Builder()
+                    .apply { value = subjectReference }
         }
-        return dummyItems
     }
 
     /**
-     * Recursively builds QuestionnaireResponse.Item from Questionnaire.Item based on current answers.
-     *
-     * @param qItems The list of Questionnaire.Item to traverse.
-     * @param answers The map of current answers.
-     * @return A list of populated QuestionnaireResponse.Item.Builder instances.
+     * Builds encounter reference.
      */
-    private fun buildResponseItemsRecursively(
-        qItems: List<Questionnaire.Item>,
-        answers: Map<String, Any>,
-    ): List<QuestionnaireResponse.Item.Builder> {
-        val responseItems = mutableListOf<QuestionnaireResponse.Item.Builder>()
-        for (qItem in qItems) {
-            val linkId = qItem.linkId.value ?: continue
-            val qType = qItem.type.value
-            val answer = answers[linkId]
+    private fun buildEncounterReference(id: String): Reference.Builder {
+        val encounterReference = if (id.startsWith("Encounter/")) id else "Encounter/$id"
+        return Reference.Builder().apply {
+            reference =
+                com.google.fhir.model.r4.String
+                    .Builder()
+                    .apply { value = encounterReference }
+        }
+    }
 
-            val itemBuilder =
-                QuestionnaireResponse.Item
-                    .Builder(
-                        com.google.fhir.model.r4.String
-                            .Builder()
-                            .apply { value = linkId },
-                    ).apply {
-                        this.text = qItem.text?.toBuilder()
-                    }
-
-            var hasAnswer = false
-
-            if (answer != null) {
-                when (answer) {
-                    is String -> {
-                        if (answer.isNotBlank()) {
-                            val fhirValue =
-                                when (qType) {
-                                    Questionnaire.QuestionnaireItemType.Date ->
-                                        com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Date(
-                                            com.google.fhir.model.r4.Date
-                                                .Builder()
-                                                .apply {
-                                                    value =
-                                                        com.google.fhir.model.r4.FhirDate
-                                                            .fromString(answer)
-                                                }.build(),
-                                        )
-                                    Questionnaire.QuestionnaireItemType.DateTime ->
-                                        com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.DateTime(
-                                            com.google.fhir.model.r4.DateTime
-                                                .Builder()
-                                                .apply {
-                                                    value =
-                                                        com.google.fhir.model.r4.FhirDateTime
-                                                            .fromString(answer)
-                                                }.build(),
-                                        )
-                                    Questionnaire.QuestionnaireItemType.Decimal ->
-                                        com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Decimal(
-                                            com.google.fhir.model.r4.Decimal
-                                                .Builder()
-                                                .apply {
-                                                    value =
-                                                        com.ionspin.kotlin.bignum.decimal.BigDecimal
-                                                            .parseString(answer)
-                                                }.build(),
-                                        )
-                                    Questionnaire.QuestionnaireItemType.Integer ->
-                                        com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Integer(
-                                            com.google.fhir.model.r4.Integer
-                                                .Builder()
-                                                .apply {
-                                                    value =
-                                                        answer.toIntOrNull() ?: 0
-                                                }.build(),
-                                        )
-                                    else ->
-                                        com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String(
-                                            com.google.fhir.model.r4.String
-                                                .Builder()
-                                                .apply {
-                                                    value =
-                                                        answer
-                                                }.build(),
-                                        )
-                                }
-                            itemBuilder.answer.add(
-                                QuestionnaireResponse.Item.Answer
+    /**
+     * Appends photos.
+     */
+    private fun appendPhotosToResponseItems(items: MutableList<QuestionnaireResponse.Item.Builder>) {
+        _uiState.value.photos.forEach { photo ->
+            val stepName =
+                photo.context
+                    ?.related
+                    ?.firstOrNull()
+                    ?.identifier
+                    ?.value
+                    ?.value ?: photo.description?.value
+            if (stepName != null) {
+                val urlPath =
+                    photo.content
+                        .firstOrNull()
+                        ?.attachment
+                        ?.url
+                        ?.value
+                if (urlPath != null) {
+                    items.add(
+                        QuestionnaireResponse.Item
+                            .Builder(
+                                com.google.fhir.model.r4.String
                                     .Builder()
-                                    .apply { value = fhirValue },
-                            )
-                            hasAnswer = true
-                        }
-                    }
-                    is List<*> -> {
-                        val strList = answer.filterIsInstance<String>().filter { it.isNotBlank() }
-                        if (strList.isNotEmpty()) {
-                            strList.forEach { strVal ->
-                                itemBuilder.answer.add(
+                                    .apply { value = stepName },
+                            ).apply {
+                                answer.add(
                                     QuestionnaireResponse.Item.Answer.Builder().apply {
                                         value =
-                                            com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String(
-                                                com.google.fhir.model.r4.String
+                                            com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Attachment(
+                                                com.google.fhir.model.r4.Attachment
                                                     .Builder()
-                                                    .apply { value = strVal }
-                                                    .build(),
+                                                    .apply {
+                                                        url =
+                                                            com.google.fhir.model.r4.Url
+                                                                .Builder()
+                                                                .apply { value = urlPath }
+                                                    }.build(),
                                             )
                                     },
                                 )
-                            }
-                            hasAnswer = true
-                        }
-                    }
-                    is Boolean -> {
-                        itemBuilder.answer.add(
-                            QuestionnaireResponse.Item.Answer.Builder().apply {
-                                value =
-                                    com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Boolean(
-                                        com.google.fhir.model.r4.Boolean
-                                            .Builder()
-                                            .apply { value = answer }
-                                            .build(),
-                                    )
                             },
-                        )
-                        hasAnswer = true
-                    }
-                    is Float -> {
-                        val fhirValue =
-                            when (qType) {
-                                Questionnaire.QuestionnaireItemType.Integer ->
-                                    com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Integer(
-                                        com.google.fhir.model.r4.Integer
-                                            .Builder()
-                                            .apply {
-                                                value =
-                                                    answer.toInt()
-                                            }.build(),
-                                    )
-                                else ->
-                                    com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Decimal(
-                                        com.google.fhir.model.r4.Decimal
-                                            .Builder()
-                                            .apply {
-                                                value =
-                                                    com.ionspin.kotlin.bignum.decimal.BigDecimal
-                                                        .parseString(answer.toString())
-                                            }.build(),
-                                    )
-                            }
-                        itemBuilder.answer.add(
-                            QuestionnaireResponse.Item.Answer
-                                .Builder()
-                                .apply { value = fhirValue },
-                        )
-                        hasAnswer = true
-                    }
+                    )
                 }
-            }
-
-            if (qItem.item.isNotEmpty()) {
-                val nestedItems = buildResponseItemsRecursively(qItem.item, answers)
-                if (nestedItems.isNotEmpty()) {
-                    itemBuilder.item.addAll(nestedItems)
-                    hasAnswer = true
-                }
-            }
-
-            if (hasAnswer || qType == Questionnaire.QuestionnaireItemType.Group) {
-                responseItems.add(itemBuilder)
             }
         }
-        return responseItems
     }
 
     /**
-     * Recursively extracts answers from QuestionnaireResponse items.
-     *
-     * @param items The list of QuestionnaireResponse.Item to traverse.
-     * @param existingAnswers The map to populate with extracted answers.
+     * Updates the encounter with notes from the form.
      */
-    private fun extractAnswersRecursively(
-        items: List<QuestionnaireResponse.Item>,
-        existingAnswers: MutableMap<String, Any>,
+    private suspend fun updateEncounterWithNotes(
+        q: Questionnaire?,
+        encounterId: String,
     ) {
-        items.forEach { item ->
-            val linkId = item.linkId.value ?: return@forEach
-            val answers = item.answer
-            if (answers.isNotEmpty()) {
-                if (answers.size > 1) {
-                    val list =
-                        answers.mapNotNull {
-                            val v = it.value
-                            if (v is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String) v.value.value else null
-                        }
-                    existingAnswers[linkId] = list
-                } else {
-                    val answer = answers.first().value
-                    if (answer != null) {
-                        when (answer) {
-                            is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String -> {
-                                val v = answer.value.value
-                                if (v != null) existingAnswers[linkId] = v
-                            }
-                            is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Boolean -> {
-                                val v = answer.value.value
-                                if (v != null) existingAnswers[linkId] = v
-                            }
-                            is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Decimal -> {
-                                val v = answer.value.value
-                                if (v != null) existingAnswers[linkId] = v.toStringExpanded().toFloatOrNull() ?: 0f
-                            }
-                            is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Integer -> {
-                                val v = answer.value.value
-                                existingAnswers[linkId] = v?.toFloat() ?: 0f
-                            }
-                            is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Date -> {
-                                val v = answer.value.value
-                                if (v != null) existingAnswers[linkId] = v.toString()
-                            }
-                            is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.DateTime -> {
-                                val v = answer.value.value
-                                if (v != null) existingAnswers[linkId] = v.toString()
-                            }
-                            is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Attachment -> {
-                                // handled in photos
-                            }
-                            else -> {}
-                        }
+        val allAnswers = _uiState.value.answers
+        val notesBuilder = StringBuilder()
+        allAnswers.forEach { (linkId, answer) ->
+            val questionItem =
+                q?.item?.let {
+                    io.healthplatform.chartcam.utils.QuestionnaireUtils
+                        .findItemRecursively(it, linkId)
+                }
+            val questionTitle = questionItem?.text?.value ?: linkId
+            when (answer) {
+                is String -> if (answer.isNotBlank()) notesBuilder.append("$questionTitle: $answer. ")
+                is Boolean ->
+                    notesBuilder.append(
+                        "$questionTitle: ${if (answer) {
+                            org.jetbrains.compose.resources.getString(
+                                Res.string.yes,
+                            )
+                        } else {
+                            org.jetbrains.compose.resources
+                                .getString(Res.string.no)
+                        }}. ",
+                    )
+                is List<*> -> {
+                    val strList = answer.filterIsInstance<String>()
+                    if (strList.isNotEmpty()) {
+                        notesBuilder.append("$questionTitle: ${strList.joinToString(", ")}. ")
                     }
                 }
-            }
-            if (item.item.isNotEmpty()) {
-                extractAnswersRecursively(item.item, existingAnswers)
+                is Float -> notesBuilder.append("$questionTitle: $answer. ")
             }
         }
+        val notesStr = notesBuilder.toString().trim()
+
+        fhirRepository.updateEncounterStatus(
+            encounterId,
+            "finished",
+            notesStr.ifBlank {
+                org.jetbrains.compose.resources
+                    .getString(Res.string.no_notes)
+            },
+        )
+
+        // Ignore result to support offline persistence
     }
 }
