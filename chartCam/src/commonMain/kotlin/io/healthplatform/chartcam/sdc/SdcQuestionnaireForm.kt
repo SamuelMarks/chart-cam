@@ -213,7 +213,6 @@ fun RenderQuestionnaireItem(
     }
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param item The item.
@@ -222,6 +221,7 @@ fun RenderQuestionnaireItem(
  * @param focusManager The focusManager.
  * @param onTakePhotoRequested The onTakePhotoRequested.
  */
+@Composable
 private fun RenderQuestionnaireItemImpl(
     item: Questionnaire.Item,
     state: SdcFormState,
@@ -312,11 +312,11 @@ private fun isMissingRequired(
         (answerValue is List<*> && answerValue.isEmpty())
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
  */
+@Composable
 private fun RenderGroupItem(ctx: RenderContext) {
     androidx.compose.material3.ElevatedCard(
         modifier =
@@ -347,12 +347,12 @@ private fun RenderGroupItem(ctx: RenderContext) {
     }
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
  * @param effectiveReadOnly The effectiveReadOnly.
  */
+@Composable
 private fun RenderInputItem(
     ctx: RenderContext,
     effectiveReadOnly: Boolean,
@@ -378,11 +378,11 @@ private fun RenderInputItem(
     }
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
  */
+@Composable
 private fun RenderReadOnlyField(ctx: RenderContext) {
     val answerDisplay = getAnswerDisplayText(ctx.type, ctx.item, ctx.linkId, ctx.state.answers)
 
@@ -431,7 +431,6 @@ private fun RenderReadOnlyField(ctx: RenderContext) {
     }
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param type The type.
@@ -440,6 +439,7 @@ private fun RenderReadOnlyField(ctx: RenderContext) {
  * @param answers The answers.
  * @return The result.
  */
+@Composable
 private fun getAnswerDisplayText(
     type: Questionnaire.QuestionnaireItemType,
     item: Questionnaire.Item,
@@ -454,12 +454,12 @@ private fun getAnswerDisplayText(
         else -> answers[linkId]?.toString() ?: ""
     }
 
-@Composable
 /**
  * Internal helper function.
  * @param checked The checked.
  * @return The result.
  */
+@Composable
 private fun getBooleanAnswerText(checked: Boolean?): String {
     if (checked == null) return ""
     return if (checked) stringResource(Res.string.yes) else stringResource(Res.string.no)
@@ -572,12 +572,12 @@ private fun RenderReadOnlyAttachment(ctx: RenderContext) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
  */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun RenderEditableField(ctx: RenderContext) {
     when (ctx.type) {
         Questionnaire.QuestionnaireItemType.String -> RenderStringField(ctx)
@@ -593,11 +593,11 @@ private fun RenderEditableField(ctx: RenderContext) {
     }
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
  */
+@Composable
 private fun RenderStringField(ctx: RenderContext) {
     val text = ctx.state.answers[ctx.linkId] as? String ?: ""
     io.healthplatform.chartcam.ui.components.FormBuilderTextInput(
@@ -621,11 +621,11 @@ private fun RenderStringField(ctx: RenderContext) {
     )
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
  */
+@Composable
 private fun RenderBooleanField(ctx: RenderContext) {
     val checked = ctx.state.answers[ctx.linkId] as? Boolean ?: false
     Row(
@@ -658,12 +658,12 @@ private fun RenderBooleanField(ctx: RenderContext) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
  */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun RenderChoiceField(ctx: RenderContext) {
     var expanded by remember { mutableStateOf(false) }
     val options =
@@ -719,7 +719,6 @@ private fun RenderChoiceField(ctx: RenderContext) {
     }
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
@@ -727,6 +726,7 @@ private fun RenderChoiceField(ctx: RenderContext) {
  * @param isMultiSelect The isMultiSelect.
  * @param options The options.
  */
+@Composable
 private fun RenderRadioOrCheckboxGroup(
     ctx: RenderContext,
     itemControl: String,
@@ -771,7 +771,6 @@ private fun RenderRadioOrCheckboxGroup(
     }
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
@@ -780,6 +779,7 @@ private fun RenderRadioOrCheckboxGroup(
  * @param isCheckboxes The isCheckboxes.
  * @param selectedOptions The selectedOptions.
  */
+@Composable
 private fun RenderRadioOrCheckboxOption(
     ctx: RenderContext,
     option: String,
@@ -833,8 +833,6 @@ private fun RenderRadioOrCheckboxOption(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
@@ -842,6 +840,8 @@ private fun RenderRadioOrCheckboxOption(
  * @param expanded The expanded.
  * @param onExpandedChange The onExpandedChange.
  */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun RenderDropdownField(
     ctx: RenderContext,
     options: List<String>,
@@ -896,11 +896,11 @@ private fun RenderDropdownField(
     }
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
  */
+@Composable
 private fun RenderAttachmentField(ctx: RenderContext) {
     val relatedAttachments =
         ctx.state.config.attachments.filter {
@@ -928,11 +928,11 @@ private fun RenderAttachmentField(ctx: RenderContext) {
     }
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
  */
+@Composable
 private fun RenderTextField(ctx: RenderContext) {
     val text = ctx.state.answers[ctx.linkId] as? String ?: ""
     FormBuilderTextArea(
@@ -953,11 +953,11 @@ private fun RenderTextField(ctx: RenderContext) {
     )
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
  */
+@Composable
 private fun RenderDateField(ctx: RenderContext) {
     val text = ctx.state.answers[ctx.linkId] as? String ?: ""
     FormBuilderDatePicker(
@@ -978,11 +978,11 @@ private fun RenderDateField(ctx: RenderContext) {
     )
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
  */
+@Composable
 private fun RenderDateTimeField(ctx: RenderContext) {
     val text = ctx.state.answers[ctx.linkId] as? String ?: ""
     FormBuilderDateTimePicker(
@@ -1003,11 +1003,11 @@ private fun RenderDateTimeField(ctx: RenderContext) {
     )
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
  */
+@Composable
 private fun RenderDecimalField(ctx: RenderContext) {
     val text = ctx.state.answers[ctx.linkId] as? String ?: ""
     FormBuilderNumericInput(
@@ -1028,11 +1028,11 @@ private fun RenderDecimalField(ctx: RenderContext) {
     )
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param ctx The ctx.
  */
+@Composable
 private fun RenderIntegerField(ctx: RenderContext) {
     val minValue = ctx.item.getMinValue() ?: DEFAULT_MIN_VALUE
     val maxValue = ctx.item.getMaxValue() ?: DEFAULT_MAX_VALUE

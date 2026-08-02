@@ -145,10 +145,10 @@ fun LoginScreen(
     }
 }
 
-@Composable
 /**
  * Internal helper.
  */
+@Composable
 private fun LanguageMenu() {
     Box {
         var showLanguageMenu by remember { mutableStateOf(false) }
@@ -181,10 +181,10 @@ private fun LanguageMenu() {
     }
 }
 
-@Composable
 /**
  * Internal helper.
  */
+@Composable
 private fun LoginHeader() {
     Image(
         painter = painterResource(Res.drawable.logo),
@@ -207,13 +207,13 @@ private fun LoginHeader() {
     )
 }
 
-@Composable
 /**
  * Internal helper.
  * @param isLoading The isLoading.
  * @param stateErrorMessage The stateErrorMessage.
  * @param onLogin The onLogin.
  */
+@Composable
 private fun LoginCard(
     isLoading: Boolean,
     stateErrorMessage: String?,
@@ -282,7 +282,6 @@ private fun LoginCard(
     }
 }
 
-@Composable
 /**
  * Internal helper.
  * @param username The username.
@@ -290,6 +289,7 @@ private fun LoginCard(
  * @param isLoading The isLoading.
  * @param isError The isError.
  */
+@Composable
 private fun UsernameField(
     username: String,
     onUsernameChange: (String) -> Unit,
@@ -322,7 +322,6 @@ private fun UsernameField(
     )
 }
 
-@Composable
 /**
  * Internal helper.
  * @param password The password.
@@ -331,6 +330,7 @@ private fun UsernameField(
  * @param isError The isError.
  * @param onLogin The onLogin.
  */
+@Composable
 private fun PasswordField(
     password: String,
     onPasswordChange: (String) -> Unit,
@@ -369,10 +369,10 @@ private fun PasswordField(
     )
 }
 
-@Composable
 /**
  * Internal helper.
  */
+@Composable
 private fun OfflineModeSwitch() {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -392,11 +392,11 @@ private fun OfflineModeSwitch() {
     }
 }
 
-@Composable
 /**
  * Internal helper.
  * @param text The text.
  */
+@Composable
 private fun ErrorMessage(text: String) {
     Text(
         text = text,
@@ -407,11 +407,11 @@ private fun ErrorMessage(text: String) {
     )
 }
 
-@Composable
 /**
  * Internal helper.
  * @param onClick The onClick.
  */
+@Composable
 private fun LoginButton(onClick: () -> Unit) {
     androidx.compose.runtime.CompositionLocalProvider(
         androidx.compose.material3.LocalTextStyle provides
@@ -437,10 +437,10 @@ private fun LoginButton(onClick: () -> Unit) {
     }
 }
 
-@Composable
 /**
  * Internal helper.
  */
+@Composable
 private fun FeaturesRow() {
     Row(
         modifier = Modifier.fillMaxWidth(),

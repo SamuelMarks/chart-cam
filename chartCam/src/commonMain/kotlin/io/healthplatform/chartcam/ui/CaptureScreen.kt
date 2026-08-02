@@ -98,12 +98,12 @@ private fun extractSteps(items: List<Questionnaire.Item>): List<PhotoStep> {
     return result
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param onOpenSettings The onOpenSettings.
  * @param onCancel The onCancel.
  */
+@Composable
 private fun PermissionDeniedScreen(
     onOpenSettings: () -> Unit,
     onCancel: () -> Unit,
@@ -217,7 +217,6 @@ fun CaptureScreen(
     )
 }
 
-@Composable
 /**
  * Internal helper function.
  * @param questionnaireId The questionnaireId.
@@ -226,6 +225,7 @@ fun CaptureScreen(
  * @param onFinished The onFinished.
  * @param onCancel The onCancel.
  */
+@Composable
 private fun CaptureScreenContent(
     questionnaireId: String,
     linkId: String? = null,
@@ -283,8 +283,6 @@ private fun CaptureScreenContent(
     )
 }
 
-@OptIn(ExperimentalResourceApi::class)
-@Composable
 /**
  * Internal helper function.
  * @param state The state.
@@ -293,6 +291,8 @@ private fun CaptureScreenContent(
  * @param focusRequester The focusRequester.
  * @param actions The actions.
  */
+@OptIn(ExperimentalResourceApi::class)
+@Composable
 private fun CaptureBox(
     state: CaptureUiState,
     cameraManager: CameraManager,
@@ -397,14 +397,14 @@ fun ControlsLayer(
     }
 }
 
-@OptIn(ExperimentalResourceApi::class)
-@Composable
 /**
  * Internal helper function.
  * @param stepName The stepName.
  * @param count The count.
  * @param total The total.
  */
+@OptIn(ExperimentalResourceApi::class)
+@Composable
 private fun ControlsTopBar(
     stepName: String,
     count: Int,
@@ -427,8 +427,6 @@ private fun ControlsTopBar(
     }
 }
 
-@OptIn(ExperimentalResourceApi::class)
-@Composable
 /**
  * Internal helper function.
  * @param isCapturing The isCapturing.
@@ -437,6 +435,8 @@ private fun ControlsTopBar(
  * @param onCancel The onCancel.
  * @param onToggleLens The onToggleLens.
  */
+@OptIn(ExperimentalResourceApi::class)
+@Composable
 private fun ControlsBottomBar(
     isCapturing: Boolean,
     hasMultipleCameras: Boolean,

@@ -134,7 +134,6 @@ data class EncounterDetailActions(
     val onNewlyCreatedQuestionnaireHandled: () -> Unit = {},
 )
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalResourceApi::class)
 /**
  * Encapsulates the UI for detailing an encounter.
  *
@@ -144,6 +143,7 @@ data class EncounterDetailActions(
  * @param actions Actions triggered from the screen.
  * @param newlyCreatedQuestionnaireId Optional ID of a newly created questionnaire.
  */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalResourceApi::class)
 @Composable
 fun EncounterDetailScreen(
     patientId: String,
@@ -207,7 +207,6 @@ private data class EncounterEffectParams(
     val photoManager: PhotoSessionManager,
 )
 
-@Composable
 /**
  * Internal helper.
  * @param params The params.
@@ -215,6 +214,7 @@ private data class EncounterEffectParams(
  * @param viewModel The viewModel.
  * @param state The state.
  */
+@Composable
 private fun EncounterEffects(
     params: EncounterEffectParams,
     actions: EncounterDetailActions,
@@ -255,12 +255,12 @@ private fun EncounterEffects(
     }
 }
 
-@Composable
 /**
  * Internal helper.
  * @param onConfirm The onConfirm.
  * @param onDismiss The onDismiss.
  */
+@Composable
 private fun DeleteConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
@@ -287,8 +287,6 @@ private fun DeleteConfirmDialog(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 /**
  * Internal helper.
  * @param state The state.
@@ -296,6 +294,8 @@ private fun DeleteConfirmDialog(
  * @param viewModel The viewModel.
  * @param onDeleteRequest The onDeleteRequest.
  */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun EncounterTopBar(
     state: EncounterUiState,
     actions: EncounterDetailActions,
@@ -349,8 +349,6 @@ private fun EncounterTopBar(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 /**
  * Internal helper.
  * @param state The state.
@@ -358,6 +356,8 @@ private fun EncounterTopBar(
  * @param actions The actions.
  * @param viewModel The viewModel.
  */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun EncounterDetailContent(
     state: EncounterUiState,
     padding: PaddingValues,
@@ -410,14 +410,14 @@ private fun EncounterDetailContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 /**
  * Internal helper.
  * @param state The state.
  * @param actions The actions.
  * @param viewModel The viewModel.
  */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun EncounterDetailHeader(
     state: EncounterUiState,
     actions: EncounterDetailActions,
@@ -430,11 +430,11 @@ private fun EncounterDetailHeader(
     }
 }
 
-@Composable
 /**
  * Internal helper.
  * @param state The state.
  */
+@Composable
 private fun PatientAndPractitionerInfo(state: EncounterUiState) {
     state.patient?.let { patient ->
         Text(
@@ -459,14 +459,14 @@ private fun PatientAndPractitionerInfo(state: EncounterUiState) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 /**
  * Internal helper.
  * @param state The state.
  * @param actions The actions.
  * @param viewModel The viewModel.
  */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun QuestionnaireSelector(
     state: EncounterUiState,
     actions: EncounterDetailActions,
@@ -523,13 +523,13 @@ private fun QuestionnaireSelector(
     }
 }
 
-@Composable
 /**
  * Internal helper.
  * @param state The state.
  * @param actions The actions.
  * @param viewModel The viewModel.
  */
+@Composable
 private fun QuestionnaireFormArea(
     state: EncounterUiState,
     actions: EncounterDetailActions,
@@ -642,11 +642,11 @@ private fun canFinalizeEncounter(state: EncounterUiState): Boolean =
         !state.isFinalized &&
         state.encounter?.status?.value != com.google.fhir.model.r4.Encounter.EncounterStatus.Finished
 
-@Composable
-@androidx.compose.material3.ExperimentalMaterial3Api
 /**
  * Internal helper.
  */
+@Composable
+@androidx.compose.material3.ExperimentalMaterial3Api
 private fun androidx.compose.material3.ExposedDropdownMenuBoxScope.QuestionnaireDropdownMenu(
     expanded: Boolean,
     state: EncounterUiState,
