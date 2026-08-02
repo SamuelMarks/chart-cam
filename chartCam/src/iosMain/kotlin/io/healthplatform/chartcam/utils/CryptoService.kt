@@ -33,10 +33,13 @@ private const val ARGON2_HASH_LEN = 32
  */
 @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 actual class CryptoService actual constructor() {
-    @OptIn(ExperimentalForeignApi::class)
     /**
      * Inits cryptor.
+     * @param op The op.
+     * @param key The key.
+     * @return The cryptor reference.
      */
+    @OptIn(ExperimentalForeignApi::class)
     private fun MemScope.initCryptor(
         op: platform.CoreCrypto.CCOperation,
         key: ByteArray,

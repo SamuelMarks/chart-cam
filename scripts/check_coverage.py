@@ -8,7 +8,7 @@ def get_kdoc_coverage(source_dirs):
     missing = []
 
     # regex to match class, interface, object, fun (including private/internal)
-    decl_pattern = re.compile(r'^\s*(?:(?:public|protected|private|internal|override|abstract|open|suspend|inline|data|value|expect|actual)\s+)*(class|interface|object|fun)\s+([a-zA-Z0-9_<>]+)')
+    decl_pattern = re.compile(r'^\s*(?:(?:public|protected|private|internal|override|abstract|open|suspend|inline|data|value|expect|actual)\s+)*(class|interface|object|fun)\s+([a-zA-Z0-9_<>.]+)')
 
     for d in source_dirs:
         if not os.path.exists(d): continue

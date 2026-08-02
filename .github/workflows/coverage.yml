@@ -28,7 +28,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Run Tests, Check Coverage, and Lint
-        run: ./gradlew check :chartCam:koverVerify detekt
+        run: ./gradlew check :chartCam:koverVerify :chartCam:koverXmlReport detekt
 
       - name: Run Python Coverage Check
         run: python3 scripts/check_coverage.py

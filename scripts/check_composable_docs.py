@@ -4,7 +4,7 @@ import sys
 
 def check_composable_docs(source_dirs):
     missing = []
-    func_pattern = re.compile(r'^\s*(?:(?:public|protected|internal|private)\s+)*fun\s+([a-zA-Z0-9_<>]+)\s*\(')
+    func_pattern = re.compile(r'^\s*(?:(?:public|protected|internal|private)\s+)*fun\s+([a-zA-Z0-9_<>.]+)\s*\(')
     param_pattern = re.compile(r'@param\s+([a-zA-Z0-9_]+)')
 
     for d in source_dirs:

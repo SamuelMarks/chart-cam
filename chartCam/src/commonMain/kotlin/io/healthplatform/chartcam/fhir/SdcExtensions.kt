@@ -26,6 +26,7 @@ object SdcExtensions {
 
 /**
  * Checks if a Questionnaire Item is hidden based on the SDC hidden extension.
+ * @return True if hidden, false otherwise.
  */
 fun Questionnaire.Item.isHidden(): Boolean {
     val hiddenExt = this.extension.firstOrNull { it.url == SdcExtensions.HIDDEN }
@@ -38,6 +39,7 @@ fun Questionnaire.Item.isHidden(): Boolean {
 
 /**
  * Retrieves the ItemControl code from the item, or null if not present.
+ * @return The item control code, or null.
  */
 fun Questionnaire.Item.getItemControl(): String? =
     this.extension
@@ -52,6 +54,7 @@ fun Questionnaire.Item.getItemControl(): String? =
 
 /**
  * Retrieves the minimum value extension for numeric inputs.
+ * @return The minimum value, or null.
  */
 fun Questionnaire.Item.getMinValue(): Float? =
     this.extension
@@ -64,6 +67,7 @@ fun Questionnaire.Item.getMinValue(): Float? =
 
 /**
  * Retrieves the maximum value extension for numeric inputs.
+ * @return The maximum value, or null.
  */
 fun Questionnaire.Item.getMaxValue(): Float? =
     this.extension

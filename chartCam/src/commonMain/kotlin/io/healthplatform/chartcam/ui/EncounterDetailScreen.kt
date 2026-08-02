@@ -644,6 +644,11 @@ private fun canFinalizeEncounter(state: EncounterUiState): Boolean =
 
 /**
  * Internal helper.
+ * @param expanded The expanded.
+ * @param state The state.
+ * @param actions The actions.
+ * @param viewModel The viewModel.
+ * @param onDismiss The onDismiss.
  */
 @Composable
 @androidx.compose.material3.ExperimentalMaterial3Api

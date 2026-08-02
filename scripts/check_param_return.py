@@ -6,7 +6,7 @@ def check_param_return(source_dirs):
     total_funcs = 0
     missing = []
 
-    func_pattern = re.compile(r'^\s*(?:(?:public|protected|private|internal|override|abstract|open|suspend|inline|expect|actual)\s+)*fun\s+([a-zA-Z0-9_<>]+)\s*\(')
+    func_pattern = re.compile(r'^\s*(?:(?:public|protected|private|internal|override|abstract|open|suspend|inline|expect|actual)\s+)*fun\s+([a-zA-Z0-9_<>.]+)\s*\(')
 
     for d in source_dirs:
         if not os.path.exists(d): continue
