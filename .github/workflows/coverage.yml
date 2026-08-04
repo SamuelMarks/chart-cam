@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [ "master" ]
 
-env:
-  NODE_OPTIONS: "--max-old-space-size=3072"
-
 jobs:
   verify_coverage:
     runs-on: ubuntu-latest
