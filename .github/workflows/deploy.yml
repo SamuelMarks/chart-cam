@@ -104,6 +104,7 @@ jobs:
         run: |
           mkdir -p ~/.gradle
           echo "org.gradle.daemon=false" >> ~/.gradle/gradle.properties
+          sed -i '' 's/-XX:MaxRAMPercentage=50.0/-Xmx13g/g' gradle.properties
 
       - name: Fastlane iOS Deploy
         env:
