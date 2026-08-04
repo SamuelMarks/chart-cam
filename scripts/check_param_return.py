@@ -11,7 +11,6 @@ def check_param_return(source_dirs):
     for d in source_dirs:
         if not os.path.exists(d): continue
         for root, _, files in os.walk(d):
-            if "Test" in root or "test" in root: continue
             for file in files:
                 if file.endswith(".kt"):
                     path = os.path.join(root, file)
