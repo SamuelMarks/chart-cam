@@ -60,7 +60,7 @@ class JvmShareService : ShareService {
             if (!isTesting()) {
                 JOptionPane.showMessageDialog(null, "Text copied to clipboard")
             }
-        } catch (e: java.awt.HeadlessException) {
+        } catch (e: Throwable) {
             println("Headless environment detected, cannot copy to clipboard: ${e.message}")
         }
     }
