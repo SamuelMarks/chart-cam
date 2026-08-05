@@ -53,11 +53,15 @@ class JvmShareService : ShareService {
      * @param text The text string to be copied to the clipboard.
      */
     override fun shareText(text: String) {
-        val selection = StringSelection(text)
-        val clipboard = Toolkit.getDefaultToolkit().systemClipboard
-        clipboard.setContents(selection, selection)
-        if (!isTesting()) {
-            JOptionPane.showMessageDialog(null, "Text copied to clipboard")
+        try {
+            val selection = StringSelection(text)
+            val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+            clipboard.setContents(selection, selection)
+            if (!isTesting()) {
+                JOptionPane.showMessageDialog(null, "Text copied to clipboard")
+            }
+        } catch (e: java.awt.HeadlessException) {
+            println("Headless environment detected, cannot copy to clipboard: ${e.message}")
         }
     }
 }

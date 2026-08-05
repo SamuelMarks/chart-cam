@@ -54,6 +54,7 @@ jobs:
         with:
           ruby-version: '3.0'
           bundler-cache: true
+          working-directory: fastlane
 
       - name: Decode Keystore
         env:
@@ -74,6 +75,7 @@ jobs:
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        working-directory: fastlane
         run: bundle exec fastlane android deploy_internal
 
   # --- Job 3: Deploy iOS (MacOS - Expensive, run sparingly) ---
@@ -99,6 +101,7 @@ jobs:
         with:
           ruby-version: '3.0'
           bundler-cache: true
+          working-directory: fastlane
 
       - name: Disable Gradle Daemon
         run: |
@@ -110,4 +113,5 @@ jobs:
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        working-directory: fastlane
         run: bundle exec fastlane ios deploy_testflight
