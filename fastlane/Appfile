@@ -1,5 +1,5 @@
 # Android Configuration
-json_key_file("fastlane/api-key.json") # Path to the service account json for Play Store
+json_key_file("api-key.json") # Path to the service account json for Play Store
 package_name("io.healthplatform.chartcam") # Android Application ID
 
 # iOS Configuration
