@@ -84,13 +84,11 @@ fun NavGraphBuilder.newVisitDestination(
  * Registers the patient list destination to the navigation graph.
  *
  * @param navController The navigation controller.
- * @param scope The coroutine scope.
  * @param deps The application dependencies.
  * @param currentLang The current application language.
  */
 fun NavGraphBuilder.patientListDestination(
     navController: NavHostController,
-    scope: CoroutineScope,
     deps: AppDependencies,
     currentLang: String,
 ) {
@@ -127,13 +125,11 @@ fun NavGraphBuilder.patientListDestination(
  * Registers the patient detail destination to the navigation graph.
  *
  * @param navController The navigation controller.
- * @param scope The coroutine scope.
  * @param deps The application dependencies.
  * @param currentLang The current application language.
  */
 fun NavGraphBuilder.patientDetailDestination(
     navController: NavHostController,
-    scope: CoroutineScope,
     deps: AppDependencies,
     currentLang: String,
 ) {
@@ -158,13 +154,11 @@ fun NavGraphBuilder.patientDetailDestination(
  * Registers the patient visits destination to the navigation graph.
  *
  * @param navController The navigation controller.
- * @param scope The coroutine scope.
  * @param deps The application dependencies.
  * @param currentLang The current application language.
  */
 fun NavGraphBuilder.patientVisitsDestination(
     navController: NavHostController,
-    scope: CoroutineScope,
     deps: AppDependencies,
     currentLang: String,
 ) {

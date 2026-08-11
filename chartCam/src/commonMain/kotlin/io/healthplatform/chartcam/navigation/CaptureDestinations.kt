@@ -12,7 +12,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import io.healthplatform.chartcam.ui.CaptureScreen
 import io.healthplatform.chartcam.ui.TriageScreen
-import kotlinx.coroutines.CoroutineScope
 
 /**
  * Registers the capture destination to the navigation graph.
@@ -53,13 +52,11 @@ fun NavGraphBuilder.captureDestination(
  * Registers the capture for patient destination to the navigation graph.
  *
  * @param navController The navigation controller.
- * @param scope The coroutine scope.
  * @param deps The application dependencies.
  * @param currentLang The current application language.
  */
 fun NavGraphBuilder.captureForPatientDestination(
     navController: NavHostController,
-    scope: CoroutineScope,
     deps: AppDependencies,
     currentLang: String,
 ) {
@@ -88,13 +85,11 @@ fun NavGraphBuilder.captureForPatientDestination(
  * Registers the triage destination to the navigation graph.
  *
  * @param navController The navigation controller.
- * @param scope The coroutine scope.
  * @param deps The application dependencies.
  * @param currentLang The current application language.
  */
 fun NavGraphBuilder.triageDestination(
     navController: NavHostController,
-    scope: CoroutineScope,
     deps: AppDependencies,
     currentLang: String,
 ) {

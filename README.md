@@ -14,7 +14,7 @@ ChartCam is a fully open-source, decentralized clinical data capture and researc
 Far beyond a standard clinical camera, ChartCam is a powerful engine designed to democratize medical research. It empowers clinicians, academics, and researchers to effortlessly build, share, and deploy custom questionnaires to run their own clinical studies. From bespoke triage assessments to specialized patient intake protocols, your team can mobilize dynamic data collection instruments instantly.
 
 **Uncompromising Security & Decentralization**
-Patient privacy is built into ChartCam’s foundation. Utilizing a heavily encrypted, decentralized architecture, the application ensures that your clinical data remains sovereign. Patient information is secured on-device using military-grade iOS Keychain encryption—guaranteeing total compliance and rigorous provenance tracking without relying on vulnerable centralized middleware.
+Patient privacy is built into ChartCam’s foundation. Utilizing a heavily encrypted, decentralized architecture, the application ensures that your clinical data remains sovereign. Patient information is secured on-device using platform-native hardware encryption (e.g., Android Keystore, iOS Keychain)—guaranteeing total compliance and rigorous provenance tracking without relying on vulnerable centralized middleware.
 
 **Native FHIR Interoperability**
 By speaking natively in the Fast Healthcare Interoperability Resources (HL7 FHIR R4) standard, ChartCam eliminates data silos. Every data point—whether it is a high-fidelity clinical image (`DocumentReference`/`Media`) or custom study data (`QuestionnaireResponse`)—is fully structured, standardized, and primed for immediate integration into any major Electronic Health Record (EHR) system.
@@ -31,6 +31,15 @@ By speaking natively in the Fast Healthcare Interoperability Resources (HL7 FHIR
 ChartCam: The secure, open-source engine for clinical innovation.
 
 **Keywords:** `open-source, fhir, clinical, research, harvard, mgh, decentralized, encrypted, questionnaire, ehr, medical`
+
+## Screenshots
+
+<div align="center">
+  <img src="fastlane/screenshots/en-US/iphone-01-login.png" width="200" alt="Login"/>
+  <img src="fastlane/screenshots/en-US/iphone-02-patient-list.png" width="200" alt="Patient List"/>
+  <img src="fastlane/screenshots/en-US/iphone-04-patient-detail.png" width="200" alt="Patient Detail"/>
+  <img src="fastlane/screenshots/en-US/iphone-08-fill-questionnaire.png" width="200" alt="Fill Questionnaire"/>
+</div>
 
 ---
 

@@ -87,14 +87,14 @@ fun AppNavigation() {
     NavHost(navController = navController, startDestination = Routes.LOGIN) {
         loginDestination(navController, dependencies, currentLang)
         captureDestination(navController, dependencies, currentLang)
-        captureForPatientDestination(navController, scope, dependencies, currentLang)
-        triageDestination(navController, scope, dependencies, currentLang)
+        captureForPatientDestination(navController, dependencies, currentLang)
+        triageDestination(navController, dependencies, currentLang)
         newVisitDestination(navController, scope, dependencies, currentLang)
         visitDetailDestination(navController, scope, dependencies, currentLang)
-        patientListDestination(navController, scope, dependencies, currentLang)
-        patientDetailDestination(navController, scope, dependencies, currentLang)
-        patientVisitsDestination(navController, scope, dependencies, currentLang)
-        questionnaireBuilderDestination(navController, scope, dependencies, currentLang)
-        questionnaireListDestination(navController, scope, dependencies, currentLang)
+        patientListDestination(navController, dependencies, currentLang)
+        patientDetailDestination(navController, dependencies, currentLang)
+        patientVisitsDestination(navController, dependencies, currentLang)
+        questionnaireBuilderDestination(navController, dependencies, currentLang)
+        questionnaireListDestination(navController, dependencies, currentLang)
     }
 }

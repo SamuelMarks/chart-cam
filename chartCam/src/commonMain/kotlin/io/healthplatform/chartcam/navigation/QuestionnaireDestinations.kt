@@ -11,19 +11,16 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import io.healthplatform.chartcam.ui.QuestionnaireListScreen
-import kotlinx.coroutines.CoroutineScope
 
 /**
  * Registers the questionnaire builder destination to the navigation graph.
  *
  * @param navController The navigation controller.
- * @param scope The coroutine scope.
  * @param deps The application dependencies.
  * @param currentLang The current application language.
  */
 fun NavGraphBuilder.questionnaireBuilderDestination(
     navController: NavHostController,
-    scope: CoroutineScope,
     deps: AppDependencies,
     currentLang: String,
 ) {
@@ -51,13 +48,11 @@ fun NavGraphBuilder.questionnaireBuilderDestination(
  * Registers the questionnaire list destination to the navigation graph.
  *
  * @param navController The navigation controller.
- * @param scope The coroutine scope.
  * @param deps The application dependencies.
  * @param currentLang The current application language.
  */
 fun NavGraphBuilder.questionnaireListDestination(
     navController: NavHostController,
-    scope: CoroutineScope,
     deps: AppDependencies,
     currentLang: String,
 ) {
