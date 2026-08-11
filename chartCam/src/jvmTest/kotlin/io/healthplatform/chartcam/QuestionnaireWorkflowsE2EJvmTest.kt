@@ -13,11 +13,20 @@ import androidx.compose.ui.test.performClick
 import org.junit.Rule
 import kotlin.test.Test
 
+/**
+ * E2E tests for questionnaire workflows on JVM.
+ */
 @OptIn(ExperimentalTestApi::class)
 class QuestionnaireWorkflowsE2EJvmTest {
+    /**
+     * The compose rule.
+     */
     @get:Rule
     val rule = createComposeRule()
 
+    /**
+     * Tests the duplicate questionnaire workflow.
+     */
     @Test
     fun duplicateQuestionnaireWorkflow() {
         val repo =

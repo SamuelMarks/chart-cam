@@ -11,7 +11,13 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 
+/**
+ * Tests for the [NetworkClient] creation and basic usage.
+ */
 class NetworkClientTest {
+    /**
+     * Tests that the Ktor client can be created and queried using a MockEngine.
+     */
     @Test
     fun testCreateNetworkClient() =
         runTest {

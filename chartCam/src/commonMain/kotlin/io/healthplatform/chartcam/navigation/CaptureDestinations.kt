@@ -13,7 +13,6 @@ import androidx.navigation.toRoute
 import io.healthplatform.chartcam.ui.CaptureScreen
 import io.healthplatform.chartcam.ui.TriageScreen
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 /**
  * Registers the capture destination to the navigation graph.
@@ -75,10 +74,10 @@ fun NavGraphBuilder.captureForPatientDestination(
                     if (outputPathsMap.isNotEmpty()) {
                         deps.photoSessionManager.setPhotos(outputPathsMap)
                     }
-                    scope.launch { navController.popBackStack() }
+                    navController.popBackStack()
                 },
                 onCancel = {
-                    scope.launch { navController.popBackStack() }
+                    navController.popBackStack()
                 },
             )
         }
@@ -105,7 +104,7 @@ fun NavGraphBuilder.triageDestination(
                 capturedPhotoPaths = deps.photoSessionManager.get(),
                 fhirRepository = deps.fhirRepository,
                 onProceedToEncounter = { patientId, _ ->
-                    scope.launch { navController.navigate(NewVisitRoute(patientId)) }
+                    navController.navigate(NewVisitRoute(patientId))
                 },
             )
         }

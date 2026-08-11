@@ -7,7 +7,13 @@ package io.healthplatform.chartcam.terminology
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+/**
+ * Tests for terminology services in FHIR.
+ */
 class TerminologyServiceTest {
+    /**
+     * Validates terminology constant accessors.
+     */
     @Test
     fun testTerminologyService() {
         val loincSystem = TerminologyService.getLoincCodeSystem()

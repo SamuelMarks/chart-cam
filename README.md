@@ -1,12 +1,36 @@
 ChartCam
 ========
 
-![Doc Coverage](https://img.shields.io/badge/Doc%20Coverage-36.5%25-brightgreen)
+[![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+![Doc Coverage](https://img.shields.io/badge/Doc%20Coverage-100.0%25-brightgreen)
 ![Test Coverage](https://img.shields.io/badge/Test%20Coverage-100.0%25-brightgreen)
 [![Coverage Verification](https://github.com/SamuelMarks/chart-cam/actions/workflows/coverage.yml/badge.svg)](https://github.com/SamuelMarks/chart-cam/actions/workflows/coverage.yml)
 [![ChartCam CI/CD](https://github.com/SamuelMarks/chart-cam/actions/workflows/deploy.yml/badge.svg)](https://github.com/SamuelMarks/chart-cam/actions/workflows/deploy.yml)
 
-ChartCam is an enterprise-grade Kotlin Multiplatform (KMP) application engineered for modern healthcare platforms. It provides a secure, efficient, and compliant solution for capturing, managing, and triaging patient clinical photography. Architected specifically for practitioners operating in fast-paced, high-friction environments, ChartCam facilitates rapid clinical documentation while maintaining strict adherence to global data privacy regulations (e.g., HIPAA, GDPR, PIPEDA).
+> Open-source, decentralized, and FHIR-native. Built for Harvard clinicians to rapidly capture encrypted clinical media and run custom medical studies on the go.
+
+ChartCam is a fully open-source, decentralized clinical data capture and research platform engineered for the modern healthcare ecosystem. Originally developed to support Google-sponsored clinicians at Harvard Medical School’s Mass General Hospital (Mass Eye and Ear Infirmary), ChartCam brings rigorous, privacy-first data collection directly to the point of care.
+
+Far beyond a standard clinical camera, ChartCam is a powerful engine designed to democratize medical research. It empowers clinicians, academics, and researchers to effortlessly build, share, and deploy custom questionnaires to run their own clinical studies. From bespoke triage assessments to specialized patient intake protocols, your team can mobilize dynamic data collection instruments instantly.
+
+**Uncompromising Security & Decentralization**
+Patient privacy is built into ChartCam’s foundation. Utilizing a heavily encrypted, decentralized architecture, the application ensures that your clinical data remains sovereign. Patient information is secured on-device using military-grade iOS Keychain encryption—guaranteeing total compliance and rigorous provenance tracking without relying on vulnerable centralized middleware.
+
+**Native FHIR Interoperability**
+By speaking natively in the Fast Healthcare Interoperability Resources (HL7 FHIR R4) standard, ChartCam eliminates data silos. Every data point—whether it is a high-fidelity clinical image (`DocumentReference`/`Media`) or custom study data (`QuestionnaireResponse`)—is fully structured, standardized, and primed for immediate integration into any major Electronic Health Record (EHR) system.
+
+**Key Features:**
+
+* **Open-Source Transparency:** Free, extensible, and fully open-source. No vendor lock-in; just community-driven healthcare innovation you can trust and audit.
+* **Custom Studies on the Go:** Create and share dynamic, FHIR-based questionnaires to execute bespoke clinical trials, studies, and patient intake workflows.
+* **Research-Grade Pedigree:** Engineered for high-friction clinical environments in collaboration with top-tier medical researchers at Mass Eye and Ear.
+* **Decentralized & Encrypted:** True data sovereignty. Robust on-device encryption protects sensitive patient data at rest, enforcing strict compliance with global health privacy standards.
+* **Rapid "Snap-First" Workflow:** Hardware-accelerated native camera capabilities allow for frictionless, zero-delay clinical photography so you can focus on the patient, not the device.
+* **Direct EHR Integration:** FHIR-native architecture means your unstructured media and custom study data are instantly structured for downstream EHR consumption.
+
+ChartCam: The secure, open-source engine for clinical innovation.
+
+**Keywords:** `open-source, fhir, clinical, research, harvard, mgh, decentralized, encrypted, questionnaire, ehr, medical`
 
 ---
 
@@ -28,7 +52,7 @@ ChartCam takes clinical data interoperability and regulatory compliance as found
 
 *   **Patient & Encounter Resources:** Every clinical interaction is strictly modeled using FHIR `Patient` and `Encounter` resources. This guarantees an unambiguous, standardized linkage between the subject of care and the specific clinical event.
 *   **DocumentReference & Media:** Captured clinical photography is never treated as a loosely managed raw file. Instead, images are immediately encapsulated within FHIR `DocumentReference` or `Media` resources. This rich metadata wrapper includes the author (practitioner), capture datetime, anatomical site (codified via SNOMED CT or LOINC), and capturing device information.
-*   **Questionnaire & QuestionnaireResponse:** To support dynamic, compliance-driven clinical intake forms and triage assessments, ChartCam heavily leverages `Questionnaire` and `QuestionnaireResponse` resources. This enables healthcare organizations to deploy custom, structured data collection instruments (e.g., informed consent forms, specialized wound assessment scales) that render natively within the KMP application layer.
+*   **Questionnaire & QuestionnaireResponse:** To democratize medical research and support dynamic triage, ChartCam heavily leverages `Questionnaire` and `QuestionnaireResponse` resources. This enables clinicians and researchers to effortlessly build, share, and deploy custom data collection instruments (e.g., bespoke clinical trials, specialized patient intake workflows) instantly without relying on centralized middleware.
 *   **Security & Provenance:** Patient consent and data provenance are rigorously managed. Clinical media is associated with `Consent` and `Provenance` resources to maintain an immutable, auditable trail of data capture and access, aligning with stringent HIPAA and security audit requirements.
 
 By natively speaking FHIR, ChartCam eliminates the traditional need for fragile, complex middleware transformations, empowering organizations to directly route high-fidelity clinical media into a patient's longitudinal health record.
@@ -190,4 +214,19 @@ Upon completion, comprehensive HTML test coverage and result reports are generat
 * `chartCam/build/reports/tests/`
 
 ---
-> **Compliance Note:** ChartCam enforces 100% Documentation and Test Coverage standards. Execute `./gradlew check` to verify compliance prior to submitting any Pull Requests.
+
+## License
+
+Licensed under either of
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <https://www.apache.org/licenses/LICENSE-2.0>)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or <https://opensource.org/licenses/MIT>)
+
+at your option.
+
+### Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
+

@@ -2,12 +2,14 @@ import xml.etree.ElementTree as ET
 import os
 import sys
 
+
 def get_keys(filepath):
     if not os.path.exists(filepath):
         return set()
     tree = ET.parse(filepath)
     root = tree.getroot()
-    return set(child.get('name') for child in root if child.tag == 'string')
+    return set(child.get("name") for child in root if child.tag == "string")
+
 
 base_dir = "chartCam/src/commonMain/composeResources/values"
 base_keys = get_keys(os.path.join(base_dir, "strings.xml"))

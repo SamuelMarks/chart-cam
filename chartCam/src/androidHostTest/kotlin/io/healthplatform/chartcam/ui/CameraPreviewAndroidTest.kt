@@ -14,10 +14,16 @@ import org.junit.runner.RunWith
 import org.mockito.Mockito
 import org.robolectric.RobolectricTestRunner
 
+/**
+ * Android host tests for CameraPreview.
+ */
 @OptIn(ExperimentalTestApi::class)
 @org.robolectric.annotation.Config(manifest = "src/androidHostTest/AndroidManifest.xml", packageName = "io.healthplatform.chartcam")
 @RunWith(RobolectricTestRunner::class)
 class CameraPreviewAndroidTest {
+    /**
+     * Dummy test for CameraPreview (currently ignored as Robolectric doesn't support the required features).
+     */
     @org.junit.Ignore("Robolectric doesn't support this")
     @Test
     fun testCameraPreviewAndroid() =

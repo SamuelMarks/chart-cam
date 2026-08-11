@@ -24,11 +24,20 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
 import kotlin.test.Test
 
+/**
+ * E2E tests for an existing visit on JVM.
+ */
 @OptIn(ExperimentalTestApi::class)
 class ExistingVisitE2EJvmTest {
+    /**
+     * The compose rule.
+     */
     @get:Rule
     val rule = createComposeRule()
 
+    /**
+     * Tests an existing visit locked questionnaire.
+     */
     @Test
     fun testExistingVisitLockedQuestionnaire() =
         runTest {

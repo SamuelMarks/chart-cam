@@ -20,6 +20,9 @@ import org.junit.runner.RunWith
 class AndroidPermissionManagerTest {
     private lateinit var context: Context
 
+    /**
+     * Setup for tests.
+     */
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext<Context>()

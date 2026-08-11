@@ -11,16 +11,32 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith
 
+/**
+ * Dummy implementation of [Clipboard] for testing.
+ */
 class DummyClipboard : Clipboard {
+    /**
+     * Text in the dummy clipboard.
+     */
     var text: String? = null
 
+    /**
+     * Gets the clip entry.
+     * @return [ClipEntry] instance or null.
+     */
     override suspend fun getClipEntry(): ClipEntry? = null // Mocking fully is complex in this test env
 
     // We override extensions by testing them directly if possible, or just the logic
 }
 
+/**
+ * Tests for Android clipboard utilities.
+ */
 @RunWith(AndroidJUnit4::class)
 class AndroidClipboardUtilsTest {
+    /**
+     * Tests the clipboard logic.
+     */
     @Test
     fun testClipboard() =
         runBlocking {

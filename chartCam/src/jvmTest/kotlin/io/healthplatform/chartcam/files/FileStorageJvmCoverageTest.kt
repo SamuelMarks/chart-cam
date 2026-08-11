@@ -1,10 +1,20 @@
+/**
+ * @file FileStorageJvmCoverageTest.kt
+ * Contains declarations for FileStorageJvmCoverageTest.kt.
+ */
 package io.healthplatform.chartcam.files
 
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * Coverage test class for FileStorage on JVM.
+ */
 class FileStorageJvmCoverageTest {
+    /**
+     * Tests saving and reading an image.
+     */
     @Test
     fun testSaveAndReadImage() {
         val storage = createFileStorage()
@@ -15,6 +25,9 @@ class FileStorageJvmCoverageTest {
         assertEquals(3, bytes.size)
     }
 
+    /**
+     * Tests reading a non-existent image.
+     */
     @Test
     fun testReadNonExistent() {
         val storage = createFileStorage()

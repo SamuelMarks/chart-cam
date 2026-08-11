@@ -10,8 +10,14 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.v2.runComposeUiTest
 import kotlin.test.Test
 
+/**
+ * Test class for Theme on JVM.
+ */
 @OptIn(ExperimentalTestApi::class)
 class ThemeJvmTest {
+    /**
+     * Tests AppTheme on JVM.
+     */
     @Test
     fun testAppTheme() =
         runComposeUiTest {

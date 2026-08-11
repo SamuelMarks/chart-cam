@@ -1,3 +1,7 @@
+/**
+ * @file FormBuilderWidgetsJvmTest.kt
+ * Contains declarations for FormBuilderWidgetsJvmTest.kt.
+ */
 package io.healthplatform.chartcam.ui.components
 
 import androidx.compose.foundation.layout.Column
@@ -15,7 +19,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * Test class for FormBuilderWidgets on JVM.
+ */
 class FormBuilderWidgetsJvmTest {
+    /**
+     * Tests FormBuilderTextInput.
+     */
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun testFormBuilderTextInput() =
@@ -35,6 +45,9 @@ class FormBuilderWidgetsJvmTest {
             assertEquals("Hello", value)
         }
 
+    /**
+     * Tests FormBuilderCheckbox.
+     */
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun testFormBuilderCheckbox() =
@@ -53,6 +66,9 @@ class FormBuilderWidgetsJvmTest {
             assertTrue(isChecked)
         }
 
+    /**
+     * Tests FormBuilder widgets error states.
+     */
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun testFormBuilderWidgetsErrorStates() =

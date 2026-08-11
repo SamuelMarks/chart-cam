@@ -1,3 +1,7 @@
+/**
+ * @file EncounterDetailCoverageTest.kt
+ * Contains declarations for EncounterDetailCoverageTest.kt.
+ */
 package io.healthplatform.chartcam.viewmodel
 
 import com.google.fhir.model.r4.Attachment
@@ -21,7 +25,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Test
 import org.mockito.Mockito
 
+/**
+ * Coverage test class for EncounterDetailViewModel.
+ */
 class EncounterDetailCoverageTest {
+    /**
+     * Tests nulls and missing forms handling.
+     */
     @Test
     fun testNullsAndMissingForms() {
         val fhirRepository = Mockito.mock(FhirRepository::class.java)
@@ -223,6 +233,9 @@ class EncounterDetailCoverageTest {
         kotlinx.coroutines.runBlocking { kotlinx.coroutines.delay(200) }
     }
 
+    /**
+     * Tests onFormUpdated.
+     */
     @Test
     fun testOnFormUpdated() {
         val fhirRepository = Mockito.mock(FhirRepository::class.java)
@@ -234,6 +247,9 @@ class EncounterDetailCoverageTest {
         vm.onFormUpdated(mapOf("test" to "test"))
     }
 
+    /**
+     * Tests selectQuestionnaireById and createAndSelectQuestionnaire.
+     */
     @Test
     fun testSelectQuestionnaireByIdAndCreate() {
         val fhirRepository = Mockito.mock(FhirRepository::class.java)

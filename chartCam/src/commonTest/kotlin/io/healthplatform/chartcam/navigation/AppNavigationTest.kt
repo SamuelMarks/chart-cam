@@ -8,7 +8,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * Tests for Application Navigation utilities.
+ */
 class AppNavigationTest {
+    /**
+     * Tests the behavior of the [PhotoSessionManager].
+     */
     @Test
     fun testPhotoSessionManager() {
         val manager = PhotoSessionManager()

@@ -13,7 +13,16 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import com.google.fhir.model.r4.String as FhirString
 
+/**
+ * Tests for SDC calculated expression logic.
+ */
 class SdcEvaluatorTest {
+    /**
+     * Helper to construct a [Questionnaire] with a specific calculated expression.
+     * @param linkIdStr The item linkId.
+     * @param expression The FHIRpath/SDC expression.
+     * @return Prepared [Questionnaire].
+     */
     private fun createQuestionnaireWithCalcExt(
         linkIdStr: String,
         expression: String,
@@ -39,6 +48,12 @@ class SdcEvaluatorTest {
         return Questionnaire.Builder(status = Enumeration(value = PublicationStatus.Active)).apply { item.add(itemB) }.build()
     }
 
+    /**
+     * Helper to construct a [Questionnaire] with an alternative expression format.
+     * @param linkIdStr The item linkId.
+     * @param expression The FHIRpath/SDC expression.
+     * @return Prepared [Questionnaire].
+     */
     private fun createQuestionnaireWithAltCalcExt(
         linkIdStr: String,
         expression: String,
@@ -60,6 +75,7 @@ class SdcEvaluatorTest {
         return Questionnaire.Builder(status = Enumeration(value = PublicationStatus.Active)).apply { item.add(itemB) }.build()
     }
 
+    /** Test basic arithmetic expression evaluation. */
     @Test
     fun testEvaluateMathExpressionBasic() {
         val q = createQuestionnaireWithCalcExt("target", "%a + %b")
@@ -68,6 +84,7 @@ class SdcEvaluatorTest {
         assertEquals(15f, result["target"])
     }
 
+    /** Test advanced arithmetic expression evaluation. */
     @Test
     fun testEvaluateMathExpressionAdvanced() {
         val q = createQuestionnaireWithCalcExt("target", "(%a + %b) * %c / 2")
@@ -76,6 +93,7 @@ class SdcEvaluatorTest {
         assertEquals(30f, result["target"])
     }
 
+    /** Test evaluating math using alternative extension structure. */
     @Test
     fun testEvaluateMathExpressionWithAltExt() {
         val q = createQuestionnaireWithAltCalcExt("target", "%a - %b")
@@ -84,6 +102,7 @@ class SdcEvaluatorTest {
         assertEquals(10f, result["target"])
     }
 
+    /** Test default value handling for missing variables. */
     @Test
     fun testMissingVarsDefaultToZero() {
         val q = createQuestionnaireWithCalcExt("target", "%a + %missing")
@@ -92,6 +111,7 @@ class SdcEvaluatorTest {
         assertEquals(5f, result["target"])
     }
 
+    /** Test cascading updates across multiple expression fields. */
     @Test
     fun testCascadingUpdates() {
         val itemB =
@@ -148,6 +168,7 @@ class SdcEvaluatorTest {
         assertEquals(30f, result["C"])
     }
 
+    /** Test handling of malformed math formulas. */
     @Test
     fun testMalformedMath() {
         val q = createQuestionnaireWithCalcExt("target", "1 + * 2")
@@ -156,6 +177,7 @@ class SdcEvaluatorTest {
         assertTrue(!result.containsKey("target"))
     }
 
+    /** Test behavior with empty expressions. */
     @Test
     fun testEmptyExpression() {
         val q = createQuestionnaireWithCalcExt("target", "   ")
@@ -164,6 +186,7 @@ class SdcEvaluatorTest {
         assertEquals(0f, result["target"])
     }
 
+    /** Test evaluation within nested items. */
     @Test
     fun testNestedItem() {
         val calcExt =
@@ -205,6 +228,7 @@ class SdcEvaluatorTest {
         assertEquals(15f, result["nested"])
     }
 
+    /** Test fallback behavior on invalid variable type input. */
     @Test
     fun testInvalidVariableType() {
         val q = createQuestionnaireWithCalcExt("target", "%a + 2")
@@ -213,6 +237,7 @@ class SdcEvaluatorTest {
         assertEquals(2f, result["target"])
     }
 
+    /** Test mixed mathematical operation order. */
     @Test
     fun testSubtractionAndDivision() {
         val q = createQuestionnaireWithCalcExt("target", "10 - 4 / 2")
@@ -221,6 +246,7 @@ class SdcEvaluatorTest {
         assertEquals(8f, result["target"])
     }
 
+    /** Test validation bounds when link ID is omitted. */
     @Test
     fun testMissingLinkId() {
         val calcExt =

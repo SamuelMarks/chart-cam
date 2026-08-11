@@ -10,25 +10,40 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+/**
+ * Test class for DateFormatter on JVM.
+ */
 class DateFormatterJvmTest {
     private val defaultLocale = Locale.getDefault()
 
+    /**
+     * Sets up the test environment.
+     */
     @BeforeTest
     fun setUp() {
         Locale.setDefault(Locale.US)
     }
 
+    /**
+     * Tears down the test environment.
+     */
     @AfterTest
     fun tearDown() {
         Locale.setDefault(defaultLocale)
     }
 
+    /**
+     * Tests formatLocalizedDate with blank input.
+     */
     @Test
     fun testFormatLocalizedDate_isBlank() {
         assertEquals("", formatLocalizedDate(""))
         assertEquals("   ", formatLocalizedDate("   "))
     }
 
+    /**
+     * Tests formatLocalizedDate with time.
+     */
     @Test
     fun testFormatLocalizedDate_withTime() {
         val fhirDate = "2026-07-09T10:00:00Z"
@@ -40,6 +55,9 @@ class DateFormatterJvmTest {
         assert(formatted.contains("9"))
     }
 
+    /**
+     * Tests formatLocalizedDate with date only.
+     */
     @Test
     fun testFormatLocalizedDate_dateOnly() {
         val fhirDate = "2026-07-09"
@@ -47,6 +65,9 @@ class DateFormatterJvmTest {
         assertEquals("Jul 9, 2026", formatted)
     }
 
+    /**
+     * Tests formatLocalizedDate exception fallback.
+     */
     @Test
     fun testFormatLocalizedDate_exceptionFallback() {
         val invalidDate = "Invalid-Date-String"

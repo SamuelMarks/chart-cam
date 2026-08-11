@@ -66,6 +66,9 @@ class AuthRepositoryJvmTest {
             map.remove(key)
         }
 
+        /**
+         * Simulates an error during save.
+         */
         var throwOnSave = false
     }
 

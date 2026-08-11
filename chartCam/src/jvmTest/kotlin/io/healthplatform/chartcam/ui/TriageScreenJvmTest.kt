@@ -11,8 +11,14 @@ import io.healthplatform.chartcam.repository.FhirRepository
 import org.mockito.Mockito
 import kotlin.test.Test
 
+/**
+ * Test class for TriageScreen on JVM.
+ */
 @OptIn(ExperimentalTestApi::class)
 class TriageScreenJvmTest {
+    /**
+     * Test triage screen on JVM.
+     */
     @Test
     fun testTriageScreenJvm() =
         runComposeUiTest {

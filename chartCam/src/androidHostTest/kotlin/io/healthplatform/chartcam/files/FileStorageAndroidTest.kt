@@ -14,22 +14,34 @@ import org.robolectric.RuntimeEnvironment
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * Android host tests for FileStorage.
+ */
 @org.robolectric.annotation.Config(manifest = org.robolectric.annotation.Config.NONE, sdk = [33])
 @RunWith(RobolectricTestRunner::class)
 class FileStorageAndroidTest {
     private lateinit var fileStorage: FileStorage
 
+    /**
+     * Setup for tests.
+     */
     @Before
     fun setup() {
         AndroidAppInit.init(RuntimeEnvironment.getApplication())
         fileStorage = AndroidFileStorage()
     }
 
+    /**
+     * Teardown after tests.
+     */
     @After
     fun tearDown() {
         fileStorage.clearCache()
     }
 
+    /**
+     * Test saving and reading an image.
+     */
     @Test
     fun testSaveAndReadImage() {
         val fileName = "test_image.jpg"
@@ -44,6 +56,9 @@ class FileStorageAndroidTest {
         assertTrue(testBytes.contentEquals(readBytes))
     }
 
+    /**
+     * Test reading a non-existent image.
+     */
     @Test
     fun testReadNonExistentImage() {
         val path = RuntimeEnvironment.getApplication().cacheDir.absolutePath + "/non_existent.jpg"
@@ -51,6 +66,9 @@ class FileStorageAndroidTest {
         assertEquals(0, bytes.size)
     }
 
+    /**
+     * Test clearing the cache.
+     */
     @Test
     fun testClearCache() {
         val fileName = "temp_image.jpg"
@@ -62,12 +80,18 @@ class FileStorageAndroidTest {
         assertEquals(0, bytes.size)
     }
 
+    /**
+     * Test factory creates AndroidFileStorage.
+     */
     @Test
     fun testCreateFileStorageFactory() {
         val storage = createFileStorage()
         assertTrue(storage is AndroidFileStorage)
     }
 
+    /**
+     * Test saving an image overwrites an existing image with the same name.
+     */
     @Test
     fun testSaveImageOverwritesExisting() {
         val fileName = "overwrite_image.jpg"
@@ -81,6 +105,9 @@ class FileStorageAndroidTest {
         assertTrue(testBytes2.contentEquals(readBytes))
     }
 
+    /**
+     * Test clear cache deletes files.
+     */
     @Test
     fun testClearCacheDeletesFiles() {
         val fileName1 = "temp_image1.jpg"
@@ -93,6 +120,9 @@ class FileStorageAndroidTest {
         assertEquals(0, fileStorage.readImage(RuntimeEnvironment.getApplication().cacheDir.absolutePath + "/" + fileName1).size)
     }
 
+    /**
+     * Test reading invalid data handles errors.
+     */
     @Test
     fun testReadInvalidData() {
         // If file exists but is corrupted, should return empty array because of catch

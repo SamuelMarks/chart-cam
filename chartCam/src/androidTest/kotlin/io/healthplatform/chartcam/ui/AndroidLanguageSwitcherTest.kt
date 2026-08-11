@@ -12,13 +12,22 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Locale
 
+/**
+ * Tests for Android language switcher logic.
+ */
 @RunWith(AndroidJUnit4::class)
 class AndroidLanguageSwitcherTest {
+    /**
+     * Setup the test by initializing the Android app.
+     */
     @Before
     fun setup() {
         AndroidAppInit.init(ApplicationProvider.getApplicationContext())
     }
 
+    /**
+     * Test changing the app language.
+     */
     @Test
     fun testChangeAppLanguage() {
         val initialLocale = Locale.getDefault()

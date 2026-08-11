@@ -7,12 +7,21 @@ package io.healthplatform.chartcam.database
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+/**
+ * Test class for DatabaseDriverFactory on WasmJS.
+ */
 class DatabaseDriverFactoryWasmJsTest {
+    /**
+     * Dummy test to satisfy the test runner.
+     */
     @Test
     fun dummyTest() {
         assertTrue(true)
     }
 
+    /**
+     * Tests wasm sqlite initialization error handling.
+     */
     @Test
     fun testWasmSqliteInitErrorHandling() {
         // Ensures that if SQLjs fails to load the webassembly binary, an appropriate fallback or exception is thrown.

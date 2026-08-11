@@ -18,19 +18,31 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 
+/**
+ * Tests for the Android [ShareService].
+ */
 @RunWith(AndroidJUnit4::class)
 class AndroidShareServiceTest {
+    /**
+     * Setup test environment.
+     */
     @Before
     fun setup() {
         AndroidAppInit.init(ApplicationProvider.getApplicationContext())
     }
 
+    /**
+     * Tests creating a share service.
+     */
     @Test
     fun testCreateShareService() {
         val service = createShareService()
         assertTrue(service is AndroidShareService)
     }
 
+    /**
+     * Tests sharing text logic.
+     */
     @Test
     fun testShareText() =
         runBlocking {
@@ -43,6 +55,9 @@ class AndroidShareServiceTest {
             }
         }
 
+    /**
+     * Tests sharing a file.
+     */
     @Test
     fun testShareFile() {
         val service = createShareService()

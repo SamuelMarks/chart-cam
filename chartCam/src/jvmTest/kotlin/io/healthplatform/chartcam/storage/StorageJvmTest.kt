@@ -10,7 +10,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+/**
+ * Test class for Storage operations on JVM.
+ */
 class StorageJvmTest {
+    /**
+     * Tests SecureStorage logic.
+     */
     @Test
     fun testSecureStorage() {
         val storage = createSecureStorage()
@@ -20,6 +26,9 @@ class StorageJvmTest {
         assertNull(storage.getString("test_key"))
     }
 
+    /**
+     * Tests FileStorage logic.
+     */
     @Test
     fun testFileStorage() {
         val storage = createFileStorage()

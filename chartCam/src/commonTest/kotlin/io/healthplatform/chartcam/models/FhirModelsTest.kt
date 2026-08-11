@@ -1,3 +1,7 @@
+/**
+ * @file FhirModelsTest.kt
+ * Contains tests for FhirModels.kt.
+ */
 @file:Suppress("UNNECESSARY_SAFE_CALL")
 
 package io.healthplatform.chartcam.models
@@ -8,7 +12,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * Tests for FHIR model creation.
+ */
 class FhirModelsTest {
+    /**
+     * Tests creation of a FHIR [Patient].
+     */
     @Test
     fun testCreateFhirPatient() {
         val dob = LocalDate(1990, 1, 1)
@@ -28,6 +38,9 @@ class FhirModelsTest {
         assertEquals("Doe, John", patient.fullName)
     }
 
+    /**
+     * Tests creation of a FHIR Practitioner.
+     */
     @Test
     fun testCreateFhirPractitioner() {
         val practitioner =
@@ -44,6 +57,9 @@ class FhirModelsTest {
         assertEquals("Smith, Jane", practitioner.fullName)
     }
 
+    /**
+     * Tests creation of a FHIR Encounter.
+     */
     @Test
     fun testCreateFhirEncounter() {
         val encounter =
@@ -66,6 +82,9 @@ class FhirModelsTest {
         assertTrue(encounter.encounterDate.contains("2023-10-27"))
     }
 
+    /**
+     * Tests creation of a FHIR DocumentReference.
+     */
     @Test
     fun testCreateFhirDocumentReference() {
         val docRef =
@@ -109,6 +128,9 @@ class FhirModelsTest {
         )
     }
 
+    /**
+     * Tests creation of a FHIR clinical note DocumentReference.
+     */
     @Test
     fun testCreateFhirClinicalNote() {
         val clinicalNote =
@@ -139,6 +161,9 @@ class FhirModelsTest {
         )
     }
 
+    /**
+     * Tests creation of a FHIR Device.
+     */
     @Test
     fun testCreateFhirDevice() {
         val device =
@@ -158,6 +183,9 @@ class FhirModelsTest {
         assertEquals("Google", device.manufacturer?.value)
     }
 
+    /**
+     * Tests creation of a FHIR Provenance.
+     */
     @Test
     fun testCreateFhirProvenance() {
         val provenance =
@@ -185,6 +213,9 @@ class FhirModelsTest {
         )
     }
 
+    /**
+     * Tests creation of a FHIR Binary.
+     */
     @Test
     fun testCreateFhirBinary() {
         val binary =
@@ -198,6 +229,9 @@ class FhirModelsTest {
         assertEquals("iVBORw0KGgo=", binary.data?.value)
     }
 
+    /**
+     * Tests parsing of empty FHIR extensions.
+     */
     @Test
     fun testEmptyPatientExtensions() {
         val emptyPatient = Patient.Builder().build()

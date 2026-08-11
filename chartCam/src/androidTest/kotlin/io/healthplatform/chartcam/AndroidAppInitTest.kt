@@ -20,6 +20,9 @@ import java.lang.reflect.Field
  */
 @RunWith(AndroidJUnit4::class)
 class AndroidAppInitTest {
+    /**
+     * Setup for tests.
+     */
     @Before
     fun setup() {
         // Reset the singleton using reflection for isolated tests

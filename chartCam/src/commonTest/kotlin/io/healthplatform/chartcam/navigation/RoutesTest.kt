@@ -8,7 +8,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
+/**
+ * Tests for the [Routes] object and data classes defining navigation routes.
+ */
 class RoutesTest {
+    /**
+     * Validates that standard routes and route arguments parse correctly.
+     */
     @Test
     fun testRoutes() {
         assertEquals("/auth/login", Routes.LOGIN)

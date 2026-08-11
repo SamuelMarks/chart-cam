@@ -1,3 +1,7 @@
+/**
+ * @file PatientListCoverageTest.kt
+ * Contains declarations for PatientListCoverageTest.kt.
+ */
 package io.healthplatform.chartcam.viewmodel
 
 import com.google.fhir.model.r4.Patient
@@ -9,7 +13,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Test
 import org.mockito.Mockito
 
+/**
+ * Coverage test class for PatientListViewModel.
+ */
 class PatientListCoverageTest {
+    /**
+     * Tests delete account with null fields.
+     */
     @Test
     fun testDeleteAccountWithNullFields() {
         val fhirRepository = Mockito.mock(FhirRepository::class.java)

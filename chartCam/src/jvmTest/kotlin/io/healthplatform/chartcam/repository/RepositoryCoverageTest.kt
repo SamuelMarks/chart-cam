@@ -1,3 +1,7 @@
+/**
+ * @file RepositoryCoverageTest.kt
+ * Contains declarations for RepositoryCoverageTest.kt.
+ */
 package io.healthplatform.chartcam.repository
 
 import app.cash.sqldelight.async.coroutines.synchronous
@@ -7,7 +11,13 @@ import com.google.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import org.junit.Test
 
+/**
+ * Coverage test class for repositories.
+ */
 class RepositoryCoverageTest {
+    /**
+     * Tests FhirRepository null paths.
+     */
     @Test
     fun testFhirRepositoryNullPaths() {
         val driver =
@@ -44,6 +54,9 @@ class RepositoryCoverageTest {
         }
     }
 
+    /**
+     * Tests QuestionnaireRepository coverage.
+     */
     @Test
     fun testQuestionnaireRepositoryCoverage() {
         val repo = QuestionnaireRepository()

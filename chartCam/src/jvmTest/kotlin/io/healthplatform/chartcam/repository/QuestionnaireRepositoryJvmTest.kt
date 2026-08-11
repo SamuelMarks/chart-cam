@@ -1,3 +1,7 @@
+/**
+ * @file QuestionnaireRepositoryJvmTest.kt
+ * Contains declarations for QuestionnaireRepositoryJvmTest.kt.
+ */
 package io.healthplatform.chartcam.repository
 
 import com.google.fhir.model.r4.Enumeration
@@ -10,7 +14,13 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+/**
+ * Test class for QuestionnaireRepository on JVM.
+ */
 class QuestionnaireRepositoryJvmTest {
+    /**
+     * Fake FHIR repository for testing.
+     */
     class FakeFhirRepo :
         FhirRepository(
             io.healthplatform.chartcam.database.ChartCamDatabase(
@@ -18,9 +28,13 @@ class QuestionnaireRepositoryJvmTest {
                     .JdbcSqliteDriver(app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver.IN_MEMORY),
             ),
         ) {
+        /** Map of saved resources. */
         val savedResources = mutableMapOf<String, com.google.fhir.model.r4.Resource>()
+
+        /** List of deleted resources. */
         val deletedResources = mutableListOf<String>()
 
+        /** Save resource. */
         override suspend fun saveResource(
             type: String,
             id: String,
@@ -30,6 +44,7 @@ class QuestionnaireRepositoryJvmTest {
             savedResources[id] = resource
         }
 
+        /** Delete resource. */
         override suspend fun deleteResource(
             type: String,
             id: String,
@@ -39,6 +54,9 @@ class QuestionnaireRepositoryJvmTest {
         }
     }
 
+    /**
+     * Tests loading default forms.
+     */
     @Test
     fun testLoadDefaultForms() =
         runTest {
@@ -55,6 +73,9 @@ class QuestionnaireRepositoryJvmTest {
             assertNotNull(q2)
         }
 
+    /**
+     * Tests loading default forms exceptions.
+     */
     @Test
     fun testLoadDefaultFormsExceptions() =
         runTest {
@@ -63,6 +84,9 @@ class QuestionnaireRepositoryJvmTest {
             assertTrue(true)
         }
 
+    /**
+     * Tests creating a questionnaire.
+     */
     @Test
     fun testCreateQuestionnaire() {
         val qrRepo = QuestionnaireRepository(null)
@@ -78,6 +102,9 @@ class QuestionnaireRepositoryJvmTest {
         assertEquals("Label B", q.item[2].text?.value)
     }
 
+    /**
+     * Tests creating a questionnaire with fewer labels.
+     */
     @Test
     fun testCreateQuestionnaireWithFewerLabels() {
         val qrRepo = QuestionnaireRepository(null)
@@ -88,6 +115,9 @@ class QuestionnaireRepositoryJvmTest {
         assertEquals("1", q.item[2].text?.value)
     }
 
+    /**
+     * Tests getting available questionnaires.
+     */
     @Test
     fun testGetAvailableQuestionnaires() {
         val qrRepo = QuestionnaireRepository(null)
@@ -97,6 +127,9 @@ class QuestionnaireRepositoryJvmTest {
         assertTrue(available.any { it.id == q.id })
     }
 
+    /**
+     * Tests saving and getting a questionnaire.
+     */
     @Test
     fun testSaveAndGetQuestionnaire() =
         kotlinx.coroutines.runBlocking {
@@ -117,6 +150,9 @@ class QuestionnaireRepositoryJvmTest {
             assertEquals(q, fhirRepo.savedResources["q-save"])
         }
 
+    /**
+     * Tests deleting a questionnaire.
+     */
     @Test
     fun testDeleteQuestionnaire() =
         kotlinx.coroutines.runBlocking {

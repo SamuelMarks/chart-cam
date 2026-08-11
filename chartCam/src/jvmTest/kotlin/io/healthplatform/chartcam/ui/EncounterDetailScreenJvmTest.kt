@@ -19,11 +19,20 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
 import kotlin.test.Test
 
+/**
+ * Test class for EncounterDetailScreen on JVM.
+ */
 @OptIn(ExperimentalTestApi::class)
 class EncounterDetailScreenJvmTest {
+    /**
+     * The compose rule.
+     */
     @get:Rule
     val rule = createComposeRule()
 
+    /**
+     * Tests EncounterDetailScreen on JVM.
+     */
     @Test
     fun testEncounterDetailScreenJvm() =
         runTest {

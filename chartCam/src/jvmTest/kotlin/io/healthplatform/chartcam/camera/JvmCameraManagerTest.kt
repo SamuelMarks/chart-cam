@@ -12,7 +12,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * Test class for JvmCameraManager and JvmPermissionManager.
+ */
 class JvmCameraManagerTest {
+    /**
+     * Tests that the correct managers are remembered on JVM.
+     */
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun testRememberJvmManagers() =
@@ -26,6 +32,9 @@ class JvmCameraManagerTest {
             }
         }
 
+    /**
+     * Tests JvmCameraManager methods.
+     */
     @Test
     fun testJvmCameraManager() {
         runBlocking {
@@ -58,6 +67,9 @@ class JvmCameraManagerTest {
         }
     }
 
+    /**
+     * Tests JvmPermissionManager methods.
+     */
     @Test
     fun testJvmPermissionManager() {
         runBlocking {

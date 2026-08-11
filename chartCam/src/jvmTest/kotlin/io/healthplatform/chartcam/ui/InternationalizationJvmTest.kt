@@ -16,16 +16,28 @@ import org.junit.Rule
 import kotlin.test.AfterTest
 import kotlin.test.Test
 
+/**
+ * Test class for Internationalization on JVM.
+ */
 @OptIn(ExperimentalTestApi::class)
 class InternationalizationJvmTest {
+    /**
+     * The compose rule.
+     */
     @get:Rule
     val rule = createComposeRule()
 
+    /**
+     * Tears down the test by resetting the app language to "en".
+     */
     @AfterTest
     fun tearDown() {
         setAppLanguage("en")
     }
 
+    /**
+     * Tests language switching to Spanish.
+     */
     @Test
     fun testLanguageSwitchingToSpanish() =
         runTest {
@@ -42,6 +54,9 @@ class InternationalizationJvmTest {
             rule.onNodeWithText("Iniciar sesión / Registrarse").assertExists()
         }
 
+    /**
+     * Tests language switching to Japanese.
+     */
     @Test
     fun testLanguageSwitchingToJapanese() =
         runTest {

@@ -22,30 +22,54 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+/**
+ * Tests for [CaptureViewModel] business logic.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class CaptureViewModelTest {
+    /** Test dispatcher for coroutine tests. */
     private val testDispatcher = StandardTestDispatcher()
 
+    /**
+     * Mock implementation of [CameraManager] for testing.
+     */
     class MockCameraManager : CameraManager {
+        /** Simulate failure indicator. */
         var simulateFailure = false
+
+        /** Exception to throw, if any. */
         var exceptionToThrow: Exception? = null
 
+        /**
+         * Capture image method.
+         * @return Mock byte array or null.
+         */
         override suspend fun captureImage(): ByteArray? {
             if (exceptionToThrow != null) throw exceptionToThrow!!
             return if (simulateFailure) null else ByteArray(10)
         }
 
+        /** Toggle flash. */
         override fun setFlash(on: Boolean) {}
 
+        /** Toggle lens. */
         override fun toggleLens() {}
 
+        /** Release resources. */
         override fun release() {}
     }
 
+    /**
+     * Mock implementation of [FileStorage].
+     */
     class MockFileStorage : FileStorage {
+        /** Internal storage map. */
         val files = mutableMapOf<String, ByteArray>()
+
+        /** Simulate failure indicator. */
         var simulateFailure = false
 
+        /** Save an image to map. */
         override fun saveImage(
             fileName: String,
             bytes: ByteArray,
@@ -55,23 +79,28 @@ class CaptureViewModelTest {
             return "path/to/$fileName"
         }
 
+        /** Read image from map. */
         override fun readImage(path: String): ByteArray = files[path.substringAfterLast("/")] ?: ByteArray(0)
 
+        /** Clear cache logic. */
         override fun clearCache() {
             files.clear()
         }
     }
 
+    /** Setup test coroutine dispatcher. */
     @BeforeTest
     fun setup() {
         Dispatchers.setMain(testDispatcher)
     }
 
+    /** Tear down test coroutine dispatcher. */
     @AfterTest
     fun tearDown() {
         Dispatchers.resetMain()
     }
 
+    /** Tests step initialization logic. */
     @Test
     fun testInitSteps() {
         val vm = CaptureViewModel(MockCameraManager(), MockFileStorage())
@@ -85,6 +114,7 @@ class CaptureViewModelTest {
         assertEquals(2, vm.uiState.value.totalSteps)
     }
 
+    /** Tests capture success path. */
     @Test
     fun testOnCaptureSuccess() =
         runTest {
@@ -104,6 +134,7 @@ class CaptureViewModelTest {
             assertNotNull(vm.uiState.value.reviewImageBytes)
         }
 
+    /** Tests capture failure due to null response. */
     @Test
     fun testOnCaptureFailure() =
         runTest {
@@ -118,6 +149,7 @@ class CaptureViewModelTest {
             assertNull(vm.uiState.value.reviewImageBytes)
         }
 
+    /** Tests capture logic when an exception is thrown. */
     @Test
     fun testOnCaptureException() =
         runTest {
@@ -132,6 +164,7 @@ class CaptureViewModelTest {
             assertNull(vm.uiState.value.reviewImageBytes)
         }
 
+    /** Tests confirming an image moves to the next step. */
     @Test
     fun testOnConfirmAdvancesStep() =
         runTest {
@@ -152,6 +185,7 @@ class CaptureViewModelTest {
             assertEquals(1, vm.getResultPaths().size)
         }
 
+    /** Tests confirming image on last step finishes session. */
     @Test
     fun testOnConfirmFinishesSequence() =
         runTest {
@@ -168,6 +202,7 @@ class CaptureViewModelTest {
             assertEquals(1, vm.uiState.value.capturedCount)
         }
 
+    /** Tests failure in storage during confirm action. */
     @Test
     fun testOnConfirmStorageFailure() =
         runTest {
@@ -185,6 +220,7 @@ class CaptureViewModelTest {
             assertFalse(vm.uiState.value.isFinished)
         }
 
+    /** Tests retaking an image discards current selection. */
     @Test
     fun testOnRetake() =
         runTest {
@@ -201,6 +237,7 @@ class CaptureViewModelTest {
             assertNull(vm.uiState.value.reviewImageBytes)
         }
 
+    /** Tests triggering capture while already capturing has no effect. */
     @Test
     fun testOnCaptureWhileCapturing() =
         runTest {
@@ -217,6 +254,7 @@ class CaptureViewModelTest {
             advanceUntilIdle()
         }
 
+    /** Tests confirm logic aborts gracefully if no image is available. */
     @Test
     fun testOnConfirmWithoutBytes() {
         val vm = CaptureViewModel(MockCameraManager(), MockFileStorage())

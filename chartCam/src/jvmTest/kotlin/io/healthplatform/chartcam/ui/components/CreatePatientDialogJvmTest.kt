@@ -13,8 +13,14 @@ import kotlinx.coroutines.test.runTest
 import org.jetbrains.compose.resources.getString
 import kotlin.test.Test
 
+/**
+ * Test class for CreatePatientDialog on JVM.
+ */
 @OptIn(ExperimentalTestApi::class)
 class CreatePatientDialogJvmTest {
+    /**
+     * Test create patient dialog on JVM.
+     */
     @Test
     fun testCreatePatientDialogJvm() =
         runTest {

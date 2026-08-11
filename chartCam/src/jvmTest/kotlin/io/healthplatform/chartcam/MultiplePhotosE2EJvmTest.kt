@@ -115,6 +115,11 @@ class MultiplePhotosE2EJvmTest {
             val targetedCaptureViewModel = CaptureViewModel(MockCameraManager(), MockFileStorage())
             val targetLinkId = "item_2"
 
+            /**
+             * Extract steps from items.
+             * @param items the items
+             * @return the photo steps
+             */
             fun extractSteps(items: List<com.google.fhir.model.r4.Questionnaire.Item>): List<PhotoStep> {
                 val result = mutableListOf<PhotoStep>()
                 for (item in items) {

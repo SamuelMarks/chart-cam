@@ -20,11 +20,17 @@ import org.junit.Before
 import kotlin.test.Test
 import com.google.fhir.model.r4.String as FhirString
 
+/**
+ * Test class for QuestionnaireListScreen on JVM.
+ */
 class QuestionnaireListScreenJvmTest {
     private lateinit var db: ChartCamDatabase
     private lateinit var driver: JdbcSqliteDriver
     private lateinit var repo: QuestionnaireRepository
 
+    /**
+     * Sets up the test environment.
+     */
     @Before
     fun setup() {
         driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
@@ -33,11 +39,17 @@ class QuestionnaireListScreenJvmTest {
         repo = QuestionnaireRepository()
     }
 
+    /**
+     * Tears down the test environment.
+     */
     @After
     fun tearDown() {
         driver.close()
     }
 
+    /**
+     * Tests QuestionnaireListScreen on JVM.
+     */
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun testQuestionnaireListScreen() =

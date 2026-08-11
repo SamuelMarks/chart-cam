@@ -17,10 +17,19 @@ import io.healthplatform.chartcam.viewmodel.QuestionnaireBuilderViewModel
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * E2E tests for the Form Builder.
+ */
 class FormBuilderE2EJvmTest {
+    /**
+     * The compose rule.
+     */
     @get:Rule
     val rule = createComposeRule()
 
+    /**
+     * Tests the form builder journey.
+     */
     @Test
     fun testFormBuilderJourney() {
         val repo = QuestionnaireRepository()
@@ -69,6 +78,9 @@ class FormBuilderE2EJvmTest {
         rule.onNodeWithText("New SINGLE_LINE_TEXT Item", substring = true).assertIsDisplayed()
     }
 
+    /**
+     * Tests choice validation.
+     */
     @Test
     fun testChoiceValidationE2E() {
         val repo = QuestionnaireRepository()

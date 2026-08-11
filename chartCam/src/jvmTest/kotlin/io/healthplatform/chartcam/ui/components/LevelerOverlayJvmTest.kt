@@ -8,7 +8,13 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.runComposeUiTest
 import kotlin.test.Test
 
+/**
+ * Test class for LevelerOverlay on JVM.
+ */
 class LevelerOverlayJvmTest {
+    /**
+     * Test leveler overlay on JVM.
+     */
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun testLevelerOverlay() =

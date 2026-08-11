@@ -15,15 +15,24 @@ import org.robolectric.RobolectricTestRunner
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
+/**
+ * Android host tests for SecureStorage.
+ */
 @org.robolectric.annotation.Config(manifest = org.robolectric.annotation.Config.NONE, sdk = [33])
 @RunWith(RobolectricTestRunner::class)
 class SecureStorageAndroidTest {
+    /**
+     * Setup for tests.
+     */
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         AndroidAppInit.init(context)
     }
 
+    /**
+     * Teardown for tests.
+     */
     @After
     fun teardown() {
         val field = AndroidAppInit::class.java.getDeclaredField("context")
@@ -31,6 +40,9 @@ class SecureStorageAndroidTest {
         field.set(AndroidAppInit, null)
     }
 
+    /**
+     * Tests basic save, get, and delete operations on SecureStorage.
+     */
     @Test
     fun testSecureStorageSaveGetDelete() {
         val storage = createSecureStorage()

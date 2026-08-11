@@ -20,6 +20,9 @@ import kotlin.test.assertContentEquals
  */
 @RunWith(AndroidJUnit4::class)
 class AndroidFileStorageTest {
+    /**
+     * Setup for tests.
+     */
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()

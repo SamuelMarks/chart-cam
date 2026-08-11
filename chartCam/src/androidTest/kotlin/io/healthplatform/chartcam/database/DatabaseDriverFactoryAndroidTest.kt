@@ -18,6 +18,9 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class DatabaseDriverFactoryAndroidTest {
+    /**
+     * Setup for tests.
+     */
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()

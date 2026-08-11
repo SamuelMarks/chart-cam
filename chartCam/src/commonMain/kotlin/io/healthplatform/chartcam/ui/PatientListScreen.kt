@@ -12,8 +12,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -493,37 +495,53 @@ fun PatientListScreen(
             onDismissRequest = { showAboutDialog = false },
             title = { Text(stringResource(Res.string.about_title), modifier = Modifier.semantics { heading() }) },
             text = {
-                val fullText = stringResource(Res.string.version_text, "0.0.1 — https://healthplatform.io")
-                val url = "https://healthplatform.io"
-                val startIndex = fullText.indexOf(url)
+                Column {
+                    val fullText = stringResource(Res.string.version_text, "0.0.1 — https://healthplatform.io")
+                    val url = "https://healthplatform.io"
+                    val startIndex = fullText.indexOf(url)
 
-                if (startIndex >= 0) {
-                    val annotatedString =
-                        androidx.compose.ui.text.buildAnnotatedString {
-                            append(fullText)
-                            addLink(
-                                androidx.compose.ui.text.LinkAnnotation
-                                    .Url(url),
-                                start = startIndex,
-                                end = startIndex + url.length,
-                            )
-                            addStyle(
-                                style =
-                                    androidx.compose.ui.text.SpanStyle(
-                                        color = MaterialTheme.colorScheme.primary,
-                                        textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
-                                    ),
-                                start = startIndex,
-                                end = startIndex + url.length,
-                            )
-                        }
+                    if (startIndex >= 0) {
+                        val annotatedString =
+                            androidx.compose.ui.text.buildAnnotatedString {
+                                append(fullText)
+                                addLink(
+                                    androidx.compose.ui.text.LinkAnnotation
+                                        .Url(url),
+                                    start = startIndex,
+                                    end = startIndex + url.length,
+                                )
+                                addStyle(
+                                    style =
+                                        androidx.compose.ui.text.SpanStyle(
+                                            color = MaterialTheme.colorScheme.primary,
+                                            textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                                        ),
+                                    start = startIndex,
+                                    end = startIndex + url.length,
+                                )
+                            }
+                        Text(
+                            text = annotatedString,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        Text(fullText)
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = annotatedString,
-                        style = MaterialTheme.typography.bodyMedium,
+                        text =
+                            "THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, " +
+                                "EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES " +
+                                "OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND " +
+                                "NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT " +
+                                "HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, " +
+                                "WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING " +
+                                "FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR " +
+                                "OTHER DEALINGS IN THE SOFTWARE.",
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                } else {
-                    Text(fullText)
                 }
             },
             confirmButton = {

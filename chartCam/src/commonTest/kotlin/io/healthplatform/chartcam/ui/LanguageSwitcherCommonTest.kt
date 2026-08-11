@@ -8,7 +8,13 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+/**
+ * Common test wrapper for language switcher logic.
+ */
 class LanguageSwitcherCommonTest {
+    /**
+     * Test logic wrapping the [setAppLanguage] flow.
+     */
     @Test
     fun testSetAppLanguage() =
         runTest {

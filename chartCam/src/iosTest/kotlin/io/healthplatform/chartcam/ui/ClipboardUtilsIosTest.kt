@@ -1,3 +1,7 @@
+/**
+ * @file ClipboardUtilsIosTest.kt
+ * Contains iOS-specific clipboard implementation tests.
+ */
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -8,7 +12,13 @@ import platform.UIKit.UIPasteboard
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+/**
+ * Validation tests for clipboard extension utilities on iOS.
+ */
 class ClipboardUtilsIosTest {
+    /**
+     * Validates that standard clipboard data storage and retrieval operate accurately with the iOS backing types.
+     */
     @OptIn(ExperimentalComposeUiApi::class)
     @Test
     fun testSetAndGetPlainText() =

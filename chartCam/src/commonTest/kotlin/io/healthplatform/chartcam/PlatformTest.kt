@@ -7,7 +7,13 @@ package io.healthplatform.chartcam
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+/**
+ * Tests for Platform retrieval.
+ */
 class PlatformTest {
+    /**
+     * Validates that the platform name is correctly resolved.
+     */
     @Test
     fun testPlatformNameIsNotEmpty() {
         val platform = getPlatform()

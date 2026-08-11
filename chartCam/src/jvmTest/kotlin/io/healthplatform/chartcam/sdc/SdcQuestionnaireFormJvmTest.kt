@@ -24,8 +24,14 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * Test class for SdcQuestionnaireForm on JVM.
+ */
 @OptIn(ExperimentalTestApi::class)
 class SdcQuestionnaireFormJvmTest {
+    /**
+     * Tests rendering of different widgets.
+     */
     @Test
     fun testRendersDifferentWidgets() =
         runComposeUiTest {
@@ -89,6 +95,9 @@ class SdcQuestionnaireFormJvmTest {
             assertEquals(true, answers["item8"])
         }
 
+    /**
+     * Tests rendering of nested group items.
+     */
     @Test
     fun testRendersNestedGroupItems() =
         runComposeUiTest {
@@ -137,6 +146,9 @@ class SdcQuestionnaireFormJvmTest {
             assertEquals("nested value", answers["nestedItem1"])
         }
 
+    /**
+     * Tests determining if an item is hidden.
+     */
     @Test
     fun testIsItemHidden() {
         val item =
@@ -161,6 +173,9 @@ class SdcQuestionnaireFormJvmTest {
         assertTrue(item.isHidden())
     }
 
+    /**
+     * Tests single select checkbox behavior.
+     */
     @Test
     fun testSingleSelectCheckboxBehavesCorrectly() =
         runComposeUiTest {

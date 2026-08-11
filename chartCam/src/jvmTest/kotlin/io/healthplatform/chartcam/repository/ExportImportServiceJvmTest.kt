@@ -19,6 +19,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+/**
+ * Test class for ExportImportService on JVM.
+ */
 class ExportImportServiceJvmTest {
     private lateinit var db: ChartCamDatabase
     private lateinit var driver: JdbcSqliteDriver
@@ -26,6 +29,9 @@ class ExportImportServiceJvmTest {
     private lateinit var cryptoService: CryptoService
     private lateinit var service: ExportImportService
 
+    /**
+     * Sets up the test environment.
+     */
     @Before
     fun setup() {
         driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
@@ -36,11 +42,17 @@ class ExportImportServiceJvmTest {
         service = ExportImportService(db, fileStorage)
     }
 
+    /**
+     * Tears down the test environment.
+     */
     @After
     fun tearDown() {
         driver.close()
     }
 
+    /**
+     * Tests exporting and importing data.
+     */
     @Test
     fun testExportAndImportData() =
         runTest {
@@ -83,6 +95,9 @@ class ExportImportServiceJvmTest {
             driver2.close()
         }
 
+    /**
+     * Tests malformed data import failure.
+     */
     @Test
     fun testMalformedDataImportFails() =
         runTest {
@@ -101,6 +116,9 @@ class ExportImportServiceJvmTest {
             assertTrue(exceptionThrown, "Expected an exception when importing malformed FHIR data")
         }
 
+    /**
+     * Tests wrong password import failure.
+     */
     @Test
     fun testWrongPasswordFails() =
         runTest {
@@ -117,6 +135,9 @@ class ExportImportServiceJvmTest {
             assertTrue(exceptionThrown, "Expected an exception when decrypting with the wrong password")
         }
 
+    /**
+     * Tests export with a missing image.
+     */
     @Test
     fun testExportWithMissingImage() =
         runTest {
@@ -139,9 +160,14 @@ class ExportImportServiceJvmTest {
             assertTrue(encryptedData.isNotEmpty())
         }
 
+    /**
+     * Mock file storage for tests.
+     */
     class MockFileStorage : FileStorage {
+        /** Maps paths to byte arrays. */
         val files = mutableMapOf<String, ByteArray>()
 
+        /** Save an image. */
         override fun saveImage(
             fileName: String,
             bytes: ByteArray,
@@ -150,8 +176,10 @@ class ExportImportServiceJvmTest {
             return fileName
         }
 
+        /** Read an image. */
         override fun readImage(path: String): ByteArray = files[path] ?: throw IllegalArgumentException("File not found")
 
+        /** Clear cache. */
         override fun clearCache() {
             files.clear()
         }

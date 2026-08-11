@@ -19,11 +19,17 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
+/**
+ * Test class for FhirRepository on JVM.
+ */
 class FhirRepositoryJvmTest {
     private lateinit var db: ChartCamDatabase
     private lateinit var driver: JdbcSqliteDriver
     private lateinit var repository: FhirRepository
 
+    /**
+     * Sets up the test environment.
+     */
     @Before
     fun setup() {
         driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
@@ -32,11 +38,17 @@ class FhirRepositoryJvmTest {
         repository = FhirRepository(db)
     }
 
+    /**
+     * Tears down the test environment.
+     */
     @After
     fun tearDown() {
         driver.close()
     }
 
+    /**
+     * Tests practitioner CRUD operations.
+     */
     @Test
     fun testPractitionerCrud() =
         runTest {
@@ -57,6 +69,9 @@ class FhirRepositoryJvmTest {
             assertNull(repository.getPractitioner("prac_1"))
         }
 
+    /**
+     * Tests patient CRUD operations.
+     */
     @Test
     fun testPatientCrud() =
         runTest {
@@ -80,6 +95,9 @@ class FhirRepositoryJvmTest {
             assertNull(repository.getPatient("pat_1"))
         }
 
+    /**
+     * Tests encounter CRUD operations.
+     */
     @Test
     fun testEncounterCrud() =
         runTest {
@@ -109,6 +127,9 @@ class FhirRepositoryJvmTest {
             assertNull(repository.getEncounter("enc_1"))
         }
 
+    /**
+     * Tests database failures are handled or thrown.
+     */
     @Test
     fun testDatabaseFailuresHandledOrThrown() =
         runTest {

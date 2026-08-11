@@ -1,3 +1,7 @@
+/**
+ * @file PatientListViewModelJvmTest.kt
+ * Contains declarations for PatientListViewModelJvmTest.kt.
+ */
 package io.healthplatform.chartcam.viewmodel
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
@@ -32,6 +36,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+/**
+ * Test class PatientListViewModelTest.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class PatientListViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
@@ -43,6 +50,9 @@ class PatientListViewModelTest {
     private lateinit var driver: JdbcSqliteDriver
     private lateinit var database: ChartCamDatabase
 
+    /**
+     * Setup setup.
+     */
     @BeforeTest
     fun setup() {
         Dispatchers.setMain(testDispatcher)
@@ -54,26 +64,32 @@ class PatientListViewModelTest {
 
         val fakeFileStorage =
             object : FileStorage {
+                /** Override saveImage */
                 override fun saveImage(
                     fileName: String,
                     bytes: ByteArray,
                 ): String = fileName
 
+                /** Override readImage */
                 override fun readImage(path: String): ByteArray = ByteArray(0)
 
+                /** Override clearCache */
                 override fun clearCache() {}
             }
         mockExportImportService = MockExportImportService(database, fakeFileStorage)
 
         val fakeSecureStorage =
             object : SecureStorage {
+                /** Override save */
                 override fun save(
                     key: String,
                     value: String,
                 ) {}
 
+                /** Override getString */
                 override fun getString(key: String): String? = null
 
+                /** Override delete */
                 override fun delete(key: String) {}
             }
         val mockHttpClient = HttpClient(MockEngine) { engine { addHandler { respondOk() } } }
@@ -96,6 +112,9 @@ class PatientListViewModelTest {
             )
     }
 
+    /**
+     * Teardown tearDown.
+     */
     @AfterTest
     fun tearDown() {
         driver.close()
@@ -274,6 +293,9 @@ class PatientListViewModelTest {
         }
 }
 
+/**
+ * Test class MockFhirRepository.
+ */
 class MockFhirRepository(
     database: ChartCamDatabase,
 ) : FhirRepository(database) {
@@ -286,6 +308,7 @@ class MockFhirRepository(
     var deletedPatientId: String? = null
     var deletedPractitionerId: String? = null
 
+    /** Override getAllPatients */
     override suspend fun getAllPatients(
         showAll: Boolean,
         practitionerId: String?,
@@ -295,6 +318,7 @@ class MockFhirRepository(
         return patientsToReturn
     }
 
+    /** Override searchPatients */
     override suspend fun searchPatients(
         query: String,
         showAll: Boolean,
@@ -306,20 +330,26 @@ class MockFhirRepository(
         return patientsToReturn
     }
 
+    /** Override savePatient */
     override suspend fun savePatient(patient: Patient) {
         if (shouldThrowOnSave) throw RuntimeException("Save Error")
         savedPatient = patient
     }
 
+    /** Override deletePatient */
     override suspend fun deletePatient(id: String) {
         deletedPatientId = id
     }
 
+    /** Override deletePractitioner */
     override suspend fun deletePractitioner(id: String) {
         deletedPractitionerId = id
     }
 }
 
+/**
+ * Test class MockExportImportService.
+ */
 class MockExportImportService(
     database: ChartCamDatabase,
     fileStorage: FileStorage,
@@ -327,6 +357,7 @@ class MockExportImportService(
     var shouldThrow = false
     var lastImportData: String? = null
 
+    /** Override exportData */
     override suspend fun exportData(
         password: String,
         exportAll: Boolean,
@@ -336,6 +367,7 @@ class MockExportImportService(
         return "exported-data"
     }
 
+    /** Override importData */
     override suspend fun importData(
         encryptedData: String,
         password: String,
@@ -345,6 +377,9 @@ class MockExportImportService(
     }
 }
 
+/**
+ * Test class MockAuthRepository.
+ */
 class MockAuthRepository(
     client: HttpClient,
     storage: SecureStorage,
@@ -354,6 +389,7 @@ class MockAuthRepository(
 
     override val currentUser = currentUserFlow
 
+    /** Override login */
     override suspend fun login(
         username: String,
         password: String,
@@ -363,10 +399,13 @@ class MockAuthRepository(
                 .createFhirPractitioner("1", "S", "J", true),
         )
 
+    /** Override checkSession */
     override suspend fun checkSession(): Boolean = true
 
+    /** Override logout */
     override fun logout() {}
 
+    /** Override deleteAccount */
     override fun deleteAccount(username: String) {
         deleteAccountCalled = true
     }

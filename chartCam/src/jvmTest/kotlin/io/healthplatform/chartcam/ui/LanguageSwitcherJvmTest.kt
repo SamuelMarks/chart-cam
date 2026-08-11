@@ -8,7 +8,13 @@ import org.junit.Test
 import java.util.Locale
 import kotlin.test.assertEquals
 
+/**
+ * Test class for LanguageSwitcher on JVM.
+ */
 class LanguageSwitcherJvmTest {
+    /**
+     * Tests changing app language.
+     */
     @Test
     fun testChangeAppLanguage() {
         val originalLocale = Locale.getDefault()

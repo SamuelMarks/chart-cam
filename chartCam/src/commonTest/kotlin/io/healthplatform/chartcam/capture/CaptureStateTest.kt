@@ -8,7 +8,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
+/**
+ * Tests for UI states and capture steps.
+ */
 class CaptureStateTest {
+    /**
+     * Validates [PhotoStep] equivalence and predefined sizes.
+     */
     @Test
     fun testPhotoStep() {
         val step1 = PhotoStep("1", "Title 1")
@@ -17,6 +23,9 @@ class CaptureStateTest {
         assertEquals(8, PhotoStep.STANDARD_STEPS.size)
     }
 
+    /**
+     * Validates [CaptureUiState] equivalence and hashcode behavior across its varying states.
+     */
     @Test
     fun testCaptureUiStateEqualsAndHashCode() {
         val state1 = CaptureUiState(currentStep = PhotoStep("1", "A"), reviewImageBytes = byteArrayOf(1, 2, 3))

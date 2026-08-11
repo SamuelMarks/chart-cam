@@ -11,9 +11,16 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
+/**
+ * Tests for the Questionnaire sharing and serialization behavior.
+ */
 class QuestionnaireSharingServiceTest {
+    /** Test instance of the sharing service. */
     private val service = QuestionnaireSharingService()
 
+    /**
+     * Validates round-trip serialization logic.
+     */
     @Test
     fun testSerializationAndDeserialization() {
         val original =
@@ -38,6 +45,9 @@ class QuestionnaireSharingServiceTest {
         assertEquals(original.title?.value, deserialized.title?.value)
     }
 
+    /**
+     * Validates deserialization failure on malformed json.
+     */
     @Test
     fun testDeserializeInvalidFormatFails() {
         val invalidJson = """not a json"""

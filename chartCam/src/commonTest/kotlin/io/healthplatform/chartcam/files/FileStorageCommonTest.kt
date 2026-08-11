@@ -8,10 +8,18 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
+/**
+ * Common tests for the FileStorage interface.
+ */
 class FileStorageCommonTest {
+    /**
+     * Mock implementation of FileStorage.
+     */
     class MockFileStorage : FileStorage {
+        /** Internal storage map. */
         val storage = mutableMapOf<String, ByteArray>()
 
+        /** Save an image to the map. */
         override fun saveImage(
             fileName: String,
             bytes: ByteArray,
@@ -20,13 +28,18 @@ class FileStorageCommonTest {
             return fileName
         }
 
+        /** Read an image from the map. */
         override fun readImage(path: String): ByteArray = storage[path] ?: ByteArray(0)
 
+        /** Clear cache. */
         override fun clearCache() {
             storage.clear()
         }
     }
 
+    /**
+     * Test basic file storage operations using the mock.
+     */
     @Test
     fun testFileStorageOperations() {
         val fs = MockFileStorage()

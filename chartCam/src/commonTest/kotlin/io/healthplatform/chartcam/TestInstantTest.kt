@@ -7,7 +7,13 @@ package io.healthplatform.chartcam
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+/**
+ * Tests for test instant functionality.
+ */
 class TestInstantTest {
+    /**
+     * Test the [test] instant method.
+     */
     @Test
     fun testTestInstant() {
         // Doesn't return anything, just ensures it executes without crash

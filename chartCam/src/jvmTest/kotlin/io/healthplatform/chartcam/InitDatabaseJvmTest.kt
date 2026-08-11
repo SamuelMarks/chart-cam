@@ -13,9 +13,19 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import kotlin.test.assertTrue
 
+/**
+ * Tests for database initialization on JVM.
+ */
 class InitDatabaseJvmTest {
+    /**
+     * Helper to mock any object.
+     * @return null casted to T.
+     */
     private fun <T> anyOrNull(): T? = Mockito.any()
 
+    /**
+     * Tests successful database initialization.
+     */
     @Test
     fun testInitDatabaseSuccess() =
         runBlocking {
@@ -25,6 +35,9 @@ class InitDatabaseJvmTest {
             assertTrue(true)
         }
 
+    /**
+     * Tests handling of IllegalStateException during initialization.
+     */
     @Test
     fun testInitDatabaseIllegalStateException() =
         runBlocking {
@@ -35,6 +48,9 @@ class InitDatabaseJvmTest {
             assertTrue(true)
         }
 
+    /**
+     * Tests handling of IllegalArgumentException during initialization.
+     */
     @Test
     fun testInitDatabaseIllegalArgumentException() =
         runBlocking {

@@ -11,8 +11,14 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
+/**
+ * Tests for the Android CryptoService.
+ */
 @RunWith(AndroidJUnit4::class)
 class AndroidCryptoServiceTest {
+    /**
+     * Test crypto service encryption and decryption.
+     */
     @Test
     fun testCryptoService() =
         runBlocking {

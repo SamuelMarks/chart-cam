@@ -7,7 +7,13 @@ package io.healthplatform.chartcam
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+/**
+ * Tests for [AndroidPlatform].
+ */
 class AndroidPlatformTest {
+    /**
+     * Tests that the platform name starts with "Android".
+     */
     @Test
     fun testPlatformName() {
         val platform = getPlatform()

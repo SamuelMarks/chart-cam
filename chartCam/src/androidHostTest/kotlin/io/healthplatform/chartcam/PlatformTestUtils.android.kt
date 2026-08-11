@@ -4,6 +4,9 @@
  */
 package io.healthplatform.chartcam
 
+/**
+ * Cleans up the test environment for Android host tests.
+ */
 actual fun cleanupTestEnv() {
     // No-op for now
 }

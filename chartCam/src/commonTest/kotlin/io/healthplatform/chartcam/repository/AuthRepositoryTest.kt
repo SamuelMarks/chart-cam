@@ -16,10 +16,18 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+/**
+ * Tests for the [AuthRepository] login flow and state management.
+ */
 class AuthRepositoryTest {
+    /**
+     * Mock of [SecureStorage] to be used in auth tests.
+     */
     class MockSecureStorage : SecureStorage {
+        /** Internal storage. */
         val map = mutableMapOf<String, String>()
 
+        /** Save value logic. */
         override fun save(
             key: String,
             value: String,
@@ -27,13 +35,18 @@ class AuthRepositoryTest {
             map[key] = value
         }
 
+        /** Read value logic. */
         override fun getString(key: String): String? = map[key]
 
+        /** Delete value logic. */
         override fun delete(key: String) {
             map.remove(key)
         }
     }
 
+    /**
+     * Test successful login and stored hash validation.
+     */
     @Test
     fun testLoginSuccess() =
         runTest {
@@ -59,6 +72,9 @@ class AuthRepositoryTest {
             assertTrue(result2.isSuccess)
         }
 
+    /**
+     * Test incorrect password handling.
+     */
     @Test
     fun testLoginWrongPassword() =
         runTest {
@@ -73,6 +89,9 @@ class AuthRepositoryTest {
             assertEquals("incorrect password", result.exceptionOrNull()?.message)
         }
 
+    /**
+     * Test specific keyword login failure behavior.
+     */
     @Test
     fun testLoginErrorKeyword() =
         runTest {
@@ -85,6 +104,9 @@ class AuthRepositoryTest {
             assertEquals("Invalid Credentials", result.exceptionOrNull()?.message)
         }
 
+    /**
+     * Test session validation checks.
+     */
     @Test
     fun testCheckSession() =
         runTest {
@@ -99,6 +121,9 @@ class AuthRepositoryTest {
             assertNotNull(repo.currentUser.value)
         }
 
+    /**
+     * Test logout and account deletion mechanics.
+     */
     @Test
     fun testLogoutAndDeleteAccount() =
         runTest {
@@ -119,6 +144,9 @@ class AuthRepositoryTest {
             assertNull(storage.getString("hash_testuser"))
         }
 
+    /**
+     * Test refresh token operation.
+     */
     @Test
     fun testRefreshToken() =
         runTest {

@@ -15,15 +15,24 @@ import org.robolectric.RobolectricTestRunner
 import java.util.Locale
 import kotlin.test.assertEquals
 
+/**
+ * Android host tests for LanguageSwitcher.
+ */
 @org.robolectric.annotation.Config(manifest = org.robolectric.annotation.Config.NONE, sdk = [33])
 @RunWith(RobolectricTestRunner::class)
 class LanguageSwitcherAndroidTest {
+    /**
+     * Setup for tests.
+     */
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         AndroidAppInit.init(context)
     }
 
+    /**
+     * Teardown for tests.
+     */
     @After
     fun teardown() {
         val field = AndroidAppInit::class.java.getDeclaredField("context")
@@ -31,6 +40,9 @@ class LanguageSwitcherAndroidTest {
         field.set(AndroidAppInit, null)
     }
 
+    /**
+     * Test changing the app language on Android.
+     */
     @Test
     fun testChangeAppLanguageAndroid() {
         val originalLocale = Locale.getDefault()

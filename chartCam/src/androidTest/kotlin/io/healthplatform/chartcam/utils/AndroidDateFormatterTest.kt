@@ -10,8 +10,14 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
+/**
+ * Tests for Android date formatting logic.
+ */
 @RunWith(AndroidJUnit4::class)
 class AndroidDateFormatterTest {
+    /**
+     * Test formatting of localized dates.
+     */
     @Test
     fun testFormatLocalizedDate() {
         val fhirDate = "2023-01-01"

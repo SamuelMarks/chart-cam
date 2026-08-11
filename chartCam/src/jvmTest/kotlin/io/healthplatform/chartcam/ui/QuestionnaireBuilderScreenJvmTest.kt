@@ -28,7 +28,13 @@ import org.jetbrains.compose.resources.getString
 import org.junit.Test
 import kotlin.test.assertTrue
 
+/**
+ * Test class for QuestionnaireBuilderScreen on JVM.
+ */
 class QuestionnaireBuilderScreenJvmTest {
+    /**
+     * Tests that the builder screen renders and navigates back.
+     */
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun testBuilderScreenRendersAndNavigatesBack() =
@@ -53,6 +59,9 @@ class QuestionnaireBuilderScreenJvmTest {
             }
         }
 
+    /**
+     * Tests adding widgets and previewing the form.
+     */
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun testBuilderAddAndPreview() =
@@ -84,6 +93,9 @@ class QuestionnaireBuilderScreenJvmTest {
             }
         }
 
+    /**
+     * Tests saving the form.
+     */
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun testBuilderSave() =
@@ -111,6 +123,9 @@ class QuestionnaireBuilderScreenJvmTest {
             }
         }
 
+    /**
+     * Tests widget selection row.
+     */
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun testWidgetSelectionRow() =

@@ -12,7 +12,13 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+/**
+ * Test class for database operations on JVM.
+ */
 class DatabaseJvmTest {
+    /**
+     * Tests inserting and retrieving a practitioner.
+     */
     @Test
     fun testInsertAndRetrievePractitioner() =
         runTest {

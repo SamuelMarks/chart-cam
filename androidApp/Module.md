@@ -1,0 +1,2 @@
+# Module androidApp
+This module contains the Android application entry point for the ChartCam project. It relies on the shared `chartCam` module for all core UI and business logic, providing only the host Activity and platform-specific configuration.

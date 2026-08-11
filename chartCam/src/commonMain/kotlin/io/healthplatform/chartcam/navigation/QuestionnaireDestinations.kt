@@ -12,7 +12,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import io.healthplatform.chartcam.ui.QuestionnaireListScreen
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 /**
  * Registers the questionnaire builder destination to the navigation graph.
@@ -38,10 +37,10 @@ fun NavGraphBuilder.questionnaireBuilderDestination(
         androidx.compose.runtime.key(currentLang) {
             io.healthplatform.chartcam.ui.QuestionnaireBuilderScreen(
                 viewModel = viewModel,
-                onBack = { scope.launch { navController.popBackStack() } },
+                onBack = { navController.popBackStack() },
                 onSaved = { savedId ->
                     navController.previousBackStackEntry?.savedStateHandle?.set("createdQuestionnaireId", savedId)
-                    scope.launch { navController.popBackStack() }
+                    navController.popBackStack()
                 },
             )
         }
@@ -66,13 +65,11 @@ fun NavGraphBuilder.questionnaireListDestination(
         androidx.compose.runtime.key(currentLang) {
             QuestionnaireListScreen(
                 questionnaireRepository = deps.questionnaireRepository,
-                onBack = { scope.launch { navController.popBackStack() } },
+                onBack = { navController.popBackStack() },
                 onNavigateToBuilder = { duplicateId ->
-                    scope.launch {
-                        navController.navigate(
-                            QuestionnaireBuilderRoute(duplicateFromId = duplicateId),
-                        )
-                    }
+                    navController.navigate(
+                        QuestionnaireBuilderRoute(duplicateFromId = duplicateId),
+                    )
                 },
             )
         }

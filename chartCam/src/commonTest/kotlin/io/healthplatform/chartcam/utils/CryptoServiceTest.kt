@@ -10,7 +10,13 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
+/**
+ * Tests for [CryptoService] core behaviors including AES-GCM and Argon2 logic.
+ */
 class CryptoServiceTest {
+    /**
+     * Standard encryption/decryption round trip test.
+     */
     @Test
     fun testEncryptionAndDecryption() =
         runTest {
@@ -25,6 +31,9 @@ class CryptoServiceTest {
             assertEquals(original, decrypted)
         }
 
+    /**
+     * Tests behavior when utilizing empty passwords.
+     */
     @Test
     fun testEmptyPassword() =
         runTest {
@@ -38,6 +47,9 @@ class CryptoServiceTest {
             }
         }
 
+    /**
+     * Tests behavior of malformed base64 decryption attempt.
+     */
     @Test
     fun testInvalidBase64() =
         runTest {
@@ -46,6 +58,9 @@ class CryptoServiceTest {
             assertEquals("", result)
         }
 
+    /**
+     * Validate Argon2 determinism and length constraints.
+     */
     @Test
     fun testArgon2KeyDerivation() =
         runTest {
@@ -60,6 +75,9 @@ class CryptoServiceTest {
             assertContentEquals(key1, key2, "Derived keys with same inputs should be identical")
         }
 
+    /**
+     * Basic AES-GCM operation test.
+     */
     @Test
     fun testAesGcmEncryptionDecryption() =
         runTest {
@@ -73,6 +91,9 @@ class CryptoServiceTest {
             assertContentEquals(plaintext, decrypted, "Decrypted data must match original plaintext")
         }
 
+    /**
+     * Validation of AES-GCM tag verification on tampered data.
+     */
     @Test
     fun testAesGcmAuthentication() =
         runTest {
@@ -93,6 +114,9 @@ class CryptoServiceTest {
             }
         }
 
+    /**
+     * Tests decryption with a ciphertext shorter than the IV payload limits.
+     */
     @Test
     fun testAesGcmCiphertextTooShort() =
         runTest {
@@ -108,6 +132,9 @@ class CryptoServiceTest {
             }
         }
 
+    /**
+     * Test failure flow for incorrect password derivation.
+     */
     @Test
     fun testWrongPassword() =
         runTest {
@@ -120,6 +147,9 @@ class CryptoServiceTest {
             assertEquals("", decrypted)
         }
 
+    /**
+     * Tests decrypt behavior on abnormally short but valid base64 input.
+     */
     @Test
     fun testDecryptShortPayload() =
         runTest {

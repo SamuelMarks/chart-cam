@@ -2,23 +2,27 @@ import os
 import re
 import sys
 
+
 def get_kdoc_coverage(source_dirs):
     total_declarations = 0
     documented_declarations = 0
     missing = []
 
     # regex to match class, interface, object, fun (including private/internal)
-    decl_pattern = re.compile(r'^\s*(?:(?:public|protected|private|internal|override|abstract|open|suspend|inline|data|value|expect|actual)\s+)*(class|interface|object|fun)\s+([a-zA-Z0-9_<>.]+)')
+    decl_pattern = re.compile(
+        r"^\s*(?:(?:public|protected|private|internal|override|abstract|open|suspend|inline|data|value|expect|actual)\s+)*(class|interface|object|fun)\s+([a-zA-Z0-9_<>.]+)"
+    )
 
     for d in source_dirs:
-        if not os.path.exists(d): continue
+        if not os.path.exists(d):
+            continue
         for root, _, files in os.walk(d):
             for file in files:
                 if file.endswith(".kt"):
                     path = os.path.join(root, file)
                     with open(path, "r", encoding="utf-8") as f:
                         lines = f.readlines()
-                        
+
                     has_file_doc = False
                     for i in range(min(15, len(lines))):
                         if "@file" in lines[i]:
@@ -45,15 +49,16 @@ def get_kdoc_coverage(source_dirs):
                                 if check_line.endswith("*/"):
                                     is_documented = True
                                 break
-                            
+
                             if is_documented:
                                 documented_declarations += 1
                             else:
-                                missing.append(f"{path}:{i+1} {line.strip()}")
+                                missing.append(f"{path}:{i + 1} {line.strip()}")
 
     if total_declarations == 0:
         return 100.0, missing
     return (documented_declarations / total_declarations) * 100.0, missing
+
 
 if __name__ == "__main__":
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -70,10 +75,35 @@ if __name__ == "__main__":
     doc_cov, missing = get_kdoc_coverage(dirs)
 
     print(f"Doc Coverage: {doc_cov:.1f}%")
+
+    # Update README.md
+    readme_path = os.path.join(project_root, "README.md")
+    if os.path.exists(readme_path):
+        with open(readme_path, "r", encoding="utf-8") as f:
+            readme_content = f.read()
+
+        color = (
+            "brightgreen"
+            if doc_cov >= 100.0
+            else ("yellow" if doc_cov >= 80.0 else "red")
+        )
+
+        # Regex to match the Doc Coverage badge
+        new_readme_content = re.sub(
+            r"!\[Doc Coverage\]\(https://img\.shields\.io/badge/Doc%20Coverage-[0-9.]+%(?:25|)-[a-zA-Z]+\)",
+            f"![Doc Coverage](https://img.shields.io/badge/Doc%20Coverage-{doc_cov:.1f}%25-{color})",
+            readme_content,
+        )
+
+        if readme_content != new_readme_content:
+            with open(readme_path, "w", encoding="utf-8") as f:
+                f.write(new_readme_content)
+            print("Updated README.md doc coverage badge.")
+
     if doc_cov < 100.0:
         print("Doc coverage is below 100.0%. Please add missing KDocs:")
         for m in missing:
             print(m)
         sys.exit(1)
-    
+
     sys.exit(0)

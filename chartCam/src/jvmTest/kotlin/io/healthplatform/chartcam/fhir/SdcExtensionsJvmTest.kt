@@ -17,7 +17,14 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+/**
+ * Test class for SdcExtensions on JVM.
+ */
 class SdcExtensionsJvmTest {
+    /**
+     * Helper method to create a Questionnaire.Item.Builder.
+     * @return the builder instance
+     */
     private fun createBuilder() =
         Questionnaire.Item.Builder(
             linkId =
@@ -29,6 +36,9 @@ class SdcExtensionsJvmTest {
                     .Enumeration(value = Questionnaire.QuestionnaireItemType.String),
         )
 
+    /**
+     * Tests isHidden extension.
+     */
     @Test
     fun `test isHidden`() {
         val itemWithoutHidden = createBuilder().build()
@@ -65,6 +75,9 @@ class SdcExtensionsJvmTest {
         assertFalse(itemWithBadHidden.isHidden())
     }
 
+    /**
+     * Tests getItemControl extension.
+     */
     @Test
     fun `test getItemControl`() {
         val itemNoControl = createBuilder().build()
@@ -108,6 +121,9 @@ class SdcExtensionsJvmTest {
         assertNull(itemEmptyControl.getItemControl())
     }
 
+    /**
+     * Tests getMinValue and getMaxValue extensions.
+     */
     @Test
     fun `test getMinValue and getMaxValue`() {
         val itemNoMinMax = createBuilder().build()

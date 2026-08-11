@@ -12,7 +12,13 @@ import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * Test class for QuestionnaireResponseGenerator on JVM.
+ */
 class QuestionnaireResponseGeneratorJvmTest {
+    /**
+     * Tests unanswered required questions and deeply nested groups.
+     */
     @Test
     fun `test unanswered required questions and deeply nested groups`() {
         val nestedItem =

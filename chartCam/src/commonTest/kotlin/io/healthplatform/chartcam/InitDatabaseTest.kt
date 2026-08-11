@@ -8,7 +8,13 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+/**
+ * Tests for database initialization logic.
+ */
 class InitDatabaseTest {
+    /**
+     * Tests the database initialization error handling.
+     */
     @Test
     fun testInitDatabase() =
         runTest {

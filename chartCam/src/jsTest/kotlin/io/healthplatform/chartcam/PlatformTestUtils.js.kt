@@ -4,6 +4,9 @@
  */
 package io.healthplatform.chartcam
 
+/**
+ * Cleans up the test environment for JS.
+ */
 actual fun cleanupTestEnv() {
     // No-op
 }

@@ -10,7 +10,13 @@ import org.mockito.Mockito
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
+/**
+ * Tests for [AndroidAppInit].
+ */
 class AndroidAppInitTest {
+    /**
+     * Test successful context retrieval after init.
+     */
     @Test
     fun testInitAndGetContext() {
         val mockContext = Mockito.mock(Context::class.java)
@@ -24,6 +30,9 @@ class AndroidAppInitTest {
         assertEquals(mockAppContext, retrievedContext)
     }
 
+    /**
+     * Test getting context before init throws exception.
+     */
     @Test
     fun testGetContextBeforeInitThrowsException() {
         // We need to reset the context to null using reflection because it's a private var

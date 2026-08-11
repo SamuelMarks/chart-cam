@@ -10,7 +10,13 @@ import io.healthplatform.chartcam.database.ChartCamDatabase
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
+/**
+ * Dummy async test class for JVM.
+ */
 class DummyAsyncJvmTest {
+    /**
+     * Tests dummy async behavior.
+     */
     @Test
     fun testDummyAsyncJvm() =
         runTest {

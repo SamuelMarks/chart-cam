@@ -21,9 +21,15 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class AndroidCameraPreviewTest {
+    /**
+     * Rule to setup compose testing.
+     */
     @get:Rule
     val composeTestRule = createComposeRule()
 
+    /**
+     * Setup test environment.
+     */
     @Before
     fun setup() {
         AndroidAppInit.init(ApplicationProvider.getApplicationContext())

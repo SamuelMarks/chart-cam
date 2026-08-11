@@ -7,6 +7,9 @@ package io.healthplatform.chartcam
 import java.io.File
 import java.util.prefs.Preferences
 
+/**
+ * Cleans up the test environment for JVM.
+ */
 actual fun cleanupTestEnv() {
     System.setProperty("chartcam.isTest", "true")
     File("chartcam_desktop.db").delete()

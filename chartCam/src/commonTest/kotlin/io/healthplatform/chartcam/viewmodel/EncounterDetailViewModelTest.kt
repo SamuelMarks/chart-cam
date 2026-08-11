@@ -8,7 +8,13 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+/**
+ * Tests for the [EncounterDetailViewModel].
+ */
 class EncounterDetailViewModelTest {
+    /**
+     * Dummy execution logic.
+     */
     @Test
     fun dummyTest() {
         assertNotNull(this)

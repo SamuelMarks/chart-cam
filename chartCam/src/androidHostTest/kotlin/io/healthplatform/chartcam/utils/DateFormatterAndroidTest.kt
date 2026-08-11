@@ -7,7 +7,13 @@ package io.healthplatform.chartcam.utils
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+/**
+ * Android host tests for DateFormatter.
+ */
 class DateFormatterAndroidTest {
+    /**
+     * Test localized date formatting behaves correctly on Android.
+     */
     @Test
     fun testFormatLocalizedDate() {
         // Date only

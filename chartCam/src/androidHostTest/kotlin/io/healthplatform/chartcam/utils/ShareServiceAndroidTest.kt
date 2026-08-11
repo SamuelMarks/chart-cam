@@ -14,14 +14,23 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.File
 
+/**
+ * Android host tests for ShareService.
+ */
 @RunWith(RobolectricTestRunner::class)
 class ShareServiceAndroidTest {
+    /**
+     * Setup for tests.
+     */
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         AndroidAppInit.init(context)
     }
 
+    /**
+     * Teardown for tests.
+     */
     @After
     fun teardown() {
         val field = AndroidAppInit::class.java.getDeclaredField("context")
@@ -29,6 +38,9 @@ class ShareServiceAndroidTest {
         field.set(AndroidAppInit, null)
     }
 
+    /**
+     * Tests AndroidShareService functionality.
+     */
     @Test
     fun testShareServiceAndroid() {
         val service = createShareService()

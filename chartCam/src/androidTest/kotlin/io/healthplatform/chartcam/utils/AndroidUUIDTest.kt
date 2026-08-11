@@ -10,8 +10,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
+/**
+ * Tests for the Android UUID utilities.
+ */
 @RunWith(AndroidJUnit4::class)
 class AndroidUUIDTest {
+    /**
+     * Tests UUID random generation.
+     */
     @Test
     fun testRandomUUID() {
         val uuid1 = UUID.randomUUID()

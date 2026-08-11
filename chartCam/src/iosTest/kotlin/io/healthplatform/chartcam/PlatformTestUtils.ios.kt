@@ -4,6 +4,9 @@
  */
 package io.healthplatform.chartcam
 
+/**
+ * Cleans up the test environment for the iOS target.
+ */
 actual fun cleanupTestEnv() {
     // No-op
 }

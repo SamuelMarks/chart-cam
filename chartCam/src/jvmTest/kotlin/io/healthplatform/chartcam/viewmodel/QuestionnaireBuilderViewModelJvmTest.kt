@@ -11,7 +11,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+/**
+ * Test class QuestionnaireBuilderViewModelJvmTest.
+ */
 class QuestionnaireBuilderViewModelJvmTest {
+    /**
+     * Test testInitialState.
+     */
     @Test
     fun testInitialState() {
         val repo = QuestionnaireRepository()
@@ -24,6 +30,9 @@ class QuestionnaireBuilderViewModelJvmTest {
         assertFalse(state.isPreviewMode)
     }
 
+    /**
+     * Test testUpdateTitle.
+     */
     @Test
     fun testUpdateTitle() {
         val repo = QuestionnaireRepository()
@@ -34,6 +43,9 @@ class QuestionnaireBuilderViewModelJvmTest {
         assertEquals("New Form", viewModel.state.value.title)
     }
 
+    /**
+     * Test testAddAndRemoveItem.
+     */
     @Test
     fun testAddAndRemoveItem() {
         val repo = QuestionnaireRepository()
@@ -56,6 +68,9 @@ class QuestionnaireBuilderViewModelJvmTest {
         )
     }
 
+    /**
+     * Test testUpdateItem.
+     */
     @Test
     fun testUpdateItem() {
         val repo = QuestionnaireRepository()
@@ -77,6 +92,9 @@ class QuestionnaireBuilderViewModelJvmTest {
         assertEquals(listOf("OptA", "OptB"), updatedItem.options)
     }
 
+    /**
+     * Test testMoveItemUpAndDown.
+     */
     @Test
     fun testMoveItemUpAndDown() {
         val repo = QuestionnaireRepository()
@@ -122,6 +140,9 @@ class QuestionnaireBuilderViewModelJvmTest {
         assertEquals(id1, itemsAfter[2].linkId)
     }
 
+    /**
+     * Test testTogglePreviewMode.
+     */
     @Test
     fun testTogglePreviewMode() {
         val repo = QuestionnaireRepository()
@@ -133,6 +154,9 @@ class QuestionnaireBuilderViewModelJvmTest {
         assertTrue(viewModel.state.value.isPreviewMode)
     }
 
+    /**
+     * Test testSaveQuestionnaire.
+     */
     @Test
     fun testSaveQuestionnaire() {
         val repo = QuestionnaireRepository()
@@ -153,6 +177,9 @@ class QuestionnaireBuilderViewModelJvmTest {
         assertEquals(2, form?.item?.size)
     }
 
+    /**
+     * Test testSingleSelectExtensionMapping.
+     */
     @Test
     fun testSingleSelectExtensionMapping() {
         val repo = QuestionnaireRepository()
@@ -191,6 +218,9 @@ class QuestionnaireBuilderViewModelJvmTest {
         assertEquals("check-box", code)
     }
 
+    /**
+     * Test testDuplicateLinkIdValidation.
+     */
     @Test
     fun testDuplicateLinkIdValidation() {
         val repo = QuestionnaireRepository()
@@ -230,6 +260,9 @@ class QuestionnaireBuilderViewModelJvmTest {
         )
     }
 
+    /**
+     * Test testChoiceOptionsValidation.
+     */
     @Test
     fun testChoiceOptionsValidation() {
         val repo = QuestionnaireRepository()
@@ -272,6 +305,9 @@ class QuestionnaireBuilderViewModelJvmTest {
         assertFalse(viewModel.validate())
     }
 
+    /**
+     * Test testDuplicateFromId.
+     */
     @Test
     fun testDuplicateFromId() {
         val repo = QuestionnaireRepository()
@@ -315,6 +351,9 @@ class QuestionnaireBuilderViewModelJvmTest {
         assertTrue(idNum > 2)
     }
 
+    /**
+     * Test testAllWidgetTypesMapping.
+     */
     @Test
     fun testAllWidgetTypesMapping() {
         val repo = QuestionnaireRepository()
@@ -354,6 +393,9 @@ class QuestionnaireBuilderViewModelJvmTest {
         }
     }
 
+    /**
+     * Test testSaveQuestionnaireDuplicateNameError.
+     */
     @Test
     fun testSaveQuestionnaireDuplicateNameError() {
         val repo = QuestionnaireRepository()
@@ -381,6 +423,9 @@ class QuestionnaireBuilderViewModelJvmTest {
         assertTrue(successfulId != null)
     }
 
+    /**
+     * Test testValidateCatchesItemError.
+     */
     @Test
     fun testValidateCatchesItemError() {
         val repo = QuestionnaireRepository()

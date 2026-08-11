@@ -47,7 +47,12 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-// Helper to avoid Kotlin NPE when using ArgumentCaptor
+/**
+ * Helper to avoid Kotlin NPE when using ArgumentCaptor.
+ * @param captor the captor
+ * @param dummy the dummy value
+ * @return the dummy value
+ */
 private fun <T> capture(
     captor: ArgumentCaptor<T>,
     dummy: T,
@@ -56,11 +61,19 @@ private fun <T> capture(
     return dummy
 }
 
+/**
+ * Helper to provide any object.
+ * @param dummy the dummy value
+ * @return the dummy value
+ */
 private fun <T> anyObj(dummy: T): T {
     any(dummy!!::class.java)
     return dummy
 }
 
+/**
+ * Test class for EncounterDetailViewModel on JVM.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class EncounterDetailViewModelJvmTest {
     private lateinit var fhirRepository: FhirRepository

@@ -7,7 +7,13 @@ package io.healthplatform.chartcam.utils
 import java.io.File
 import kotlin.test.Test
 
+/**
+ * Test class for ShareService on JVM.
+ */
 class ShareServiceJvmTest {
+    /**
+     * Tests sharing text on JVM.
+     */
     @Test
     fun testJvmShareServiceText() {
         val service = JvmShareService()
@@ -15,6 +21,9 @@ class ShareServiceJvmTest {
         service.shareText("test string")
     }
 
+    /**
+     * Tests sharing a file on JVM.
+     */
     @Test
     fun testJvmShareServiceFile() {
         val service = JvmShareService()

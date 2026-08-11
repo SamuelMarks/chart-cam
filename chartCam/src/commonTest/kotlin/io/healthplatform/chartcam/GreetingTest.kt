@@ -7,7 +7,13 @@ package io.healthplatform.chartcam
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+/**
+ * Tests for the greeting service.
+ */
 class GreetingTest {
+    /**
+     * Test generating a greeting message.
+     */
     @Test
     fun testGreeting() {
         val greeting = Greeting()

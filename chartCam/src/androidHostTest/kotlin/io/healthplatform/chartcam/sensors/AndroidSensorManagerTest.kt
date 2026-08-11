@@ -24,6 +24,9 @@ import org.mockito.Mockito.mock
 class AndroidSensorManagerTest {
     private lateinit var context: Context
 
+    /**
+     * Setup for tests.
+     */
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext<Context>()
@@ -72,6 +75,9 @@ class AndroidSensorManagerTest {
             }
         }
 
+    /**
+     * Test sensor event with mocked data.
+     */
     @Test
     fun testSensorChangedWithMock() =
         runBlocking {

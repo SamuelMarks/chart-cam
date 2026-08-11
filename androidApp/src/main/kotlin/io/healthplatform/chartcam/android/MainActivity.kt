@@ -1,3 +1,7 @@
+/**
+ * @file MainActivity.kt
+ * Contains the main Android entry point for the ChartCam application.
+ */
 package io.healthplatform.chartcam.android
 
 import android.os.Bundle
@@ -14,6 +18,11 @@ import io.healthplatform.chartcam.App
  * Main Entry point for the Android Application.
  */
 class MainActivity : ComponentActivity() {
+    /**
+     * Called when the activity is starting.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down then this Bundle contains the data it most recently supplied in onSaveInstanceState(Bundle).
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -31,6 +40,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Preview for the main App composable on Android.
+ */
 @Preview
 @Composable
 fun AppAndroidPreview() {

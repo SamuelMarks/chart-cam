@@ -11,8 +11,14 @@ import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import org.mockito.Mockito
 import kotlin.test.Test
 
+/**
+ * Test class for CaptureScreen on JVM.
+ */
 @OptIn(ExperimentalTestApi::class)
 class CaptureScreenJvmTest {
+    /**
+     * Tests capturing screen on JVM.
+     */
     @Test
     fun testCaptureScreenJvm() =
         runComposeUiTest {
@@ -30,6 +36,9 @@ class CaptureScreenJvmTest {
             onRoot().assertExists()
         }
 
+    /**
+     * Tests controls layer rendering.
+     */
     @Test
     fun testControlsLayer() =
         runComposeUiTest {
@@ -51,6 +60,9 @@ class CaptureScreenJvmTest {
             onRoot().assertExists()
         }
 
+    /**
+     * Tests review layer rendering.
+     */
     @Test
     fun testReviewLayer() =
         runComposeUiTest {

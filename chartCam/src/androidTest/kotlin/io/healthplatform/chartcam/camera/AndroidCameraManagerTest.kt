@@ -23,6 +23,9 @@ class AndroidCameraManagerTest {
     private lateinit var context: Context
     private lateinit var manager: AndroidCameraManager
 
+    /**
+     * Setup for tests.
+     */
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext<Context>()

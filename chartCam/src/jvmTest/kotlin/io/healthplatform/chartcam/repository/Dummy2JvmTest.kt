@@ -11,7 +11,13 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertTrue
 
+/**
+ * Dummy test class 2 for JVM.
+ */
 class Dummy2JvmTest {
+    /**
+     * Tests async dummy behavior.
+     */
     @Test
     fun testAsyncDummy() =
         runTest {

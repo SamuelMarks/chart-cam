@@ -13,8 +13,14 @@ import kotlinx.coroutines.test.runTest
 import org.mockito.Mockito
 import kotlin.test.Test
 
+/**
+ * Test class for PatientDetailScreen on JVM.
+ */
 @OptIn(ExperimentalTestApi::class)
 class PatientDetailScreenJvmTest {
+    /**
+     * Tests PatientDetailScreen on JVM.
+     */
     @Test
     fun testPatientDetailScreenJvm() =
         runComposeUiTest {

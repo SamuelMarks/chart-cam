@@ -183,6 +183,9 @@ class LoginViewModelTest {
             assertEquals(Res.string.invalid_credentials, viewModel.uiState.value.errorMessage)
         }
 
+    /**
+     * Tests the scenario where the login operation fails with an incorrect password error specifically.
+     */
     @Test
     fun testLoginFailure_IncorrectPassword() =
         runTest {
@@ -201,6 +204,9 @@ class LoginViewModelTest {
             assertEquals(Res.string.incorrect_password, viewModel.uiState.value.errorMessage)
         }
 
+    /**
+     * Tests the scenario where the login operation fails with an unknown error.
+     */
     @Test
     fun testLoginFailure_UnknownError() =
         runTest {

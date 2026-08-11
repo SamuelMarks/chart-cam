@@ -2,23 +2,25 @@ import os
 import re
 import sys
 
+
 def check_a11y(source_dirs):
     missing = []
-    
-    icon_pattern = re.compile(r'\bIcon\(')
-    image_pattern = re.compile(r'\bImage\(')
-    
-    desc_pattern = re.compile(r'contentDescription\s*=')
-    
+
+    icon_pattern = re.compile(r"\bIcon\(")
+    image_pattern = re.compile(r"\bImage\(")
+
+    desc_pattern = re.compile(r"contentDescription\s*=")
+
     for d in source_dirs:
-        if not os.path.exists(d): continue
+        if not os.path.exists(d):
+            continue
         for root, _, files in os.walk(d):
             for file in files:
                 if file.endswith(".kt"):
                     path = os.path.join(root, file)
                     with open(path, "r", encoding="utf-8") as f:
                         lines = f.readlines()
-                        
+
                     for i, line in enumerate(lines):
                         if icon_pattern.search(line) or image_pattern.search(line):
                             found = False
@@ -27,9 +29,12 @@ def check_a11y(source_dirs):
                                     found = True
                                     break
                             if not found:
-                                missing.append(f"{path}:{i+1} Icon/Image missing contentDescription")
+                                missing.append(
+                                    f"{path}:{i + 1} Icon/Image missing contentDescription"
+                                )
 
     return missing
+
 
 if __name__ == "__main__":
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -42,6 +47,6 @@ if __name__ == "__main__":
         for m in missing:
             print(m)
         sys.exit(1)
-        
+
     print("A11y checks passed")
     sys.exit(0)

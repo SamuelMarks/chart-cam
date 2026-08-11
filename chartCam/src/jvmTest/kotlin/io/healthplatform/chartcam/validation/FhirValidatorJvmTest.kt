@@ -15,7 +15,13 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * Test class for FhirValidator on JVM.
+ */
 class FhirValidatorJvmTest {
+    /**
+     * Tests valid patient validation.
+     */
     @Test
     fun testValidPatient() {
         val patient =
@@ -37,6 +43,9 @@ class FhirValidatorJvmTest {
         assertTrue(FhirValidator.validate(patient))
     }
 
+    /**
+     * Tests invalid patient validation (no name).
+     */
     @Test
     fun testInvalidPatientNoName() {
         val patient =
@@ -52,6 +61,9 @@ class FhirValidatorJvmTest {
         assertFalse(FhirValidator.validate(patient))
     }
 
+    /**
+     * Tests valid questionnaire validation.
+     */
     @Test
     fun testValidQuestionnaire() {
         val q =
@@ -72,6 +84,9 @@ class FhirValidatorJvmTest {
         assertTrue(FhirValidator.validate(q))
     }
 
+    /**
+     * Tests invalid questionnaire validation (empty item).
+     */
     @Test
     fun testInvalidQuestionnaireEmptyItem() {
         val q =
@@ -83,6 +98,9 @@ class FhirValidatorJvmTest {
         assertFalse(FhirValidator.validate(q))
     }
 
+    /**
+     * Tests invalid questionnaire validation (choice with no options).
+     */
     @Test
     fun testInvalidQuestionnaireChoiceNoOptions() {
         val q =

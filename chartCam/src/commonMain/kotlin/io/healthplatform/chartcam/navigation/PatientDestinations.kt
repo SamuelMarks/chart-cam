@@ -53,7 +53,7 @@ fun NavGraphBuilder.newVisitDestination(
                     ),
                 actions =
                     io.healthplatform.chartcam.ui.EncounterDetailActions(
-                        onBack = { scope.launch { navController.popBackStack() } },
+                        onBack = { navController.popBackStack() },
                         onTakePhotos = { qId, linkId ->
                             scope.launch {
                                 navController.navigate(CaptureForPatientRoute(patientId, qId, linkId))
@@ -109,7 +109,7 @@ fun NavGraphBuilder.patientListDestination(
                             navController.navigate(PatientDetailRoute(patientId))
                         },
                         onNavigateToQuestionnaires = {
-                            scope.launch { navController.navigate(Routes.QUESTIONNAIRE_LIST) }
+                            navController.navigate(Routes.QUESTIONNAIRE_LIST)
                         },
                         onLogout = {
                             deps.authRepository.logout()
@@ -144,10 +144,10 @@ fun NavGraphBuilder.patientDetailDestination(
             PatientDetailScreen(
                 patientId = patientId,
                 fhirRepository = deps.fhirRepository,
-                onBack = { scope.launch { navController.popBackStack() } },
-                onNewVisit = { scope.launch { navController.navigate(NewVisitRoute(patientId)) } },
+                onBack = { navController.popBackStack() },
+                onNewVisit = { navController.navigate(NewVisitRoute(patientId)) },
                 onVisitSelected = { visitId ->
-                    scope.launch { navController.navigate(VisitDetailRoute(patientId, visitId)) }
+                    navController.navigate(VisitDetailRoute(patientId, visitId))
                 },
             )
         }
@@ -175,10 +175,10 @@ fun NavGraphBuilder.patientVisitsDestination(
             PatientDetailScreen(
                 patientId = patientId,
                 fhirRepository = deps.fhirRepository,
-                onBack = { scope.launch { navController.popBackStack() } },
-                onNewVisit = { scope.launch { navController.navigate(NewVisitRoute(patientId)) } },
+                onBack = { navController.popBackStack() },
+                onNewVisit = { navController.navigate(NewVisitRoute(patientId)) },
                 onVisitSelected = { visitId ->
-                    scope.launch { navController.navigate(VisitDetailRoute(patientId, visitId)) }
+                    navController.navigate(VisitDetailRoute(patientId, visitId))
                 },
             )
         }
@@ -221,7 +221,7 @@ fun NavGraphBuilder.visitDetailDestination(
                     ),
                 actions =
                     io.healthplatform.chartcam.ui.EncounterDetailActions(
-                        onBack = { scope.launch { navController.popBackStack() } },
+                        onBack = { navController.popBackStack() },
                         onTakePhotos = { qId, linkId ->
                             scope.launch {
                                 navController.navigate(CaptureForPatientRoute(patientId, qId, linkId))
@@ -234,7 +234,7 @@ fun NavGraphBuilder.visitDetailDestination(
                             )
                         },
                         onFinalized = {
-                            scope.launch { navController.popBackStack() }
+                            navController.popBackStack()
                         },
                         onNewlyCreatedQuestionnaireHandled = {
                             entry.savedStateHandle.remove<String>("createdQuestionnaireId")

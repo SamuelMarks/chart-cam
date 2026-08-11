@@ -12,7 +12,13 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
 import kotlin.test.Test
 
+/**
+ * End-to-end tests for the main workflow of the app.
+ */
 class E2ETest {
+    /**
+     * Tests the full clinical workflow, from login to questionnaire building to data export.
+     */
     @OptIn(ExperimentalTestApi::class)
     @kotlin.test.Ignore
     @Test

@@ -7,7 +7,13 @@ package io.healthplatform.chartcam.database
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 
+/**
+ * Tests for the database driver factory behavior.
+ */
 class DatabaseDriverFactoryTest {
+    /**
+     * Test initialization of the database driver factory setup.
+     */
     @Test
     fun testFactoryInitialization() {
         // Since DatabaseDriverFactory requires platform-specific init (e.g. Context on Android),

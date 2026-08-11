@@ -7,7 +7,13 @@ package io.healthplatform.chartcam.camera
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 
+/**
+ * Tests for the [PermissionManager] interface.
+ */
 class PermissionManagerTest {
+    /**
+     * Validates that [PermissionManager] can be implemented by an anonymous object.
+     */
     @Test
     fun testPermissionManagerInterface() {
         val manager =

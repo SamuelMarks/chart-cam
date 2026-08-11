@@ -22,12 +22,18 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * Test class for SyncWorker on JVM.
+ */
 class SyncWorkerJvmTest {
     private lateinit var repository: FhirRepository
     private val fhirJson =
         com.google.fhir.model.r4
             .FhirR4Json()
 
+    /**
+     * Sets up the test environment.
+     */
     @BeforeTest
     fun setup() {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
@@ -35,6 +41,9 @@ class SyncWorkerJvmTest {
         repository = FhirRepository(driver)
     }
 
+    /**
+     * Tests successful sync with delta updates.
+     */
     @Test
     fun testSuccessfulSyncWithDeltaUpdates() =
         runTest {
@@ -98,6 +107,9 @@ class SyncWorkerJvmTest {
             assertTrue(downloadedPatient != null)
         }
 
+    /**
+     * Tests offline queuing and error state.
+     */
     @Test
     fun testOfflineQueuingAndErrorState() =
         runTest {
@@ -124,6 +136,9 @@ class SyncWorkerJvmTest {
             assertEquals(1, repository.getPendingLocalChangesCount())
         }
 
+    /**
+     * Tests conflict resolution ETag mismatch.
+     */
     @Test
     fun testConflictResolutionETagMismatch() =
         runTest {

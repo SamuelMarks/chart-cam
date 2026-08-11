@@ -19,9 +19,16 @@ import kotlin.test.assertTrue
 import com.google.fhir.model.r4.Boolean as FhirBoolean
 import com.google.fhir.model.r4.String as FhirString
 
+/**
+ * Tests for SDC extension functions on FHIR resources.
+ */
 class SdcExtensionsTest {
+    /** Helper for creating FHIR strings. */
     private fun str(s: String) = FhirString.Builder().apply { value = s }
 
+    /**
+     * Test the `isHidden` extension.
+     */
     @Test
     fun testIsHidden() {
         val hiddenExt =
@@ -47,6 +54,9 @@ class SdcExtensionsTest {
         assertFalse(visibleItem.isHidden())
     }
 
+    /**
+     * Test getting the item control extension.
+     */
     @Test
     fun testGetItemControl() {
         val coding = Coding.Builder().apply { code = Code.Builder().apply { value = "drop-down" } }
@@ -77,6 +87,9 @@ class SdcExtensionsTest {
         assertNull(itemNoControl.getItemControl())
     }
 
+    /**
+     * Test getting min/max value extensions.
+     */
     @Test
     fun testGetMinValueAndMaxValue() {
         val minExt =
