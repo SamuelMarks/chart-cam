@@ -56,18 +56,37 @@ jobs:
           bundler-cache: true
           working-directory: fastlane
 
+      - name: Verify Required Secrets
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          PLAY_STORE_JSON_B64: ${{ secrets.PLAY_STORE_JSON_B64 }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          missing_secrets=()
+          if [ -z "$ANDROID_KEYSTORE_B64" ]; then missing_secrets+=("ANDROID_KEYSTORE_B64"); fi
+          if [ -z "$PLAY_STORE_JSON_B64" ]; then missing_secrets+=("PLAY_STORE_JSON_B64"); fi
+          if [ -z "$ANDROID_STORE_PASSWORD" ]; then missing_secrets+=("ANDROID_STORE_PASSWORD"); fi
+          if [ -z "$ANDROID_KEY_ALIAS" ]; then missing_secrets+=("ANDROID_KEY_ALIAS"); fi
+          if [ -z "$ANDROID_KEY_PASSWORD" ]; then missing_secrets+=("ANDROID_KEY_PASSWORD"); fi
+          if [ ${#missing_secrets[@]} -ne 0 ]; then
+            echo "::error::Missing required GitHub Secrets for Android deployment: ${missing_secrets[*]}"
+            echo "Please define these in the GitHub repository settings (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+
       - name: Decode Keystore
         env:
           ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
         run: |
-          echo "$ANDROID_KEYSTORE_B64" | base64 --decode > chartCam/release.keystore
+          echo "$ANDROID_KEYSTORE_B64" | base64 --decode > release.keystore
 
       - name: Decode Play Store API Key
         env:
           PLAY_STORE_JSON_B64: ${{ secrets.PLAY_STORE_JSON_B64 }}
         run: |
-          mkdir -p fastlane
-          echo "$PLAY_STORE_JSON_B64" | base64 --decode > fastlane/api-key.json
+          echo "$PLAY_STORE_JSON_B64" | base64 --decode > api-key.json
 
       - name: Fastlane Android Deploy
         env:
@@ -102,6 +121,20 @@ jobs:
           ruby-version: '3.0'
           bundler-cache: true
           working-directory: fastlane
+
+      - name: Verify Required Secrets
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          missing_secrets=()
+          if [ -z "$MATCH_PASSWORD" ]; then missing_secrets+=("MATCH_PASSWORD"); fi
+          if [ -z "$APP_STORE_CONNECT_API_KEY" ]; then missing_secrets+=("APP_STORE_CONNECT_API_KEY"); fi
+          if [ ${#missing_secrets[@]} -ne 0 ]; then
+            echo "::error::Missing required GitHub Secrets for iOS deployment: ${missing_secrets[*]}"
+            echo "Please define these in the GitHub repository settings (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
 
       - name: Disable Gradle Daemon
         run: |
