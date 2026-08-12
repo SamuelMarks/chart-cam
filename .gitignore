@@ -34,3 +34,4 @@ TestCam.kt
 test_*.kt
 test_*.js
 test_*.gradle.kts
+.env

@@ -1,3 +1,5 @@
+-include .env
+
 .PHONY: clean build test lint build_release_android build_release_ios build_release_jvm build_release_js build_release_wasm run_android run_ios run_jvm
 
 clean:
@@ -16,16 +18,30 @@ build_release_android:
 	./gradlew --console=plain :androidApp:assembleRelease
 
 build_release_ios:
+	@if [ -z "$(APPLE_TEAM_ID)" ]; then echo "Error: APPLE_TEAM_ID is not set in .env"; exit 1; fi
 	@echo "Creating iOS archive..."
-	cd iosApp && xcodebuild -scheme iosApp -configuration Release -destination 'generic/platform=iOS' CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO archive -archivePath ../build/ios/ChartCam.xcarchive
+	cd iosApp && xcodebuild -scheme iosApp -configuration Release -destination 'generic/platform=iOS' DEVELOPMENT_TEAM="$(APPLE_TEAM_ID)" archive -archivePath ../build/ios/ChartCam.xcarchive -allowProvisioningUpdates
+	@echo "Exporting .ipa for App Store Connect..."
+	@mkdir -p build/ios
+	@echo '<?xml version="1.0" encoding="UTF-8"?>' > build/ios/exportOptions.plist
+	@echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> build/ios/exportOptions.plist
+	@echo '<plist version="1.0">' >> build/ios/exportOptions.plist
+	@echo '<dict>' >> build/ios/exportOptions.plist
+	@echo '    <key>method</key>' >> build/ios/exportOptions.plist
+	@echo '    <string>app-store</string>' >> build/ios/exportOptions.plist
+	@echo '    <key>teamID</key>' >> build/ios/exportOptions.plist
+	@echo '    <string>$(APPLE_TEAM_ID)</string>' >> build/ios/exportOptions.plist
+	@echo '    <key>uploadSymbols</key>' >> build/ios/exportOptions.plist
+	@echo '    <true/>' >> build/ios/exportOptions.plist
+	@echo '    <key>signingStyle</key>' >> build/ios/exportOptions.plist
+	@echo '    <string>automatic</string>' >> build/ios/exportOptions.plist
+	@echo '</dict>' >> build/ios/exportOptions.plist
+	@echo '</plist>' >> build/ios/exportOptions.plist
+	cd iosApp && xcodebuild -exportArchive -archivePath ../build/ios/ChartCam.xcarchive -exportOptionsPlist ../build/ios/exportOptions.plist -exportPath ../build/ios DEVELOPMENT_TEAM="$(APPLE_TEAM_ID)" -allowProvisioningUpdates
 	@echo "================================================================="
-	@echo "Archive successfully generated at:"
-	@echo "  build/ios/ChartCam.xcarchive"
-	@echo ""
-	@echo "If you need an unsigned .ipa, you can manually zip the .app:"
-	@echo "  mkdir -p build/ios/Payload"
-	@echo "  cp -R build/ios/ChartCam.xcarchive/Products/Applications/ChartCam.app build/ios/Payload/"
-	@echo "  cd build/ios && zip -r ChartCam-unsigned.ipa Payload"
+	@echo "IPA successfully generated at:"
+	@echo "  build/ios/ChartCam.ipa"
+	@echo "You can upload this file using the Apple Transporter app."
 	@echo "================================================================="
 
 build_release_jvm:
