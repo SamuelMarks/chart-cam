@@ -138,9 +138,9 @@ actual class CryptoService actual constructor() {
                 try {
                     status =
                         iv.usePinned { ivPinned ->
-                            CCCryptorGCMAddIV(cryptorRef, ivPinned.addressOf(0), GCM_IV_LENGTH_U)
+                            my_CCCryptorGCMAddIV(cryptorRef, ivPinned.addressOf(0), GCM_IV_LENGTH_U)
                         }
-                    if (status != kCCSuccess) error("CCCryptorGCMAddIV failed: $status")
+                    if (status != kCCSuccess) error("my_CCCryptorGCMAddIV failed: $status")
 
                     if (plaintext.isNotEmpty()) {
                         status =
@@ -163,9 +163,9 @@ actual class CryptoService actual constructor() {
                         tag.usePinned { tagPinned ->
                             val tagLenVar = alloc<platform.posix.size_tVar>()
                             tagLenVar.value = GCM_TAG_LENGTH_U
-                            CCCryptorGCMFinal(cryptorRef, tagPinned.addressOf(0), tagLenVar.ptr)
+                            my_CCCryptorGCMFinal(cryptorRef, tagPinned.addressOf(0), tagLenVar.ptr)
                         }
-                    if (status != kCCSuccess) error("CCCryptorGCMFinal failed: $status")
+                    if (status != kCCSuccess) error("my_CCCryptorGCMFinal failed: $status")
                 } finally {
                     CCCryptorRelease(cryptorRef)
                 }
@@ -203,9 +203,9 @@ actual class CryptoService actual constructor() {
                 try {
                     status =
                         iv.usePinned { ivPinned ->
-                            CCCryptorGCMAddIV(cryptorRef, ivPinned.addressOf(0), GCM_IV_LENGTH_U)
+                            my_CCCryptorGCMAddIV(cryptorRef, ivPinned.addressOf(0), GCM_IV_LENGTH_U)
                         }
-                    if (status != kCCSuccess) error("CCCryptorGCMAddIV failed: $status")
+                    if (status != kCCSuccess) error("my_CCCryptorGCMAddIV failed: $status")
 
                     if (actualCiphertext.isNotEmpty()) {
                         status =
@@ -229,9 +229,9 @@ actual class CryptoService actual constructor() {
                         tagOut.usePinned { tagOutPinned ->
                             val tagLenVar = alloc<platform.posix.size_tVar>()
                             tagLenVar.value = GCM_TAG_LENGTH_U
-                            CCCryptorGCMFinal(cryptorRef, tagOutPinned.addressOf(0), tagLenVar.ptr)
+                            my_CCCryptorGCMFinal(cryptorRef, tagOutPinned.addressOf(0), tagLenVar.ptr)
                         }
-                    if (status != kCCSuccess) error("CCCryptorGCMFinal failed: $status")
+                    if (status != kCCSuccess) error("my_CCCryptorGCMFinal failed: $status")
 
                     // Compare tags
                     var tagMatches = true

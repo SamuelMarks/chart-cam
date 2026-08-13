@@ -15,14 +15,14 @@ cd "$ARGON2_SRC"
 
 if [ ! -f "$BUILD_DIR/iosArm64/libargon2.a" ]; then
     mkdir -p "$BUILD_DIR/iosArm64"
-    xcrun -sdk iphoneos clang -arch arm64 -O3 -c argon2.c core.c encoding.c ref.c thread.c blake2/blake2b.c -I. -DARGON2_NO_THREADS
+    xcrun -sdk iphoneos clang -arch arm64 -O3 -c argon2.c core.c encoding.c ref.c thread.c blake2/blake2b.c gcm_crypto.c -I. -DARGON2_NO_THREADS
     xcrun -sdk iphoneos ar rcs "$BUILD_DIR/iosArm64/libargon2.a" *.o
     rm *.o
 fi
 
 if [ ! -f "$BUILD_DIR/iosSimulatorArm64/libargon2.a" ]; then
     mkdir -p "$BUILD_DIR/iosSimulatorArm64"
-    xcrun -sdk iphonesimulator clang -arch arm64 -O3 -c argon2.c core.c encoding.c ref.c thread.c blake2/blake2b.c -I. -DARGON2_NO_THREADS
+    xcrun -sdk iphonesimulator clang -arch arm64 -O3 -c argon2.c core.c encoding.c ref.c thread.c blake2/blake2b.c gcm_crypto.c -I. -DARGON2_NO_THREADS
     xcrun -sdk iphonesimulator ar rcs "$BUILD_DIR/iosSimulatorArm64/libargon2.a" *.o
     rm *.o
 fi

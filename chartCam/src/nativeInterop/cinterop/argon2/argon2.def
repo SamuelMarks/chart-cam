@@ -9,8 +9,6 @@ linkerOpts = -framework Security -framework CoreFoundation
 #define kCCModeGCM 11
 #endif
 
-extern CCCryptorStatus CCCryptorGCMAddIV(CCCryptorRef cryptor, const void *iv, size_t ivLen);
-extern CCCryptorStatus CCCryptorGCMaddAAD(CCCryptorRef cryptor, const void *aad, size_t aadLen);
-extern CCCryptorStatus CCCryptorGCMFinal(CCCryptorRef cryptor, void *tag, size_t *tagLength);
-extern CCCryptorStatus CCCryptorGCMReset(CCCryptorRef cryptor);
+extern CCCryptorStatus my_CCCryptorGCMAddIV(CCCryptorRef cryptor, const void *iv, size_t ivLen);
+extern CCCryptorStatus my_CCCryptorGCMFinal(CCCryptorRef cryptor, void *tag, size_t *tagLength);
 

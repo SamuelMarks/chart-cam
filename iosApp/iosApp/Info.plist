@@ -6,5 +6,7 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>ChartCam needs camera access to capture clinical photos.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<true/>
 </dict>
 </plist>

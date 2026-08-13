@@ -37,7 +37,12 @@ ChartCam: The secure, open-source engine for clinical innovation.
 <div align="center">
   <img src="fastlane/screenshots/en-US/iphone-01-login.png" width="200" alt="Login"/>
   <img src="fastlane/screenshots/en-US/iphone-02-patient-list.png" width="200" alt="Patient List"/>
+  <img src="fastlane/screenshots/en-US/iphone-03-add-patient.png" width="200" alt="Add Patient"/>
   <img src="fastlane/screenshots/en-US/iphone-04-patient-detail.png" width="200" alt="Patient Detail"/>
+  <br/>
+  <img src="fastlane/screenshots/en-US/iphone-05-questionnaire-list.png" width="200" alt="Questionnaire List"/>
+  <img src="fastlane/screenshots/en-US/iphone-06-questionnaire-builder.png" width="200" alt="Questionnaire Builder"/>
+  <img src="fastlane/screenshots/en-US/iphone-07-questionnaire-share.png" width="200" alt="Share Questionnaire"/>
   <img src="fastlane/screenshots/en-US/iphone-08-fill-questionnaire.png" width="200" alt="Fill Questionnaire"/>
 </div>
 
