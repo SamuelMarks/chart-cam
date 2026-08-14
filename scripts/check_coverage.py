@@ -1,9 +1,34 @@
+"""
+This module provides a script to calculate the KDoc documentation coverage for a
+Kotlin project. It scans specified source directories, identifies Kotlin declarations
+(classes, interfaces, objects, and functions), and checks if they are preceded by
+a valid KDoc block. It also verifies that each file starts with a `@file` KDoc tag.
+The script outputs the overall coverage percentage and updates the corresponding
+badge in the project's README.md file.
+"""
+
 import os
 import re
 import sys
 
 
 def get_kdoc_coverage(source_dirs):
+    """
+    Calculate the KDoc documentation coverage for Kotlin source files.
+
+    This function scans the provided directories for `.kt` files. For each file, it
+    first checks if a `@file` KDoc tag exists within the first 15 lines. Then, it
+    uses a regular expression to find all major Kotlin declarations (classes,
+    interfaces, objects, and functions). For every declaration found, it checks
+    if the preceding lines contain a valid KDoc block (ending with `*/`).
+
+    :param source_dirs: A list of directory paths to scan for Kotlin source files.
+    :type source_dirs: list[str]
+    :return: A tuple containing two elements:
+             - The calculated documentation coverage as a float percentage (0.0 to 100.0).
+             - A list of string messages detailing the locations of missing documentation.
+    :rtype: tuple[float, list[str]]
+    """
     total_declarations = 0
     documented_declarations = 0
     missing = []

@@ -1,9 +1,31 @@
+"""
+This module provides a script to perform basic accessibility (a11y) checks on Jetpack
+Compose UI code. It scans Kotlin source files to ensure that visual elements like
+`Icon` and `Image` composables include a `contentDescription` parameter, which is
+essential for screen readers and overall accessibility.
+"""
+
 import os
 import re
 import sys
 
 
 def check_a11y(source_dirs):
+    """
+    Check Kotlin source files for missing accessibility descriptions on UI elements.
+
+    This function scans the provided directories for `.kt` files. Within each file,
+    it searches for invocations of `Icon(` or `Image(`. When found, it inspects the
+    immediate surrounding lines (up to 8 lines ahead) to verify that a
+    `contentDescription` parameter is passed to the composable.
+
+    :param source_dirs: A list of directory paths to scan for Kotlin source files.
+    :type source_dirs: list[str]
+    :return: A list of string messages detailing the locations of visual elements
+             that are missing a content description. An empty list indicates that
+             all checked elements have descriptions.
+    :rtype: list[str]
+    """
     missing = []
 
     icon_pattern = re.compile(r"\bIcon\(")

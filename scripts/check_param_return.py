@@ -1,9 +1,31 @@
+"""
+This module provides a script to verify that all Kotlin functions within a project
+have comprehensive KDoc comments. Specifically, it checks that every function (which
+takes parameters or has a explicit return type) includes an `@param` tag for each
+of its declared parameters and a `@return` tag if it returns a value other than `Unit`.
+"""
+
 import os
 import re
 import sys
 
 
 def check_param_return(source_dirs):
+    """
+    Check Kotlin source files for missing @param and @return tags in KDoc comments.
+
+    This function scans the given directories for `.kt` files. It parses each file to
+    identify function declarations. For each function, it extracts the parameter names
+    and the return type. It then inspects the preceding KDoc block to ensure that
+    every parameter (excluding 'modifier') has a corresponding `@param` tag, and that
+    functions with a non-Unit return type have a `@return` tag.
+
+    :param source_dirs: A list of directory paths to scan for Kotlin source files.
+    :type source_dirs: list[str]
+    :return: A list of string messages detailing the locations of functions missing
+             required documentation tags. An empty list indicates full compliance.
+    :rtype: list[str]
+    """
     total_funcs = 0
     missing = []
 

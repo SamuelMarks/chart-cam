@@ -1,9 +1,34 @@
+"""
+This module provides a script to verify that all Jetpack Compose `@Composable`
+functions within a Kotlin codebase are documented with KDoc. Specifically, it
+checks that each composable function has a KDoc block, and that all of its
+parameters (excluding the standard 'modifier') are explicitly documented with
+an `@param` tag.
+"""
+
 import os
 import re
 import sys
 
 
 def check_composable_docs(source_dirs):
+    """
+    Check Kotlin source files for undocumented @Composable functions or parameters.
+
+    This function scans the given directories for `.kt` files. Within each file,
+    it looks for the `@Composable` annotation. When found, it parses the subsequent
+    function declaration to extract the function name and its parameter list. It
+    then verifies that a valid KDoc block exists immediately preceding the
+    `@Composable` annotation, and that the KDoc contains an `@param` tag for every
+    parameter declared in the function signature (except for 'modifier' or 'Modifier').
+
+    :param source_dirs: A list of directory paths to scan for Kotlin source files.
+    :type source_dirs: list[str]
+    :return: A list of string messages detailing any missing documentation. An empty
+             list indicates that all composable functions and their parameters are
+             properly documented.
+    :rtype: list[str]
+    """
     missing = []
     func_pattern = re.compile(
         r"^\s*(?:(?:public|protected|internal|private)\s+)*fun\s+([a-zA-Z0-9_<>.]+)\s*\("
