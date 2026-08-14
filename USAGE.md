@@ -12,10 +12,10 @@ In high-acuity clinical environments, the primary objective is to capture patien
 
 ### The Standard Practitioner Workflow
 
-1.  **Launch & Authenticate**: Launch the application and securely authenticate via the established Identity Provider (OAuth2/OIDC).
+1.  **Launch & Authenticate**: Launch the application and securely authenticate via the local, on-device credential system (e.g., local PIN). No external servers are used.
 2.  **Immediate Capture**: The application defaults to the Camera viewfinder. The practitioner captures the necessary high-fidelity clinical media without delay.
 3.  **Triage & Attribution**: Post-capture, the practitioner reviews the media and securely associates it with either an existing patient record or provisions a new encounter.
-4.  **Secure Synchronization**: The application encrypts the media, encapsulates it within standard FHIR resources (`DocumentReference`/`Media`), and seamlessly synchronizes the data with the centralized clinical backend.
+4.  **Secure Storage**: The application encrypts the media, encapsulates it within standard FHIR resources (`DocumentReference`/`Media`), and securely stores the data within the local on-device encrypted database.
 
 ---
 

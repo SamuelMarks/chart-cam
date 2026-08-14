@@ -1,0 +1,65 @@
+{
+    "resourceType": "Questionnaire",
+    "id": "basic-followup",
+    "title": "Basic Follow-up",
+    "status": "active",
+    "item": [
+        {
+            "linkId": "notes",
+            "text": "Follow-up Notes",
+            "type": "string",
+            "required": false
+        },
+        {
+            "linkId": "followup_type",
+            "text": "Type of Follow-up",
+            "type": "choice",
+            "required": true,
+            "answerOption": [
+                {
+                    "valueString": "Routine"
+                },
+                {
+                    "valueString": "Urgent"
+                }
+            ]
+        },
+        {
+            "linkId": "urgent_reason",
+            "text": "Reason for Urgency",
+            "type": "string",
+            "enableWhen": [
+                {
+                    "question": "followup_type",
+                    "operator": "=",
+                    "answerString": "Urgent"
+                }
+            ],
+            "required": true
+        },
+        {
+            "linkId": "patient_consent",
+            "text": "Patient consented to photos",
+            "type": "boolean",
+            "required": true
+        },
+        {
+            "linkId": "front",
+            "text": "Front View",
+            "type": "attachment",
+            "required": true
+        },
+        {
+            "linkId": "left",
+            "text": "Left View",
+            "type": "attachment",
+            "required": true
+        },
+        {
+            "linkId": "right",
+            "text": "Right View",
+            "type": "attachment",
+            "required": true
+        }
+    ]
+}

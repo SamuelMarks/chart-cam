@@ -1,0 +1,62 @@
+{
+    "resourceType": "Questionnaire",
+    "id": "std-form",
+    "title": "Standard Clinical Photo",
+    "status": "active",
+    "item": [
+        {
+            "linkId": "notes",
+            "text": "Clinical Notes",
+            "type": "string",
+            "required": false
+        },
+        {
+            "linkId": "front",
+            "text": "Front",
+            "type": "attachment",
+            "required": true
+        },
+        {
+            "linkId": "front_ruler",
+            "text": "Front + Ruler",
+            "type": "attachment",
+            "required": true
+        },
+        {
+            "linkId": "right",
+            "text": "Right Side",
+            "type": "attachment",
+            "required": true
+        },
+        {
+            "linkId": "right_ruler",
+            "text": "Right Side + Ruler",
+            "type": "attachment",
+            "required": true
+        },
+        {
+            "linkId": "back",
+            "text": "Back",
+            "type": "attachment",
+            "required": true
+        },
+        {
+            "linkId": "back_ruler",
+            "text": "Back + Ruler",
+            "type": "attachment",
+            "required": true
+        },
+        {
+            "linkId": "left",
+            "text": "Left Side",
+            "type": "attachment",
+            "required": true
+        },
+        {
+            "linkId": "left_ruler",
+            "text": "Left Side + Ruler",
+            "type": "attachment",
+            "required": true
+        }
+    ]
+}

@@ -1,0 +1,223 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    
+    <string name="camera_permission_required">Camera permission is required</string>
+    <string name="open_settings">Open Settings</string>
+    <string name="cancel">Cancel</string>
+    <string name="take_photo">Take Photo</string>
+    <string name="retake">Retake</string>
+    <string name="confirm">Confirm</string>
+
+    
+    <string name="triage_select_patient">Triage: Select Patient</string>
+    
+    <plurals name="selected_photos_ready">
+        <item quantity="one">Selected. 1 photo ready.</item>
+        <item quantity="other">Selected. %1$d photos ready.</item>
+    </plurals>
+
+    <string name="search_placeholder">Search Name or MRN...</string>
+    <string name="mrn_dob_format">MRN: %1$s | DOB: %2$s</string>
+    <string name="mrn_date_format">MRN: %1$s | %2$s</string>
+    <string name="no_patients_found">No patients found.</string>
+
+    
+    <string name="patient_directory">Patient Directory</string>
+    <string name="show_my_patients_only">Show My Patients Only</string>
+    <string name="show_all_patients">Show All Patients</string>
+    <string name="export_data">Export Data</string>
+    <string name="import_data">Import Data</string>
+    <string name="logout">Logout</string>
+    <string name="about">About</string>
+    <string name="delete_my_account">Delete My Account</string>
+
+    <string name="export_password_title">Export Password</string>
+    <string name="export_password_label">Enter a password to encrypt data</string>
+    <string name="export_all_patients">Export all visits of all patients</string>
+    <string name="export">Export</string>
+
+    <string name="data_exported_title">Data Exported</string>
+    <string name="data_exported_message">Data has been encrypted. Share the file and the password separately.</string>
+    <string name="share_password">Share Password</string>
+    <string name="share_file">Share File</string>
+    <string name="close">Close</string>
+
+    <string name="about_title">About ChartCam</string>
+    <string name="version_text">Version: %1$s</string>
+    <string name="ok">OK</string>
+
+    <string name="delete_account_title">Delete Account</string>
+    <string name="delete_account_message">Are you sure you want to delete your account? This will permanently delete all your patients, visits, photos, and notes. This cannot be undone.</string>
+    <string name="delete">Delete</string>
+
+    <string name="import_title">Import Data</string>
+    <string name="paste_data_here">Paste Data Here</string>
+    <string name="password">Password</string>
+    <string name="import_action">Import</string>
+
+    
+    <string name="username">Username</string>
+    <string name="login_signup">Login / signup</string>
+
+    
+    <string name="new_patient">New Patient</string>
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last Name</string>
+    <string name="mrn">MRN</string>
+    <string name="dob_label">DOB (YYYY-MM-DD)</string>
+    <string name="dob_placeholder">1990-01-01</string>
+    <string name="create">Create</string>
+
+    
+    <string name="create_questionnaire">Create Questionnaire</string>
+    <string name="title">Title</string>
+    <string name="number_of_photos">Number of Photos</string>
+    <string name="labels_comma">Labels (comma separated)</string>
+
+    <string name="visit_detail">Visit Detail</string>
+    <string name="delete_visit">Delete Visit</string>
+    <string name="delete_visit_message">Are you sure you want to delete this visit? This will permanently delete its photos and notes. This cannot be undone.</string>
+    <string name="syncing_to_server">Syncing to Server...</string>
+
+    <string name="questionnaire">Questionnaire</string>
+    <string name="questionnaire_format">Questionnaire: %1$s</string>
+
+    <string name="create_new">Create New</string>
+    <string name="edit_visit">Edit visit</string>
+    <string name="finalize_visit">Finalize Visit</string>
+    <string name="take_photos">Take Photos</string>
+    <string name="image_load_error">Image Load Error</string>
+
+    
+    <string name="patient_detail">Patient Detail</string>
+    <string name="delete_patient">Delete Patient</string>
+    <string name="delete_patient_message">Are you sure you want to delete this patient? This will permanently delete all their visits, photos, and notes. This cannot be undone.</string>
+    <string name="no_visits_found">No visits found</string>
+
+    <string name="no_notes">No notes</string>
+    <string name="initializing_camera">Initializing Camera...</string>
+
+    
+    <string name="cd_camera_preview">Camera Preview</string>
+    <string name="cd_switch_camera">Switch Camera</string>
+    <string name="cd_review">Review</string>
+    <string name="cd_proceed">Proceed</string>
+    <string name="cd_create_patient">Create Patient</string>
+    <string name="cd_switch_language">Switch Language</string>
+    <string name="cd_more">More options</string>
+    <string name="cd_add_patient">Add Patient</string>
+    <string name="cd_chartcam_logo">ChartCam Logo</string>
+    <string name="cd_questionnaire_title_input">Questionnaire Title Input</string>
+    <string name="cd_questionnaire_photos_input">Questionnaire Photos Count Input</string>
+    <string name="cd_questionnaire_labels_input">Questionnaire Labels Input</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_finalize_encounter">Finalize Encounter</string>
+    <string name="cd_questionnaire_selector">Questionnaire Selector</string>
+    <string name="cd_patient_photo">Patient Photo</string>
+    <string name="cd_item">Item %1$s</string>
+    <string name="cd_new_visit">New Visit</string>
+
+    <string name="cd_search_icon">Search icon</string>
+
+    <string name="feature_capture">Capture</string>
+    <string name="feature_secure">Secure</string>
+    <string name="feature_sync">Sync</string>
+    <string name="app_name_title">ChartCam</string>
+    <string name="app_slogan">Capture. Chart. Care.</string>
+    <string name="offline_mode">Offline mode</string>
+    <string name="step_count_format">%1$s/%2$s</string>
+    <string name="all_fields_required">All fields are required</string>
+    <string name="invalid_date_format">Invalid Date Format. Use YYYY-MM-DD</string>
+    <string name="visit_history">Visit History</string>
+    <string name="select_an_option">Select an option</string>
+    <string name="select_questionnaire">Select Questionnaire</string>
+    <string name="captured_photos_format">Captured Photos (%1$d/%2$d)</string>
+    <string name="provider_format">Provider: Dr. %1$s</string>
+<string name="build_questionnaire">Build Questionnaire</string><string name="preview">Preview</string><string name="save">Save</string><string name="preview_mode">Preview Mode</string><string name="questionnaire_title">Questionnaire Title</string><string name="items">Items</string><string name="add_widget">Add Widget</string><string name="add">Add</string><string name="label">Label</string><string name="options_comma_separated">Options (comma-separated)</string><string name="delete_item">Delete Item</string><string name="type_format">Type: %1$s</string><string name="cd_delete_item">Delete Item</string><string name="cd_save">Save</string><string name="cd_preview">Preview</string><string name="cd_add">Add</string>
+    <string name="cd_move_up">Move Up</string>
+    <string name="cd_move_down">Move Down</string>
+    <string name="confirm_delete_item_title">Delete Item?</string>
+    <string name="confirm_delete_item_message">Are you sure you want to delete this item? This cannot be undone.</string>
+    <string name="confirm_delete_option_title">Delete Option?</string>
+    <string name="confirm_delete_option_message">Are you sure you want to delete this option?</string>
+    <string name="cd_more_widgets">More widgets</string>
+    <string name="widget_photo_camera">Photo Camera</string>
+    <string name="widget_video_camera">Video Camera</string>
+    <string name="widget_switch">Switch</string>
+    <string name="widget_checkbox">Checkbox</string>
+    <string name="widget_single_select">Single Select</string>
+    <string name="widget_multi_select">Multi Select</string>
+    <string name="widget_single_line_text">Single Line Text</string>
+    <string name="widget_multi_line_text">Multi Line Text</string>
+    <string name="widget_date">Date</string>
+    <string name="widget_datetime">Date/Time</string>
+    <string name="widget_numeric">Numeric</string>
+    <string name="widget_range">Range</string>
+    <string name="date_format_label">%1$s (YYYY-MM-DD)</string>
+    <string name="datetime_format_label">%1$s (YYYY-MM-DD HH:MM)</string>
+    <string name="questionnaires">Questionnaires</string>
+    <string name="import_questionnaire">Import Questionnaire</string>
+    <string name="import_error_format">Import Error: %1$s</string>
+    <string name="unknown">Unknown</string>
+    <string name="new_item">New Item</string>
+    <string name="new_widget_item">New %1$s Item</string>
+    <string name="unknown_copy">%1$s (Copy)</string>
+    <string name="paste_from_clipboard">Paste from Clipboard</string>
+    <string name="file_import_coming_soon">File Import and QR Code Scanner coming soon</string>
+    <string name="number_of_items_format">Number of items: %1$s</string>
+    <string name="import_confirmation">Are you sure you want to import this questionnaire?</string>
+    <string name="share_questionnaire">Share Questionnaire</string>
+    <string name="copy_to_clipboard">Copy to Clipboard</string>
+    <string name="share_text_json">Share text/JSON</string>
+    <string name="qr_code_coming_soon">QR Code and File Export coming soon</string>
+    <string name="recovered_form">Recovered Form</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="add_option">Add option</string>
+    <string name="cd_delete_option">Delete option</string>
+    <string name="clipboard_is_empty">Clipboard is empty</string>
+    <string name="title_format">Title: %1$s</string>
+    <string name="attachment_included">Attachment included</string>
+    <string name="cd_unnamed_item">Unnamed question</string>
+    <string name="cd_unnamed_group">Unnamed section</string>
+    <string name="error_required_field">This field is required</string>
+    <string name="clear">Clear</string>
+    <string name="bullet_format">• %1$s</string>
+    <string name="at_least_one_option_required">At least one option is required</string>
+    <string name="not_answered">Not answered</string>
+    <string name="unknown_error">Unknown error</string>
+    <string name="invalid_fhir_format">Invalid format: JSON is not a valid FHIR Questionnaire.</string>
+    <string name="cd_more_options">More options</string>
+    <string name="delete_visit_title">Delete Visit</string>
+    <string name="english">English</string>
+    <string name="espanol">Español</string>
+    <string name="japanese">日本語</string>
+    <string name="cd_select_date">Select Date</string>
+    <string name="error">Error</string>
+    <string name="camera_unavailable">Camera unavailable or permission denied.</string>
+    <string name="cd_duplicate">Duplicate</string>
+    <string name="cd_delete">Delete</string>
+    <string name="decryption_failed">Decryption failed or data is empty.</string>
+    <string name="invalid_fhir_json_format">Invalid FHIR JSON format</string>
+    <string name="failed_to_load_patients">Failed to load patients</string>
+    <string name="failed_to_import">Failed to import. Wrong password or bad data.</string>
+    <string name="error_duplicate_id">A questionnaire with this generated ID already exists. Please change the title to make it unique.</string>
+    
+    <string name="level_status_level">Camera is level</string>
+    <string name="level_status_tilted">Camera is tilted</string>
+    <string name="cd_leveler_status">Camera Leveler: %1$s</string>
+    
+    <string name="id_format">ID: %1$s</string>
+    <string name="cd_camera_icon">Camera icon</string>
+    <string name="cd_video_icon">Video icon</string>
+    <string name="clipboard_data_label">ChartCam Clipboard Data</string>
+
+    <string name="state_selected">Selected</string>
+    <string name="state_unselected">Unselected</string>
+
+
+    <string name="incorrect_password">Incorrect password</string>
+    <string name="invalid_credentials">Invalid Credentials</string>
+</resources>
+
+

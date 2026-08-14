@@ -36,6 +36,12 @@ platform :android do
       skip_upload_screenshots: true
     )
   end
+
+  desc "Generate Android screenshots"
+  lane :screenshots do
+    gradle(task: "assembleDebug assembleDebugAndroidTest")
+    screengrab
+  end
 end
 
 platform :ios do
@@ -46,6 +52,11 @@ platform :ios do
       scheme: "iosApp",
       project: "iosApp/iosApp.xcodeproj"
     )
+  end
+
+  desc "Generate iOS screenshots"
+  lane :screenshots do
+    snapshot
   end
 
   desc "Builds the app for release"

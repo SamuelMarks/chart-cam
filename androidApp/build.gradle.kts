@@ -11,6 +11,8 @@ android {
             .toInt()
 
     defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
         applicationId = "io.healthplatform.chartcam"
         minSdk =
             libs.versions.android.minSdk
@@ -51,6 +53,14 @@ android {
 }
 
 dependencies {
+    androidTestImplementation(libs.kotlin.test)
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.compose.ui.test)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test:runner:1.5.2")
+
     implementation(dependencies.project(":chartCam"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.compose.uiToolingPreview)

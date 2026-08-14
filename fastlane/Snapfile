@@ -1,0 +1,20 @@
+# Fastlane UI Tests (Snapshot/Screengrab) Configuration
+
+# iOS Snapshot Config
+# --------------------
+# fastlane snapshot init (generates this file equivalent)
+# This drives the iOS UI tests to take screenshots on different devices.
+
+devices([
+  "iPhone 15 Pro",
+  "iPhone 15",
+  "iPad Pro (11-inch) (4th generation)"
+])
+
+languages([
+  "en-US"
+])
+
+scheme("iosApp")
+output_directory("./fastlane/screenshots")
+clear_previous_screenshots(true)

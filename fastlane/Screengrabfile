@@ -1,0 +1,10 @@
+# Android Screengrab Config
+# --------------------
+# fastlane screengrab init (generates this file equivalent)
+
+locales(['en-US'])
+clear_previous_screenshots(true)
+app_package_name('io.healthplatform.chartcam')
+use_tests_in_classes(['io.healthplatform.chartcam.ScreenshotsTest'])
+app_apk_path('androidApp/build/outputs/apk/debug/androidApp-debug.apk')
+tests_apk_path('androidApp/build/outputs/apk/androidTest/debug/androidApp-debug-androidTest.apk')
