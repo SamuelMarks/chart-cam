@@ -21,7 +21,7 @@ build_release_ios:
 	@if [ -z "$(APPLE_TEAM_ID)" ]; then echo "Error: APPLE_TEAM_ID is not set in .env"; exit 1; fi
 	@if [ -z "$(APPLE_PROVISIONING_PROFILE)" ]; then echo "Error: APPLE_PROVISIONING_PROFILE is not set in .env"; exit 1; fi
 	@echo "Creating iOS archive..."
-	cd iosApp && xcodebuild -scheme iosApp -configuration Release -destination 'generic/platform=iOS' DEVELOPMENT_TEAM="$(APPLE_TEAM_ID)" PROVISIONING_PROFILE_SPECIFIER="$(APPLE_PROVISIONING_PROFILE)" archive -archivePath ../build/ios/ChartCam.xcarchive -allowProvisioningUpdates
+	cd iosApp && PATH="/usr/bin:$$PATH" xcodebuild -scheme iosApp -configuration Release -destination 'generic/platform=iOS' DEVELOPMENT_TEAM="$(APPLE_TEAM_ID)" PROVISIONING_PROFILE_SPECIFIER="$(APPLE_PROVISIONING_PROFILE)" archive -archivePath ../build/ios/ChartCam.xcarchive -allowProvisioningUpdates
 	@echo "Exporting .ipa for App Store Connect..."
 	@mkdir -p build/ios
 	@echo '<?xml version="1.0" encoding="UTF-8"?>' > build/ios/exportOptions.plist
@@ -35,10 +35,19 @@ build_release_ios:
 	@echo '    <key>uploadSymbols</key>' >> build/ios/exportOptions.plist
 	@echo '    <true/>' >> build/ios/exportOptions.plist
 	@echo '    <key>signingStyle</key>' >> build/ios/exportOptions.plist
-	@echo '    <string>automatic</string>' >> build/ios/exportOptions.plist
+	@echo '    <string>manual</string>' >> build/ios/exportOptions.plist
+	@echo '    <key>manageAppVersionAndBuildNumber</key>' >> build/ios/exportOptions.plist
+	@echo '    <false/>' >> build/ios/exportOptions.plist
+	@echo '    <key>destination</key>' >> build/ios/exportOptions.plist
+	@echo '    <string>export</string>' >> build/ios/exportOptions.plist
+	@echo '    <key>provisioningProfiles</key>' >> build/ios/exportOptions.plist
+	@echo '    <dict>' >> build/ios/exportOptions.plist
+	@echo '        <key>io.healthplatform.chartcam</key>' >> build/ios/exportOptions.plist
+	@echo '        <string>$(APPLE_PROVISIONING_PROFILE)</string>' >> build/ios/exportOptions.plist
+	@echo '    </dict>' >> build/ios/exportOptions.plist
 	@echo '</dict>' >> build/ios/exportOptions.plist
 	@echo '</plist>' >> build/ios/exportOptions.plist
-	cd iosApp && xcodebuild -exportArchive -archivePath ../build/ios/ChartCam.xcarchive -exportOptionsPlist ../build/ios/exportOptions.plist -exportPath ../build/ios/export DEVELOPMENT_TEAM="$(APPLE_TEAM_ID)" -allowProvisioningUpdates
+	cd iosApp && PATH="/usr/bin:$$PATH" xcodebuild -exportArchive -archivePath ../build/ios/ChartCam.xcarchive -exportOptionsPlist ../build/ios/exportOptions.plist -exportPath ../build/ios/export DEVELOPMENT_TEAM="$(APPLE_TEAM_ID)"
 	@echo "================================================================="
 	@echo "IPA successfully generated at:"
 	@echo "  build/ios/export/ChartCam.ipa"
@@ -69,9 +78,9 @@ run_ios:
 	@echo "Starting iOS Simulator..."
 	@open -a Simulator
 	@echo "Building iOS app..."
-	@xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -destination 'generic/platform=iOS Simulator' build
+	@PATH="/usr/bin:$$PATH" xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -destination 'generic/platform=iOS Simulator' build
 	@echo "Installing and launching..."
-	@APP_PATH="$$(xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -destination 'generic/platform=iOS Simulator' -showBuildSettings | grep -w TARGET_BUILD_DIR | awk '{print $$3}')/ChartCam.app" && \
+	@APP_PATH="$$(PATH="/usr/bin:$$PATH" xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -destination 'generic/platform=iOS Simulator' -showBuildSettings | grep -w TARGET_BUILD_DIR | awk '{print $$3}')/ChartCam.app" && \
 	xcrun simctl install booted "$$APP_PATH" && \
 	xcrun simctl launch booted "io.healthplatform.chartcam.ChartCam"
 
