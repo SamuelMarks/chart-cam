@@ -10,11 +10,6 @@ package io.healthplatform.chartcam.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import chartcam.chartcam.generated.resources.Res
-import chartcam.chartcam.generated.resources.no
-import chartcam.chartcam.generated.resources.no_notes
-import chartcam.chartcam.generated.resources.recovered_form
-import chartcam.chartcam.generated.resources.yes
 import com.google.fhir.model.r4.Canonical
 import com.google.fhir.model.r4.DateTime
 import com.google.fhir.model.r4.DocumentReference
@@ -300,13 +295,13 @@ class EncounterDetailViewModel(
      * @param latestQr The latestQr.
      * @return The result.
      */
-    private suspend fun createRecoveredQuestionnaire(latestQr: QuestionnaireResponse): Questionnaire {
+    private suspend fun createRecoveredQuestionnaire(
+        latestQr: QuestionnaireResponse,
+        recoveredFormStr: String = "Recovered Form",
+    ): Questionnaire {
         val dummyItems =
             io.healthplatform.chartcam.utils.QuestionnaireUtils
                 .buildDummyItemsRecursively(latestQr.item)
-        val recoveredFormStr =
-            org.jetbrains.compose.resources
-                .getString(Res.string.recovered_form)
         return Questionnaire
             .Builder(
                 Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active),
@@ -422,7 +417,11 @@ class EncounterDetailViewModel(
      * Saves all dynamic answers and photos into a QuestionnaireResponse,
      * updates the Encounter status to Finished, and attempts a cloud sync.
      */
-    fun finalizeEncounter() {
+    fun finalizeEncounter(
+        yesStr: String = "Yes",
+        noStr: String = "No",
+        noNotesStr: String = "No notes",
+    ) {
         val enc = _uiState.value.encounter ?: return
         val id = enc.id ?: return
         val q = _uiState.value.selectedQuestionnaire
@@ -432,7 +431,7 @@ class EncounterDetailViewModel(
 
             // Build and save QuestionnaireResponse
             buildAndSaveQuestionnaireResponse(q, enc)
-            updateEncounterWithNotes(q, id)
+            updateEncounterWithNotes(q, id, yesStr, noStr, noNotesStr)
             syncWorker.sync()
 
             _uiState.update {
@@ -696,6 +695,9 @@ class EncounterDetailViewModel(
     private suspend fun updateEncounterWithNotes(
         q: Questionnaire?,
         encounterId: String,
+        yesStr: String,
+        noStr: String,
+        noNotesStr: String,
     ) {
         val allAnswers = _uiState.value.answers
         val notesBuilder = StringBuilder()
@@ -710,14 +712,7 @@ class EncounterDetailViewModel(
                 is String -> if (answer.isNotBlank()) notesBuilder.append("$questionTitle: $answer. ")
                 is Boolean ->
                     notesBuilder.append(
-                        "$questionTitle: ${if (answer) {
-                            org.jetbrains.compose.resources.getString(
-                                Res.string.yes,
-                            )
-                        } else {
-                            org.jetbrains.compose.resources
-                                .getString(Res.string.no)
-                        }}. ",
+                        "$questionTitle: ${if (answer) yesStr else noStr}. ",
                     )
                 is List<*> -> {
                     val strList = answer.filterIsInstance<String>()
@@ -733,10 +728,7 @@ class EncounterDetailViewModel(
         fhirRepository.updateEncounterStatus(
             encounterId,
             "finished",
-            notesStr.ifBlank {
-                org.jetbrains.compose.resources
-                    .getString(Res.string.no_notes)
-            },
+            notesStr.ifBlank { noNotesStr },
         )
 
         // Ignore result to support offline persistence

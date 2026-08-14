@@ -73,6 +73,8 @@ import chartcam.chartcam.generated.resources.edit_visit
 import chartcam.chartcam.generated.resources.finalize_visit
 import chartcam.chartcam.generated.resources.image_load_error
 import chartcam.chartcam.generated.resources.mrn_date_format
+import chartcam.chartcam.generated.resources.no
+import chartcam.chartcam.generated.resources.no_notes
 import chartcam.chartcam.generated.resources.provider_format
 import chartcam.chartcam.generated.resources.questionnaire
 import chartcam.chartcam.generated.resources.questionnaire_format
@@ -81,6 +83,7 @@ import chartcam.chartcam.generated.resources.syncing_to_server
 import chartcam.chartcam.generated.resources.take_photos
 import chartcam.chartcam.generated.resources.unknown
 import chartcam.chartcam.generated.resources.visit_detail
+import chartcam.chartcam.generated.resources.yes
 import com.google.fhir.model.r4.DocumentReference
 import com.google.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.files.createFileStorage
@@ -398,8 +401,11 @@ private fun EncounterDetailContent(
 
             if (canFinalizeEncounter(state)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
+                    val yesStr = stringResource(Res.string.yes)
+                    val noStr = stringResource(Res.string.no)
+                    val noNotesStr = stringResource(Res.string.no_notes)
                     Button(
-                        onClick = { viewModel.finalizeEncounter() },
+                        onClick = { viewModel.finalizeEncounter(yesStr, noStr, noNotesStr) },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                     ) {
                         Text(stringResource(Res.string.finalize_visit))

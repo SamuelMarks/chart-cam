@@ -8,5 +8,7 @@
 	<string>ChartCam needs camera access to capture clinical photos.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<true/>
+	<key>ITSEncryptionExportComplianceCode</key>
+	<string>$(EXPORT_COMPLIANCE_CODE)</string>
 </dict>
 </plist>

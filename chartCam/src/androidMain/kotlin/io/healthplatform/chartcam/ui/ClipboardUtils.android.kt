@@ -7,9 +7,6 @@ package io.healthplatform.chartcam.ui
 import android.content.ClipData
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.Clipboard
-import chartcam.chartcam.generated.resources.Res
-import chartcam.chartcam.generated.resources.clipboard_data_label
-import org.jetbrains.compose.resources.getString
 
 /**
  * Retrieves plain text from the Android system clipboard asynchronously.
@@ -33,7 +30,7 @@ actual suspend fun Clipboard.getPlainText(): String? {
  * @param text The plain text string to be copied to the Android clipboard.
  */
 actual suspend fun Clipboard.setPlainText(text: String) {
-    val label = getString(Res.string.clipboard_data_label)
+    val label = "ChartCam Clipboard Data"
     val clipData = ClipData.newPlainText(label, text)
     this.setClipEntry(ClipEntry(clipData))
 }

@@ -297,6 +297,7 @@ fun QuestionnaireListScreen(
                     modifier = Modifier.padding(bottom = 16.dp),
                 )
 
+                val invalidFormatStr = stringResource(Res.string.invalid_fhir_format)
                 Button(
                     onClick = {
                         coroutineScope
@@ -313,9 +314,7 @@ fun QuestionnaireListScreen(
                                 } catch (e: Exception) {
                                     println(e.message)
 
-                                    importError =
-                                        org.jetbrains.compose.resources
-                                            .getString(Res.string.invalid_fhir_format)
+                                    importError = invalidFormatStr
                                 }
                                 importBottomSheetState.hide()
                             }.invokeOnCompletion {

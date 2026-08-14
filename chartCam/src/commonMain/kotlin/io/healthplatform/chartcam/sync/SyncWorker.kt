@@ -4,8 +4,6 @@
  */
 package io.healthplatform.chartcam.sync
 
-import chartcam.chartcam.generated.resources.Res
-import chartcam.chartcam.generated.resources.unknown_error
 import com.google.fhir.model.r4.Bundle
 import com.google.fhir.model.r4.FhirR4Json
 import io.healthplatform.chartcam.repository.FhirRepository
@@ -120,8 +118,7 @@ class SyncWorker(
         } catch (e: IllegalArgumentException) {
             val queuedCount = fhirRepository.getPendingLocalChangesCount()
             val errorMsg =
-                e.message ?: org.jetbrains.compose.resources
-                    .getString(Res.string.unknown_error)
+                e.message ?: "Unknown error"
             _syncState.value =
                 if (queuedCount > 0) {
                     SyncState.Offline(queuedCount)

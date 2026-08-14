@@ -12,6 +12,7 @@
 package io.healthplatform.chartcam.camera
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
@@ -208,4 +209,12 @@ fun NSData.toByteArray(): ByteArray {
  * @return An instance of [IOSCameraManager] managed by Compose.
  */
 @Composable
-actual fun rememberCameraManager(): CameraManager = remember { IOSCameraManager() }
+actual fun rememberCameraManager(): CameraManager {
+    val manager = remember { IOSCameraManager() }
+    DisposableEffect(manager) {
+        onDispose {
+            manager.release()
+        }
+    }
+    return manager
+}

@@ -3,8 +3,6 @@
  * Contains declarations for EncounterDetailViewModelJvmTest.kt.
  */
 package io.healthplatform.chartcam.viewmodel
-import chartcam.chartcam.generated.resources.Res
-import chartcam.chartcam.generated.resources.recovered_form
 import com.google.fhir.model.r4.Canonical
 import com.google.fhir.model.r4.Date
 import com.google.fhir.model.r4.DateTime
@@ -600,8 +598,7 @@ class EncounterDetailViewModelJvmTest {
             // If the dummy items were built successfully, a fallback questionnaire will be present in state
             assertNotNull(viewModel.uiState.value.selectedQuestionnaire)
             assertEquals(
-                org.jetbrains.compose.resources
-                    .getString(Res.string.recovered_form),
+                "Recovered Form",
                 viewModel.uiState.value.selectedQuestionnaire
                     ?.title
                     ?.value,

@@ -34,14 +34,22 @@ actual fun CameraPreview(
     AndroidView(
         modifier = modifier,
         factory = { context ->
-            PreviewView(context).apply {
-                // Configure scale type
-                scaleType = PreviewView.ScaleType.FILL_CENTER
-            }
+            PreviewView(context)
+                .apply {
+                    layoutParams =
+                        android.view.ViewGroup.LayoutParams(
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                        )
+                    // Configure scale type
+                    scaleType = PreviewView.ScaleType.FILL_CENTER
+                }.also { view ->
+                    // Bind the lifecycle only once when the view is created
+                    (cameraManager as? AndroidCameraManager)?.bindToLifecycle(lifecycleOwner, view)
+                }
         },
         update = { view ->
-            // Bind the lifecycle when the view is updated/attached
-            (cameraManager as? AndroidCameraManager)?.bindToLifecycle(lifecycleOwner, view)
+            // No-op: Do not bind here to prevent continuous rebinding on recomposition
         },
     )
 }
