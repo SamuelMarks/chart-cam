@@ -42,6 +42,11 @@ repos:
         language: system
         files: \.(kt|kts|java|xml|gradle|toml)$
         pass_filenames: false
+    -   id: check-env-leaks
+        name: Check for .env leaks
+        entry: python3 scripts/check_env_leaks.py
+        language: system
+        pass_filenames: true
     -   id: doc-test-coverage
         name: Update Doc and Test Coverage Badges
         entry: python3 scripts/check_coverage.py
