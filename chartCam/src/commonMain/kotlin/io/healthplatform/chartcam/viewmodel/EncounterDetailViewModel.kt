@@ -293,6 +293,7 @@ class EncounterDetailViewModel(
     /**
      * Creates recovered questionnaire.
      * @param latestQr The latestQr.
+     * @param recoveredFormStr The string to use for the recovered form title.
      * @return The result.
      */
     private suspend fun createRecoveredQuestionnaire(
@@ -416,6 +417,10 @@ class EncounterDetailViewModel(
     /**
      * Saves all dynamic answers and photos into a QuestionnaireResponse,
      * updates the Encounter status to Finished, and attempts a cloud sync.
+     *
+     * @param yesStr The string to use for a positive boolean answer.
+     * @param noStr The string to use for a negative boolean answer.
+     * @param noNotesStr The string to use if there are no notes.
      */
     fun finalizeEncounter(
         yesStr: String = "Yes",
@@ -691,6 +696,9 @@ class EncounterDetailViewModel(
      * Updates the encounter with notes from the form.
      * @param q The q.
      * @param encounterId The encounterId.
+     * @param yesStr The string to use for a positive boolean answer.
+     * @param noStr The string to use for a negative boolean answer.
+     * @param noNotesStr The string to use if there are no notes.
      */
     private suspend fun updateEncounterWithNotes(
         q: Questionnaire?,

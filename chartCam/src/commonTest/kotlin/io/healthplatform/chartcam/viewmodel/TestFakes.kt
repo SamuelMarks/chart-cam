@@ -14,7 +14,11 @@ class FakeSecureStorage : SecureStorage {
     /** The internal map storing data. */
     private val store = mutableMapOf<String, String>()
 
-    /** Save a key-value pair. */
+    /**
+     * Save a key-value pair.
+     * @param key The key.
+     * @param value The value.
+     */
     override fun save(
         key: String,
         value: String,
@@ -22,10 +26,17 @@ class FakeSecureStorage : SecureStorage {
         store[key] = value
     }
 
-    /** Retrieve a value by key. */
+    /**
+     * Retrieve a value by key.
+     * @param key The key.
+     * @return The value or null.
+     */
     override fun getString(key: String): String? = store[key]
 
-    /** Delete a value by key. */
+    /**
+     * Delete a value by key.
+     * @param key The key.
+     */
     override fun delete(key: String) {
         store.remove(key)
     }
@@ -38,7 +49,12 @@ class FakeFileStorage : FileStorage {
     /** The internal map storing files as byte arrays. */
     private val files = mutableMapOf<String, ByteArray>()
 
-    /** Save a byte array to a pseudo-filename path. */
+    /**
+     * Save a byte array to a pseudo-filename path.
+     * @param fileName The name.
+     * @param bytes The bytes.
+     * @return The path.
+     */
     override fun saveImage(
         fileName: String,
         bytes: ByteArray,
@@ -47,7 +63,11 @@ class FakeFileStorage : FileStorage {
         return fileName
     }
 
-    /** Read a byte array given a pseudo-filename path. */
+    /**
+     * Read a byte array given a pseudo-filename path.
+     * @param path The path.
+     * @return The bytes.
+     */
     override fun readImage(path: String): ByteArray = files[path] ?: ByteArray(0)
 
     /** Clear the entire file cache. */

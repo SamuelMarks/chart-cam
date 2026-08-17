@@ -87,6 +87,7 @@ class IosSensorManager : SensorManager {
         motionManager.stopAccelerometerUpdates()
     }
 
+    /** Companion object */
     companion object {
         private const val UPDATE_INTERVAL_SECONDS = 0.1
         private const val RADIANS_TO_DEGREES = 180 / kotlin.math.PI

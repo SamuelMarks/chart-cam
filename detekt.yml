@@ -6,22 +6,24 @@ comments:
     matchDeclarationsOrder: true
   UndocumentedPublicClass:
     active: true
-    includes: ['**/*.kt']
+    includes:
+    - '**/*.kt'
   UndocumentedPublicFunction:
     active: true
-    includes: ['**/*.kt']
+    includes:
+    - '**/*.kt'
   UndocumentedPublicProperty:
     active: true
-    includes: ['**/*.kt']
-
+    includes:
+    - '**/*.kt'
 naming:
   FunctionNaming:
     active: false
-
 complexity:
   TooManyFunctions:
     active: true
-    excludes: ['**/*']
+    excludes:
+    - '**/*'
     ignoreDeprecated: false
     ignorePrivate: false
     ignoreOverridden: false
@@ -31,5 +33,16 @@ complexity:
     thresholdInObjects: 11
     thresholdInEnums: 11
     ignoreAnnotated: []
-
-
+  LongMethod:
+    active: true
+    ignoreAnnotated:
+    - Composable
+  LongParameterList:
+    active: true
+    ignoreAnnotated:
+    - Composable
+    ignoreDefaultParameters: true
+  CyclomaticComplexMethod:
+    active: true
+    ignoreAnnotated:
+    - Composable

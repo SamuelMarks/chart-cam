@@ -19,7 +19,11 @@ class SecureStorageCommonTest {
         /** In memory storage map. */
         val map = mutableMapOf<String, String>()
 
-        /** Save a value to map. */
+        /**
+         * Save a value to map.
+         * @param key The key.
+         * @param value The value.
+         */
         override fun save(
             key: String,
             value: String,
@@ -27,10 +31,17 @@ class SecureStorageCommonTest {
             map[key] = value
         }
 
-        /** Read a value from map. */
+        /**
+         * Read a value from map.
+         * @param key The key.
+         * @return The value or null.
+         */
         override fun getString(key: String): String? = map[key]
 
-        /** Delete a value from map. */
+        /**
+         * Delete a value from map.
+         * @param key The key.
+         */
         override fun delete(key: String) {
             map.remove(key)
         }

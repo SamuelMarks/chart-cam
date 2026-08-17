@@ -130,7 +130,6 @@ import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Suppress("LongMethod", "CyclomaticComplexMethod", "TooGenericExceptionCaught")
 fun PatientListScreen(
     dependencies: PatientListDependencies,
     actions: PatientListActions,

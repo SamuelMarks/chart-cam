@@ -100,6 +100,9 @@ class EncounterDetailViewModelJvmTest {
                 Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
             ).build()
 
+    /**
+     * Set up for testing EncounterDetailViewModel.
+     */
     @Before
     fun setup() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -120,11 +123,17 @@ class EncounterDetailViewModelJvmTest {
             )
     }
 
+    /**
+     * Tear down for testing EncounterDetailViewModel.
+     */
     @After
     fun tearDown() {
         Dispatchers.resetMain()
     }
 
+    /**
+     * Test updating answer changes state.
+     */
     @Test
     fun testOnAnswerChangedUpdatesStateCorrectly() {
         viewModel.onAnswerChanged("link1", "my answer")
@@ -137,12 +146,18 @@ class EncounterDetailViewModelJvmTest {
         )
     }
 
+    /**
+     * Test updating notes changes state.
+     */
     @Test
     fun testOnNotesChanged() {
         viewModel.onNotesChanged("some notes")
         assertEquals("some notes", viewModel.uiState.value.answers["notes"])
     }
 
+    /**
+     * Test selecting questionnaire.
+     */
     @Test
     fun testSelectQuestionnaire() {
         val q =
@@ -159,6 +174,9 @@ class EncounterDetailViewModelJvmTest {
         )
     }
 
+    /**
+     * Test selecting questionnaire by id.
+     */
     @Test
     fun testSelectQuestionnaireById() {
         val q =
@@ -176,6 +194,9 @@ class EncounterDetailViewModelJvmTest {
         )
     }
 
+    /**
+     * Test creating and selecting questionnaire.
+     */
     @Test
     fun testCreateAndSelectQuestionnaire() {
         val q =
@@ -194,12 +215,18 @@ class EncounterDetailViewModelJvmTest {
         )
     }
 
+    /**
+     * Test resetting finalized state.
+     */
     @Test
     fun testResetFinalized() {
         viewModel.resetFinalized()
         assertFalse(viewModel.uiState.value.isFinalized)
     }
 
+    /**
+     * Test deleting encounter.
+     */
     @Test
     fun testDeleteEncounter() =
         runTest {
@@ -223,6 +250,9 @@ class EncounterDetailViewModelJvmTest {
             assertTrue(success)
         }
 
+    /**
+     * Test adding photos.
+     */
     @Test
     fun testAddPhotos() =
         runTest {
@@ -248,6 +278,9 @@ class EncounterDetailViewModelJvmTest {
             assertEquals(1, viewModel.uiState.value.photos.size)
         }
 
+    /**
+     * Test initializing new encounter.
+     */
     @Test
     fun testInitializeNewEncounter() =
         runTest {
@@ -267,6 +300,9 @@ class EncounterDetailViewModelJvmTest {
             )
         }
 
+    /**
+     * Test finalize encounter builds response.
+     */
     @Test
     fun testFinalizeEncounterBuildsProperQuestionnaireResponse() =
         runTest {
@@ -392,6 +428,9 @@ class EncounterDetailViewModelJvmTest {
             assertTrue(gItem.item.any { it.linkId.value == "link_nested" })
         }
 
+    /**
+     * Test loading existing encounter with existing responses.
+     */
     @Test
     fun testLoadingExistingEncounterWithExistingResponses() =
         runTest {
@@ -546,6 +585,9 @@ class EncounterDetailViewModelJvmTest {
             )
         }
 
+    /**
+     * Test form update callback.
+     */
     @Test
     fun testOnFormUpdated() {
         val newMap = mapOf("q1" to "a1")
@@ -553,6 +595,9 @@ class EncounterDetailViewModelJvmTest {
         assertEquals("a1", viewModel.uiState.value.answers["q1"])
     }
 
+    /**
+     * Test dummy item building coverage.
+     */
     @Test
     fun testBuildDummyItemsRecursivelyCoverage() =
         runTest {
@@ -605,6 +650,9 @@ class EncounterDetailViewModelJvmTest {
             )
         }
 
+    /**
+     * Test recursively extracting answers list.
+     */
     @Test
     fun testExtractAnswersRecursivelyList() =
         runTest {
@@ -663,6 +711,9 @@ class EncounterDetailViewModelJvmTest {
             assertEquals(listOf("val1", "val2"), answers)
         }
 
+    /**
+     * Test reopening encounter.
+     */
     @Test
     fun testReopenEncounter() =
         runTest {
@@ -732,6 +783,9 @@ class EncounterDetailViewModelJvmTest {
             assertEquals(false, state.isFinalized)
         }
 
+    /**
+     * Test adding photos with nulls.
+     */
     @Test
     fun testAddPhotosWithNulls() {
         val photosMap = mapOf("Step1" to "path1")

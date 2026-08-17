@@ -31,6 +31,7 @@ class AndroidSensorManager(
     context: Context,
 ) : SensorManager,
     SensorEventListener {
+    /** Companion object */
     companion object {
         private const val RAD_TO_DEG = 180.0 / Math.PI
     }

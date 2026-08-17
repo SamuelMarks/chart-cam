@@ -34,7 +34,13 @@ class QuestionnaireRepositoryJvmTest {
         /** List of deleted resources. */
         val deletedResources = mutableListOf<String>()
 
-        /** Save resource. */
+        /**
+         * Save resource.
+         * @param type The resource type.
+         * @param id The resource id.
+         * @param resource The resource itself.
+         * @param isLocalChange If it's a local change.
+         */
         override suspend fun saveResource(
             type: String,
             id: String,
@@ -44,7 +50,12 @@ class QuestionnaireRepositoryJvmTest {
             savedResources[id] = resource
         }
 
-        /** Delete resource. */
+        /**
+         * Delete resource.
+         * @param type The resource type.
+         * @param id The resource id.
+         * @param isLocalChange If it's a local change.
+         */
         override suspend fun deleteResource(
             type: String,
             id: String,

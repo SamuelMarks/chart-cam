@@ -1,12 +1,13 @@
 @file:Suppress(
-    "WildcardImport",
     "ktlint:standard:no-wildcard-imports",
+    "WildcardImport",
     "UNCHECKED_CAST",
     "CAST_NEVER_SUCCEEDS",
     "USELESS_CAST",
 )
 /**
- * iOS implementation of the camera manager.
+ * @file IOSCameraManager.kt
+ * Contains declarations for IOSCameraManager.kt.
  */
 
 package io.healthplatform.chartcam.camera

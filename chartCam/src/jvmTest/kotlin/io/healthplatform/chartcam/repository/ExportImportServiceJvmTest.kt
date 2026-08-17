@@ -167,7 +167,12 @@ class ExportImportServiceJvmTest {
         /** Maps paths to byte arrays. */
         val files = mutableMapOf<String, ByteArray>()
 
-        /** Save an image. */
+        /**
+         * Save an image.
+         * @param fileName The name of the file.
+         * @param bytes The byte array.
+         * @return The saved path.
+         */
         override fun saveImage(
             fileName: String,
             bytes: ByteArray,
@@ -176,7 +181,11 @@ class ExportImportServiceJvmTest {
             return fileName
         }
 
-        /** Read an image. */
+        /**
+         * Read an image.
+         * @param path The path of the file.
+         * @return The byte array.
+         */
         override fun readImage(path: String): ByteArray = files[path] ?: throw IllegalArgumentException("File not found")
 
         /** Clear cache. */

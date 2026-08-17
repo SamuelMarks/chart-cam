@@ -64,13 +64,22 @@ class PatientListViewModelTest {
 
         val fakeFileStorage =
             object : FileStorage {
-                /** Override saveImage */
+                /**
+                 * Override saveImage.
+                 * @param fileName The name.
+                 * @param bytes The data.
+                 * @return The path.
+                 */
                 override fun saveImage(
                     fileName: String,
                     bytes: ByteArray,
                 ): String = fileName
 
-                /** Override readImage */
+                /**
+                 * Override readImage.
+                 * @param path The path.
+                 * @return The data.
+                 */
                 override fun readImage(path: String): ByteArray = ByteArray(0)
 
                 /** Override clearCache */
@@ -80,16 +89,27 @@ class PatientListViewModelTest {
 
         val fakeSecureStorage =
             object : SecureStorage {
-                /** Override save */
+                /**
+                 * Override save.
+                 * @param key The key.
+                 * @param value The value.
+                 */
                 override fun save(
                     key: String,
                     value: String,
                 ) {}
 
-                /** Override getString */
+                /**
+                 * Override getString.
+                 * @param key The key.
+                 * @return The value or null.
+                 */
                 override fun getString(key: String): String? = null
 
-                /** Override delete */
+                /**
+                 * Override delete.
+                 * @param key The key.
+                 */
                 override fun delete(key: String) {}
             }
         val mockHttpClient = HttpClient(MockEngine) { engine { addHandler { respondOk() } } }
@@ -121,6 +141,9 @@ class PatientListViewModelTest {
         Dispatchers.resetMain()
     }
 
+    /**
+     * Test loadPatients.
+     */
     @Test
     fun `loadPatients sets patients in state`() =
         runTest(testDispatcher) {
@@ -140,6 +163,9 @@ class PatientListViewModelTest {
             assertFalse(viewModel.uiState.value.isLoading)
         }
 
+    /**
+     * Test loadPatients error.
+     */
     @Test
     fun `loadPatients handles error`() =
         runTest(testDispatcher) {
@@ -152,6 +178,9 @@ class PatientListViewModelTest {
             assertFalse(viewModel.uiState.value.isLoading)
         }
 
+    /**
+     * Test onSearchQueryChanged.
+     */
     @Test
     fun `onSearchQueryChanged updates query and reloads`() =
         runTest(testDispatcher) {
@@ -162,6 +191,9 @@ class PatientListViewModelTest {
             assertEquals("Jane", mockFhirRepository.lastSearchQuery)
         }
 
+    /**
+     * Test setShowAllPatients.
+     */
     @Test
     fun `setShowAllPatients updates state and reloads`() =
         runTest(testDispatcher) {
@@ -172,6 +204,9 @@ class PatientListViewModelTest {
             assertTrue(mockFhirRepository.lastShowAll)
         }
 
+    /**
+     * Test createPatient.
+     */
     @Test
     fun `createPatient saves patient and reloads`() =
         runTest(testDispatcher) {
@@ -190,6 +225,9 @@ class PatientListViewModelTest {
             assertTrue(createdId.isNotEmpty())
         }
 
+    /**
+     * Test exportData.
+     */
     @Test
     fun `exportData calls service and updates state`() =
         runTest(testDispatcher) {
@@ -200,6 +238,9 @@ class PatientListViewModelTest {
             assertEquals("password123", viewModel.uiState.value.exportPassword)
         }
 
+    /**
+     * Test clearExportData.
+     */
     @Test
     fun `clearExportData resets state`() =
         runTest(testDispatcher) {
@@ -211,6 +252,9 @@ class PatientListViewModelTest {
             assertEquals(null, viewModel.uiState.value.exportPassword)
         }
 
+    /**
+     * Test importData success.
+     */
     @Test
     fun `importData success reloads patients`() =
         runTest(testDispatcher) {
@@ -225,6 +269,9 @@ class PatientListViewModelTest {
             assertEquals(null, viewModel.uiState.value.error)
         }
 
+    /**
+     * Test importData failure.
+     */
     @Test
     fun `importData failure sets error`() =
         runTest(testDispatcher) {
@@ -235,6 +282,9 @@ class PatientListViewModelTest {
             assertEquals(Res.string.failed_to_import, viewModel.uiState.value.error)
         }
 
+    /**
+     * Test deleteAccount.
+     */
     @Test
     fun `deleteAccount deletes practitioner and patients`() =
         runTest(testDispatcher) {
@@ -253,6 +303,9 @@ class PatientListViewModelTest {
             assertTrue(mockAuthRepository.deleteAccountCalled)
         }
 
+    /**
+     * Test clearError.
+     */
     @Test
     fun `clearError sets error to null`() =
         runTest(testDispatcher) {
@@ -264,6 +317,9 @@ class PatientListViewModelTest {
             assertEquals(null, viewModel.uiState.value.error)
         }
 
+    /**
+     * Test createPatient error.
+     */
     @Test
     fun `createPatient handles error gracefully`() =
         runTest(testDispatcher) {
@@ -282,6 +338,9 @@ class PatientListViewModelTest {
             assertFalse(successCalled)
         }
 
+    /**
+     * Test exportData error.
+     */
     @Test
     fun `exportData handles error gracefully`() =
         runTest(testDispatcher) {
@@ -308,7 +367,12 @@ class MockFhirRepository(
     var deletedPatientId: String? = null
     var deletedPractitionerId: String? = null
 
-    /** Override getAllPatients */
+    /**
+     * Override getAllPatients.
+     * @param showAll Boolean flag.
+     * @param practitionerId ID.
+     * @return List of patients.
+     */
     override suspend fun getAllPatients(
         showAll: Boolean,
         practitionerId: String?,
@@ -318,7 +382,13 @@ class MockFhirRepository(
         return patientsToReturn
     }
 
-    /** Override searchPatients */
+    /**
+     * Override searchPatients.
+     * @param query Query string.
+     * @param showAll Boolean flag.
+     * @param practitionerId ID.
+     * @return List of patients.
+     */
     override suspend fun searchPatients(
         query: String,
         showAll: Boolean,
@@ -330,18 +400,27 @@ class MockFhirRepository(
         return patientsToReturn
     }
 
-    /** Override savePatient */
+    /**
+     * Override savePatient.
+     * @param patient The patient.
+     */
     override suspend fun savePatient(patient: Patient) {
         if (shouldThrowOnSave) throw RuntimeException("Save Error")
         savedPatient = patient
     }
 
-    /** Override deletePatient */
+    /**
+     * Override deletePatient.
+     * @param id The ID.
+     */
     override suspend fun deletePatient(id: String) {
         deletedPatientId = id
     }
 
-    /** Override deletePractitioner */
+    /**
+     * Override deletePractitioner.
+     * @param id The ID.
+     */
     override suspend fun deletePractitioner(id: String) {
         deletedPractitionerId = id
     }
@@ -357,7 +436,13 @@ class MockExportImportService(
     var shouldThrow = false
     var lastImportData: String? = null
 
-    /** Override exportData */
+    /**
+     * Override exportData.
+     * @param password Password.
+     * @param exportAll Export all flag.
+     * @param practitionerId Practitioner ID.
+     * @return Export string.
+     */
     override suspend fun exportData(
         password: String,
         exportAll: Boolean,
@@ -367,7 +452,11 @@ class MockExportImportService(
         return "exported-data"
     }
 
-    /** Override importData */
+    /**
+     * Override importData.
+     * @param encryptedData Encrypted data.
+     * @param password Password.
+     */
     override suspend fun importData(
         encryptedData: String,
         password: String,
@@ -389,7 +478,12 @@ class MockAuthRepository(
 
     override val currentUser = currentUserFlow
 
-    /** Override login */
+    /**
+     * Override login.
+     * @param username Username.
+     * @param password Password.
+     * @return Result.
+     */
     override suspend fun login(
         username: String,
         password: String,
@@ -399,13 +493,19 @@ class MockAuthRepository(
                 .createFhirPractitioner("1", "S", "J", true),
         )
 
-    /** Override checkSession */
+    /**
+     * Override checkSession.
+     * @return Boolean.
+     */
     override suspend fun checkSession(): Boolean = true
 
     /** Override logout */
     override fun logout() {}
 
-    /** Override deleteAccount */
+    /**
+     * Override deleteAccount.
+     * @param username Username.
+     */
     override fun deleteAccount(username: String) {
         deleteAccountCalled = true
     }

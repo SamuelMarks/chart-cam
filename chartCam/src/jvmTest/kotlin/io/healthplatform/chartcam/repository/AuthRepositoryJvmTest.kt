@@ -82,13 +82,30 @@ class AuthRepositoryJvmTest {
                 object : SecureStorage {
                     val map = mutableMapOf<String, String>()
 
+                    /**
+                     * Mock save method.
+                     *
+                     * @param key The key.
+                     * @param value The value.
+                     */
                     override fun save(
                         key: String,
                         value: String,
                     ): Unit = throw IllegalArgumentException("Storage error")
 
+                    /**
+                     * Mock get string method.
+                     *
+                     * @param key The key.
+                     * @return A dummy token string.
+                     */
                     override fun getString(key: String): String? = "dummy_refresh_token"
 
+                    /**
+                     * Mock delete method.
+                     *
+                     * @param key The key.
+                     */
                     override fun delete(key: String) {}
                 }
             val repo = AuthRepository(NetworkClient.create(MockEngine { respond("") }), storage)

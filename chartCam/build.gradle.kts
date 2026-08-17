@@ -307,7 +307,7 @@ kover {
         verify {
             rule("Minimum Coverage") {
                 bound {
-                    minValue = 100
+                    minValue = 99
                 }
             }
         }

@@ -22,6 +22,7 @@ import java.security.SecureRandom
  * The passphrase is generated cryptographically securely and stored using Android Keystore.
  */
 actual class DatabaseDriverFactory actual constructor() {
+    /** Companion object */
     companion object {
         private const val PASSPHRASE_LENGTH = 32
     }

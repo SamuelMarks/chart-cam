@@ -59,7 +59,6 @@ data class PatientListUiState(
  * @param exportImportService Service to handle exporting and importing of data.
  * @param authRepository The source of authentication truth, used to get the current practitioner.
  */
-@Suppress("TooGenericExceptionCaught", "SwallowedException")
 class PatientListViewModel(
     private val repository: FhirRepository,
     private val exportImportService: ExportImportService,
@@ -97,7 +96,10 @@ class PatientListViewModel(
                         repository.searchPatients(query, showAll = showAll, practitionerId = practitionerId)
                     }
                 _uiState.update { it.copy(patients = results, isLoading = false) }
-            } catch (e: Exception) {
+            } catch (e: IllegalStateException) {
+                println(e.message)
+                _uiState.update { it.copy(isLoading = false, error = Res.string.failed_to_load_patients) }
+            } catch (e: IllegalArgumentException) {
                 println(e.message)
                 _uiState.update { it.copy(isLoading = false, error = Res.string.failed_to_load_patients) }
             }
@@ -163,7 +165,7 @@ class PatientListViewModel(
                 setCreateDialogVisible(false)
                 loadPatients()
                 onSuccess(newPatient.id ?: "")
-            } catch (e: Exception) {
+            } catch (e: IllegalStateException) {
                 // Ignoring error in production, log system can handle
                 println(e.message)
             }
@@ -185,7 +187,7 @@ class PatientListViewModel(
             try {
                 val data = exportImportService.exportData(password, exportAll, practitionerId)
                 _uiState.update { it.copy(exportedData = data, exportPassword = password) }
-            } catch (e: Exception) {
+            } catch (e: IllegalStateException) {
                 // Ignoring error in production, log system can handle
                 println(e.message)
             }
@@ -217,7 +219,7 @@ class PatientListViewModel(
                 loadPatients()
                 _uiState.update { it.copy(error = null) }
                 onSuccess()
-            } catch (e: Exception) {
+            } catch (e: IllegalStateException) {
                 println(e.message)
                 _uiState.update { it.copy(error = Res.string.failed_to_import) }
             }

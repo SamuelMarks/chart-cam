@@ -1,4 +1,10 @@
-@file:Suppress("ktlint:standard:no-wildcard-imports", "WildcardImport")
+@file:Suppress(
+    "ktlint:standard:no-wildcard-imports",
+    "WildcardImport",
+    "UNCHECKED_CAST",
+    "CAST_NEVER_SUCCEEDS",
+    "USELESS_CAST",
+)
 /**
  * @file CryptoService.ios.kt
  * Contains declarations for CryptoService.ios.kt.

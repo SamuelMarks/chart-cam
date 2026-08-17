@@ -49,7 +49,10 @@ class CaptureViewModelTest {
             return if (simulateFailure) null else ByteArray(10)
         }
 
-        /** Toggle flash. */
+        /**
+         * Toggle flash.
+         * @param on Flash state.
+         */
         override fun setFlash(on: Boolean) {}
 
         /** Toggle lens. */
@@ -69,7 +72,12 @@ class CaptureViewModelTest {
         /** Simulate failure indicator. */
         var simulateFailure = false
 
-        /** Save an image to map. */
+        /**
+         * Save an image to map.
+         * @param fileName The name.
+         * @param bytes The bytes.
+         * @return The path.
+         */
         override fun saveImage(
             fileName: String,
             bytes: ByteArray,
@@ -79,7 +87,11 @@ class CaptureViewModelTest {
             return "path/to/$fileName"
         }
 
-        /** Read image from map. */
+        /**
+         * Read image from map.
+         * @param path The path.
+         * @return The bytes.
+         */
         override fun readImage(path: String): ByteArray = files[path.substringAfterLast("/")] ?: ByteArray(0)
 
         /** Clear cache logic. */

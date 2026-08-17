@@ -29,7 +29,6 @@ import okio.ByteString.Companion.encodeUtf8
  * @param storage The SecureStorage implementation used to store sensitive tokens and credentials.
  */
 open class AuthRepository(
-    @Suppress("UnusedPrivateProperty")
     private val client: io.ktor.client.HttpClient,
     /**
      * Secure storage backend for persisting access tokens, refresh tokens, and password hashes.

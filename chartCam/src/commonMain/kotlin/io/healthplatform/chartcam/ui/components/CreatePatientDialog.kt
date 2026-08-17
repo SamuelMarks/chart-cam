@@ -74,7 +74,6 @@ import org.jetbrains.compose.resources.stringResource
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Suppress("LongMethod", "CyclomaticComplexMethod", "TooGenericExceptionCaught")
 fun CreatePatientDialog(
     onDismissRequest: () -> Unit,
     onConfirm: (String, String, String, LocalDate, String) -> Unit,
@@ -160,7 +159,7 @@ fun CreatePatientDialog(
             val dob =
                 try {
                     LocalDate.parse(dobString.trim())
-                } catch (e: Exception) {
+                } catch (e: IllegalArgumentException) {
                     println(e.message)
 
                     null

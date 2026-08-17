@@ -1,3 +1,7 @@
+/**
+ * @file ScreenshotGeneratorE2E.kt
+ * Contains the [ScreenshotGeneratorE2E] test class.
+ */
 package io.healthplatform.chartcam
 
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,8 +27,17 @@ import org.junit.Test
 import java.io.File
 import javax.imageio.ImageIO
 
+/**
+ * End-to-end UI tests that traverse the application on JVM to generate desktop screenshots.
+ */
 @OptIn(ExperimentalTestApi::class)
 class ScreenshotGeneratorE2E {
+    /**
+     * Captures the root UI node and saves it as an image file.
+     *
+     * @param composeTestRule The active compose UI test rule.
+     * @param filename The path and filename to save the image.
+     */
     private fun takeScreenshot(
         composeTestRule: DesktopComposeUiTest,
         filename: String,
@@ -41,6 +54,11 @@ class ScreenshotGeneratorE2E {
         println("WROTE " + f.absolutePath)
     }
 
+    /**
+     * Sets up the database and repository dependencies for the test.
+     *
+     * @return A Pair containing the [FhirRepository] and [QuestionnaireRepository].
+     */
     private fun setupDeps(): Pair<FhirRepository, QuestionnaireRepository> {
         val dbFactory = DatabaseDriverFactory()
         val driver = dbFactory.createDriver()
@@ -53,6 +71,9 @@ class ScreenshotGeneratorE2E {
         return Pair(fhirRepository, questionnaireRepository)
     }
 
+    /**
+     * Test function that generates screenshots for the questionnaire sharing and capture screens.
+     */
     @Test
     fun generateQuestionnaireScreenshots() {
         File("chartcam_desktop.db").delete()

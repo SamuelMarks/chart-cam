@@ -23,7 +23,11 @@ import com.google.fhir.model.r4.String as FhirString
  * Tests for SDC extension functions on FHIR resources.
  */
 class SdcExtensionsTest {
-    /** Helper for creating FHIR strings. */
+    /**
+     * Helper for creating FHIR strings.
+     * @param s The string value.
+     * @return The FHIR String builder.
+     */
     private fun str(s: String) = FhirString.Builder().apply { value = s }
 
     /**

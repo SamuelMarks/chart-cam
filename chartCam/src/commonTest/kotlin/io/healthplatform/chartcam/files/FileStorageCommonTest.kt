@@ -19,7 +19,12 @@ class FileStorageCommonTest {
         /** Internal storage map. */
         val storage = mutableMapOf<String, ByteArray>()
 
-        /** Save an image to the map. */
+        /**
+         * Save an image to the map.
+         * @param fileName The name.
+         * @param bytes The bytes.
+         * @return The path.
+         */
         override fun saveImage(
             fileName: String,
             bytes: ByteArray,
@@ -28,7 +33,11 @@ class FileStorageCommonTest {
             return fileName
         }
 
-        /** Read an image from the map. */
+        /**
+         * Read an image from the map.
+         * @param path The path.
+         * @return The bytes.
+         */
         override fun readImage(path: String): ByteArray = storage[path] ?: ByteArray(0)
 
         /** Clear cache. */

@@ -27,7 +27,11 @@ class AuthRepositoryTest {
         /** Internal storage. */
         val map = mutableMapOf<String, String>()
 
-        /** Save value logic. */
+        /**
+         * Save value logic.
+         * @param key The key.
+         * @param value The value.
+         */
         override fun save(
             key: String,
             value: String,
@@ -35,10 +39,17 @@ class AuthRepositoryTest {
             map[key] = value
         }
 
-        /** Read value logic. */
+        /**
+         * Read value logic.
+         * @param key The key.
+         * @return The value or null.
+         */
         override fun getString(key: String): String? = map[key]
 
-        /** Delete value logic. */
+        /**
+         * Delete value logic.
+         * @param key The key.
+         */
         override fun delete(key: String) {
             map.remove(key)
         }

@@ -2,7 +2,6 @@
  * @file FhirModelsTest.kt
  * Contains tests for FhirModels.kt.
  */
-@file:Suppress("UNNECESSARY_SAFE_CALL")
 
 package io.healthplatform.chartcam.models
 

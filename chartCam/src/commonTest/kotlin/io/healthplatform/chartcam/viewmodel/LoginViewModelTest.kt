@@ -212,6 +212,13 @@ class LoginViewModelTest {
         runTest {
             val throwingRepo =
                 object : AuthRepository(NetworkClient.create(MockEngine { respond("OK") }), mockStorage) {
+                    /**
+                     * Override login to always throw an unknown exception.
+                     *
+                     * @param username The username.
+                     * @param password The password.
+                     * @return A Result containing the failure.
+                     */
                     override suspend fun login(
                         username: String,
                         password: String,

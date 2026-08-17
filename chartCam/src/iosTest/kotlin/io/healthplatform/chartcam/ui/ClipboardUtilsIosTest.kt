@@ -27,12 +27,21 @@ class ClipboardUtilsIosTest {
                 object : Clipboard {
                     private var currentEntry: ClipEntry? = null
 
+                    /**
+                     * Get clip entry mock.
+                     * @return The current entry.
+                     */
                     override suspend fun getClipEntry(): ClipEntry? = currentEntry
 
+                    /**
+                     * Set clip entry mock.
+                     * @param clipEntry The new entry to set.
+                     */
                     override suspend fun setClipEntry(clipEntry: ClipEntry?) {
                         currentEntry = clipEntry
                     }
 
+                    /** Provide fake native clipboard. */
                     override val nativeClipboard: UIPasteboard
                         get() = UIPasteboard.generalPasteboard
                 }

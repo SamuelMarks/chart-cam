@@ -1,3 +1,7 @@
+/**
+ * @file AndroidScreenshotGeneratorTest.kt
+ * Contains the AndroidScreenshotGeneratorTest class for generating screenshots during tests.
+ */
 package io.healthplatform.chartcam
 
 import android.graphics.Bitmap
@@ -19,6 +23,9 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.io.FileOutputStream
 
+/**
+ * End-to-end UI tests that traverse the application to generate screenshots.
+ */
 @RunWith(AndroidJUnit4::class)
 class AndroidScreenshotGeneratorTest {
     @get:Rule
@@ -26,6 +33,12 @@ class AndroidScreenshotGeneratorTest {
         androidx.compose.ui.test.junit4
             .createAndroidComposeRule<io.healthplatform.chartcam.android.MainActivity>()
 
+    /**
+     * Saves a bitmap to the device's external cache directory.
+     *
+     * @param bitmap The image to save.
+     * @param name The filename for the saved screenshot.
+     */
     private fun saveScreenshot(
         bitmap: Bitmap,
         name: String,
@@ -44,9 +57,17 @@ class AndroidScreenshotGeneratorTest {
         }
     }
 
+    /**
+     * Traverses the application and generates a set of end-to-end screenshots.
+     */
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun generateE2EScreenshots() {
+        /**
+         * Captures the root node as an image and saves it.
+         *
+         * @param name The name of the screenshot file.
+         */
         fun capture(name: String) {
             composeTestRule.waitForIdle()
             Thread.sleep(500) // Ensure animations settle
@@ -55,6 +76,12 @@ class AndroidScreenshotGeneratorTest {
             saveScreenshot(img, name)
         }
 
+        /**
+         * Safely attempts to click a UI node, handling potential flakiness.
+         *
+         * @param text The text or content description to search for.
+         * @param isContentDescription Whether to search by content description instead of text.
+         */
         fun safeClick(
             text: String,
             isContentDescription: Boolean = false,

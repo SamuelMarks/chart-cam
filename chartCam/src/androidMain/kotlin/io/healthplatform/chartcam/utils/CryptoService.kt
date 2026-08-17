@@ -19,6 +19,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * Service providing cryptographic operations on the Android platform using BouncyCastle and javax.crypto.
  */
 actual class CryptoService actual constructor() {
+    /** Companion object */
     companion object {
         private const val ARGON2_ITERATIONS = 3
         private const val ARGON2_MEMORY_KB = 65536

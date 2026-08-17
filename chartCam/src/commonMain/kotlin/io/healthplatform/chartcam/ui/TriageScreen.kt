@@ -76,7 +76,6 @@ import org.jetbrains.compose.resources.stringResource
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Suppress("LongMethod")
 fun TriageScreen(
     capturedPhotoPaths: Map<String, String>,
     fhirRepository: FhirRepository,
@@ -105,60 +104,19 @@ fun TriageScreen(
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             state.selectedPatient?.let { patient ->
-                ListItem(
-                    headlineContent = { Text(patient.fullName, style = MaterialTheme.typography.titleMedium) },
-                    supportingContent = {
-                        Text(
-                            pluralStringResource(
-                                Res.plurals.selected_photos_ready,
-                                state.capturedPhotoPaths.size,
-                                state.capturedPhotoPaths.size,
-                            ),
-                        )
-                    },
-                    trailingContent = {
-                        IconButton(onClick = { onProceedToEncounter(patient.id ?: "", state.capturedPhotoPaths) }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowForward,
-                                contentDescription = stringResource(Res.string.cd_proceed),
-                            )
-                        }
-                    },
-                    modifier = Modifier.padding(8.dp),
+                TriagePatientSelectionHeader(
+                    patient = patient,
+                    photoCount = state.capturedPhotoPaths.size,
+                    onProceed = { onProceedToEncounter(patient.id ?: "", state.capturedPhotoPaths) },
                 )
                 HorizontalDivider()
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                SearchBar(
-                    inputField = {
-                        androidx.compose.material3.SearchBarDefaults.InputField(
-                            query = state.searchQuery,
-                            onQueryChange = { viewModel.onSearchQueryChanged(it) },
-                            onSearch = { },
-                            expanded = false,
-                            onExpandedChange = { },
-                            placeholder = { Text(stringResource(Res.string.search_placeholder)) },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Search,
-                                    contentDescription = stringResource(Res.string.cd_search_icon),
-                                )
-                            },
-                        )
-                    },
-                    expanded = false,
-                    onExpandedChange = { },
-                    modifier = Modifier.weight(1f),
-                ) {}
-
-                IconButton(onClick = { viewModel.showCreatePatient(true) }) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.cd_create_patient))
-                }
-            }
+            TriageSearchBar(
+                query = state.searchQuery,
+                onQueryChange = viewModel::onSearchQueryChanged,
+                onCreatePatientClick = { viewModel.showCreatePatient(true) },
+            )
 
             LazyColumn {
                 items(state.searchResults) { patient ->
@@ -200,5 +158,87 @@ fun TriageScreen(
                 viewModel.createPatient(f, l, mrn, dob, g)
             },
         )
+    }
+}
+
+/**
+ * Header displaying the currently selected patient.
+ *
+ * @param patient The selected patient.
+ * @param photoCount Number of captured photos.
+ * @param onProceed Callback when proceed is clicked.
+ */
+@Composable
+private fun TriagePatientSelectionHeader(
+    patient: com.google.fhir.model.r4.Patient,
+    photoCount: Int,
+    onProceed: () -> Unit,
+) {
+    ListItem(
+        headlineContent = { Text(patient.fullName, style = MaterialTheme.typography.titleMedium) },
+        supportingContent = {
+            Text(
+                pluralStringResource(
+                    Res.plurals.selected_photos_ready,
+                    photoCount,
+                    photoCount,
+                ),
+            )
+        },
+        trailingContent = {
+            IconButton(onClick = onProceed) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = stringResource(Res.string.cd_proceed),
+                )
+            }
+        },
+        modifier = Modifier.padding(8.dp),
+    )
+}
+
+/**
+ * Search bar component for the triage screen.
+ *
+ * @param query The current search query.
+ * @param onQueryChange Callback for query changes.
+ * @param onCreatePatientClick Callback to create a new patient.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TriageSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onCreatePatientClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SearchBar(
+            inputField = {
+                androidx.compose.material3.SearchBarDefaults.InputField(
+                    query = query,
+                    onQueryChange = onQueryChange,
+                    onSearch = { },
+                    expanded = false,
+                    onExpandedChange = { },
+                    placeholder = { Text(stringResource(Res.string.search_placeholder)) },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = stringResource(Res.string.cd_search_icon),
+                        )
+                    },
+                )
+            },
+            expanded = false,
+            onExpandedChange = { },
+            modifier = Modifier.weight(1f),
+        ) {}
+
+        IconButton(onClick = onCreatePatientClick) {
+            Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.cd_create_patient))
+        }
     }
 }

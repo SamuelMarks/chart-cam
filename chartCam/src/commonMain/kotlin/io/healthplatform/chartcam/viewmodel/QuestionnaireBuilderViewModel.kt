@@ -53,17 +53,40 @@ data class BuilderItem(
  * Enum defining the supported widget types in the builder.
  */
 enum class WidgetType {
+    /** PHOTO_CAMERA */
     PHOTO_CAMERA,
+
+    /** VIDEO_CAMERA */
     VIDEO_CAMERA,
+
+    /** SWITCH */
     SWITCH,
+
+    /** CHECKBOX */
     CHECKBOX,
+
+    /** SINGLE_SELECT */
     SINGLE_SELECT,
+
+    /** MULTI_SELECT */
     MULTI_SELECT,
+
+    /** SINGLE_LINE_TEXT */
     SINGLE_LINE_TEXT,
+
+    /** MULTI_LINE_TEXT */
     MULTI_LINE_TEXT,
+
+    /** DATE */
     DATE,
+
+    /** DATE */
     DATETIME,
+
+    /** NUMERIC */
     NUMERIC,
+
+    /** RANGE */
     RANGE,
 }
 
@@ -181,6 +204,8 @@ class QuestionnaireBuilderViewModel(
     fun addItem(widgetType: WidgetType) {
         val currentItems = _state.value.items
         val newId = "item_${nextItemId++}"
+
+        /** SINGLE_SELECT */
         val isError = (widgetType == WidgetType.SINGLE_SELECT || widgetType == WidgetType.MULTI_SELECT)
         val newItem =
             BuilderItem(
@@ -214,7 +239,9 @@ class QuestionnaireBuilderViewModel(
                                 newLabel.isBlank() ||
                                     (
                                         (
+                                            /** SINGLE_SELECT */
                                             item.widgetType == WidgetType.SINGLE_SELECT ||
+                                                /** MULTI_SELECT */
                                                 item.widgetType == WidgetType.MULTI_SELECT
                                         ) &&
                                             newOptions.isEmpty()
@@ -320,7 +347,6 @@ class QuestionnaireBuilderViewModel(
      * @param builderItem The builderItem.
      * @return The result.
      */
-    @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun mapBuilderItemToFhir(builderItem: BuilderItem): Questionnaire.Item.Builder {
         val fhirType = getFhirItemType(builderItem.widgetType)
         val itemBuilder =
@@ -349,6 +375,7 @@ class QuestionnaireBuilderViewModel(
         fhirType: Questionnaire.QuestionnaireItemType,
     ) {
         if (fhirType == Questionnaire.QuestionnaireItemType.Choice) {
+            /** MULTI_SELECT */
             if (builderItem.widgetType == WidgetType.MULTI_SELECT) {
                 itemBuilder.repeats = Boolean.Builder().apply { value = true }
             }
@@ -391,6 +418,7 @@ class QuestionnaireBuilderViewModel(
                 WidgetType.PHOTO_CAMERA -> "photo"
                 WidgetType.SWITCH -> "switch"
                 WidgetType.RANGE -> "slider"
+                /** SINGLE_SELECT */
                 WidgetType.SINGLE_SELECT, WidgetType.MULTI_SELECT -> "check-box"
                 else -> null
             }
@@ -427,8 +455,11 @@ class QuestionnaireBuilderViewModel(
      */
     private fun getFhirItemType(widgetType: WidgetType): Questionnaire.QuestionnaireItemType =
         when (widgetType) {
+            /** PHOTO_CAMERA */
             WidgetType.PHOTO_CAMERA, WidgetType.VIDEO_CAMERA -> Questionnaire.QuestionnaireItemType.Attachment
+            /** SWITCH */
             WidgetType.SWITCH, WidgetType.CHECKBOX -> Questionnaire.QuestionnaireItemType.Boolean
+            /** SINGLE_SELECT */
             WidgetType.SINGLE_SELECT, WidgetType.MULTI_SELECT -> Questionnaire.QuestionnaireItemType.Choice
             WidgetType.SINGLE_LINE_TEXT -> Questionnaire.QuestionnaireItemType.String
             WidgetType.MULTI_LINE_TEXT -> Questionnaire.QuestionnaireItemType.Text
