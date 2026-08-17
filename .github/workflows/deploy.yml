@@ -37,7 +37,9 @@ jobs:
     needs: [check_and_test]
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: github.ref == 'refs/heads/master' # Only deploy on main merge
+    if: github.ref == 'refs/heads/master' && env.ANDROID_KEYSTORE_B64 != '' # Only deploy on main merge if secrets exist
+    env:
+      ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
     
     steps:
       - name: Checkout Code
@@ -103,7 +105,9 @@ jobs:
     needs: [check_and_test]
     runs-on: macos-15
     timeout-minutes: 30
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' && env.MATCH_PASSWORD != ''
+    env:
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
     
     steps:
       - name: Checkout Code
