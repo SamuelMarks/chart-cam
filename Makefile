@@ -1,6 +1,6 @@
 -include .env
 
-.PHONY: clean build test lint build_release_android build_release_ios build_release_jvm build_release_js build_release_wasm run_android run_ios run_jvm
+.PHONY: clean build test lint build_release_android build_release_ios build_adhoc_ios deploy_ios_to_firebase build_release_jvm build_release_js build_release_wasm run_android run_ios run_jvm
 
 clean:
 	./gradlew --console=plain clean
@@ -52,6 +52,51 @@ build_release_ios:
 	@echo "IPA successfully generated at:"
 	@echo "  build/ios/export/ChartCam.ipa"
 	@echo "You can upload this file using the Apple Transporter app."
+	@echo "================================================================="
+
+build_adhoc_ios:
+	@if [ -z "$(APPLE_TEAM_ID)" ]; then echo "Error: APPLE_TEAM_ID is not set in .env"; exit 1; fi
+	@if [ -z "$(APPLE_PROVISIONING_PROFILE_ADHOC)" ]; then echo "Error: APPLE_PROVISIONING_PROFILE_ADHOC is not set in .env (needed for Firebase App Distro)"; exit 1; fi
+	@echo "Creating iOS Ad-Hoc archive..."
+	cd iosApp && PATH="/usr/bin:$$PATH" xcodebuild -scheme iosApp -configuration Release -destination 'generic/platform=iOS' DEVELOPMENT_TEAM="$(APPLE_TEAM_ID)" PROVISIONING_PROFILE_SPECIFIER="$(APPLE_PROVISIONING_PROFILE_ADHOC)" archive -archivePath ../build/ios/ChartCam_AdHoc.xcarchive -allowProvisioningUpdates
+	@echo "Exporting .ipa for Ad-Hoc Distribution..."
+	@mkdir -p build/ios/export_adhoc
+	@echo '<?xml version="1.0" encoding="UTF-8"?>' > build/ios/exportOptions_adhoc.plist
+	@echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> build/ios/exportOptions_adhoc.plist
+	@echo '<plist version="1.0">' >> build/ios/exportOptions_adhoc.plist
+	@echo '<dict>' >> build/ios/exportOptions_adhoc.plist
+	@echo '    <key>method</key>' >> build/ios/exportOptions_adhoc.plist
+	@echo '    <string>ad-hoc</string>' >> build/ios/exportOptions_adhoc.plist
+	@echo '    <key>teamID</key>' >> build/ios/exportOptions_adhoc.plist
+	@echo '    <string>$(APPLE_TEAM_ID)</string>' >> build/ios/exportOptions_adhoc.plist
+	@echo '    <key>signingStyle</key>' >> build/ios/exportOptions_adhoc.plist
+	@echo '    <string>manual</string>' >> build/ios/exportOptions_adhoc.plist
+	@echo '    <key>manageAppVersionAndBuildNumber</key>' >> build/ios/exportOptions_adhoc.plist
+	@echo '    <false/>' >> build/ios/exportOptions_adhoc.plist
+	@echo '    <key>destination</key>' >> build/ios/exportOptions_adhoc.plist
+	@echo '    <string>export</string>' >> build/ios/exportOptions_adhoc.plist
+	@echo '    <key>provisioningProfiles</key>' >> build/ios/exportOptions_adhoc.plist
+	@echo '    <dict>' >> build/ios/exportOptions_adhoc.plist
+	@echo '        <key>io.healthplatform.chartcam</key>' >> build/ios/exportOptions_adhoc.plist
+	@echo '        <string>$(APPLE_PROVISIONING_PROFILE_ADHOC)</string>' >> build/ios/exportOptions_adhoc.plist
+	@echo '    </dict>' >> build/ios/exportOptions_adhoc.plist
+	@echo '</dict>' >> build/ios/exportOptions_adhoc.plist
+	@echo '</plist>' >> build/ios/exportOptions_adhoc.plist
+	cd iosApp && PATH="/usr/bin:$$PATH" xcodebuild -exportArchive -archivePath ../build/ios/ChartCam_AdHoc.xcarchive -exportOptionsPlist ../build/ios/exportOptions_adhoc.plist -exportPath ../build/ios/export_adhoc DEVELOPMENT_TEAM="$(APPLE_TEAM_ID)"
+	@echo "================================================================="
+	@echo "Ad-Hoc IPA successfully generated at:"
+	@echo "  build/ios/export_adhoc/ChartCam.ipa"
+	@echo "================================================================="
+
+deploy_ios_to_firebase: build_adhoc_ios
+	@if [ -z "$(FIREBASE_IOS_APP_ID)" ]; then echo "Error: FIREBASE_IOS_APP_ID is not set in .env"; exit 1; fi
+	@echo "Uploading to Firebase App Distribution..."
+	npx --yes firebase-tools appdistribution:distribute build/ios/export_adhoc/ChartCam.ipa \
+		--app $(FIREBASE_IOS_APP_ID) \
+		--release-notes "Stopgap release" \
+		--testers "$(FIREBASE_TESTERS)"
+	@echo "================================================================="
+	@echo "Successfully uploaded to Firebase App Distribution!"
 	@echo "================================================================="
 
 build_release_jvm:

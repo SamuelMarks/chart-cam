@@ -95,7 +95,7 @@ class PatientListViewModel(
                     } else {
                         repository.searchPatients(query, showAll = showAll, practitionerId = practitionerId)
                     }
-                _uiState.update { it.copy(patients = results, isLoading = false) }
+                _uiState.update { it.copy(patients = results ?: emptyList(), isLoading = false) }
             } catch (e: IllegalStateException) {
                 println(e.message)
                 _uiState.update { it.copy(isLoading = false, error = Res.string.failed_to_load_patients) }

@@ -159,9 +159,6 @@ actual class CryptoService actual constructor() {
                 ""
             } catch (ignored: java.lang.IllegalArgumentException) {
                 ""
-            } catch (e: java.security.GeneralSecurityException) {
-                println(e)
-                ""
             }
         }
 }

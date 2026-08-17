@@ -377,7 +377,7 @@ class MockFhirRepository(
         showAll: Boolean,
         practitionerId: String?,
     ): List<Patient> {
-        if (shouldThrow) throw RuntimeException("DB Error")
+        if (shouldThrow) throw IllegalStateException("DB Error")
         lastShowAll = showAll
         return patientsToReturn
     }
@@ -394,7 +394,7 @@ class MockFhirRepository(
         showAll: Boolean,
         practitionerId: String?,
     ): List<Patient> {
-        if (shouldThrow) throw RuntimeException("DB Error")
+        if (shouldThrow) throw IllegalStateException("DB Error")
         lastSearchQuery = query
         lastShowAll = showAll
         return patientsToReturn
@@ -405,7 +405,7 @@ class MockFhirRepository(
      * @param patient The patient.
      */
     override suspend fun savePatient(patient: Patient) {
-        if (shouldThrowOnSave) throw RuntimeException("Save Error")
+        if (shouldThrowOnSave) throw IllegalStateException("Save Error")
         savedPatient = patient
     }
 
@@ -448,7 +448,7 @@ class MockExportImportService(
         exportAll: Boolean,
         practitionerId: String?,
     ): String {
-        if (shouldThrow) throw RuntimeException("Export error")
+        if (shouldThrow) throw IllegalStateException("Export error")
         return "exported-data"
     }
 
@@ -461,7 +461,7 @@ class MockExportImportService(
         encryptedData: String,
         password: String,
     ) {
-        if (shouldThrow) throw RuntimeException("Import error")
+        if (shouldThrow) throw IllegalStateException("Import error")
         lastImportData = encryptedData
     }
 }
