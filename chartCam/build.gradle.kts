@@ -2,6 +2,16 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
+
+val copyAndroidComposeResources =
+    tasks.register<Copy>("copyAndroidComposeResources") {
+        from("build/generated/compose/resourceGenerator/preparedResources/commonMain/composeResources")
+        into(
+            "build/generated/compose/resourceGenerator/assembledResources/androidMain/composeResources/chartcam.chartcam.generated.resources",
+        )
+        dependsOn("prepareComposeResourcesTaskForCommonMain")
+    }
+
 buildscript {
     dependencies {
         classpath("org.jetbrains.dokka:dokka-base:2.0.0")
@@ -102,6 +112,11 @@ kotlin {
     }
 
     sourceSets {
+        androidMain {
+            (this as org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet).resources.srcDirs(
+                "build/generated/compose/resourceGenerator/assembledResources/androidMain",
+            )
+        }
         androidMain.dependencies {
             implementation("app.cash.sqldelight:async-extensions:2.2.1")
             implementation(libs.bouncycastle)
@@ -341,4 +356,14 @@ detekt {
         "src/wasmJsMain/kotlin",
         "src/webMain/kotlin",
     )
+}
+
+tasks.withType<ProcessResources>().configureEach { dependsOn("copyAndroidComposeResources") }
+tasks.whenTaskAdded {
+    if (name.contains("AndroidMain") ||
+        name.contains("Release") ||
+        name.contains("Debug")
+    ) {
+        dependsOn("copyAndroidComposeResources")
+    }
 }
