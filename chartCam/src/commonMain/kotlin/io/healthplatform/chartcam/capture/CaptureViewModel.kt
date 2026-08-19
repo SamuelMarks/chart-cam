@@ -88,7 +88,7 @@ class CaptureViewModel(
             } catch (e: IllegalStateException) {
                 println("Capture error: ${e.message}")
                 _uiState.update { it.copy(isCapturing = false) }
-            } catch (e: IllegalArgumentException) {
+            } catch (e: Exception) {
                 println("Capture error: ${e.message}")
                 _uiState.update { it.copy(isCapturing = false) }
             }
@@ -134,7 +134,7 @@ class CaptureViewModel(
         } catch (e: IllegalStateException) {
             println("Storage error: ${e.message}")
             _uiState.update { it.copy(reviewImageBytes = null) }
-        } catch (e: IllegalArgumentException) {
+        } catch (e: Exception) {
             println("Argument error: ${e.message}")
             _uiState.update { it.copy(reviewImageBytes = null) }
         }

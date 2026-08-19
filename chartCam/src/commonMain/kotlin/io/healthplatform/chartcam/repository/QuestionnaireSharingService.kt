@@ -32,7 +32,7 @@ class QuestionnaireSharingService {
     fun deserializeQuestionnaire(jsonString: String): Questionnaire =
         try {
             fhirJson.decodeFromString(jsonString) as Questionnaire
-        } catch (e: IllegalArgumentException) {
+        } catch (e: Exception) {
             throw IllegalArgumentException("Invalid FHIR JSON format", e)
         }
 }

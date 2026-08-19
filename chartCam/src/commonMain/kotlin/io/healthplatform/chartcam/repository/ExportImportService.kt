@@ -182,7 +182,7 @@ open class ExportImportService(
                 val fileName = filePath.substringAfterLast("/")
                 val binary = createFhirBinary(id = fileName, contentTypeStr = mimeType, base64Data = base64Data)
                 bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = binary.toBuilder() })
-            } catch (e: IllegalArgumentException) {
+            } catch (e: Exception) {
                 println("Failed to export binary: ${e.message}")
             }
         }

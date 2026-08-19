@@ -159,7 +159,7 @@ fun CreatePatientDialog(
             val dob =
                 try {
                     LocalDate.parse(dobString.trim())
-                } catch (e: IllegalArgumentException) {
+                } catch (e: Exception) {
                     println(e.message)
 
                     null

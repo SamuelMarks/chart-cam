@@ -219,6 +219,14 @@ fun PatientListScreen(
                         onDismissRequest = { showMenu = false },
                     ) {
                         DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.questionnaires)) },
+                            onClick = {
+                                showMenu = false
+                                actions.onNavigateToQuestionnaires()
+                            },
+                        )
+
+                        DropdownMenuItem(
                             text = {
                                 Text(
                                     if (state.showAllPatients) {

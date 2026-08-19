@@ -157,7 +157,7 @@ open class AuthRepository(
 
             _currentUser.value = practitioner
             Result.success(practitioner)
-        } catch (e: IllegalArgumentException) {
+        } catch (e: Exception) {
             Result.failure(e)
         } catch (e: IllegalStateException) {
             Result.failure(e)
@@ -225,7 +225,7 @@ open class AuthRepository(
             val newAccess = "refreshed_access_token_${io.ktor.util.date.getTimeMillis()}"
             storage.save(KEY_ACCESS_TOKEN, newAccess)
             true
-        } catch (e: IllegalArgumentException) {
+        } catch (e: Exception) {
             println("Failed to refresh token: ${e.message}")
             false
         } catch (e: IllegalStateException) {

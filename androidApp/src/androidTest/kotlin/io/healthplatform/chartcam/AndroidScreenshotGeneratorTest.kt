@@ -11,10 +11,13 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Rule
@@ -156,9 +159,11 @@ class AndroidScreenshotGeneratorTest {
 
         // Patient detail view automatically shows after creation
         safeClick("Back", isContentDescription = true)
+        Thread.sleep(1000)
 
         // 2. List patients (Populated)
         safeClick("More options", isContentDescription = true)
+        Thread.sleep(1000)
         safeClick("Show All Patients")
 
         capture("iphone-02-list-patients")
@@ -187,17 +192,48 @@ class AndroidScreenshotGeneratorTest {
 
         safeClick("Single Line Text", isContentDescription = true)
         val textFields = composeTestRule.onAllNodes(hasText("Label"))
-        textFields[1].performTextInput("Symptoms") // First label is Pain Level
+        composeTestRule
+            .onAllNodes(
+                androidx.compose.ui.test
+                    .hasText("Label"),
+            ).onLast()
+            .performTextInput("Symptoms") // First label is Pain Level
 
         // Add Camera 0
+        composeTestRule
+            .onAllNodes(
+                androidx.compose.ui.test
+                    .hasScrollAction(),
+            )[0]
+            .performTouchInput { swipeUp() }
+        composeTestRule.waitForIdle()
+
         safeClick("Photo Camera", isContentDescription = true)
         val cameraFields = composeTestRule.onAllNodes(hasText("Label"))
-        cameraFields[2].performTextInput("Left Eye")
+        composeTestRule
+            .onAllNodes(
+                androidx.compose.ui.test
+                    .hasText("Label"),
+            ).onLast()
+            .performTextInput("Left Eye")
 
         // Add Camera 1
+        composeTestRule
+            .onAllNodes(
+                androidx.compose.ui.test
+                    .hasScrollAction(),
+            )[0]
+            .performTouchInput { swipeUp() }
+        composeTestRule.waitForIdle()
+
         safeClick("Photo Camera", isContentDescription = true)
         val cameraFields2 = composeTestRule.onAllNodes(hasText("Label"))
-        cameraFields2[3].performTextInput("Right Eye")
+        composeTestRule
+            .onAllNodes(
+                androidx.compose.ui.test
+                    .hasText("Label"),
+            ).onLast()
+            .performTextInput("Right Eye")
 
         capture("iphone-03-create-questionnaire")
         safeClick("Save", isContentDescription = true)
@@ -212,8 +248,12 @@ class AndroidScreenshotGeneratorTest {
         capture("iphone-04-fill-questionnaire")
         safeClick("Finalize Visit")
         safeClick("Back", isContentDescription = true)
+        Thread.sleep(1000)
 
         // 5. View questionnaires for a given patient (Encounters view in Patient Detail)
+        safeClick("Jane")
+        Thread.sleep(1000)
+
         capture("iphone-05-view-patient-questionnaires")
 
         // 6. View specific questionnaire filled out for given patient
@@ -222,11 +262,14 @@ class AndroidScreenshotGeneratorTest {
 
         // Back to Patient Detail
         safeClick("Back", isContentDescription = true)
+        Thread.sleep(1000)
         // Back to List
         safeClick("Back", isContentDescription = true)
+        Thread.sleep(1000)
 
         // Go to Questionnaires List for Exporting
         safeClick("More options", isContentDescription = true)
+        Thread.sleep(1000)
         safeClick("Questionnaires")
 
         // 7. Export questionnaire
@@ -237,9 +280,11 @@ class AndroidScreenshotGeneratorTest {
         safeClick("Share Questionnaire")
         // Back to List
         safeClick("Back", isContentDescription = true)
+        Thread.sleep(1000)
 
         // 8. Export dataset (incl. with password)
         safeClick("More options", isContentDescription = true)
+        Thread.sleep(1000)
         safeClick("Export Data")
         composeTestRule
             .onAllNodes(
@@ -259,6 +304,7 @@ class AndroidScreenshotGeneratorTest {
 
         // 9. Logout
         safeClick("More options", isContentDescription = true)
+        Thread.sleep(1000)
         safeClick("Logout")
         capture("iphone-09-logout")
     }

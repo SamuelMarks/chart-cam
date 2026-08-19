@@ -437,7 +437,7 @@ class EncounterDetailViewModel(
             // Build and save QuestionnaireResponse
             buildAndSaveQuestionnaireResponse(q, enc)
             updateEncounterWithNotes(q, id, yesStr, noStr, noNotesStr)
-            syncWorker.sync()
+            // syncWorker.sync()
 
             _uiState.update {
                 it.copy(

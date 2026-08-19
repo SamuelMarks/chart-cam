@@ -108,7 +108,7 @@ object SdcEvaluator {
         } catch (e: NumberFormatException) {
             println("Math evaluation error: ${e.message}")
             null
-        } catch (e: IllegalArgumentException) {
+        } catch (e: Exception) {
             println("Math evaluation error: ${e.message}")
             null
         }

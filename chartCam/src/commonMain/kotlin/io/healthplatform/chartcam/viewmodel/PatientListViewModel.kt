@@ -99,7 +99,7 @@ class PatientListViewModel(
             } catch (e: IllegalStateException) {
                 println(e.message)
                 _uiState.update { it.copy(isLoading = false, error = Res.string.failed_to_load_patients) }
-            } catch (e: IllegalArgumentException) {
+            } catch (e: Exception) {
                 println(e.message)
                 _uiState.update { it.copy(isLoading = false, error = Res.string.failed_to_load_patients) }
             }

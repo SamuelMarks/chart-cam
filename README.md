@@ -35,15 +35,17 @@ ChartCam: The secure, open-source engine for clinical innovation.
 ## Screenshots
 
 <div align="center">
-  <img src="fastlane/screenshots/en-US/iphone-01-login.png" width="200" alt="Login"/>
-  <img src="fastlane/screenshots/en-US/iphone-02-patient-list.png" width="200" alt="Patient List"/>
-  <img src="fastlane/screenshots/en-US/iphone-03-add-patient.png" width="200" alt="Add Patient"/>
-  <img src="fastlane/screenshots/en-US/iphone-04-patient-detail.png" width="200" alt="Patient Detail"/>
+  <img src="fastlane/screenshots/en-US/iphone-00-login.png" width="200" alt="Login"/>
+  <img src="fastlane/screenshots/en-US/iphone-02-list-patients.png" width="200" alt="Patient List"/>
+  <img src="fastlane/screenshots/en-US/iphone-06-view-specific-questionnaire.png" width="200" alt="View Specific Questionnaire"/>
+  <img src="fastlane/screenshots/en-US/iphone-09-logout.png" width="200" alt="Logout"/>
+  <img src="fastlane/screenshots/en-US/iphone-01-create-patient.png" width="200" alt="Add Patient"/>
+  <img src="fastlane/screenshots/en-US/iphone-05-view-patient-questionnaires.png" width="200" alt="View Patient Questionnaires"/>
   <br/>
-  <img src="fastlane/screenshots/en-US/iphone-05-questionnaire-list.png" width="200" alt="Questionnaire List"/>
-  <img src="fastlane/screenshots/en-US/iphone-06-questionnaire-builder.png" width="200" alt="Questionnaire Builder"/>
-  <img src="fastlane/screenshots/en-US/iphone-07-questionnaire-share.png" width="200" alt="Share Questionnaire"/>
-  <img src="fastlane/screenshots/en-US/iphone-08-fill-questionnaire.png" width="200" alt="Fill Questionnaire"/>
+  <img src="fastlane/screenshots/en-US/iphone-03-create-questionnaire.png" width="200" alt="Create Questionnaire"/>
+  <img src="fastlane/screenshots/en-US/iphone-04-fill-questionnaire.png" width="200" alt="Fill Questionnaire"/>
+  <img src="fastlane/screenshots/en-US/iphone-07-export-questionnaire-view.png" width="200" alt="Export Questionnaire"/>
+  <img src="fastlane/screenshots/en-US/iphone-08-export-dataset.png" width="200" alt="Export Dataset"/>
 </div>
 
 ---
