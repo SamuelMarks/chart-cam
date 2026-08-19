@@ -29,7 +29,7 @@ jobs:
           arch: x86_64
           profile: pixel_6
           script: |
-            ./gradlew :chartCam:connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=io.healthplatform.chartcam.AndroidScreenshotGeneratorTest
+            ./gradlew :androidApp:connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=io.healthplatform.chartcam.AndroidScreenshotGeneratorTest
             mkdir -p fastlane/screenshots/en-US
             adb pull /sdcard/Android/data/io.healthplatform.chartcam.test/cache/screenshots/ fastlane/screenshots/en-US/ || true
             adb pull /sdcard/Android/data/io.healthplatform.chartcam/cache/screenshots/ fastlane/screenshots/en-US/ || true
