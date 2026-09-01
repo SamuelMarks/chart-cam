@@ -310,7 +310,7 @@ fun QuestionnaireListScreen(
                                     } else {
                                         importError = "Empty"
                                     }
-                                } catch (e: Exception) {
+                                } catch (e: IllegalArgumentException) {
                                     println(e.message)
 
                                     importError = invalidFormatStr
@@ -399,7 +399,7 @@ fun QuestionnaireListScreen(
                                 try {
                                     val json = questionnaireSharingService.serializeQuestionnaire(q)
                                     clipboard.setPlainText(json)
-                                } catch (e: Exception) {
+                                } catch (e: IllegalArgumentException) {
                                     println(e.message)
 
                                     // Handle error
@@ -421,7 +421,7 @@ fun QuestionnaireListScreen(
                         try {
                             val json = questionnaireSharingService.serializeQuestionnaire(q)
                             shareService.shareText(json)
-                        } catch (e: Exception) {
+                        } catch (e: IllegalArgumentException) {
                             println(e.message)
 
                             // Handle error

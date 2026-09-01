@@ -21,7 +21,7 @@ build_release_ios:
 	@if [ -z "$(APPLE_TEAM_ID)" ]; then echo "Error: APPLE_TEAM_ID is not set in .env"; exit 1; fi
 	@if [ -z "$(APPLE_PROVISIONING_PROFILE)" ]; then echo "Error: APPLE_PROVISIONING_PROFILE is not set in .env"; exit 1; fi
 	@echo "Creating iOS archive..."
-	cd iosApp && PATH="/usr/bin:$$PATH" xcodebuild -scheme iosApp -configuration Release -destination 'generic/platform=iOS' DEVELOPMENT_TEAM="$(APPLE_TEAM_ID)" PROVISIONING_PROFILE_SPECIFIER="$(APPLE_PROVISIONING_PROFILE)" archive -archivePath ../build/ios/ChartCam.xcarchive -allowProvisioningUpdates
+	cd iosApp && PATH="/usr/bin:$$PATH" xcodebuild -scheme iosApp -configuration Release -destination 'generic/platform=iOS' DEVELOPMENT_TEAM="$(APPLE_TEAM_ID)" PROVISIONING_PROFILE_SPECIFIER="$(APPLE_PROVISIONING_PROFILE)" EXPORT_COMPLIANCE_CODE="$(EXPORT_COMPLIANCE_CODE)" archive -archivePath ../build/ios/ChartCam.xcarchive -allowProvisioningUpdates
 	@echo "Exporting .ipa for App Store Connect..."
 	@mkdir -p build/ios
 	@echo '<?xml version="1.0" encoding="UTF-8"?>' > build/ios/exportOptions.plist
@@ -58,7 +58,7 @@ build_adhoc_ios:
 	@if [ -z "$(APPLE_TEAM_ID)" ]; then echo "Error: APPLE_TEAM_ID is not set in .env"; exit 1; fi
 	@if [ -z "$(APPLE_PROVISIONING_PROFILE_ADHOC)" ]; then echo "Error: APPLE_PROVISIONING_PROFILE_ADHOC is not set in .env (needed for Firebase App Distro)"; exit 1; fi
 	@echo "Creating iOS Ad-Hoc archive..."
-	cd iosApp && PATH="/usr/bin:$$PATH" xcodebuild -scheme iosApp -configuration Release -destination 'generic/platform=iOS' DEVELOPMENT_TEAM="$(APPLE_TEAM_ID)" PROVISIONING_PROFILE_SPECIFIER="$(APPLE_PROVISIONING_PROFILE_ADHOC)" archive -archivePath ../build/ios/ChartCam_AdHoc.xcarchive -allowProvisioningUpdates
+	cd iosApp && PATH="/usr/bin:$$PATH" xcodebuild -scheme iosApp -configuration Release -destination 'generic/platform=iOS' DEVELOPMENT_TEAM="$(APPLE_TEAM_ID)" PROVISIONING_PROFILE_SPECIFIER="$(APPLE_PROVISIONING_PROFILE_ADHOC)" EXPORT_COMPLIANCE_CODE="$(EXPORT_COMPLIANCE_CODE)" archive -archivePath ../build/ios/ChartCam_AdHoc.xcarchive -allowProvisioningUpdates
 	@echo "Exporting .ipa for Ad-Hoc Distribution..."
 	@mkdir -p build/ios/export_adhoc
 	@echo '<?xml version="1.0" encoding="UTF-8"?>' > build/ios/exportOptions_adhoc.plist

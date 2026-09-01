@@ -163,7 +163,6 @@ class TenPartFlowE2EJvmTest {
                 EncounterDetailViewModel(
                     fhirRepository,
                     authRepository,
-                    syncWorker,
                     questionnaireRepository,
                 )
             // By initializing with this customFormId (in practice this requires selecting the form)
@@ -213,7 +212,6 @@ class TenPartFlowE2EJvmTest {
                 EncounterDetailViewModel(
                     fhirRepository,
                     authRepository,
-                    syncWorker,
                     questionnaireRepository,
                 )
             readOnlyEncounterViewModel.initialize(patientId = patientId, visitId = encounterId!!, photosMap = emptyMap())

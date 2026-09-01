@@ -48,7 +48,6 @@ fun NavGraphBuilder.newVisitDestination(
                         photoSessionManager = deps.photoSessionManager,
                         fhirRepository = deps.fhirRepository,
                         authRepository = deps.authRepository,
-                        syncWorker = deps.syncWorker,
                         questionnaireRepository = deps.questionnaireRepository,
                     ),
                 actions =
@@ -66,9 +65,7 @@ fun NavGraphBuilder.newVisitDestination(
                             )
                         },
                         onFinalized = {
-                            navController.navigate(PatientDetailRoute(patientId)) {
-                                popUpTo(PatientDetailRoute(patientId)) { inclusive = true }
-                            }
+                            navController.popBackStack(PatientDetailRoute(patientId), inclusive = false)
                         },
                         onNewlyCreatedQuestionnaireHandled = {
                             entry.savedStateHandle.remove<String>("createdQuestionnaireId")
@@ -210,7 +207,6 @@ fun NavGraphBuilder.visitDetailDestination(
                         photoSessionManager = deps.photoSessionManager,
                         fhirRepository = deps.fhirRepository,
                         authRepository = deps.authRepository,
-                        syncWorker = deps.syncWorker,
                         questionnaireRepository = deps.questionnaireRepository,
                     ),
                 actions =

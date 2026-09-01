@@ -42,7 +42,7 @@ class QuestionnaireRepository(
                         .readBytes("files/default_templates/std-form.json")
                 val stdQ = fhirJson.decodeFromString(stdBytes.decodeToString()) as Questionnaire
                 inMemoryForms["std-form"] = stdQ
-            } catch (e: Exception) {
+            } catch (e: IllegalArgumentException) {
                 println("Error: ${e.message}")
             } catch (e: IllegalStateException) {
                 println("Error: ${e.message}")
@@ -54,7 +54,7 @@ class QuestionnaireRepository(
                         .readBytes("files/default_templates/basic-followup.json")
                 val basicQ = fhirJson.decodeFromString(basicBytes.decodeToString()) as Questionnaire
                 inMemoryForms["basic-followup"] = basicQ
-            } catch (e: Exception) {
+            } catch (e: IllegalArgumentException) {
                 println("Error: ${e.message}")
             } catch (e: IllegalStateException) {
                 println("Error: ${e.message}")

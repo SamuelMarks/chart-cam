@@ -115,7 +115,7 @@ class SyncWorker(
             }
 
             _syncState.value = SyncState.Completed
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
             val queuedCount = fhirRepository.getPendingLocalChangesCount()
             val errorMsg =
                 e.message ?: "Unknown error"
@@ -178,7 +178,7 @@ class SyncWorker(
                 }
 
             handlePushResponse(response, change)
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
             println("Error: ${e.message}")
             false
         }
@@ -242,7 +242,7 @@ class SyncWorker(
                     success = true
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
             println("Error: ${e.message}")
         }
         return success
@@ -292,7 +292,7 @@ class SyncWorker(
                     success = true
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
             println("Error: ${e.message}")
         }
         return success

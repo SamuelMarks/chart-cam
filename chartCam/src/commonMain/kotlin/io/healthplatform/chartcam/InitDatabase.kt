@@ -24,7 +24,7 @@ suspend fun initDatabase(driver: SqlDriver) {
         ChartCamDatabase.Schema.awaitCreate(driver)
     } catch (e: IllegalStateException) {
         println("Schema creation failed or already exists: ${e.message}")
-    } catch (e: Exception) {
+    } catch (e: IllegalArgumentException) {
         println("Runtime schema creation error: ${e.message}")
     }
 }

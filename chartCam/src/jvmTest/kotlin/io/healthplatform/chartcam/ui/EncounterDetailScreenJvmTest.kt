@@ -75,7 +75,6 @@ class EncounterDetailScreenJvmTest {
                             photoSessionManager = photoSessionManager,
                             fhirRepository = fhirRepository,
                             authRepository = authRepository,
-                            syncWorker = syncWorker,
                             questionnaireRepository = questionnaireRepository,
                         ),
                     actions =

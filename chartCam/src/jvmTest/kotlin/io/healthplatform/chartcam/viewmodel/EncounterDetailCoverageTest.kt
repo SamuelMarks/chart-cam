@@ -227,7 +227,7 @@ class EncounterDetailCoverageTest {
         val prac = Practitioner.Builder().apply { id = "prac1" }.build()
         Mockito.`when`(authRepository.currentUser).thenReturn(MutableStateFlow(prac))
 
-        val vm = EncounterDetailViewModel(fhirRepository, authRepository, syncWorker, qrRepo)
+        val vm = EncounterDetailViewModel(fhirRepository, authRepository, qrRepo)
         vm.initialize("pat1", "enc1", mapOf("Step1" to "path1"))
 
         kotlinx.coroutines.runBlocking { kotlinx.coroutines.delay(200) }
@@ -243,7 +243,7 @@ class EncounterDetailCoverageTest {
         val qrRepo = Mockito.mock(QuestionnaireRepository::class.java)
         val syncWorker = Mockito.mock(SyncWorker::class.java)
 
-        val vm = EncounterDetailViewModel(fhirRepository, authRepository, syncWorker, qrRepo)
+        val vm = EncounterDetailViewModel(fhirRepository, authRepository, qrRepo)
         vm.onFormUpdated(mapOf("test" to "test"))
     }
 
@@ -266,7 +266,7 @@ class EncounterDetailCoverageTest {
         Mockito.`when`(qrRepo.getAvailableQuestionnaires()).thenReturn(listOf(q))
         Mockito.`when`(qrRepo.createQuestionnaire("Title", 1, "label")).thenReturn(q)
 
-        val vm = EncounterDetailViewModel(fhirRepository, authRepository, syncWorker, qrRepo)
+        val vm = EncounterDetailViewModel(fhirRepository, authRepository, qrRepo)
 
         vm.selectQuestionnaireById("q-fresh")
         vm.createAndSelectQuestionnaire("Title", 1, "label")

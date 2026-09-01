@@ -28,7 +28,6 @@ import io.healthplatform.chartcam.models.createFhirProvenance
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
-import io.healthplatform.chartcam.sync.SyncWorker
 import io.healthplatform.chartcam.utils.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -73,13 +72,11 @@ data class EncounterUiState(
  *
  * @param fhirRepository The repository providing FHIR data access.
  * @param authRepository The repository providing authentication state.
- * @param syncWorker The worker handling synchronization of data.
  * @param questionnaireRepository The repository for managing and retrieving questionnaires.
  */
 class EncounterDetailViewModel(
     private val fhirRepository: FhirRepository,
     private val authRepository: AuthRepository,
-    private val syncWorker: SyncWorker,
     private val questionnaireRepository: QuestionnaireRepository,
 ) : ViewModel() {
     /** Internal mutable state flow holding the Encounter UI state. */
@@ -437,7 +434,6 @@ class EncounterDetailViewModel(
             // Build and save QuestionnaireResponse
             buildAndSaveQuestionnaireResponse(q, enc)
             updateEncounterWithNotes(q, id, yesStr, noStr, noNotesStr)
-            // syncWorker.sync()
 
             _uiState.update {
                 it.copy(

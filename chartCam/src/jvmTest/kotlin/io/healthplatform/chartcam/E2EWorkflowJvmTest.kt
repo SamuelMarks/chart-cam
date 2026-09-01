@@ -149,7 +149,6 @@ class E2EWorkflowJvmTest {
                 EncounterDetailViewModel(
                     fhirRepository,
                     authRepository,
-                    syncWorker,
                     qRepo,
                 )
 

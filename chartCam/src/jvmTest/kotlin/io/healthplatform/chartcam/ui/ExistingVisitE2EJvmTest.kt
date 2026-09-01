@@ -117,7 +117,6 @@ class ExistingVisitE2EJvmTest {
                             photoSessionManager = photoSessionManager,
                             fhirRepository = fhirRepository,
                             authRepository = authRepository,
-                            syncWorker = syncWorker,
                             questionnaireRepository = questionnaireRepository,
                         ),
                     actions =

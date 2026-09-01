@@ -94,7 +94,6 @@ import io.healthplatform.chartcam.navigation.PhotoSessionManager
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
-import io.healthplatform.chartcam.sync.SyncWorker
 import io.healthplatform.chartcam.viewmodel.EncounterDetailViewModel
 import io.healthplatform.chartcam.viewmodel.EncounterUiState
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -107,14 +106,12 @@ import org.jetbrains.compose.resources.stringResource
  * @property photoSessionManager The photo session manager.
  * @property fhirRepository The FHIR repository.
  * @property authRepository The authentication repository.
- * @property syncWorker The sync worker.
  * @property questionnaireRepository The questionnaire repository.
  */
 data class EncounterDetailDependencies(
     val photoSessionManager: PhotoSessionManager,
     val fhirRepository: FhirRepository,
     val authRepository: AuthRepository,
-    val syncWorker: SyncWorker,
     val questionnaireRepository: QuestionnaireRepository,
 )
 
@@ -160,7 +157,6 @@ fun EncounterDetailScreen(
             EncounterDetailViewModel(
                 dependencies.fhirRepository,
                 dependencies.authRepository,
-                dependencies.syncWorker,
                 dependencies.questionnaireRepository,
             )
         }

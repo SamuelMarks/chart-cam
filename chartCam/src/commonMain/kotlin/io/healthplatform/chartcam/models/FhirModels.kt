@@ -231,7 +231,7 @@ fun createFhirDocumentReference(params: DocumentReferenceCreationParams): Docume
             try {
                 // we ignore the date parse error just in case params.dateStr is wrong format
                 date = Instant.Builder().apply { value = FhirDateTime.fromString(params.dateStr) }
-            } catch (e: Exception) {
+            } catch (e: IllegalArgumentException) {
                 println(e.message)
             }
             if (!params.desc.isNullOrBlank()) {
@@ -277,7 +277,7 @@ fun createFhirClinicalNote(
             type = buildClinicalNoteType()
             try {
                 date = Instant.Builder().apply { value = FhirDateTime.fromString(dateStr) }
-            } catch (e: Exception) {
+            } catch (e: IllegalArgumentException) {
                 println("Failed to parse clinical note date: ${e.message}")
             }
         }.build()

@@ -118,7 +118,6 @@ class EncounterDetailViewModelJvmTest {
             EncounterDetailViewModel(
                 fhirRepository,
                 authRepository,
-                syncWorker,
                 questionnaireRepository,
             )
     }
@@ -753,7 +752,7 @@ class EncounterDetailViewModelJvmTest {
 
             `when`(questionnaireRepository.getAvailableQuestionnaires()).thenReturn(listOf(dummyQ))
 
-            val viewModel = EncounterDetailViewModel(fhirRepository, authRepository, syncWorker, questionnaireRepository)
+            val viewModel = EncounterDetailViewModel(fhirRepository, authRepository, questionnaireRepository)
             viewModel.initialize("patient-1", encId, emptyMap())
 
             advanceUntilIdle()
