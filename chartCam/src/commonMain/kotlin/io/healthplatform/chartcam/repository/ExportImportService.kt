@@ -1,3 +1,4 @@
+@file:Suppress("TooGenericExceptionCaught")
 /**
  * @file ExportImportService.kt
  * Contains declarations for ExportImportService.kt.
@@ -5,6 +6,7 @@
  * Provides functionality to export and import FHIR resources and associated binaries
  * (like photos) to and from a password-encrypted JSON payload.
  */
+
 package io.healthplatform.chartcam.repository
 
 import com.google.fhir.model.r4.Binary

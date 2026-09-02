@@ -106,7 +106,7 @@ class CaptureViewModel(
 
         try {
             // 1. Save File
-            val fileName = "capture_${currentStep.id}.jpg"
+            val fileName = "capture_${io.healthplatform.chartcam.utils.UUID.randomUUID()}_${currentStep.id}.jpg"
             val path = fileStorage.saveImage(fileName, bytes)
             filePaths[currentStep] = path
 

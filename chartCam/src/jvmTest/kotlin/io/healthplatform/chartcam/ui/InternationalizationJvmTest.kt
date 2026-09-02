@@ -27,12 +27,22 @@ class InternationalizationJvmTest {
     @get:Rule
     val rule = createComposeRule()
 
+    private var originalLocale: java.util.Locale? = null
+
+    @kotlin.test.BeforeTest
+    fun setup() {
+        originalLocale = java.util.Locale.getDefault()
+    }
+
     /**
-     * Tears down the test by resetting the app language to "en".
+     * Tears down the test by resetting the app language to the original locale.
      */
     @AfterTest
     fun tearDown() {
-        setAppLanguage("en")
+        originalLocale?.let {
+            java.util.Locale.setDefault(it)
+            currentLanguageState.value = it.language
+        } ?: setAppLanguage("en")
     }
 
     /**

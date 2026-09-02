@@ -24,6 +24,9 @@ class AndroidAppInitTest {
 
         val mockCacheDir = java.io.File(System.getProperty("java.io.tmpdir"), "mockCacheDir")
         mockCacheDir.mkdirs()
+        // Add a mock file to cover migratePhotosFromCache loop
+        java.io.File(mockCacheDir, "mockPhoto.png").createNewFile()
+
         val mockFilesDir = java.io.File(System.getProperty("java.io.tmpdir"), "mockFilesDir")
         mockFilesDir.mkdirs()
 

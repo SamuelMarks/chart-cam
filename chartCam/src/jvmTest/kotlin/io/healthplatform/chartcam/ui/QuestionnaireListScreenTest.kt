@@ -75,6 +75,7 @@ class QuestionnaireListScreenTest {
                 )
             }
 
+            println("TEST DEBUG Locale is ${java.util.Locale.getDefault().language}")
             // The TopAppBar title should still be there
             onNodeWithText("Questionnaires").assertExists()
         }

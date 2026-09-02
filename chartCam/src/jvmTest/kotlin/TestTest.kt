@@ -16,4 +16,9 @@ class TestTest {
             }
             onNodeWithText("Hello").assertExists()
         }
+
+    @Test
+    fun testFoo() {
+        test.foo()
+    }
 }

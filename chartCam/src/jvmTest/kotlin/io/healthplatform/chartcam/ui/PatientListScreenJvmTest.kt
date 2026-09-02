@@ -61,6 +61,11 @@ class PatientListScreenJvmTest {
             waitForIdle()
 
             onNodeWithContentDescription("More options").performClick()
+            waitForIdle()
+
+            waitUntil(timeoutMillis = 5000) {
+                onAllNodesWithText("Questionnaires").fetchSemanticsNodes().isNotEmpty()
+            }
 
             onAllNodesWithText("Questionnaires")[0].performClick()
 

@@ -27,7 +27,11 @@ class LanguageSwitcherCommonTest {
             } catch (e: Exception) {
                 // expected in mock
             } finally {
-                currentLanguageState.value = old
+                try {
+                    setAppLanguage(old)
+                } catch (e: Exception) {
+                    currentLanguageState.value = old
+                }
             }
         }
 }
