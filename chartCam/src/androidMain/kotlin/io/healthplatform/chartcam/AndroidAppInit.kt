@@ -30,6 +30,29 @@ object AndroidAppInit {
      */
     fun init(ctx: Context) {
         context = ctx.applicationContext
+        migratePhotosFromCache(ctx.applicationContext)
+    }
+
+    /**
+     * Migrates existing photos from the temporary cache directory to the persistent
+     * internal files directory to prevent unexpected data loss by the OS.
+     *
+     * @param ctx The application context.
+     */
+    private fun migratePhotosFromCache(ctx: Context) {
+        val cacheDir = ctx.cacheDir
+        val filesDir = ctx.filesDir
+
+        cacheDir.listFiles()?.forEach { file ->
+            // Assuming photos or related encrypted data are the only things we store here
+            // or specific patterns like ".enc" or image names.
+            // Move files to filesDir.
+            val destFile = java.io.File(filesDir, file.name)
+            if (!destFile.exists()) {
+                file.copyTo(destFile)
+            }
+            file.delete()
+        }
     }
 
     /**

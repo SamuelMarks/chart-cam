@@ -22,12 +22,24 @@ class AndroidAppInitTest {
         val mockContext = Mockito.mock(Context::class.java)
         val mockAppContext = Mockito.mock(Context::class.java)
 
+        val mockCacheDir = java.io.File(System.getProperty("java.io.tmpdir"), "mockCacheDir")
+        mockCacheDir.mkdirs()
+        val mockFilesDir = java.io.File(System.getProperty("java.io.tmpdir"), "mockFilesDir")
+        mockFilesDir.mkdirs()
+
         Mockito.`when`(mockContext.applicationContext).thenReturn(mockAppContext)
+        Mockito.`when`(mockAppContext.cacheDir).thenReturn(mockCacheDir)
+        Mockito.`when`(mockAppContext.filesDir).thenReturn(mockFilesDir)
+        Mockito.`when`(mockAppContext.applicationContext).thenReturn(mockAppContext) // for the nested call in migratePhotosFromCache if any
 
         AndroidAppInit.init(mockContext)
 
         val retrievedContext = AndroidAppInit.getContext()
         assertEquals(mockAppContext, retrievedContext)
+
+        // Clean up
+        mockCacheDir.deleteRecursively()
+        mockFilesDir.deleteRecursively()
     }
 
     /**

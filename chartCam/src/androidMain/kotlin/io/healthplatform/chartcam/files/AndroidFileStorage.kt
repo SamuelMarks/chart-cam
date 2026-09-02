@@ -22,9 +22,9 @@ class AndroidFileStorage : FileStorage {
     private val context = AndroidAppInit.getContext()
 
     /**
-     * The application's cache directory where temporary encrypted files are stored.
+     * The application's internal files directory where persistent encrypted files are stored.
      */
-    private val cacheDir = context.cacheDir
+    private val filesDir = context.filesDir
 
     /**
      * Saves raw byte data as an encrypted file.
@@ -37,7 +37,7 @@ class AndroidFileStorage : FileStorage {
         fileName: String,
         bytes: ByteArray,
     ): String {
-        val file = File(cacheDir, fileName)
+        val file = File(filesDir, fileName)
         if (file.exists()) {
             file.delete()
         }
@@ -71,12 +71,11 @@ class AndroidFileStorage : FileStorage {
     }
 
     /**
-     * Deletes all files currently stored in the cache directory.
-     * Provides a safe cache clear mechanism.
+     * Deletes all files currently stored in the internal files directory.
      */
     override fun clearCache() {
-        // Safe cache clear for demo purposes.
-        cacheDir.listFiles()!!.forEach { it.delete() }
+        // Safe clear for demo purposes.
+        filesDir.listFiles()?.forEach { it.delete() }
     }
 }
 
