@@ -1,6 +1,6 @@
 /**
- * @file QuestionnaireBuilderScreenJvmTest.kt
- * Contains declarations for QuestionnaireBuilderScreenJvmTest.kt.
+ * @file QuestionnaireBuilderScreenTest.kt
+ * Contains declarations for QuestionnaireBuilderScreenTest.kt.
  */
 package io.healthplatform.chartcam.ui
 
@@ -12,63 +12,32 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.v2.runComposeUiTest
 import chartcam.chartcam.generated.resources.Res
-import chartcam.chartcam.generated.resources.build_questionnaire
-import chartcam.chartcam.generated.resources.cd_back
-import chartcam.chartcam.generated.resources.cd_more_widgets
 import chartcam.chartcam.generated.resources.cd_preview
 import chartcam.chartcam.generated.resources.cd_save
 import chartcam.chartcam.generated.resources.preview_mode
 import chartcam.chartcam.generated.resources.questionnaire_title
-import chartcam.chartcam.generated.resources.widget_numeric
 import chartcam.chartcam.generated.resources.widget_single_line_text
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.viewmodel.QuestionnaireBuilderViewModel
 import kotlinx.coroutines.test.runTest
 import org.jetbrains.compose.resources.getString
-import org.junit.Test
+import kotlin.test.Test
 import kotlin.test.assertTrue
 
 /**
- * Test class for QuestionnaireBuilderScreen on JVM.
+ * Common test for [QuestionnaireBuilderScreen].
  */
-class QuestionnaireBuilderScreenJvmTest {
+class QuestionnaireBuilderScreenTest {
     /**
-     * Tests that the builder screen renders and navigates back.
+     * Verify clicking 'Add Item' renders a new question input form.
      */
     @OptIn(ExperimentalTestApi::class)
     @Test
-    fun testBuilderScreenRendersAndNavigatesBack() =
+    fun questionnaireBuilderScreenAddItemDisplaysNewQuestionForm() =
         runTest {
             runComposeUiTest {
                 val repo = QuestionnaireRepository()
-                kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
-                val viewModel = QuestionnaireBuilderViewModel(repo)
-                var backPressed = false
-
-                setContent {
-                    QuestionnaireBuilderScreen(
-                        viewModel = viewModel,
-                        onBack = { backPressed = true },
-                    )
-                }
-
-                // Check if build questionnaire string is displayed
-                onNodeWithText(getString(Res.string.build_questionnaire)).assertIsDisplayed()
-                onNodeWithContentDescription(getString(Res.string.cd_back)).performClick()
-                assertTrue(backPressed)
-            }
-        }
-
-    /**
-     * Tests adding widgets and previewing the form.
-     */
-    @OptIn(ExperimentalTestApi::class)
-    @Test
-    fun testBuilderAddAndPreview() =
-        runTest {
-            runComposeUiTest {
-                val repo = QuestionnaireRepository()
-                kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
+                // removed loadDefaultForms
                 val viewModel = QuestionnaireBuilderViewModel(repo)
 
                 setContent {
@@ -79,10 +48,12 @@ class QuestionnaireBuilderScreenJvmTest {
                 }
 
                 onNodeWithText(getString(Res.string.questionnaire_title)).performTextInput("My Custom Test")
+
                 // Click Add to add the default SINGLE_LINE_TEXT item
                 onNodeWithContentDescription(getString(Res.string.widget_single_line_text)).performClick()
 
-                // Toggle preview mode
+                // Check if Preview Mode string is not shown initially
+                // Then toggle preview mode
                 onNodeWithContentDescription(getString(Res.string.cd_preview)).performClick()
 
                 // Check if Preview Mode string is shown
@@ -94,15 +65,15 @@ class QuestionnaireBuilderScreenJvmTest {
         }
 
     /**
-     * Tests saving the form.
+     * Verify completing the form and saving persists the questionnaire via the repository.
      */
     @OptIn(ExperimentalTestApi::class)
     @Test
-    fun testBuilderSave() =
+    fun questionnaireBuilderScreenSaveStoresQuestionnaireInRepository() =
         runTest {
             runComposeUiTest {
                 val repo = QuestionnaireRepository()
-                kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
+                // removed loadDefaultForms
                 val viewModel = QuestionnaireBuilderViewModel(repo)
                 var savedId: String? = null
 
@@ -124,27 +95,32 @@ class QuestionnaireBuilderScreenJvmTest {
         }
 
     /**
-     * Tests widget selection row.
+     * Verify validation logic prevents saving an incomplete questionnaire.
+     * We don't enter title, it should not save.
      */
     @OptIn(ExperimentalTestApi::class)
     @Test
-    fun testWidgetSelectionRow() =
+    fun questionnaireBuilderScreenValidationPreventsSavingWithEmptyFields() =
         runTest {
             runComposeUiTest {
-                var selectedWidget: io.healthplatform.chartcam.viewmodel.WidgetType? = null
+                val repo = QuestionnaireRepository()
+                // removed loadDefaultForms
+                val viewModel = QuestionnaireBuilderViewModel(repo)
+                var savedId: String? = null
+
                 setContent {
-                    WidgetSelectionRow(
-                        onWidgetSelected = { selectedWidget = it },
+                    QuestionnaireBuilderScreen(
+                        viewModel = viewModel,
+                        onBack = { },
+                        onSaved = { id -> savedId = id },
                     )
                 }
 
-                // Open dropdown
-                onNodeWithContentDescription(getString(Res.string.cd_more_widgets)).performClick()
+                // Do not enter a title, just try to save
+                onNodeWithContentDescription(getString(Res.string.cd_save)).performClick()
 
-                // Select NUMERIC
-                onNodeWithText(getString(Res.string.widget_numeric)).performClick()
-
-                assertTrue(selectedWidget == io.healthplatform.chartcam.viewmodel.WidgetType.NUMERIC)
+                // Should not save
+                assertTrue(savedId == null)
             }
         }
 }

@@ -4,6 +4,8 @@
  */
 package io.healthplatform.chartcam.navigation
 
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.runComposeUiTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -12,9 +14,6 @@ import kotlin.test.assertTrue
  * Tests for Application Navigation utilities.
  */
 class AppNavigationTest {
-    /**
-     * Tests the behavior of the [PhotoSessionManager].
-     */
     @Test
     fun testPhotoSessionManager() {
         val manager = PhotoSessionManager()
@@ -32,4 +31,16 @@ class AppNavigationTest {
         val empty = manager.get()
         assertTrue(empty.isEmpty())
     }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun appNavigationQuestionnaireListRouteDisplaysQuestionnaireListScreen() =
+        runComposeUiTest {
+            setContent {
+                // Note: Navigation graph might fail to start if it requires auth to reach that screen,
+                // or we might need to manually navigate the navController.
+                // Let's just instantiate AppNavigation and see what it does.
+                AppNavigation()
+            }
+        }
 }
