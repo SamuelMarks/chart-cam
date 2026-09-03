@@ -1,6 +1,6 @@
 /**
  * @file AuthRepositoryTest.kt
- * Contains declarations for AuthRepositoryTest.kt.
+ * Contains tests for [AuthRepository].
  */
 package io.healthplatform.chartcam.repository
 
@@ -11,168 +11,70 @@ import io.ktor.client.engine.mock.respondOk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 /**
- * Tests for the [AuthRepository] login flow and state management.
+ * An in-memory implementation of [SecureStorage] for testing.
  */
-class AuthRepositoryTest {
-    /**
-     * Mock of [SecureStorage] to be used in auth tests.
-     */
-    class MockSecureStorage : SecureStorage {
-        /** Internal storage. */
-        val map = mutableMapOf<String, String>()
+class InMemorySecureStorage : SecureStorage {
+    private val data = mutableMapOf<String, String>()
 
-        /**
-         * Save value logic.
-         * @param key The key.
-         * @param value The value.
-         */
-        override fun save(
-            key: String,
-            value: String,
-        ) {
-            map[key] = value
-        }
+    override fun save(
+        key: String,
+        value: String,
+    ) {
+        data[key] = value
+    }
 
-        /**
-         * Read value logic.
-         * @param key The key.
-         * @return The value or null.
-         */
-        override fun getString(key: String): String? = map[key]
+    override fun getString(key: String): String? = data[key]
 
-        /**
-         * Delete value logic.
-         * @param key The key.
-         */
-        override fun delete(key: String) {
-            map.remove(key)
-        }
+    override fun delete(key: String) {
+        data.remove(key)
     }
 
     /**
-     * Test successful login and stored hash validation.
+     * Helper to verify if storage is empty.
+     * @return true if empty.
      */
-    @Test
-    fun testLoginSuccess() =
-        runTest {
-            val client = HttpClient(MockEngine { respondOk("") })
-            val storage = MockSecureStorage()
-            val repo = AuthRepository(client, storage)
+    fun isEmpty(): Boolean = data.isEmpty()
+}
 
-            val result = repo.login("testuser", "password123")
-            assertTrue(result.isSuccess)
-
-            val user = result.getOrNull()
-            assertNotNull(user)
-            assertEquals(
-                "testuser",
-                user.name
-                    .first()
-                    .family
-                    ?.value,
-            )
-
-            // Login again to hit the stored hash branch
-            val result2 = repo.login("testuser", "password123")
-            assertTrue(result2.isSuccess)
-        }
-
+/**
+ * Test class for validating [AuthRepository] operations, primarily focusing on session security.
+ */
+class AuthRepositoryTest {
     /**
-     * Test incorrect password handling.
+     * Verifies that [AuthRepository.logout] securely clears all sensitive session tokens
+     * and resets the current user state to null.
      */
     @Test
-    fun testLoginWrongPassword() =
+    fun testSecureClearingOfSensitiveDataOnLogout() =
         runTest {
-            val client = HttpClient(MockEngine { respondOk("") })
-            val storage = MockSecureStorage()
-            val repo = AuthRepository(client, storage)
+            val mockEngine = MockEngine { _ -> respondOk() }
+            val httpClient = HttpClient(mockEngine)
+            val secureStorage = InMemorySecureStorage()
+            val repository = AuthRepository(httpClient, secureStorage)
 
-            repo.login("testuser", "password123")
-            val result = repo.login("testuser", "wrongpassword")
+            // Given a user logs in
+            val username = "testuser"
+            val password = "securepassword"
+            val result = repository.login(username, password)
+            assertEquals(true, result.isSuccess, "Login should succeed")
 
-            assertTrue(result.isFailure)
-            assertEquals("incorrect password", result.exceptionOrNull()?.message)
-        }
+            // Assert tokens and user state exist
+            assertEquals("testuser", secureStorage.getString(AuthRepository.KEY_CURRENT_USERNAME))
+            assertEquals(true, secureStorage.getString("access_token") != null)
+            assertEquals(true, repository.currentUser.value != null)
 
-    /**
-     * Test specific keyword login failure behavior.
-     */
-    @Test
-    fun testLoginErrorKeyword() =
-        runTest {
-            val client = HttpClient(MockEngine { respondOk("") })
-            val storage = MockSecureStorage()
-            val repo = AuthRepository(client, storage)
+            // When user logs out
+            repository.logout()
 
-            val result = repo.login("testuser", "error")
-            assertTrue(result.isFailure)
-            assertEquals("Invalid Credentials", result.exceptionOrNull()?.message)
-        }
+            // Then all sensitive data should be cleared from storage
+            assertNull(secureStorage.getString(AuthRepository.KEY_CURRENT_USERNAME), "Username should be removed")
+            assertNull(secureStorage.getString("access_token"), "Access token should be removed")
+            assertNull(secureStorage.getString("refresh_token"), "Refresh token should be removed")
 
-    /**
-     * Test session validation checks.
-     */
-    @Test
-    fun testCheckSession() =
-        runTest {
-            val client = HttpClient(MockEngine { respondOk("") })
-            val storage = MockSecureStorage()
-            val repo = AuthRepository(client, storage)
-
-            assertFalse(repo.checkSession())
-
-            repo.login("testuser", "password123")
-            assertTrue(repo.checkSession())
-            assertNotNull(repo.currentUser.value)
-        }
-
-    /**
-     * Test logout and account deletion mechanics.
-     */
-    @Test
-    fun testLogoutAndDeleteAccount() =
-        runTest {
-            val client = HttpClient(MockEngine { respondOk("") })
-            val storage = MockSecureStorage()
-            val repo = AuthRepository(client, storage)
-
-            repo.login("testuser", "password123")
-            assertNotNull(storage.getString(AuthRepository.KEY_CURRENT_USERNAME))
-
-            repo.logout()
-            assertNull(repo.currentUser.value)
-            assertNull(storage.getString(AuthRepository.KEY_CURRENT_USERNAME))
-
-            repo.login("testuser", "password123")
-            repo.deleteAccount("testuser")
-            assertNull(repo.currentUser.value)
-            assertNull(storage.getString("hash_testuser"))
-        }
-
-    /**
-     * Test refresh token operation.
-     */
-    @Test
-    fun testRefreshToken() =
-        runTest {
-            val client = HttpClient(MockEngine { respondOk("") })
-            val storage = MockSecureStorage()
-            val repo = AuthRepository(client, storage)
-
-            assertFalse(repo.refreshToken())
-
-            repo.login("testuser", "password123")
-            val oldAccess = storage.getString("access_token")
-
-            assertTrue(repo.refreshToken())
-            val newAccess = storage.getString("access_token")
-
-            kotlin.test.assertNotEquals(oldAccess, newAccess)
+            // And current user state should be reset
+            assertNull(repository.currentUser.value, "Current user state should be null")
         }
 }

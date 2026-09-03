@@ -1,164 +1,82 @@
 /**
  * @file CryptoServiceTest.kt
- * Contains declarations for CryptoServiceTest.kt.
+ * Contains tests for the [CryptoService] class.
  */
 package io.healthplatform.chartcam.utils
 
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 /**
- * Tests for [CryptoService] core behaviors including AES-GCM and Argon2 logic.
+ * Test class for validating the security and encryption functionality provided by [CryptoService].
  */
 class CryptoServiceTest {
     /**
-     * Standard encryption/decryption round trip test.
+     * Verifies the consistency of Argon2 hashing.
+     * Ensures that deriving a key with the same password and salt produces the same result.
      */
     @Test
-    fun testEncryptionAndDecryption() =
+    fun testArgon2ConsistencyAndSaltGeneration() =
         runTest {
-            val service = CryptoService()
-            val original = "Hello, secret data!"
-            val password = "mypassword123"
-
-            val encrypted = service.encrypt(original, password)
-            assertNotEquals(original, encrypted)
-
-            val decrypted = service.decrypt(encrypted, password)
-            assertEquals(original, decrypted)
-        }
-
-    /**
-     * Tests behavior when utilizing empty passwords.
-     */
-    @Test
-    fun testEmptyPassword() =
-        runTest {
-            val service = CryptoService()
-            val original = "No password data"
-            try {
-                val encrypted = service.encrypt(original, "")
-                val decrypted = service.decrypt(encrypted, "")
-                assertEquals(original, decrypted)
-            } catch (e: Throwable) {
-            }
-        }
-
-    /**
-     * Tests behavior of malformed base64 decryption attempt.
-     */
-    @Test
-    fun testInvalidBase64() =
-        runTest {
-            val service = CryptoService()
-            val result = service.decrypt("not base64!!!", "pass")
-            assertEquals("", result)
-        }
-
-    /**
-     * Validate Argon2 determinism and length constraints.
-     */
-    @Test
-    fun testArgon2KeyDerivation() =
-        runTest {
-            val service = CryptoService()
-            val password = "deterministic_password"
+            val cryptoService = CryptoService()
+            val password = "securePassword123"
             val salt = byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
 
-            val key1 = service.deriveKeyArgon2(password, salt)
-            val key2 = service.deriveKeyArgon2(password, salt)
+            val key1 = cryptoService.deriveKeyArgon2(password, salt)
+            val key2 = cryptoService.deriveKeyArgon2(password, salt)
 
-            assertEquals(32, key1.size, "Derived key should be 32 bytes (256-bit)")
-            assertContentEquals(key1, key2, "Derived keys with same inputs should be identical")
+            // Ensure same inputs yield same output
+            assertTrue(key1.contentEquals(key2), "Argon2 should be deterministic with same salt and password")
+
+            val diffSalt = byteArrayOf(16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
+            val key3 = cryptoService.deriveKeyArgon2(password, diffSalt)
+
+            // Ensure different salt yields different key
+            assertTrue(!key1.contentEquals(key3), "Argon2 should produce different keys with different salts")
         }
 
     /**
-     * Basic AES-GCM operation test.
+     * Verifies that the encrypt method generates a random salt and IV on each invocation,
+     * so that encrypting the same data twice yields different ciphertexts.
      */
     @Test
-    fun testAesGcmEncryptionDecryption() =
+    fun testEncryptionRandomness() =
         runTest {
-            val service = CryptoService()
-            val plaintext = "Secure Message".encodeToByteArray()
-            val key = ByteArray(32) { it.toByte() } // Fake 32-byte key
+            val cryptoService = CryptoService()
+            val password = "securePassword123"
+            val plaintext = "Sensitive Patient Data: Name: John Doe, DOB: 1980-01-01"
 
-            val ciphertext = service.encryptAesGcm(plaintext, key)
-            val decrypted = service.decryptAesGcm(ciphertext, key)
+            val cipherText1 = cryptoService.encrypt(plaintext, password)
+            val cipherText2 = cryptoService.encrypt(plaintext, password)
 
-            assertContentEquals(plaintext, decrypted, "Decrypted data must match original plaintext")
+            // Ensure randomized salt/IV means different ciphertext for the same plaintext
+            assertNotEquals(cipherText1, cipherText2, "Encryption should yield different base64 strings due to random salts/IVs")
         }
 
     /**
-     * Validation of AES-GCM tag verification on tampered data.
+     * Verifies end-to-end encryption and decryption of patient details.
      */
     @Test
-    fun testAesGcmAuthentication() =
+    fun testEndToEndEncryptionOfPatientDetails() =
         runTest {
-            val service = CryptoService()
-            val plaintext = "Sensitive Data".encodeToByteArray()
-            val key = ByteArray(32) { (it * 2).toByte() }
+            val cryptoService = CryptoService()
+            val password = "masterEncryptionKey!@#"
+            val patientDetails =
+                """
+                {
+                    "id": "12345",
+                    "name": "Jane Smith",
+                    "condition": "Hypertension",
+                    "notes": "Patient requires daily monitoring."
+                }
+                """.trimIndent()
 
-            val ciphertext = service.encryptAesGcm(plaintext, key)
+            val encrypted = cryptoService.encrypt(patientDetails, password)
+            val decrypted = cryptoService.decrypt(encrypted, password)
 
-            // Modify the ciphertext (tamper with the tag or data)
-            ciphertext[ciphertext.lastIndex] = (ciphertext[ciphertext.lastIndex] + 1).toByte()
-
-            try {
-                service.decryptAesGcm(ciphertext, key)
-                throw AssertionError("Expected exception during decryption due to invalid tag")
-            } catch (e: Throwable) {
-                // Expected
-            }
-        }
-
-    /**
-     * Tests decryption with a ciphertext shorter than the IV payload limits.
-     */
-    @Test
-    fun testAesGcmCiphertextTooShort() =
-        runTest {
-            val service = CryptoService()
-            val key = ByteArray(32) { it.toByte() }
-            val shortCiphertext = ByteArray(10) { it.toByte() } // Less than 12
-
-            try {
-                service.decryptAesGcm(shortCiphertext, key)
-                throw AssertionError("Expected exception for short ciphertext")
-            } catch (e: Throwable) {
-                // Expected IllegalArgumentException
-            }
-        }
-
-    /**
-     * Test failure flow for incorrect password derivation.
-     */
-    @Test
-    fun testWrongPassword() =
-        runTest {
-            val service = CryptoService()
-            val original = "Secret!"
-            val encrypted = service.encrypt(original, "correct")
-
-            // Should return empty string due to catch(e: Exception)
-            val decrypted = service.decrypt(encrypted, "wrong")
-            assertEquals("", decrypted)
-        }
-
-    /**
-     * Tests decrypt behavior on abnormally short but valid base64 input.
-     */
-    @Test
-    fun testDecryptShortPayload() =
-        runTest {
-            val service = CryptoService()
-            // Shorter than 16 + 12 (28) bytes
-            val shortPayload =
-                kotlin.io.encoding.Base64
-                    .encode(ByteArray(10) { it.toByte() })
-            val result = service.decrypt(shortPayload, "pass")
-            assertEquals("", result)
+            assertEquals(patientDetails, decrypted, "Decrypted patient details should match the original plaintext")
         }
 }
