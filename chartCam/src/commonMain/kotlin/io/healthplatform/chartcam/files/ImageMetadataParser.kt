@@ -85,7 +85,6 @@ object ImageMetadataParser {
      * @return True if JPEG SOI.
      */
     private fun isJpeg(bytes: ByteArray): Boolean {
-        if (bytes.size < HeaderMarkers.MIN_HEADER_LEN) return false
         val b0 = bytes[0].toInt() and HeaderMarkers.MASK_BYTE
         val b1 = bytes[1].toInt() and HeaderMarkers.MASK_BYTE
         return b0 == HeaderMarkers.MARKER_PREFIX && b1 == HeaderMarkers.MARKER_SOI
@@ -139,12 +138,13 @@ object ImageMetadataParser {
         offset: Int,
     ): SegmentInfo {
         val prefix = bytes[offset].toInt() and HeaderMarkers.MASK_BYTE
-        val hasPrefix = prefix == HeaderMarkers.MARKER_PREFIX && offset + 1 < bytes.size
-        val marker = if (hasPrefix) bytes[offset + 1].toInt() and HeaderMarkers.MASK_BYTE else 0
+        if (prefix != HeaderMarkers.MARKER_PREFIX) {
+            return SegmentInfo(0, 0, offset, isValid = false, isTerminal = false)
+        }
+        val marker = bytes[offset + 1].toInt() and HeaderMarkers.MASK_BYTE
         val bodyOffset = offset + 2
 
         return when {
-            !hasPrefix -> SegmentInfo(0, 0, offset, isValid = false, isTerminal = false)
             marker == HeaderMarkers.MARKER_EOI || marker == HeaderMarkers.MARKER_SOS ->
                 SegmentInfo(marker, 0, bytes.size, isValid = true, isTerminal = true)
             bodyOffset + 2 > bytes.size ->

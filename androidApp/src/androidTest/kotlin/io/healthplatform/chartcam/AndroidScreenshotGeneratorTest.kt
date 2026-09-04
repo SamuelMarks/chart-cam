@@ -31,6 +31,17 @@ import java.io.FileOutputStream
  */
 @RunWith(AndroidJUnit4::class)
 class AndroidScreenshotGeneratorTest {
+    companion object {
+        /**
+         * Sets up the test environment by forcing light mode.
+         */
+        @org.junit.BeforeClass
+        @JvmStatic
+        fun setupClass() {
+            io.healthplatform.chartcam.android.MainActivity.forceLightMode = true
+        }
+    }
+
     @get:Rule
     val composeTestRule =
         androidx.compose.ui.test.junit4
@@ -75,7 +86,9 @@ class AndroidScreenshotGeneratorTest {
             composeTestRule.waitForIdle()
             Thread.sleep(500) // Ensure animations settle
             composeTestRule.waitForIdle()
-            val img = composeTestRule.onAllNodes(isRoot())[0].captureToImage().asAndroidBitmap()
+            val roots = composeTestRule.onAllNodes(isRoot())
+            val rootNode = if (roots.fetchSemanticsNodes().size > 1) roots.onLast() else roots[0]
+            val img = rootNode.captureToImage().asAndroidBitmap()
             saveScreenshot(img, name)
         }
 
@@ -144,9 +157,6 @@ class AndroidScreenshotGeneratorTest {
         composeTestRule.onNodeWithText("Username").performTextInput("clinician")
         composeTestRule.onNodeWithText("Password").performTextInput("123456")
         safeClick("Login / signup")
-
-        // 2. List patients (Initially empty)
-        capture("iphone-02-list-patients-empty")
 
         // 1. Create patient
         safeClick("Add Patient", isContentDescription = true)
@@ -290,7 +300,7 @@ class AndroidScreenshotGeneratorTest {
             .onAllNodes(
                 androidx.compose.ui.test
                     .hasSetTextAction(),
-            )[0]
+            ).onLast()
             .performTextInput("secure123")
         capture("iphone-08-export-dataset")
         safeClick("Export")

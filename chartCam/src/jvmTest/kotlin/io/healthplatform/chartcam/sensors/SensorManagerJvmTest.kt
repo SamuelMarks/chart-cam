@@ -28,4 +28,23 @@ class SensorManagerJvmTest {
 
             manager.stopListening()
         }
+
+    /**
+     * Tests default implementation of isAvailable via SensorManager.DefaultImpls.
+     */
+    @Test
+    fun testSensorManagerDefaultImpls() {
+        val defaultImplsClass = Class.forName("io.healthplatform.chartcam.sensors.SensorManager\$DefaultImpls")
+        val isAvailMethod = defaultImplsClass.getMethod("isAvailable", SensorManager::class.java)
+        val dummyManager =
+            object : SensorManager {
+                override val orientation = kotlinx.coroutines.flow.emptyFlow<OrientationData>()
+
+                override fun startListening() {}
+
+                override fun stopListening() {}
+            }
+        val result = isAvailMethod.invoke(null, dummyManager) as Boolean
+        kotlin.test.assertTrue(result)
+    }
 }

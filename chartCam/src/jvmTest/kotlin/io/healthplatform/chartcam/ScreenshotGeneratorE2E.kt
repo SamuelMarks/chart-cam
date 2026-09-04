@@ -11,15 +11,18 @@ import androidx.compose.ui.graphics.toAwtImage
 import androidx.compose.ui.test.DesktopComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.v2.runDesktopComposeUiTest
 import io.healthplatform.chartcam.database.DatabaseDriverFactory
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
-import io.healthplatform.chartcam.ui.CaptureScreen
 import io.healthplatform.chartcam.ui.QuestionnaireListScreen
 import io.healthplatform.chartcam.ui.theme.AppTheme
 import kotlinx.coroutines.runBlocking
@@ -78,48 +81,92 @@ class ScreenshotGeneratorE2E {
     fun generateQuestionnaireScreenshots() {
         File("chartcam_desktop.db").delete()
         val (fhirRepo, qRepo) = setupDeps()
+        val storage =
+            io.healthplatform.chartcam.storage
+                .JvmSecureStorage("test_screenshots")
+        val authRepo =
+            io.healthplatform.chartcam.repository
+                .AuthRepository(storage)
+        val fileStorage =
+            io.healthplatform.chartcam.files
+                .createFileStorage()
+        val exportImportService =
+            io.healthplatform.chartcam.repository
+                .ExportImportService(fhirRepo.database, fileStorage)
+        val deps =
+            io.healthplatform.chartcam.ui
+                .PatientListDependencies(fhirRepo, exportImportService, authRepo)
+        val acts =
+            io.healthplatform.chartcam.ui
+                .PatientListActions({}, {}, {})
 
-        // Create the questionnaire for sharing and capturing
-        val q =
-            runBlocking {
-                qRepo.createQuestionnaire("Burn Assessment", 2, "Left Arm, Right Arm")
-            }
-
-        listOf("iphone" to Pair(1284, 2778), "ipad" to Pair(2048, 2732)).forEach { (device, size) ->
-            // Screenshot 07: Share Questionnaire
-            runDesktopComposeUiTest(width = size.first, height = size.second) {
-                setContent {
-                    AppTheme {
-                        Surface(modifier = Modifier.fillMaxSize()) {
-                            QuestionnaireListScreen(questionnaireRepository = qRepo, onBack = {}, onNavigateToBuilder = {})
-                        }
-                    }
-                }
-                waitForIdle()
-                // Click the share button on Burn Assessment
-                onAllNodesWithContentDescription("Share Questionnaire", substring = true, ignoreCase = true).onFirst().performClick()
-                waitForIdle()
-                takeScreenshot(this, "../fastlane/screenshots/en-US/" + device + "-07-questionnaire-share.png")
-            }
-
-            // Screenshot 08: Fill out Questionnaire (CaptureScreen)
-            runDesktopComposeUiTest(width = size.first, height = size.second) {
-                setContent {
-                    AppTheme {
-                        Surface(modifier = Modifier.fillMaxSize()) {
-                            CaptureScreen(
-                                questionnaireId = q.id!!,
-                                linkId = null,
-                                questionnaireRepository = qRepo,
-                                onFinished = {},
-                                onCancel = {},
+        runDesktopComposeUiTest(width = 1080, height = 1920) {
+            setContent {
+                AppTheme(darkTheme = false) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
+                            io.healthplatform.chartcam.ui.PatientListScreen(
+                                dependencies = deps,
+                                actions = acts,
+                            )
+                            io.healthplatform.chartcam.ui.components.CreatePatientDialog(
+                                onDismissRequest = {},
+                                onConfirm = { _, _, _, _, _ -> },
                             )
                         }
                     }
                 }
-                waitForIdle()
-                takeScreenshot(this, "../fastlane/screenshots/en-US/" + device + "-08-fill-questionnaire.png")
             }
+            waitForIdle()
+            onNodeWithText("First Name").performTextInput("Jane")
+            onNodeWithText("Last Name").performTextInput("Smith")
+            onNodeWithText("MRN").performTextInput("MRN-9876")
+            onNodeWithText("DOB (YYYY-MM-DD)").performTextInput("1985-05-15")
+            waitForIdle()
+            takeScreenshot(this, "../fastlane/screenshots/en-US/iphone-01-create-patient.png")
+        }
+
+        // Screenshot 08: Export dataset
+        runDesktopComposeUiTest(width = 1080, height = 1920) {
+            setContent {
+                AppTheme(darkTheme = false) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        io.healthplatform.chartcam.ui.PatientListScreen(
+                            dependencies = deps,
+                            actions = acts,
+                        )
+                    }
+                }
+            }
+            waitForIdle()
+            onAllNodesWithContentDescription("More options", substring = true, ignoreCase = true).onFirst().performClick()
+            waitForIdle()
+            onNodeWithText("Export Data").performClick()
+            waitForIdle()
+            onAllNodes(hasSetTextAction()).onLast().performTextInput("secure123")
+            waitForIdle()
+            takeScreenshot(this, "../fastlane/screenshots/en-US/iphone-08-export-dataset.png")
+        }
+
+        // Create the questionnaire for sharing and capturing
+        runBlocking {
+            qRepo.createQuestionnaire("Burn Assessment", 2, "Left Arm, Right Arm")
+        }
+
+        // Screenshot 07: Share Questionnaire
+        runDesktopComposeUiTest(width = 1080, height = 1920) {
+            setContent {
+                AppTheme(darkTheme = false) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        QuestionnaireListScreen(questionnaireRepository = qRepo, onBack = {}, onNavigateToBuilder = {})
+                    }
+                }
+            }
+            waitForIdle()
+            // Click the share button on Burn Assessment
+            onAllNodesWithContentDescription("Share Questionnaire", substring = true, ignoreCase = true).onFirst().performClick()
+            waitForIdle()
+            takeScreenshot(this, "../fastlane/screenshots/en-US/iphone-07-export-questionnaire-view.png")
         }
     }
 }

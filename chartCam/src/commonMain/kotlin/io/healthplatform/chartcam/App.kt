@@ -7,6 +7,7 @@
  */
 package io.healthplatform.chartcam
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -24,11 +25,12 @@ import io.healthplatform.chartcam.ui.theme.AppTheme
  * **State & Side Effects:**
  * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
+ * @param darkTheme Whether to render the application UI in dark theme. Defaults to system setting.
  */
 @Composable
 @Preview
-fun App() {
-    AppTheme {
+fun App(darkTheme: Boolean = isSystemInDarkTheme()) {
+    AppTheme(darkTheme = darkTheme) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = Color.Transparent,

@@ -36,16 +36,16 @@ ChartCam: The secure, open-source engine for clinical innovation.
 
 <div align="center">
   <img src="fastlane/screenshots/en-US/iphone-00-login.png" width="200" alt="Login"/>
-  <img src="fastlane/screenshots/en-US/iphone-02-list-patients.png" width="200" alt="Patient List"/>
-  <img src="fastlane/screenshots/en-US/iphone-06-view-specific-questionnaire.png" width="200" alt="View Specific Questionnaire"/>
-  <img src="fastlane/screenshots/en-US/iphone-09-logout.png" width="200" alt="Logout"/>
-  <img src="fastlane/screenshots/en-US/iphone-01-create-patient.png" width="200" alt="Add Patient"/>
-  <img src="fastlane/screenshots/en-US/iphone-05-view-patient-questionnaires.png" width="200" alt="View Patient Questionnaires"/>
-  <br/>
+  <img src="fastlane/screenshots/en-US/iphone-01-create-patient.png" width="200" alt="Create Patient"/>
+  <img src="fastlane/screenshots/en-US/iphone-02-list-patients.png" width="200" alt="Patient Directory"/>
   <img src="fastlane/screenshots/en-US/iphone-03-create-questionnaire.png" width="200" alt="Create Questionnaire"/>
   <img src="fastlane/screenshots/en-US/iphone-04-fill-questionnaire.png" width="200" alt="Fill Questionnaire"/>
+  <br/>
+  <img src="fastlane/screenshots/en-US/iphone-05-view-patient-questionnaires.png" width="200" alt="View Patient Questionnaires"/>
+  <img src="fastlane/screenshots/en-US/iphone-06-view-specific-questionnaire.png" width="200" alt="View Specific Questionnaire"/>
   <img src="fastlane/screenshots/en-US/iphone-07-export-questionnaire-view.png" width="200" alt="Export Questionnaire"/>
   <img src="fastlane/screenshots/en-US/iphone-08-export-dataset.png" width="200" alt="Export Dataset"/>
+  <img src="fastlane/screenshots/en-US/iphone-09-logout.png" width="200" alt="Logout"/>
 </div>
 
 ---

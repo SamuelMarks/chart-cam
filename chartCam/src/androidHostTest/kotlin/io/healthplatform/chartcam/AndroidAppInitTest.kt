@@ -151,4 +151,66 @@ class AndroidAppInitTest {
         mockCacheDir.deleteRecursively()
         mockFilesDir.deleteRecursively()
     }
+
+    /**
+     * Test migration when cacheDir is null.
+     */
+    @Test
+    fun testInitWhenCacheDirIsNull() {
+        val mockContext = Mockito.mock(Context::class.java)
+        val mockAppContext = Mockito.mock(Context::class.java)
+        val tmpDir = System.getProperty("java.io.tmpdir") ?: "/tmp"
+
+        Mockito.`when`(mockContext.applicationContext).thenReturn(mockAppContext)
+        Mockito.`when`(mockAppContext.cacheDir).thenReturn(null)
+        Mockito.`when`(mockAppContext.filesDir).thenReturn(java.io.File(tmpDir))
+
+        AndroidAppInit.init(mockContext)
+        assertEquals(mockAppContext, AndroidAppInit.getContext())
+    }
+
+    /**
+     * Test migration when filesDir is null.
+     */
+    @Test
+    fun testInitWhenFilesDirIsNull() {
+        val mockContext = Mockito.mock(Context::class.java)
+        val mockAppContext = Mockito.mock(Context::class.java)
+        val tmpDir = System.getProperty("java.io.tmpdir") ?: "/tmp"
+
+        Mockito.`when`(mockContext.applicationContext).thenReturn(mockAppContext)
+        Mockito.`when`(mockAppContext.cacheDir).thenReturn(java.io.File(tmpDir))
+        Mockito.`when`(mockAppContext.filesDir).thenReturn(null)
+
+        AndroidAppInit.init(mockContext)
+        assertEquals(mockAppContext, AndroidAppInit.getContext())
+    }
+
+    /**
+     * Test migration when copying a file fails with an IOException.
+     */
+    @Test
+    fun testInitMigrationHandlesIoException() {
+        val mockContext = Mockito.mock(Context::class.java)
+        val mockAppContext = Mockito.mock(Context::class.java)
+
+        val mockCacheDir = java.io.File(System.getProperty("java.io.tmpdir"), "mockCacheDirIoEx")
+        mockCacheDir.mkdirs()
+        val cacheFile = java.io.File(mockCacheDir, "photoToFail.jpg")
+        cacheFile.createNewFile()
+
+        // Create a regular file to act as filesDir so that copyTo fails with IOException
+        val mockFilesDirAsFile = java.io.File(System.getProperty("java.io.tmpdir"), "mockFilesDirIoExFile")
+        mockFilesDirAsFile.createNewFile()
+
+        Mockito.`when`(mockContext.applicationContext).thenReturn(mockAppContext)
+        Mockito.`when`(mockAppContext.cacheDir).thenReturn(mockCacheDir)
+        Mockito.`when`(mockAppContext.filesDir).thenReturn(mockFilesDirAsFile)
+
+        AndroidAppInit.init(mockContext)
+        assertEquals(mockAppContext, AndroidAppInit.getContext())
+
+        mockCacheDir.deleteRecursively()
+        mockFilesDirAsFile.delete()
+    }
 }

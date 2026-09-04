@@ -161,6 +161,14 @@ class DynamicLanguageAndLayoutExpansionTest {
     fun testLocalizedDateAndDecimalFormatting() {
         val testNumber = 1234.56
 
+        // Default arguments: localeTag = "en", decimalPlaces = 2
+        val defaultDecimal = formatLocalizedDecimal(testNumber)
+        assertEquals("1234.56", defaultDecimal)
+
+        // Default decimalPlaces: localeTag = "en", decimalPlaces = 2
+        val defaultPlacesDecimal = formatLocalizedDecimal(testNumber, localeTag = "en")
+        assertEquals("1234.56", defaultPlacesDecimal)
+
         // English: dot decimal separator
         val enDecimal = formatLocalizedDecimal(testNumber, localeTag = "en", decimalPlaces = 2)
         assertEquals("1234.56", enDecimal)
@@ -177,8 +185,16 @@ class DynamicLanguageAndLayoutExpansionTest {
         val arDecimal = formatLocalizedDecimal(42.5, localeTag = "ar", decimalPlaces = 1)
         assertEquals("٤٢٫٥", arDecimal)
 
+        // Negative Arabic number: covers else branch in Arabic digit mapping
+        val negativeArDecimal = formatLocalizedDecimal(-42.5, localeTag = "ar", decimalPlaces = 1)
+        assertEquals("-٤٢٫٥", negativeArDecimal)
+
         // Integer with zero decimal places
         val zeroFrac = formatLocalizedDecimal(99.9, localeTag = "en", decimalPlaces = 0)
         assertEquals("100", zeroFrac)
+
+        // Whole number where fraction part is empty
+        val wholeNumber = formatLocalizedDecimal(50.0, localeTag = "en", decimalPlaces = 2)
+        assertEquals("50", wholeNumber)
     }
 }

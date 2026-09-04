@@ -109,6 +109,27 @@ class SensorCalibrationExpansionTest {
         }
 
     /**
+     * Test sensor manager relying on default isAvailable implementation.
+     */
+    private class DefaultSensorManager : SensorManager {
+        override val orientation: kotlinx.coroutines.flow.Flow<OrientationData> =
+            kotlinx.coroutines.flow.flowOf(OrientationData(0.0, 0.0))
+
+        override fun startListening() {}
+
+        override fun stopListening() {}
+    }
+
+    /**
+     * Test that the default implementation of isAvailable on SensorManager returns true.
+     */
+    @Test
+    fun testDefaultSensorManagerIsAvailable() {
+        val defaultManager = DefaultSensorManager()
+        assertTrue(defaultManager.isAvailable)
+    }
+
+    /**
      * Ensure sensor matrices reorient correctly between portrait, landscape left, and landscape right orientations.
      */
     @Test

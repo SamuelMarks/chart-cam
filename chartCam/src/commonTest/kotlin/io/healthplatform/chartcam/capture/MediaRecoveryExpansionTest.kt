@@ -182,6 +182,104 @@ class MediaRecoveryExpansionTest {
         assertFalse(pngMeta.isCorrupted)
         assertEquals("image/png", pngMeta.mimeType)
 
+        // Short PNG (< 8 bytes) and non-matching characters at positions 1, 2, 3
+        val shortPng = byteArrayOf(0x89.toByte(), 'P'.code.toByte(), 'N'.code.toByte(), 'G'.code.toByte(), 0)
+        assertTrue(ImageMetadataParser.parse(shortPng).isCorrupted)
+
+        val wrongPng1 = byteArrayOf(0x89.toByte(), 'X'.code.toByte(), 'N'.code.toByte(), 'G'.code.toByte(), 0, 0, 0, 0)
+        assertTrue(ImageMetadataParser.parse(wrongPng1).isCorrupted)
+
+        val wrongPng2 = byteArrayOf(0x89.toByte(), 'P'.code.toByte(), 'X'.code.toByte(), 'G'.code.toByte(), 0, 0, 0, 0)
+        assertTrue(ImageMetadataParser.parse(wrongPng2).isCorrupted)
+
+        val wrongPng3 = byteArrayOf(0x89.toByte(), 'P'.code.toByte(), 'N'.code.toByte(), 'X'.code.toByte(), 0, 0, 0, 0)
+        assertTrue(ImageMetadataParser.parse(wrongPng3).isCorrupted)
+
+        // Non-JPEG: 0xFF prefix but not SOI (0xD8)
+        val nonJpegSoi = byteArrayOf(0xFF.toByte(), 0x00.toByte(), 0x00.toByte(), 0x00.toByte())
+        assertTrue(ImageMetadataParser.parse(nonJpegSoi).isCorrupted)
+
+        // Corrupt JPEG segment missing 0xFF prefix
+        val corruptSegPrefix = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0x00.toByte(), 0x00.toByte())
+        assertTrue(ImageMetadataParser.parse(corruptSegPrefix).isCorrupted)
+
+        // JPEG with MARKER_SOS (terminal marker 0xDA)
+        val jpegSos = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xDA.toByte(), 0x00.toByte(), 0x00.toByte())
+        assertFalse(ImageMetadataParser.parse(jpegSos).isCorrupted)
+
+        // JPEG where bodyOffset + 2 > bytes.size (prefix + marker present, but length bytes missing)
+        val incompleteLengthJpeg = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE1.toByte(), 0x01.toByte())
+        assertTrue(ImageMetadataParser.parse(incompleteLengthJpeg).isCorrupted)
+
+        // JPEG where segment length < MIN_SEGMENT_LEN (2)
+        val invalidSegLenJpeg =
+            byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE1.toByte(), 0x00.toByte(), 0x01.toByte(), 0x00.toByte())
+        assertTrue(ImageMetadataParser.parse(invalidSegLenJpeg).isCorrupted)
+
+        // JPEG where segment bodyOffset + length exceeds array size
+        val truncatedSegBodyJpeg = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE1.toByte(), 0x00.toByte(), 0x10.toByte())
+        assertTrue(ImageMetadataParser.parse(truncatedSegBodyJpeg).isCorrupted)
+
+        // JPEG with valid APP1 (orientation) and EOI
+        val validJpegWithApp1 =
+            byteArrayOf(
+                0xFF.toByte(),
+                0xD8.toByte(),
+                0xFF.toByte(),
+                0xE1.toByte(),
+                0x00.toByte(),
+                0x0A.toByte(),
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0xFF.toByte(),
+                0xD9.toByte(),
+            )
+        val metaApp1 = ImageMetadataParser.parse(validJpegWithApp1)
+        assertFalse(metaApp1.isCorrupted)
+        assertEquals(1, metaApp1.orientation)
+
+        // JPEG with APP1 but length < 8
+        val shortApp1Jpeg =
+            byteArrayOf(
+                0xFF.toByte(),
+                0xD8.toByte(),
+                0xFF.toByte(),
+                0xE1.toByte(),
+                0x00.toByte(),
+                0x04.toByte(),
+                0,
+                0,
+                0xFF.toByte(),
+                0xD9.toByte(),
+            )
+        val metaShortApp1 = ImageMetadataParser.parse(shortApp1Jpeg)
+        assertFalse(metaShortApp1.isCorrupted)
+        assertNull(metaShortApp1.orientation)
+
+        // JPEG with SOF0 but length < 7
+        val shortSofJpeg =
+            byteArrayOf(
+                0xFF.toByte(),
+                0xD8.toByte(),
+                0xFF.toByte(),
+                0xC0.toByte(),
+                0x00.toByte(),
+                0x04.toByte(),
+                0,
+                0,
+                0xFF.toByte(),
+                0xD9.toByte(),
+            )
+        val metaShortSof = ImageMetadataParser.parse(shortSofJpeg)
+        assertFalse(metaShortSof.isCorrupted)
+        assertNull(metaShortSof.width)
+
         // 5. Minimal valid JPEG with SOF0 dimensions
         val validJpegWithSof =
             byteArrayOf(

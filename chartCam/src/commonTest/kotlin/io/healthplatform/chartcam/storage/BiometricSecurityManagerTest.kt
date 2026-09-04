@@ -88,9 +88,18 @@ class BiometricSecurityManagerTest {
         val res5 = manager.recordFailedAttempt()
         assertEquals(BiometricAuthResult.PermanentlyLockedOut, res5)
 
+        // Consecutive failure when already permanently locked
+        val resAlreadyLocked = manager.recordFailedAttempt()
+        assertEquals(BiometricAuthResult.PermanentlyLockedOut, resAlreadyLocked)
+
         // Permanent lockout forces credential fallback
         val authWhilePermLocked = manager.authenticate(simulateSuccess = true)
         assertEquals(BiometricAuthResult.PermanentlyLockedOut, authWhilePermLocked)
+
+        // Authenticate with simulateSuccess = false routes to recordFailedAttempt
+        val freshManager = BiometricSecurityManager(storage)
+        val authFailed = freshManager.authenticate(simulateSuccess = false)
+        assertTrue(authFailed is BiometricAuthResult.Failed)
 
         // Fallback: Primary password verification resets lockout
         manager.resetLockout()
@@ -136,6 +145,9 @@ class BiometricSecurityManagerTest {
         val storage = FakeSecureStorage()
         val manager = BiometricSecurityManager(storage)
 
+        // FallbackToPassword object
+        assertEquals("FallbackToPassword", BiometricAuthResult.FallbackToPassword.toString())
+
         // iOS Keychain: errSecAuthFailed (-25293)
         val resAuthFailed = manager.mapPlatformErrorCode(BiometricSecurityManager.IOS_ERR_SEC_AUTH_FAILED)
         assertTrue(resAuthFailed is BiometricAuthResult.Failed)
@@ -152,15 +164,34 @@ class BiometricSecurityManagerTest {
         val resInteractionNotAllowed = manager.mapPlatformErrorCode(BiometricSecurityManager.IOS_ERR_SEC_INTERACTION_NOT_ALLOWED)
         assertTrue(resInteractionNotAllowed is BiometricAuthResult.TemporarilyLockedOut)
 
-        // Android Keystore: KeyPermanentlyInvalidatedException
+        // Unknown iOS status code fallback
+        val resUnknown = manager.mapPlatformErrorCode(-99999)
+        assertTrue(resUnknown is BiometricAuthResult.HardwareError)
+
+        // Android Keystore: KeyPermanentlyInvalidatedException (by class name)
+        class KeyPermanentlyInvalidatedException : Exception()
+        val resKeyInvalidByClass = manager.handlePlatformException(KeyPermanentlyInvalidatedException())
+        assertEquals(BiometricAuthResult.KeyPermanentlyInvalidated, resKeyInvalidByClass)
+
+        // Android Keystore: KeyPermanentlyInvalidatedException (by message)
         val keyInvalidEx = RuntimeException("android.security.keystore.KeyPermanentlyInvalidatedException: Key invalidated")
         val resKeyInvalid = manager.handlePlatformException(keyInvalidEx)
         assertEquals(BiometricAuthResult.KeyPermanentlyInvalidated, resKeyInvalid)
 
-        // Android Keystore: UserNotAuthenticatedException
+        // Android Keystore: UserNotAuthenticatedException (by class name)
+        class UserNotAuthenticatedException : Exception()
+        val resUserNotAuthByClass = manager.handlePlatformException(UserNotAuthenticatedException())
+        assertTrue(resUserNotAuthByClass is BiometricAuthResult.Failed)
+
+        // Android Keystore: UserNotAuthenticatedException (by message)
         val userNotAuthEx = RuntimeException("android.security.keystore.UserNotAuthenticatedException: User not authenticated")
         val resUserNotAuth = manager.handlePlatformException(userNotAuthEx)
         assertTrue(resUserNotAuth is BiometricAuthResult.Failed)
+
+        // Exception with null message
+        val nullMessageEx = Exception()
+        val resNullMessage = manager.handlePlatformException(nullMessageEx)
+        assertTrue(resNullMessage is BiometricAuthResult.HardwareError)
 
         // Generic platform security error
         val genericEx = IllegalStateException("Hardware keystore communication failed")

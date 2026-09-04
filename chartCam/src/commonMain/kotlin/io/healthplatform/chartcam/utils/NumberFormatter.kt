@@ -49,16 +49,20 @@ fun formatLocalizedDecimal(
         }
 
     return if (isArabic) {
-        val arabicDigits = charArrayOf('٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩')
-        withSeparator
-            .map { ch ->
-                when {
-                    ch in '0'..'9' -> arabicDigits[ch - '0']
-                    ch == '.' -> '٫'
-                    ch == ',' -> '٬'
-                    else -> ch
+        val arabicZero = '٠'.code
+        val arabicDot = '٫'
+        buildString(withSeparator.length) {
+            for (i in 0 until withSeparator.length) {
+                val ch = withSeparator[i]
+                if (ch == '.') {
+                    append(arabicDot)
+                } else if (ch == '-') {
+                    append('-')
+                } else {
+                    append((arabicZero + (ch - '0')).toChar())
                 }
-            }.joinToString("")
+            }
+        }
     } else {
         withSeparator
     }

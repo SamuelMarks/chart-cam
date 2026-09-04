@@ -18,6 +18,13 @@ import io.healthplatform.chartcam.App
  * Main Entry point for the Android Application.
  */
 class MainActivity : ComponentActivity() {
+    companion object {
+        /**
+         * Flag to force light mode for screenshot generation or test runs.
+         */
+        var forceLightMode: Boolean = false
+    }
+
     /**
      * Called when the activity is starting.
      *
@@ -35,7 +42,11 @@ class MainActivity : ComponentActivity() {
         AndroidAppInit.init(this)
 
         setContent {
-            App()
+            if (forceLightMode) {
+                App(darkTheme = false)
+            } else {
+                App()
+            }
         }
     }
 }
