@@ -11,19 +11,15 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.google.fhir.model.r4.Encounter
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.createFileStorage
-import io.healthplatform.chartcam.network.NetworkClient
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.storage.JvmSecureStorage
-import io.healthplatform.chartcam.sync.SyncWorker
 import io.healthplatform.chartcam.viewmodel.EncounterDetailViewModel
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
 import io.healthplatform.chartcam.viewmodel.PatientDetailViewModel
 import io.healthplatform.chartcam.viewmodel.PatientListViewModel
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respondOk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -40,7 +36,7 @@ import kotlin.test.assertTrue
 
 /**
  * Validates the full End-to-End (E2E) workflows across multiple ViewModels and Repositories.
- * Uses an in-memory SQLite database and mocked network requests.
+ * Uses an in-memory SQLite database.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class E2EWorkflowJvmTest {
@@ -79,23 +75,12 @@ class E2EWorkflowJvmTest {
 
             val fhirRepository = FhirRepository(ChartCamDatabase(driver))
 
-            val mockEngine =
-                MockEngine { request ->
-                    respondOk()
-                }
-            val client = NetworkClient.create(mockEngine)
-
             val storage =
                 io.healthplatform.chartcam.storage
                     .JvmSecureStorage("test_e2e_${java.util.UUID.randomUUID()}")
-            val authRepository = AuthRepository(client, storage)
+            val authRepository = AuthRepository(storage)
             val fileStorage = createFileStorage()
             val exportImportService = ExportImportService(fhirRepository.database, fileStorage)
-            val syncWorker =
-                SyncWorker(
-                    fhirRepository,
-                    client,
-                )
 
             // 2. Login Workflow
             val loginViewModel = LoginViewModel(authRepository)

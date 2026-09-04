@@ -18,6 +18,7 @@ import com.google.fhir.model.r4.Enumeration
 import com.google.fhir.model.r4.Patient
 import com.google.fhir.model.r4.Practitioner
 import com.google.fhir.model.r4.Provenance
+import com.google.fhir.model.r4.Questionnaire
 import com.google.fhir.model.r4.QuestionnaireResponse
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.FileStorage
@@ -26,6 +27,8 @@ import io.healthplatform.chartcam.utils.CryptoService
 import kotlinx.serialization.encodeToString
 import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
+
+private const val MIN_PASSWORD_LENGTH = 6
 
 /**
  * Service responsible for creating a full or partial export of local FHIR data into
@@ -59,6 +62,7 @@ open class ExportImportService(
     ): String {
         val bundleBuilder = Bundle.Builder(Enumeration(value = Bundle.BundleType.Collection))
         addBaseResources(bundleBuilder)
+        addQuestionnaires(bundleBuilder)
         addPatients(bundleBuilder, exportAll, practitionerId)
         val encounters = addEncounters(bundleBuilder, exportAll, practitionerId)
         addDocumentReferences(bundleBuilder, exportAll, practitionerId, encounters)
@@ -68,6 +72,16 @@ open class ExportImportService(
         val bundle = bundleBuilder.build()
         val jsonData = fhirJson.encodeToString(bundle)
         return cryptoService.encrypt(jsonData, password)
+    }
+
+    /**
+     * Helper for exporting Questionnaires.
+     * @param bundleBuilder The bundleBuilder.
+     */
+    private suspend fun addQuestionnaires(bundleBuilder: Bundle.Builder) {
+        fhirRepo.getAllQuestionnaires().forEach { resource ->
+            bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
+        }
     }
 
     /**
@@ -245,9 +259,17 @@ open class ExportImportService(
     }
 
     /**
+     * Validates whether a password meets the required decryption strength criteria.
+     *
+     * @param password The password string to evaluate.
+     * @return True if valid (non-blank and at least 6 characters), false otherwise.
+     */
+    fun isValidPassword(password: String): Boolean = password.isNotBlank() && password.length >= MIN_PASSWORD_LENGTH
+
+    /**
      * Decrypts the provided JSON string and imports the contained FHIR Bundle into the local database.
      * Supported resources include `Device`, `Practitioner`, `Patient`, `Encounter`, `DocumentReference`,
-     * `Provenance`, and `Binary`.
+     * `Questionnaire`, `QuestionnaireResponse`, `Provenance`, and `Binary`.
      * `Binary` resources are specifically used to carry raw image bytes (Base64 encoded) and will be
      * decoded and written to the local [FileStorage].
      *
@@ -260,13 +282,58 @@ open class ExportImportService(
         encryptedData: String,
         password: String,
     ) {
+        require(isValidPassword(password)) {
+            "Decryption password must not be empty or weak (minimum 6 characters)."
+        }
         val jsonData = cryptoService.decrypt(encryptedData, password)
         require(jsonData.isNotEmpty()) { "Decryption failed or data is empty." }
         val bundle = fhirJson.decodeFromString(jsonData) as Bundle
 
         for (entry in bundle.entry) {
             val resource = entry.resource ?: continue
-            importResource(resource)
+            try {
+                importResource(resource)
+            } catch (e: Exception) {
+                println("Skipping malformed resource ${resource.id ?: "unknown"}: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Exports data to a temporary encrypted payload and executes an operation,
+     * guaranteeing complete cleanup of temporary cache files in both success and failure execution paths.
+     *
+     * @param T The return type of the executed block.
+     * @param password The password for encryption.
+     * @param block The block to execute with the encrypted data.
+     * @return The result of the block execution.
+     */
+    open suspend fun <T> executeWithTemporaryCleanup(
+        password: String,
+        block: suspend (encryptedData: String) -> T,
+    ): T =
+        try {
+            val data = exportData(password)
+            block(data)
+        } finally {
+            fileStorage.clearCache()
+        }
+
+    /**
+     * Imports data from an encrypted archive, guaranteeing complete cleanup of
+     * temporary cache files on completion or error.
+     *
+     * @param encryptedData The encrypted archive string.
+     * @param password The decryption password.
+     */
+    open suspend fun importDataWithCleanup(
+        encryptedData: String,
+        password: String,
+    ) {
+        try {
+            importData(encryptedData, password)
+        } finally {
+            fileStorage.clearCache()
         }
     }
 
@@ -281,6 +348,7 @@ open class ExportImportService(
             is Patient -> fhirRepo.savePatient(resource)
             is Encounter -> fhirRepo.saveEncounter(resource)
             is DocumentReference -> fhirRepo.saveDocumentReference(resource)
+            is Questionnaire -> fhirRepo.saveQuestionnaire(resource)
             is QuestionnaireResponse -> fhirRepo.saveQuestionnaireResponse(resource)
             is Provenance -> fhirRepo.saveProvenance(resource)
             is Binary -> {
@@ -288,7 +356,8 @@ open class ExportImportService(
                     resource.data
                         ?.value
                         ?.let { it.decodeBase64()?.toByteArray() }
-                if (bytes != null) fileStorage.saveImage(resource.id!!, bytes)
+                val binaryId = resource.id
+                if (bytes != null && !binaryId.isNullOrBlank()) fileStorage.saveImage(binaryId, bytes)
             }
             else -> {
                 // Ignore unknown resources for now

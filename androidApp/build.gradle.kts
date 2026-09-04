@@ -28,10 +28,52 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
 
+    val releaseStoreFilePath =
+        System.getenv("ANDROID_STORE_FILE")
+            ?: System.getenv("RELEASE_STORE_FILE")
+            ?: (project.findProperty("RELEASE_STORE_FILE") as? String)
+    val releaseStorePassword =
+        System.getenv("ANDROID_STORE_PASSWORD")
+            ?: System.getenv("RELEASE_STORE_PASSWORD")
+            ?: (project.findProperty("RELEASE_STORE_PASSWORD") as? String)
+    val releaseKeyAlias =
+        System.getenv("ANDROID_KEY_ALIAS")
+            ?: System.getenv("RELEASE_KEY_ALIAS")
+            ?: (project.findProperty("RELEASE_KEY_ALIAS") as? String)
+    val releaseKeyPassword =
+        System.getenv("ANDROID_KEY_PASSWORD")
+            ?: System.getenv("RELEASE_KEY_PASSWORD")
+            ?: (project.findProperty("RELEASE_KEY_PASSWORD") as? String)
+
+    signingConfigs {
+        if (file("debug.keystore").exists()) {
+            getByName("debug") {
+                storeFile = file("debug.keystore")
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+        if (releaseStoreFilePath != null && file(releaseStoreFilePath).exists()) {
+            create("release") {
+                storeFile = file(releaseStoreFilePath)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         getByName("release") {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (signingConfigs.findByName("release") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {

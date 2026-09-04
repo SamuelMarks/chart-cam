@@ -20,7 +20,6 @@ import com.google.fhir.model.r4.QuestionnaireResponse
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
-import io.healthplatform.chartcam.sync.SyncWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Test
 import org.mockito.Mockito
@@ -37,7 +36,6 @@ class EncounterDetailCoverageTest {
         val fhirRepository = Mockito.mock(FhirRepository::class.java)
         val authRepository = Mockito.mock(AuthRepository::class.java)
         val qrRepo = Mockito.mock(QuestionnaireRepository::class.java)
-        val syncWorker = Mockito.mock(SyncWorker::class.java)
 
         val pat = Patient.Builder().apply { id = "pat1" }.build()
         val enc =
@@ -241,21 +239,19 @@ class EncounterDetailCoverageTest {
         val fhirRepository = Mockito.mock(FhirRepository::class.java)
         val authRepository = Mockito.mock(AuthRepository::class.java)
         val qrRepo = Mockito.mock(QuestionnaireRepository::class.java)
-        val syncWorker = Mockito.mock(SyncWorker::class.java)
 
         val vm = EncounterDetailViewModel(fhirRepository, authRepository, qrRepo)
         vm.onFormUpdated(mapOf("test" to "test"))
     }
 
     /**
-     * Tests selectQuestionnaireById and createAndSelectQuestionnaire.
+     * Tests select questionnaire by ID and create response.
      */
     @Test
     fun testSelectQuestionnaireByIdAndCreate() {
         val fhirRepository = Mockito.mock(FhirRepository::class.java)
         val authRepository = Mockito.mock(AuthRepository::class.java)
         val qrRepo = Mockito.mock(QuestionnaireRepository::class.java)
-        val syncWorker = Mockito.mock(SyncWorker::class.java)
 
         val q =
             Questionnaire

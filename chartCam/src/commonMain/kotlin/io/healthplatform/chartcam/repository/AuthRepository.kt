@@ -13,36 +13,30 @@ import com.google.fhir.model.r4.Practitioner
 import com.google.fhir.model.r4.String
 import io.healthplatform.chartcam.models.TokenResponse
 import io.healthplatform.chartcam.storage.SecureStorage
-import io.ktor.client.HttpClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okio.ByteString.Companion.encodeUtf8
+import kotlin.time.Clock
 
 /**
  * Repository responsible for user authentication and session management.
  * Authentication flows rely on locally hashed credentials and managed session tokens.
  * Functions may throw illegal state exceptions if operations are performed without valid session state.
- * Contains logic for OAuth2 Password Grant and storing the Practitioner context.
+ * Contains logic for local credential verification and storing the Practitioner context.
  *
- * @param client The Ktor HttpClient used for network requests.
  * @param storage The SecureStorage implementation used to store sensitive tokens and credentials.
  */
 open class AuthRepository(
-    private val client: io.ktor.client.HttpClient,
     /**
      * Secure storage backend for persisting access tokens, refresh tokens, and password hashes.
      */
     private val storage: SecureStorage,
 ) {
-    /**
-     * Internal mutable state flow holding the currently authenticated Practitioner, or null if logged out.
-     */
-    init {
-        client.hashCode()
-    }
-
     private val _currentUser = MutableStateFlow<Practitioner?>(null)
+    private val refreshMutex = Mutex()
 
     /**
      * Observable stream of the currently logged-in practitioner.
@@ -50,7 +44,7 @@ open class AuthRepository(
     open val currentUser: StateFlow<Practitioner?> = _currentUser.asStateFlow()
 
     /**
-     * Constants used by the AuthRepository for storage keys and network endpoints.
+     * Constants used by the AuthRepository for storage keys.
      */
     companion object {
         /** Key used for storing the OAuth2 access token. */
@@ -103,8 +97,8 @@ open class AuthRepository(
     }
 
     /**
-     * Attempts to log in using OAuth2 Password Grant.
-     * Validates credentials, saves tokens securely, and fetches/creates the user profile.
+     * Attempts to log in using local credentials.
+     * Validates credentials, saves tokens securely, and creates the user profile.
      *
      * @param username The practitioner's username/email.
      * @param password The secret password.
@@ -215,22 +209,24 @@ open class AuthRepository(
     /**
      * Refreshes the access token using the currently stored refresh token.
      * Updates the secure storage with the new access token on success.
+     * Thread-safe against concurrent simultaneous background refresh requests.
      *
      * @return Boolean indicating success or failure of the refresh operation.
      */
-    open suspend fun refreshToken(): kotlin.Boolean {
-        val refreshToken = storage.getString(KEY_REFRESH_TOKEN) ?: return false
+    open suspend fun refreshToken(): kotlin.Boolean =
+        refreshMutex.withLock {
+            val refreshToken = storage.getString(KEY_REFRESH_TOKEN) ?: return false
 
-        return try {
-            val newAccess = "refreshed_access_token_${io.ktor.util.date.getTimeMillis()}"
-            storage.save(KEY_ACCESS_TOKEN, newAccess)
-            true
-        } catch (e: IllegalArgumentException) {
-            println("Failed to refresh token: ${e.message}")
-            false
-        } catch (e: IllegalStateException) {
-            println("Failed to refresh token: ${e.message}")
-            false
+            try {
+                val newAccess = "refreshed_access_token_${Clock.System.now().toEpochMilliseconds()}"
+                storage.save(KEY_ACCESS_TOKEN, newAccess)
+                true
+            } catch (e: IllegalArgumentException) {
+                println("Failed to refresh token: ${e.message}")
+                false
+            } catch (e: IllegalStateException) {
+                println("Failed to refresh token: ${e.message}")
+                false
+            }
         }
-    }
 }

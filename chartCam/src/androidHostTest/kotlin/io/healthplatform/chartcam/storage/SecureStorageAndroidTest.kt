@@ -63,4 +63,36 @@ class SecureStorageAndroidTest {
         // Ensure deleted
         assertNull(storage.getString("myKey"))
     }
+
+    /**
+     * Tests graceful recovery when stored data is malformed base64.
+     */
+    @Test
+    fun testCorruptedBase64Handling() {
+        val context = AndroidAppInit.getContext()
+        val prefs = context.getSharedPreferences("secure_prefs_v2", Context.MODE_PRIVATE)
+        prefs.edit().putString("corrupt_key", "not_valid_base64!@#$").apply()
+
+        val storage = createSecureStorage()
+        assertNull(storage.getString("corrupt_key"))
+    }
+
+    /**
+     * Tests graceful recovery when stored ciphertext fails authentication or decryption.
+     */
+    @Test
+    fun testCorruptedCiphertextHandling() {
+        val context = AndroidAppInit.getContext()
+        val prefs = context.getSharedPreferences("secure_prefs_v2", Context.MODE_PRIVATE)
+        // Valid base64, but invalid AES-GCM ciphertext
+        val invalidCiphertextBase64 =
+            android.util.Base64.encodeToString(
+                byteArrayOf(12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 99),
+                android.util.Base64.DEFAULT,
+            )
+        prefs.edit().putString("bad_cipher", invalidCiphertextBase64).apply()
+
+        val storage = createSecureStorage()
+        assertNull(storage.getString("bad_cipher"))
+    }
 }

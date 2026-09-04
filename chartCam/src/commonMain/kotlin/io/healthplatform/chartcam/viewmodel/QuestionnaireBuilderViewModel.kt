@@ -131,7 +131,7 @@ class QuestionnaireBuilderViewModel(
                                                 WidgetType.SINGLE_SELECT
                                             }
                                         else ->
-                                            when (fhirItem.type?.value) {
+                                            when (fhirItem.type.value) {
                                                 Questionnaire.QuestionnaireItemType.Attachment ->
                                                     WidgetType.PHOTO_CAMERA
                                                 Questionnaire.QuestionnaireItemType.Boolean ->
@@ -168,7 +168,7 @@ class QuestionnaireBuilderViewModel(
                                     }
 
                                 BuilderItem(
-                                    linkId = fhirItem.linkId?.value ?: "item_${nextItemId++}",
+                                    linkId = fhirItem.linkId.value ?: "item_${nextItemId++}",
                                     label = fhirItem.text?.value ?: "New Item",
                                     widgetType = widgetType,
                                     options = options,

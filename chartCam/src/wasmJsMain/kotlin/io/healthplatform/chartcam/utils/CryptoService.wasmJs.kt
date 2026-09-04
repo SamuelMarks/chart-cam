@@ -2,6 +2,8 @@
  * @file CryptoService.wasmJs.kt
  * Contains declarations for CryptoService.wasmJs.kt.
  */
+@file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+
 package io.healthplatform.chartcam.utils
 
 import kotlinx.coroutines.await

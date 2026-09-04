@@ -5,13 +5,12 @@
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import com.google.fhir.model.r4.Patient
 import io.healthplatform.chartcam.navigation.PhotoSessionManager
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
-import io.healthplatform.chartcam.sync.SyncWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -42,7 +41,6 @@ class EncounterDetailScreenJvmTest {
 
             val fhirRepository = mock(FhirRepository::class.java)
             val authRepository = mock(AuthRepository::class.java)
-            val syncWorker = mock(SyncWorker::class.java)
             val questionnaireRepository = mock(QuestionnaireRepository::class.java)
             val photoSessionManager = PhotoSessionManager()
 

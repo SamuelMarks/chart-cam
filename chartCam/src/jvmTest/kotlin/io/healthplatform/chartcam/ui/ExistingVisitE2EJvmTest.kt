@@ -6,7 +6,7 @@ package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import app.cash.sqldelight.async.coroutines.synchronous
@@ -16,7 +16,6 @@ import io.healthplatform.chartcam.navigation.PhotoSessionManager
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
-import io.healthplatform.chartcam.sync.SyncWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -55,7 +54,6 @@ class ExistingVisitE2EJvmTest {
                     .build()
             `when`(authRepository.currentUser).thenReturn(MutableStateFlow(practitioner))
 
-            val syncWorker = mock(SyncWorker::class.java)
             val photoSessionManager = PhotoSessionManager()
 
             // Create Patient

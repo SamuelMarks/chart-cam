@@ -62,10 +62,10 @@ private external fun consoleError(
 /**
  * Stops all tracks associated with a given media stream.
  *
- * @param stream The media stream (e.g., [org.w3c.dom.mediacapture.MediaStream]) represented as a [JsAny].
+ * @param stream The media stream (e.g., [org.w3c.dom.MediaProvider]) represented as a [JsAny].
  */
 @JsFun(STOP_MEDIA_TRACKS_JS)
-private external fun stopMediaTracks(stream: JsAny?)
+private external fun stopMediaTracks(stream: org.w3c.dom.MediaProvider?)
 
 /**
  * Captures the current frame from an [HTMLVideoElement] and returns it as a base64 encoded JPEG string.
@@ -159,7 +159,7 @@ class JsCameraManager : CameraManager {
      * Releases resources associated with the camera, stopping all media tracks.
      */
     override fun release() {
-        stopMediaTracks(videoElement.srcObject as? JsAny)
+        stopMediaTracks(videoElement.srcObject)
         videoElement.srcObject = null
     }
 }

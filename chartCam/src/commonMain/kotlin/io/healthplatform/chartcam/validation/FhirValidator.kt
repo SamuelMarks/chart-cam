@@ -56,7 +56,7 @@ object FhirValidator {
         val linkIds = mutableSetOf<String>()
 
         return questionnaire.item.all { item ->
-            val id = item.linkId?.value
+            val id = item.linkId.value
             val hasValidLinkAndText =
                 id?.isNotEmpty() == true &&
                     item.text?.value?.isNotEmpty() == true

@@ -132,4 +132,48 @@ class FileStorageAndroidTest {
         val result = fileStorage.readImage(path)
         assertEquals(0, result.size)
     }
+
+    /**
+     * Test readImage fallback when path points to an old cacheDir location,
+     * verifying migration compatibility for records persisted in previous versions.
+     */
+    @Test
+    fun testReadImageFallbackWhenPathPointsToOldCacheDir() {
+        val fileName = "migrated_photo.jpg"
+        val testBytes = byteArrayOf(10, 20, 30, 40, 50)
+
+        // Save image into persistent filesDir
+        fileStorage.saveImage(fileName, testBytes)
+
+        // Simulate accessing it via an old v0.0.1 cacheDir path
+        val oldCachePath = RuntimeEnvironment.getApplication().cacheDir.absolutePath + "/" + fileName
+        val readBytes = fileStorage.readImage(oldCachePath)
+
+        assertTrue(testBytes.contentEquals(readBytes))
+    }
+
+    /**
+     * Test readImage fallback when file is physically present in cacheDir,
+     * verifying automatic promotion to filesDir.
+     */
+    @Test
+    fun testReadImageFallbackWhenFileInCacheDir() {
+        val fileName = "legacy_cache_photo.jpg"
+        val testBytes = byteArrayOf(99, 88, 77)
+
+        val context = RuntimeEnvironment.getApplication()
+        val cacheFile = java.io.File(context.cacheDir, fileName)
+        val encryptedData =
+            io.healthplatform.chartcam.storage.CryptoHelper
+                .encrypt(testBytes)
+        cacheFile.writeBytes(encryptedData)
+
+        // Read using fileName or filesDir path
+        val targetPath = java.io.File(context.filesDir, fileName).absolutePath
+        val readBytes = fileStorage.readImage(targetPath)
+
+        assertTrue(testBytes.contentEquals(readBytes))
+        // Verify promoted to filesDir
+        assertTrue(java.io.File(context.filesDir, fileName).exists())
+    }
 }

@@ -50,13 +50,14 @@ class AndroidFileStorage : FileStorage {
 
     /**
      * Reads and decrypts an encrypted file back into a byte array.
+     * Supports resolving paths pointing to cache directory or persistent files directory,
+     * maintaining compatibility with files migrated between directories.
      *
      * @param path The absolute path to the encrypted file.
      * @return The decrypted byte array, or an empty byte array if the file doesn't exist.
      */
     override fun readImage(path: String): ByteArray {
-        val file = File(path)
-        if (!file.exists()) return ByteArray(0)
+        val file = resolveImageFile(path) ?: return ByteArray(0)
 
         val encryptedBytes = file.readBytes()
         return try {
@@ -71,11 +72,56 @@ class AndroidFileStorage : FileStorage {
     }
 
     /**
-     * Deletes all files currently stored in the internal files directory.
+     * Resolves the target file from the given path, falling back to persistent files directory
+     * or cache directory if necessary.
+     *
+     * @param path The initial file path to resolve.
+     * @return The resolved [File], or null if not found.
+     */
+    private fun resolveImageFile(path: String): File? {
+        val file = File(path)
+        if (file.exists()) return file
+
+        val fileName = file.name
+        val fallbackFilesDir = File(filesDir, fileName)
+        val fallbackCacheDir = File(context.cacheDir, fileName)
+        return when {
+            fallbackFilesDir.exists() -> fallbackFilesDir
+            fallbackCacheDir.exists() -> tryPromoteCacheFile(fallbackCacheDir, fileName)
+            else -> null
+        }
+    }
+
+    /**
+     * Attempts to promote a cached image file to persistent files directory.
+     *
+     * @param cacheFile The source cache file.
+     * @param fileName The name of the file to promote.
+     * @return The promoted [File] in files directory or the original cache [File].
+     */
+    private fun tryPromoteCacheFile(
+        cacheFile: File,
+        fileName: String,
+    ): File =
+        try {
+            val destFile = File(filesDir, fileName)
+            if (!destFile.exists()) {
+                cacheFile.copyTo(destFile, overwrite = true)
+            }
+            cacheFile.delete()
+            destFile
+        } catch (e: java.io.IOException) {
+            println("Failed to promote cache file $fileName: ${e.message}")
+            cacheFile
+        }
+
+    /**
+     * Deletes all files currently stored in the internal files directory and cache directory.
      */
     override fun clearCache() {
         // Safe clear for demo purposes.
         filesDir.listFiles()?.forEach { it.delete() }
+        context.cacheDir.listFiles()?.forEach { if (it.isFile) it.delete() }
     }
 }
 

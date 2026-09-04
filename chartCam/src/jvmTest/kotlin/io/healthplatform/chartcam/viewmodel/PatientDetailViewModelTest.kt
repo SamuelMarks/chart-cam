@@ -89,7 +89,7 @@ class PatientDetailViewModelTest {
 
             val state = vm.uiState.value
             assertNotNull(state.patient)
-            assertEquals(patientId, state.patient!!.id)
+            assertEquals(patientId, state.patient.id)
             // Check notes via repo because Encounter object itself doesn't hold the notes in our simplified approach
 
             assertEquals(1, state.encounters.size)

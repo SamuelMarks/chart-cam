@@ -21,8 +21,7 @@ class InitDatabaseTest {
             // We simulate catching the exception when driver is null
             var caught = false
             try {
-                val driver = null
-                if (driver == null) throw IllegalArgumentException("Driver cannot be null")
+                throw IllegalArgumentException("Driver cannot be null")
             } catch (e: Exception) {
                 caught = true
             }

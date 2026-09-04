@@ -93,7 +93,7 @@ object QuestionnaireResponseGenerator {
         answerValue: Any,
         builder: QuestionnaireResponse.Item.Builder,
     ) {
-        when (item.type?.value) {
+        when (item.type.value) {
             Questionnaire.QuestionnaireItemType.String, Questionnaire.QuestionnaireItemType.Text -> {
                 addStringAnswer(builder, answerValue as? kotlin.String ?: "")
             }

@@ -5,9 +5,6 @@
 package io.healthplatform.chartcam.repository
 
 import io.healthplatform.chartcam.storage.SecureStorage
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respondOk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -50,10 +47,8 @@ class AuthRepositoryTest {
     @Test
     fun testSecureClearingOfSensitiveDataOnLogout() =
         runTest {
-            val mockEngine = MockEngine { _ -> respondOk() }
-            val httpClient = HttpClient(mockEngine)
             val secureStorage = InMemorySecureStorage()
-            val repository = AuthRepository(httpClient, secureStorage)
+            val repository = AuthRepository(secureStorage)
 
             // Given a user logs in
             val username = "testuser"

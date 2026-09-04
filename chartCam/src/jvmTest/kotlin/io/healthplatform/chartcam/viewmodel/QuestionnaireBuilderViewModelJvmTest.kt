@@ -6,15 +6,70 @@ package io.healthplatform.chartcam.viewmodel
 
 import com.google.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
+import io.healthplatform.chartcam.repository.QuestionnaireSharingService
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
  * Test class QuestionnaireBuilderViewModelJvmTest.
  */
 class QuestionnaireBuilderViewModelJvmTest {
+    /**
+     * Test testJsonSerializationToUiState.
+     */
+    @Test
+    fun testJsonSerializationToUiState() {
+        val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
+        val viewModel = QuestionnaireBuilderViewModel(repo)
+
+        viewModel.updateTitle("Serialization Test")
+        viewModel.addItem(WidgetType.SINGLE_LINE_TEXT)
+        val linkId1 =
+            viewModel.state.value.items
+                .first()
+                .linkId
+        viewModel.updateItem(linkId1, "Text Field", emptyList())
+
+        viewModel.addItem(WidgetType.MULTI_SELECT)
+        val linkId2 =
+            viewModel.state.value.items
+                .last()
+                .linkId
+        viewModel.updateItem(linkId2, "Choice Field", listOf("A", "B"))
+
+        val builtQuestionnaire = viewModel.buildQuestionnaire()
+
+        // 1. Serialize to JSON
+        val sharingService = QuestionnaireSharingService()
+        val jsonStr = sharingService.serializeQuestionnaire(builtQuestionnaire)
+
+        // 2. Deserialize from JSON
+        val deserializedQuestionnaire = sharingService.deserializeQuestionnaire(jsonStr)
+
+        // 3. Save to repo manually to load it into a new ViewModel
+        repo.saveQuestionnaire(deserializedQuestionnaire)
+
+        // 4. Load into a new ViewModel (simulating accurate UI state reconstruction)
+        val newViewModel = QuestionnaireBuilderViewModel(repo, duplicateFromId = deserializedQuestionnaire.id)
+        val state = newViewModel.state.value
+
+        assertEquals("Serialization Test (Copy)", state.title)
+        assertEquals(2, state.items.size)
+
+        val item1 = state.items[0]
+        assertEquals("Text Field", item1.label)
+        assertEquals(WidgetType.SINGLE_LINE_TEXT, item1.widgetType)
+
+        val item2 = state.items[1]
+        assertEquals("Choice Field", item2.label)
+        assertEquals(WidgetType.MULTI_SELECT, item2.widgetType)
+        assertEquals(listOf("A", "B"), item2.options)
+    }
+
     /**
      * Test testInitialState.
      */
@@ -172,9 +227,9 @@ class QuestionnaireBuilderViewModelJvmTest {
         val savedForms = repo.getAvailableQuestionnaires()
         // ID should be "custom-test-builder-form"
         val form = savedForms.find { it.id == "custom-test-builder-form" }
-        assertTrue(form != null)
-        assertEquals("Test Builder Form", form?.title?.value)
-        assertEquals(2, form?.item?.size)
+        assertNotNull(form)
+        assertEquals("Test Builder Form", form.title?.value)
+        assertEquals(2, form.item.size)
     }
 
     /**
@@ -198,17 +253,17 @@ class QuestionnaireBuilderViewModelJvmTest {
         viewModel.saveQuestionnaire()
 
         val form = repo.getAvailableQuestionnaires().find { it.id == "custom-single-select-test" }
-        assertTrue(form != null)
+        assertNotNull(form)
 
-        val item = form?.item?.firstOrNull()
-        assertTrue(item != null)
+        val item = form.item.firstOrNull()
+        assertNotNull(item)
 
-        val ext = item?.extension?.find { it.url == "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl" }
-        assertTrue(ext != null)
+        val ext = item.extension.find { it.url == "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl" }
+        assertNotNull(ext)
 
         val code =
             ext
-                ?.value
+                .value
                 ?.asCodeableConcept()
                 ?.value
                 ?.coding

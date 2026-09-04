@@ -2,7 +2,7 @@ package io.healthplatform.chartcam
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.runDesktopComposeUiTest
+import androidx.compose.ui.test.v2.runDesktopComposeUiTest
 import org.junit.Test
 
 class QuickAppTest {

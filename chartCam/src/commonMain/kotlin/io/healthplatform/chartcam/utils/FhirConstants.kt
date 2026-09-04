@@ -6,14 +6,12 @@
  */
 package io.healthplatform.chartcam.utils
 
-import io.ktor.http.ContentType
-
 /**
- * An object holding constant values for FHIR operations and content negotiation.
+ * An object holding constant values for FHIR operations.
  */
 object FhirConstants {
     /**
-     * The Ktor `ContentType` representing the standard FHIR JSON format (`application/fhir+json`).
+     * The MIME type representing the standard FHIR JSON format (`application/fhir+json`).
      */
-    val ContentTypeFhirJson = ContentType("application", "fhir+json")
+    const val CONTENT_TYPE_FHIR_JSON = "application/fhir+json"
 }

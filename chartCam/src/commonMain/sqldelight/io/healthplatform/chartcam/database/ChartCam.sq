@@ -131,6 +131,9 @@ getAllResourcesByTypeDesc:
 SELECT * FROM ResourceEntity WHERE resourceType = ? ORDER BY lastUpdated DESC;
 
 
+countStringIndicesForResource:
+SELECT COUNT(*) FROM StringIndexEntity WHERE resourceType = ? AND resourceId = ?;
+
 /**
  * Table for tracking local changes for Sync Engine
  */

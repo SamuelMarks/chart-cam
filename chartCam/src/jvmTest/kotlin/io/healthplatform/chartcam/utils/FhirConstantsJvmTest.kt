@@ -16,6 +16,6 @@ class FhirConstantsJvmTest {
      */
     @Test
     fun testFhirConstantsJvm() {
-        assertEquals("application/fhir+json", FhirConstants.ContentTypeFhirJson.toString())
+        assertEquals("application/fhir+json", FhirConstants.CONTENT_TYPE_FHIR_JSON)
     }
 }

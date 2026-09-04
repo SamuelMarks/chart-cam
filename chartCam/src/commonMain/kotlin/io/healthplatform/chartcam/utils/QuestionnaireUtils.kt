@@ -8,6 +8,8 @@ import com.google.fhir.model.r4.Enumeration
 import com.google.fhir.model.r4.Questionnaire
 import com.google.fhir.model.r4.QuestionnaireResponse
 
+private const val MAX_RECURSION_DEPTH = 50
+
 /**
  * Utility functions for Questionnaire processing.
  */
@@ -22,17 +24,64 @@ object QuestionnaireUtils {
     fun findItemRecursively(
         items: List<Questionnaire.Item>,
         linkId: String,
+    ): Questionnaire.Item? = findItemRecursivelyInternal(items, linkId, mutableSetOf(), 0)
+
+    /**
+     * Internal recursive finder with cycle protection.
+     *
+     * @param items The list of items to search.
+     * @param linkId The linkId to search for.
+     * @param visitedLinkIds The set of already visited item linkIds to prevent infinite recursion.
+     * @param depth The current recursion depth.
+     * @return The found item or null.
+     */
+    private fun findItemRecursivelyInternal(
+        items: List<Questionnaire.Item>,
+        linkId: String,
+        visitedLinkIds: MutableSet<String>,
+        depth: Int,
     ): Questionnaire.Item? {
-        var result: Questionnaire.Item? = null
-        for (item in items) {
-            if (result != null) break
-            if (item.linkId.value == linkId) {
-                result = item
-            } else {
-                result = findItemRecursively(item.item, linkId)
+        if (linkId.isBlank() || items.isEmpty() || depth > MAX_RECURSION_DEPTH) {
+            return null
+        }
+        var found: Questionnaire.Item? = null
+        val iterator = items.iterator()
+        while (iterator.hasNext() && found == null) {
+            val item = iterator.next()
+            val itemLinkId = item.linkId.value
+            val alreadyVisited = itemLinkId != null && !visitedLinkIds.add(itemLinkId)
+            if (!alreadyVisited) {
+                if (itemLinkId == linkId) {
+                    found = item
+                } else {
+                    found = findItemRecursivelyInternal(item.item, linkId, visitedLinkIds, depth + 1)
+                }
             }
         }
-        return result
+        return found
+    }
+
+    /**
+     * Resolves the label for a question by linkId with fallback for missing or blank values.
+     *
+     * @param items The list of Questionnaire.Item to search.
+     * @param linkId The linkId to resolve label for.
+     * @param fallback The fallback label if text or item is missing or blank.
+     * @return The resolved label string.
+     */
+    fun resolveLabel(
+        items: List<Questionnaire.Item>,
+        linkId: String,
+        fallback: String = linkId,
+    ): String {
+        if (items.isEmpty()) return if (linkId.isNotBlank()) linkId else fallback
+        val item = findItemRecursively(items, linkId)
+        val textValue = item?.text?.value
+        return when {
+            !textValue.isNullOrBlank() -> textValue
+            linkId.isNotBlank() -> linkId
+            else -> fallback
+        }
     }
 
     /**

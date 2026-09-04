@@ -15,6 +15,7 @@ import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.models.familyName
 import io.healthplatform.chartcam.repository.FhirRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -31,6 +32,7 @@ import kotlin.test.assertNotNull
  * Sets up an in-memory database to test the view model's interactions with patient data
  * and UI state modifications such as photo paths.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TriageViewModelJvmTest {
     /**
      * Dispatcher used to control the execution of coroutines in tests.

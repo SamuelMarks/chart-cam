@@ -22,6 +22,14 @@ object SdcExtensions {
 
     /** The hidden extension URL. */
     const val HIDDEN = "http://hl7.org/fhir/StructureDefinition/questionnaire-hidden"
+
+    /** The calculatedExpression extension URL. */
+    const val CALCULATED_EXPRESSION =
+        "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression"
+
+    /** The initialExpression extension URL. */
+    const val INITIAL_EXPRESSION =
+        "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-initialExpression"
 }
 
 /**
@@ -35,6 +43,24 @@ fun Questionnaire.Item.isHidden(): Boolean {
         ?.asBoolean()
         ?.value
         ?.value == true
+}
+
+/**
+ * Retrieves the initialExpression extension expression from an item.
+ * @return The initial expression string or null.
+ */
+fun Questionnaire.Item.getInitialExpression(): String? {
+    val initExt = this.extension.firstOrNull { it.url == SdcExtensions.INITIAL_EXPRESSION } ?: return null
+    val exprExt = initExt.extension.firstOrNull { it.url == "expression" }
+    return exprExt
+        ?.value
+        ?.asString()
+        ?.value
+        ?.value
+        ?: initExt.value
+            ?.asString()
+            ?.value
+            ?.value
 }
 
 /**

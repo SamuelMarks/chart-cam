@@ -56,6 +56,7 @@ To maintain focus and readability, our documentation is logically partitioned in
 
 * **[Usage Guide (`USAGE.md`)](USAGE.md)**: A comprehensive guide on operating the application, detailing our "Snap-First" philosophy and optimized practitioner workflows.
 * **[Release Guide (`HOW_TO_RELEASE.md`)](HOW_TO_RELEASE.md)**: Standard Operating Procedures (SOPs) for building, signing, and deploying the application to the **Google Play Store** and **Apple App Store**.
+* **[CLI Upgrade & Migration Guide (`UPGRADE_ANDROID_VIA_CLI.md`)](UPGRADE_ANDROID_VIA_CLI.md)**: Detailed instructions for upgrading Android builds via ADB and migrating patient data across conflicting installations.
 * **[Navigation Architecture (`docs/NAVIGATION.md`)](docs/NAVIGATION.md)**: Technical breakdown of the application's routing logic, state management, and decision trees.
 
 ---

@@ -53,6 +53,8 @@ data class CaptureUiState(
     val capturedCount: Int = 0,
     /** True if the entire capture sequence has been completed. */
     val isFinished: Boolean = false,
+    /** Error message to display to the user if capture or disk operations fail. */
+    val errorMessage: String? = null,
 ) {
     /**
      * Compares this CaptureUiState instance to another object for equality.
@@ -78,6 +80,7 @@ data class CaptureUiState(
         }
         if (capturedCount != other.capturedCount) return false
         if (isFinished != other.isFinished) return false
+        if (errorMessage != other.errorMessage) return false
 
         return true
     }
@@ -95,6 +98,7 @@ data class CaptureUiState(
         result = 31 * result + (reviewImageBytes?.contentHashCode() ?: 0)
         result = 31 * result + capturedCount
         result = 31 * result + isFinished.hashCode()
+        result = 31 * result + (errorMessage?.hashCode() ?: 0)
         return result
     }
 }

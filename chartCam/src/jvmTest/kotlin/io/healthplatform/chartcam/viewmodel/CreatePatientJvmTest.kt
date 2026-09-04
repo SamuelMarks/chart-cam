@@ -2,7 +2,7 @@
  * @file CreatePatientJvmTest.kt
  * Contains declarations for CreatePatientJvmTest.kt.
  *
- * Contains testing definitions for patient creation workflows.
+ * Provides unit and integration tests specifically focused on the patient creation workflow.
  *
  * Allows isolated testing of the view model methods used to create a new patient
  * to ensure that patient records are successfully created in the underlying repository.
@@ -14,9 +14,6 @@ import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.storage.SecureStorage
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respond
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
@@ -51,11 +48,6 @@ class CreatePatientJvmTest {
                 io.healthplatform.chartcam.repository
                     .ExportImportService(database, fileStorage)
 
-            val client =
-                io.ktor.client.HttpClient(
-                    io.ktor.client.engine.mock
-                        .MockEngine { respond("") },
-                )
             val mockStorage =
                 object : io.healthplatform.chartcam.storage.SecureStorage {
                     /**
@@ -93,7 +85,7 @@ class CreatePatientJvmTest {
                         data.remove(key)
                     }
                 }
-            val authRepository = AuthRepository(client, mockStorage)
+            val authRepository = AuthRepository(mockStorage)
 
             val vm = PatientListViewModel(repo, exportImportService, authRepository)
 

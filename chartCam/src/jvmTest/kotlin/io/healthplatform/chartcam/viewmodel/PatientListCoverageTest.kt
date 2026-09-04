@@ -31,6 +31,7 @@ class PatientListCoverageTest {
 
         val patient = Patient.Builder().build() // no ID
         kotlinx.coroutines.runBlocking {
+            Mockito.`when`(fhirRepository.getAllPatients(false, null)).thenReturn(listOf(patient))
             Mockito.`when`(fhirRepository.getAllPatients(false, "")).thenReturn(listOf(patient))
         }
 

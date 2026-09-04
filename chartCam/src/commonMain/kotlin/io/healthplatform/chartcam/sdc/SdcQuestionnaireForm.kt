@@ -670,18 +670,18 @@ private fun RenderChoiceField(ctx: RenderContext) {
         ctx.item.answerOption.mapNotNull { option ->
             val v1 =
                 option.value
-                    ?.asString()
+                    .asString()
                     ?.value
                     ?.value
             val v2 =
                 option.value
-                    ?.asCoding()
+                    .asCoding()
                     ?.value
                     ?.display
                     ?.value
             val v3 =
                 option.value
-                    ?.asCoding()
+                    .asCoding()
                     ?.value
                     ?.code
                     ?.value

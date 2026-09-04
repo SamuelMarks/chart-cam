@@ -1,10 +1,11 @@
 /**
  * @file LanguageSwitcher.wasmJs.kt
- * @file LanguageSwitcher.wasmJs.kt
  *
- * Provides the WebAssembly (WasmJs) implementation for dynamically changing the application's language
+ * Provides the WebAssembly (WasmJs) specific implementation for dynamically changing the application's language
  * by modifying the browser's `navigator` language properties via JavaScript interoperability.
  */
+@file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+
 package io.healthplatform.chartcam.ui
 
 import kotlin.js.toJsString

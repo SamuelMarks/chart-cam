@@ -2,19 +2,12 @@
  * @file AuthRepositoryJvmTest.kt
  * Contains declarations for AuthRepositoryJvmTest.kt.
  *
- * Contains tests for [AuthRepository], validating authentication logic against mock network and storage.
+ * Contains tests for [AuthRepository], validating authentication logic against mock storage.
  */
 package io.healthplatform.chartcam.repository
 
 import io.healthplatform.chartcam.models.familyName
-import io.healthplatform.chartcam.network.NetworkClient
 import io.healthplatform.chartcam.storage.SecureStorage
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respond
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,7 +16,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
- * Validates the [AuthRepository] logic using Mock Networking and Mock Storage.
+ * Validates the [AuthRepository] logic using Mock Storage.
  */
 class AuthRepositoryJvmTest {
     /**
@@ -108,7 +101,7 @@ class AuthRepositoryJvmTest {
                      */
                     override fun delete(key: String) {}
                 }
-            val repo = AuthRepository(NetworkClient.create(MockEngine { respond("") }), storage)
+            val repo = AuthRepository(storage)
 
             val success = repo.refreshToken()
 
@@ -121,18 +114,8 @@ class AuthRepositoryJvmTest {
     @Test
     fun testLoginSuccess() =
         runTest {
-            // Arrange
-            val mockEngine =
-                MockEngine {
-                    respond(
-                        content = ByteReadChannel("""{"accessToken":"123","refreshToken":"456","expiresIn":3600,"tokenType":"Bearer"}"""),
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentType, "application/json"),
-                    )
-                }
-            val client = NetworkClient.create(mockEngine)
             val storage = MockStorage()
-            val repo = AuthRepository(client, storage)
+            val repo = AuthRepository(storage)
 
             // Act
             val result = repo.login("dr_house", "password123")
@@ -156,7 +139,7 @@ class AuthRepositoryJvmTest {
     fun testLoginFailure() =
         runTest {
             val storage = MockStorage()
-            val repo = AuthRepository(NetworkClient.create(MockEngine { respond("") }), storage)
+            val repo = AuthRepository(storage)
 
             // Act (using "error" password to trigger exception in current logic)
             val result = repo.login("dr_house", "error")
@@ -173,7 +156,7 @@ class AuthRepositoryJvmTest {
     fun testIncorrectPassword() =
         runTest {
             val storage = MockStorage()
-            val repo = AuthRepository(NetworkClient.create(MockEngine { respond("") }), storage)
+            val repo = AuthRepository(storage)
 
             // First login sets the password
             repo.login("dr_house", "password123")
@@ -191,7 +174,7 @@ class AuthRepositoryJvmTest {
     fun testIncorrectPasswordSameLength() =
         runTest {
             val storage = MockStorage()
-            val repo = AuthRepository(NetworkClient.create(MockEngine { respond("") }), storage)
+            val repo = AuthRepository(storage)
 
             repo.login("dr_house", "password123")
             val result = repo.login("dr_house", "password321")
@@ -206,7 +189,7 @@ class AuthRepositoryJvmTest {
     fun testCheckSession() =
         runTest {
             val storage = MockStorage()
-            val repo = AuthRepository(NetworkClient.create(MockEngine { respond("") }), storage)
+            val repo = AuthRepository(storage)
 
             assertFalse(repo.checkSession())
 
@@ -231,7 +214,7 @@ class AuthRepositoryJvmTest {
     fun testCheckSessionNoUsername() =
         runTest {
             val storage = MockStorage()
-            val repo = AuthRepository(NetworkClient.create(MockEngine { respond("") }), storage)
+            val repo = AuthRepository(storage)
 
             storage.save("access_token", "token")
 
@@ -254,7 +237,7 @@ class AuthRepositoryJvmTest {
             val storage = MockStorage()
             storage.save("refresh_token", "existing_refresh_token")
 
-            val repo = AuthRepository(NetworkClient.create(MockEngine { respond("") }), storage)
+            val repo = AuthRepository(storage)
 
             val success = repo.refreshToken()
 
@@ -269,7 +252,7 @@ class AuthRepositoryJvmTest {
     fun testTokenRefreshFailure() =
         runTest {
             val storage = MockStorage()
-            val repo = AuthRepository(NetworkClient.create(MockEngine { respond("") }), storage)
+            val repo = AuthRepository(storage)
 
             val success = repo.refreshToken()
 

@@ -94,8 +94,8 @@ open class FhirRepository(
     ) {
         val name = resource.name.firstOrNull()
         if (name != null) {
-            dbQuery.insertStringIndex(resourceType, resourceId, "family", name.familyName ?: "")
-            dbQuery.insertStringIndex(resourceType, resourceId, "given", name.givenName ?: "")
+            dbQuery.insertStringIndex(resourceType, resourceId, "family", name.familyName)
+            dbQuery.insertStringIndex(resourceType, resourceId, "given", name.givenName)
         }
         dbQuery.insertTokenIndex(resourceType, resourceId, "active", null, (resource.active?.value ?: true).toString())
     }
@@ -113,8 +113,8 @@ open class FhirRepository(
     ) {
         val name = resource.name.firstOrNull()
         if (name != null) {
-            dbQuery.insertStringIndex(resourceType, resourceId, "family", name.familyName ?: "")
-            dbQuery.insertStringIndex(resourceType, resourceId, "given", name.givenName ?: "")
+            dbQuery.insertStringIndex(resourceType, resourceId, "family", name.familyName)
+            dbQuery.insertStringIndex(resourceType, resourceId, "given", name.givenName)
             dbQuery.insertStringIndex(resourceType, resourceId, "name", "${name.givenName} ${name.familyName}")
         }
         dbQuery.insertTokenIndex(resourceType, resourceId, "mrn", null, resource.mrn)
@@ -145,7 +145,7 @@ open class FhirRepository(
         resource.participant.firstOrNull()?.individual?.reference?.value?.let {
             dbQuery.insertReferenceIndex(resourceType, resourceId, "practitioner", it)
         }
-        dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status?.value?.name ?: "")
+        dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status.value?.name ?: "")
     }
 
     /**
@@ -166,7 +166,7 @@ open class FhirRepository(
         resource.context?.encounter?.firstOrNull()?.reference?.value?.let {
             dbQuery.insertReferenceIndex(resourceType, resourceId, "encounter", it)
         }
-        dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status?.value?.name ?: "")
+        dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status.value?.name ?: "")
     }
 
     /**
@@ -190,7 +190,7 @@ open class FhirRepository(
         resource.questionnaire?.value?.let {
             dbQuery.insertReferenceIndex(resourceType, resourceId, "questionnaire", it)
         }
-        dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status?.value?.name ?: "")
+        dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status.value?.name ?: "")
     }
 
     /**
@@ -207,7 +207,7 @@ open class FhirRepository(
         resource.title?.value?.let {
             dbQuery.insertStringIndex(resourceType, resourceId, "title", it)
         }
-        dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status?.value?.name ?: "")
+        dbQuery.insertTokenIndex(resourceType, resourceId, "status", null, resource.status.value?.name ?: "")
     }
 
     /**
@@ -264,7 +264,7 @@ open class FhirRepository(
         resourceId: String,
     ): Resource? {
         val entity = dbQuery.getResourceById(resourceType, resourceId).awaitAsOneOrNull() ?: return null
-        return fhirJson.decodeFromString(entity.serializedResource) as Resource
+        return fhirJson.decodeFromString(entity.serializedResource)
     }
 
     /**
@@ -610,6 +610,25 @@ open class FhirRepository(
     open suspend fun getAllDocumentReferences() =
         dbQuery.getAllResourcesByType("DocumentReference").awaitAsList().map {
             fhirJson.decodeFromString(it.serializedResource) as DocumentReference
+        }
+
+    /**
+     * Saves a Questionnaire resource.
+     *
+     * @param questionnaire The Questionnaire resource to persist.
+     */
+    open suspend fun saveQuestionnaire(questionnaire: Questionnaire) {
+        saveResource("Questionnaire", questionnaire.id ?: "", questionnaire)
+    }
+
+    /**
+     * Retrieves all Questionnaire resources.
+     *
+     * @return A list of Questionnaire resources.
+     */
+    open suspend fun getAllQuestionnaires(): List<Questionnaire> =
+        dbQuery.getAllResourcesByType("Questionnaire").awaitAsList().map {
+            fhirJson.decodeFromString(it.serializedResource) as Questionnaire
         }
 
     /**

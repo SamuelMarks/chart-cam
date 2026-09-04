@@ -24,7 +24,7 @@ import org.jetbrains.compose.resources.StringResource
 /**
  * UI State definition for the Login Screen.
  *
- * @param isLoading Whether a network request or login processing is actively occurring.
+ * @param isLoading Whether login processing is actively occurring.
  * @param errorMessage Localized error message if login fails, or null if there is no error.
  * @param isLoggedIn Flag indicating successful authentication.
  */

@@ -241,8 +241,9 @@ private fun EncounterEffects(
     }
 
     LaunchedEffect(state.encounter?.id) {
-        if (params.visitId == "new" && state.encounter?.id != null) {
-            actions.onVisitCreated?.invoke(state.encounter?.id!!)
+        val encounterId = state.encounter?.id
+        if (params.visitId == "new" && encounterId != null) {
+            actions.onVisitCreated?.invoke(encounterId)
         }
     }
 

@@ -40,18 +40,34 @@ object AndroidAppInit {
      * @param ctx The application context.
      */
     private fun migratePhotosFromCache(ctx: Context) {
-        val cacheDir = ctx.cacheDir
-        val filesDir = ctx.filesDir
+        val cacheDir = ctx.cacheDir ?: return
+        val filesDir = ctx.filesDir ?: return
 
         cacheDir.listFiles()?.forEach { file ->
-            // Assuming photos or related encrypted data are the only things we store here
-            // or specific patterns like ".enc" or image names.
-            // Move files to filesDir.
+            if (file.isFile) {
+                migrateSingleFile(file, filesDir)
+            }
+        }
+    }
+
+    /**
+     * Migrates a single file from the cache directory to the persistent files directory.
+     *
+     * @param file The source file to migrate.
+     * @param filesDir The destination files directory.
+     */
+    private fun migrateSingleFile(
+        file: java.io.File,
+        filesDir: java.io.File,
+    ) {
+        try {
             val destFile = java.io.File(filesDir, file.name)
             if (!destFile.exists()) {
-                file.copyTo(destFile)
+                file.copyTo(destFile, overwrite = true)
             }
             file.delete()
+        } catch (e: java.io.IOException) {
+            println("Failed to migrate file ${file.name} from cache: ${e.message}")
         }
     }
 

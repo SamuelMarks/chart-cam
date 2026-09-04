@@ -1,3 +1,7 @@
+@file:Suppress(
+    "CAST_NEVER_SUCCEEDS",
+    "UNCHECKED_CAST",
+)
 @file:OptIn(kotlinx.cinterop.BetaInteropApi::class, kotlinx.cinterop.ExperimentalForeignApi::class)
 /**
  * iOS implementation of the SecureStorage interface.

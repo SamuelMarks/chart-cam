@@ -9,8 +9,8 @@ ChartCam supports multiple languages including English (`en`), Spanish (`es`), a
 3. Update the `LoginScreen` and `PatientListScreen` language switcher options to include the new language.
 
 ## Localized Clinical Resources
-ChartCam supports fetching localized `Questionnaire` resources directly from a FHIR backend. 
-- The `SyncWorker.fetchLocalizedQuestionnaires()` method executes a GET request against `/Questionnaire?_language=<locale>`.
+ChartCam loads localized `Questionnaire` definitions locally from bundled templates.
+- Localized questionnaires are selected based on the active locale.
 - The current application language is read from `io.healthplatform.chartcam.ui.currentLanguageState.value`.
 
 ## FHIR Date & Time Formatting

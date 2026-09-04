@@ -9,22 +9,18 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.google.fhir.model.r4.Encounter
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.createFileStorage
-import io.healthplatform.chartcam.network.NetworkClient
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.repository.QuestionnaireSharingService
 import io.healthplatform.chartcam.storage.JvmSecureStorage
-import io.healthplatform.chartcam.sync.SyncWorker
 import io.healthplatform.chartcam.viewmodel.EncounterDetailViewModel
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
 import io.healthplatform.chartcam.viewmodel.PatientDetailViewModel
 import io.healthplatform.chartcam.viewmodel.PatientListViewModel
 import io.healthplatform.chartcam.viewmodel.QuestionnaireBuilderViewModel
 import io.healthplatform.chartcam.viewmodel.WidgetType
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respondOk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -76,14 +72,11 @@ class TenPartFlowE2EJvmTest {
             val questionnaireRepository = QuestionnaireRepository()
             kotlinx.coroutines.runBlocking { questionnaireRepository.loadDefaultForms() }
 
-            val mockEngine = MockEngine { respondOk() }
-            val client = NetworkClient.create(mockEngine)
             val storage = JvmSecureStorage("test_e2e_10part_${java.util.UUID.randomUUID()}")
-            val authRepository = AuthRepository(client, storage)
+            val authRepository = AuthRepository(storage)
             val fileStorage = createFileStorage()
             val exportImportService = ExportImportService(fhirRepository.database, fileStorage)
             val questionnaireSharingService = QuestionnaireSharingService()
-            val syncWorker = SyncWorker(fhirRepository, client)
 
             // Step 0: Login/signup
             val loginViewModel = LoginViewModel(authRepository)

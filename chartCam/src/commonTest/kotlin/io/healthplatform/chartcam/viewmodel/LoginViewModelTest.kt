@@ -5,7 +5,7 @@
  * Comprehensive tests for [LoginViewModel].
  *
  * Verifies that the login functionality works as expected, handling
- * both success and failure cases by simulating network and repository behaviors.
+ * both success and failure cases by simulating repository behaviors.
  */
 package io.healthplatform.chartcam.viewmodel
 
@@ -13,16 +13,10 @@ import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.incorrect_password
 import chartcam.chartcam.generated.resources.invalid_credentials
 import chartcam.chartcam.generated.resources.unknown_error
-import io.healthplatform.chartcam.network.NetworkClient
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.storage.SecureStorage
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respond
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -40,6 +34,7 @@ import kotlin.test.assertTrue
  *
  * Provides automated tests for UI state changes based on authentication responses.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class LoginViewModelTest {
     /**
      * Dispatcher used to control the execution of coroutines in tests.
@@ -127,20 +122,7 @@ class LoginViewModelTest {
     @Test
     fun testLoginSuccess() =
         runTest {
-            // Mock a successful OAuth response
-            val mockEngine =
-                MockEngine {
-                    respond(
-                        content =
-                            ByteReadChannel(
-                                """{"accessToken":"token","refreshToken":"refresh","expiresIn":3600,"tokenType":"Bearer"}""",
-                            ),
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentType, "application/json"),
-                    )
-                }
-            val client = NetworkClient.create(mockEngine)
-            authRepository = AuthRepository(client, mockStorage)
+            authRepository = AuthRepository(mockStorage)
 
             val viewModel = LoginViewModel(authRepository)
 
@@ -167,9 +149,7 @@ class LoginViewModelTest {
     @Test
     fun testLoginFailure() =
         runTest {
-            // Engine not actually called due to AuthRepository "error" password simulation logic in prompt
-            val client = NetworkClient.create(MockEngine { respond("OK") })
-            authRepository = AuthRepository(client, mockStorage)
+            authRepository = AuthRepository(mockStorage)
 
             val viewModel = LoginViewModel(authRepository)
 
@@ -189,8 +169,7 @@ class LoginViewModelTest {
     @Test
     fun testLoginFailure_IncorrectPassword() =
         runTest {
-            val client = NetworkClient.create(MockEngine { respond("OK") })
-            authRepository = AuthRepository(client, mockStorage)
+            authRepository = AuthRepository(mockStorage)
 
             authRepository.login("user", "correct")
 
@@ -211,7 +190,7 @@ class LoginViewModelTest {
     fun testLoginFailure_UnknownError() =
         runTest {
             val throwingRepo =
-                object : AuthRepository(NetworkClient.create(MockEngine { respond("OK") }), mockStorage) {
+                object : AuthRepository(mockStorage) {
                     /**
                      * Override login to always throw an unknown exception.
                      *
@@ -222,7 +201,7 @@ class LoginViewModelTest {
                     override suspend fun login(
                         username: String,
                         password: String,
-                    ): Result<com.google.fhir.model.r4.Practitioner> = Result.failure(Exception("Some random network error"))
+                    ): Result<com.google.fhir.model.r4.Practitioner> = Result.failure(Exception("Some unknown error"))
                 }
             val viewModel = LoginViewModel(throwingRepo)
 

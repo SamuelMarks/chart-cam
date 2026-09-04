@@ -17,9 +17,6 @@ import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.storage.SecureStorage
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respondOk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -112,9 +109,7 @@ class PatientListViewModelTest {
                  */
                 override fun delete(key: String) {}
             }
-        val mockHttpClient = HttpClient(MockEngine) { engine { addHandler { respondOk() } } }
-
-        mockAuthRepository = MockAuthRepository(mockHttpClient, fakeSecureStorage)
+        mockAuthRepository = MockAuthRepository(fakeSecureStorage)
 
         mockAuthRepository.currentUserFlow.value =
             io.healthplatform.chartcam.models.createFhirPractitioner(
@@ -470,9 +465,8 @@ class MockExportImportService(
  * Test class MockAuthRepository.
  */
 class MockAuthRepository(
-    client: HttpClient,
     storage: SecureStorage,
-) : AuthRepository(client, storage) {
+) : AuthRepository(storage) {
     val currentUserFlow = MutableStateFlow<Practitioner?>(null)
     var deleteAccountCalled = false
 

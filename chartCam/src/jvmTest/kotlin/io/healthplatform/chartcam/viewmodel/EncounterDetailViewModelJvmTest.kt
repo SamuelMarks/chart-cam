@@ -22,7 +22,6 @@ import io.healthplatform.chartcam.models.createFhirEncounter
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
-import io.healthplatform.chartcam.sync.SyncWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -76,7 +75,6 @@ private fun <T> anyObj(dummy: T): T {
 class EncounterDetailViewModelJvmTest {
     private lateinit var fhirRepository: FhirRepository
     private lateinit var authRepository: AuthRepository
-    private lateinit var syncWorker: SyncWorker
     private lateinit var questionnaireRepository: QuestionnaireRepository
     private lateinit var viewModel: EncounterDetailViewModel
 
@@ -108,7 +106,6 @@ class EncounterDetailViewModelJvmTest {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         fhirRepository = mock(FhirRepository::class.java)
         authRepository = mock(AuthRepository::class.java)
-        syncWorker = mock(SyncWorker::class.java)
         questionnaireRepository = mock(QuestionnaireRepository::class.java)
 
         val practitioner = Practitioner.Builder().apply { id = "prac1" }.build()

@@ -18,13 +18,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import io.healthplatform.chartcam.database.DatabaseDriverFactory
 import io.healthplatform.chartcam.files.createFileStorage
-import io.healthplatform.chartcam.network.NetworkClient
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.storage.createSecureStorage
-import io.healthplatform.chartcam.sync.SyncWorker
 
 /**
  * The main entry point for the application's UI navigation graph.
@@ -40,9 +38,8 @@ fun AppNavigation() {
     val navController = rememberNavController()
     SetupBrowserHistory(navController)
 
-    val client = remember { NetworkClient.create() }
     val storage = remember { createSecureStorage() }
-    val authRepository = remember { AuthRepository(client, storage) }
+    val authRepository = remember { AuthRepository(storage) }
 
     val dbFactory = remember { DatabaseDriverFactory() }
     val driver = remember { dbFactory.createDriver() }
@@ -51,8 +48,6 @@ fun AppNavigation() {
 
     val fileStorage = remember { createFileStorage() }
     val exportImportService = remember { ExportImportService(fhirRepository.database, fileStorage) }
-
-    val syncWorker = remember { SyncWorker(fhirRepository, client) }
 
     val photoSessionManager = remember { PhotoSessionManager() }
 
@@ -63,7 +58,6 @@ fun AppNavigation() {
                 fhirRepository = fhirRepository,
                 questionnaireRepository = questionnaireRepository,
                 exportImportService = exportImportService,
-                syncWorker = syncWorker,
                 photoSessionManager = photoSessionManager,
             )
         }

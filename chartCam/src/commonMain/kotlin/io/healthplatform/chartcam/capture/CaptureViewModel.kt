@@ -75,22 +75,28 @@ class CaptureViewModel(
         viewModelScope.launch {
             try {
                 val bytes = cameraManager.captureImage()
-                if (bytes != null) {
+                if (bytes != null && bytes.isNotEmpty()) {
                     _uiState.update {
                         it.copy(
                             isCapturing = false,
                             reviewImageBytes = bytes,
+                            errorMessage = null,
                         )
                     }
                 } else {
-                    _uiState.update { it.copy(isCapturing = false) }
+                    _uiState.update {
+                        it.copy(
+                            isCapturing = false,
+                            errorMessage = "Captured image is empty or was interrupted.",
+                        )
+                    }
                 }
             } catch (e: IllegalStateException) {
                 println("Capture error: ${e.message}")
-                _uiState.update { it.copy(isCapturing = false) }
+                _uiState.update { it.copy(isCapturing = false, errorMessage = "Camera capture failed: ${e.message}") }
             } catch (e: IllegalArgumentException) {
                 println("Capture error: ${e.message}")
-                _uiState.update { it.copy(isCapturing = false) }
+                _uiState.update { it.copy(isCapturing = false, errorMessage = "Camera capture failed: ${e.message}") }
             }
         }
     }
@@ -120,6 +126,7 @@ class CaptureViewModel(
                         currentStep = nextStep,
                         reviewImageBytes = null,
                         capturedCount = filePaths.size,
+                        errorMessage = null,
                     )
                 }
             } else {
@@ -128,15 +135,52 @@ class CaptureViewModel(
                         reviewImageBytes = null,
                         isFinished = true,
                         capturedCount = filePaths.size,
+                        errorMessage = null,
                     )
                 }
             }
         } catch (e: IllegalStateException) {
             println("Storage error: ${e.message}")
-            _uiState.update { it.copy(reviewImageBytes = null) }
+            _uiState.update {
+                it.copy(
+                    reviewImageBytes = null,
+                    errorMessage = "Failed to save photo: storage is full or disk error occurred.",
+                )
+            }
         } catch (e: IllegalArgumentException) {
             println("Argument error: ${e.message}")
-            _uiState.update { it.copy(reviewImageBytes = null) }
+            _uiState.update {
+                it.copy(
+                    reviewImageBytes = null,
+                    errorMessage = "Failed to save photo: storage is full or disk error occurred.",
+                )
+            }
+        }
+    }
+
+    /**
+     * Clears any active error message in the UI state.
+     */
+    fun clearError() {
+        _uiState.update { it.copy(errorMessage = null) }
+    }
+
+    /**
+     * Restores previously captured photos following an app crash or process restart.
+     *
+     * @param savedPaths Map of completed photo steps and their saved file paths.
+     */
+    fun restoreSession(savedPaths: Map<PhotoStep, String>) {
+        filePaths.putAll(savedPaths)
+        currentStepIndex = filePaths.size
+        val nextStep = if (currentStepIndex < stepsSequence.size) stepsSequence[currentStepIndex] else null
+        _uiState.update {
+            it.copy(
+                currentStep = nextStep,
+                capturedCount = filePaths.size,
+                isFinished = currentStepIndex >= stepsSequence.size && stepsSequence.isNotEmpty(),
+                errorMessage = null,
+            )
         }
     }
 

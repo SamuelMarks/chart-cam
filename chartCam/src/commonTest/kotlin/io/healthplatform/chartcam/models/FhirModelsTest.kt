@@ -114,7 +114,7 @@ class FhirModelsTest {
             docRef.content
                 .first()
                 .attachment
-                ?.contentType
+                .contentType
                 ?.value,
         )
         assertEquals(
@@ -122,7 +122,7 @@ class FhirModelsTest {
             docRef.content
                 .first()
                 .attachment
-                ?.url
+                .url
                 ?.value,
         )
     }
@@ -147,14 +147,14 @@ class FhirModelsTest {
             clinicalNote.content
                 .first()
                 .attachment
-                ?.contentType
+                .contentType
                 ?.value,
         )
         assertTrue(
             clinicalNote.content
                 .first()
                 .attachment
-                ?.url
+                .url
                 ?.value
                 ?.contains("Patient seems fine.") == true,
         )
@@ -177,7 +177,7 @@ class FhirModelsTest {
             device.deviceName
                 .first()
                 .name
-                ?.value,
+                .value,
         )
         assertEquals("Google", device.manufacturer?.value)
     }
@@ -207,7 +207,7 @@ class FhirModelsTest {
             provenance.agent
                 .first()
                 .who
-                ?.reference
+                .reference
                 ?.value,
         )
     }
@@ -224,7 +224,7 @@ class FhirModelsTest {
                 base64Data = "iVBORw0KGgo=",
             )
         assertEquals("bin_555", binary.id)
-        assertEquals("image/png", binary.contentType?.value)
+        assertEquals("image/png", binary.contentType.value)
         assertEquals("iVBORw0KGgo=", binary.data?.value)
     }
 

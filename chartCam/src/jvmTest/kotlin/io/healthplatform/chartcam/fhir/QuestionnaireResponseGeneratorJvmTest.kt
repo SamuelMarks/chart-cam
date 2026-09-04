@@ -57,14 +57,14 @@ class QuestionnaireResponseGeneratorJvmTest {
         val answers = mapOf("nested_1" to "Some answer")
         val response2 = QuestionnaireResponseGenerator.generate(questionnaire, answers)
         assertEquals(1, response2.item.size)
-        assertEquals("group_1", response2.item[0].linkId?.value)
+        assertEquals("group_1", response2.item[0].linkId.value)
         assertEquals(1, response2.item[0].item.size)
         assertEquals(
             "nested_1",
             response2.item[0]
                 .item[0]
                 .linkId
-                ?.value,
+                .value,
         )
         val stringValueWrapper =
             response2.item[0]

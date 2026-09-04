@@ -123,7 +123,6 @@ kotlin {
 
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
-            implementation(libs.ktor.client.android)
             implementation(libs.sqldelight.android)
             implementation(libs.sqlcipher.android)
             implementation(libs.androidx.camera.core)
@@ -134,7 +133,6 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.compose.ui.test)
 
-            implementation(libs.ktor.client.mock)
             implementation(libs.kotlin.test)
 
             implementation(libs.kotlinx.coroutines.test)
@@ -153,9 +151,6 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.jetbrains.navigation.compose)
 
-            implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.datetime)
@@ -164,7 +159,6 @@ kotlin {
             implementation(libs.okio)
         }
         iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
             implementation(libs.sqldelight.native)
         }
         wasmJsMain.dependencies {
@@ -215,7 +209,6 @@ kotlin {
             implementation(libs.webcam.capture.driver.native)
             implementation(libs.sqldelight.sqlite)
             implementation("app.cash.sqldelight:async-extensions:2.2.1")
-            implementation(libs.ktor.client.java)
             implementation(libs.slf4j.simple)
         }
     }
@@ -270,7 +263,6 @@ kover {
                     "io.healthplatform.chartcam.ui.ClipboardUtils_jvmKt",
                     "io.healthplatform.chartcam.ui.components.LevelerOverlayKt",
                     "io.healthplatform.chartcam.ui.QuestionnaireBuilderScreenKt",
-                    "io.healthplatform.chartcam.sync.SyncWorker",
                     "io.healthplatform.chartcam.storage.CryptoHelper",
                     "io.healthplatform.chartcam.utils.AndroidShareService",
                     "io.healthplatform.chartcam.utils.JvmShareService",
