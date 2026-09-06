@@ -10,7 +10,13 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.new_item
+import chartcam.chartcam.generated.resources.new_widget_item
+import chartcam.chartcam.generated.resources.unknown
+import chartcam.chartcam.generated.resources.unknown_copy
 import io.healthplatform.chartcam.ui.QuestionnaireListScreen
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Registers the questionnaire builder destination to the navigation graph.
@@ -26,10 +32,40 @@ fun NavGraphBuilder.questionnaireBuilderDestination(
 ) {
     composable<QuestionnaireBuilderRoute> { backStackEntry ->
         val route = backStackEntry.toRoute<QuestionnaireBuilderRoute>()
+        val copyTemplate = stringResource(Res.string.unknown_copy)
+        val newItemLabel = stringResource(Res.string.new_item)
+        val newWidgetTemplate = stringResource(Res.string.new_widget_item)
+        val unknownLabel = stringResource(Res.string.unknown)
+        val widgetNames =
+            io.healthplatform.chartcam.viewmodel.WidgetType.entries.associateWith {
+                stringResource(
+                    io.healthplatform.chartcam.ui
+                        .getWidgetNameResource(it),
+                )
+            }
         val viewModel =
             androidx.lifecycle.viewmodel.compose.viewModel(key = route.duplicateFromId ?: "new") {
-                io.healthplatform.chartcam.viewmodel
-                    .QuestionnaireBuilderViewModel(deps.questionnaireRepository, route.duplicateFromId)
+                io.healthplatform.chartcam.viewmodel.QuestionnaireBuilderViewModel(
+                    repository = deps.questionnaireRepository,
+                    duplicateFromId = route.duplicateFromId,
+                    copyTitleResolver = { title ->
+                        if (copyTemplate.contains("%1\$s") || copyTemplate.contains("%s")) {
+                            copyTemplate.replace("%1\$s", title).replace("%s", title)
+                        } else {
+                            "$title (Copy)"
+                        }
+                    },
+                    defaultItemLabelResolver = { newItemLabel },
+                    widgetItemLabelResolver = { widgetType ->
+                        val widgetName = widgetNames[widgetType] ?: widgetType.name
+                        if (newWidgetTemplate.contains("%1\$s") || newWidgetTemplate.contains("%s")) {
+                            newWidgetTemplate.replace("%1\$s", widgetName).replace("%s", widgetName)
+                        } else {
+                            "$widgetName - $newItemLabel"
+                        }
+                    },
+                    unknownTitleResolver = { unknownLabel },
+                )
             }
         androidx.compose.runtime.key(currentLang) {
             io.healthplatform.chartcam.ui.QuestionnaireBuilderScreen(

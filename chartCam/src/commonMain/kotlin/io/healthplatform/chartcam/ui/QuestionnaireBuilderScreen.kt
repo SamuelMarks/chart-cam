@@ -56,6 +56,7 @@ import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -78,8 +79,12 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -94,8 +99,8 @@ import chartcam.chartcam.generated.resources.cd_back
 import chartcam.chartcam.generated.resources.cd_delete_item
 import chartcam.chartcam.generated.resources.cd_delete_option
 import chartcam.chartcam.generated.resources.cd_more_widgets
-import chartcam.chartcam.generated.resources.cd_move_down
-import chartcam.chartcam.generated.resources.cd_move_up
+import chartcam.chartcam.generated.resources.cd_move_item_down
+import chartcam.chartcam.generated.resources.cd_move_item_up
 import chartcam.chartcam.generated.resources.cd_preview
 import chartcam.chartcam.generated.resources.cd_save
 import chartcam.chartcam.generated.resources.confirm_delete_item_message
@@ -104,8 +109,11 @@ import chartcam.chartcam.generated.resources.confirm_delete_option_message
 import chartcam.chartcam.generated.resources.confirm_delete_option_title
 import chartcam.chartcam.generated.resources.delete
 import chartcam.chartcam.generated.resources.error_duplicate_id
+import chartcam.chartcam.generated.resources.error_item_validation
 import chartcam.chartcam.generated.resources.error_required_field
 import chartcam.chartcam.generated.resources.label
+import chartcam.chartcam.generated.resources.new_item
+import chartcam.chartcam.generated.resources.new_widget_item
 import chartcam.chartcam.generated.resources.preview_mode
 import chartcam.chartcam.generated.resources.questionnaire_title
 import chartcam.chartcam.generated.resources.type_format
@@ -127,7 +135,30 @@ import io.healthplatform.chartcam.viewmodel.BuilderItem
 import io.healthplatform.chartcam.viewmodel.QuestionnaireBuilderState
 import io.healthplatform.chartcam.viewmodel.QuestionnaireBuilderViewModel
 import io.healthplatform.chartcam.viewmodel.WidgetType
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+
+/**
+ * Translates a [WidgetType] to its localized [StringResource] reference.
+ *
+ * @param type The type of the widget.
+ * @return The string resource corresponding to the widget name.
+ */
+fun getWidgetNameResource(type: WidgetType): StringResource =
+    when (type) {
+        WidgetType.PHOTO_CAMERA -> Res.string.widget_photo_camera
+        WidgetType.VIDEO_CAMERA -> Res.string.widget_video_camera
+        WidgetType.SWITCH -> Res.string.widget_switch
+        WidgetType.CHECKBOX -> Res.string.widget_checkbox
+        WidgetType.SINGLE_SELECT -> Res.string.widget_single_select
+        WidgetType.MULTI_SELECT -> Res.string.widget_multi_select
+        WidgetType.SINGLE_LINE_TEXT -> Res.string.widget_single_line_text
+        WidgetType.MULTI_LINE_TEXT -> Res.string.widget_multi_line_text
+        WidgetType.DATE -> Res.string.widget_date
+        WidgetType.DATETIME -> Res.string.widget_datetime
+        WidgetType.NUMERIC -> Res.string.widget_numeric
+        WidgetType.RANGE -> Res.string.widget_range
+    }
 
 /**
  * Translates a [WidgetType] to its localized string representation for UI display.
@@ -136,24 +167,7 @@ import org.jetbrains.compose.resources.stringResource
  * @return The localized string name for the widget.
  */
 @Composable
-fun getWidgetNameString(type: WidgetType): String {
-    val res =
-        when (type) {
-            WidgetType.PHOTO_CAMERA -> Res.string.widget_photo_camera
-            WidgetType.VIDEO_CAMERA -> Res.string.widget_video_camera
-            WidgetType.SWITCH -> Res.string.widget_switch
-            WidgetType.CHECKBOX -> Res.string.widget_checkbox
-            WidgetType.SINGLE_SELECT -> Res.string.widget_single_select
-            WidgetType.MULTI_SELECT -> Res.string.widget_multi_select
-            WidgetType.SINGLE_LINE_TEXT -> Res.string.widget_single_line_text
-            WidgetType.MULTI_LINE_TEXT -> Res.string.widget_multi_line_text
-            WidgetType.DATE -> Res.string.widget_date
-            WidgetType.DATETIME -> Res.string.widget_datetime
-            WidgetType.NUMERIC -> Res.string.widget_numeric
-            WidgetType.RANGE -> Res.string.widget_range
-        }
-    return stringResource(res)
-}
+fun getWidgetNameString(type: WidgetType): String = stringResource(getWidgetNameResource(type))
 
 /**
  * Maps a [WidgetType] to its corresponding [ImageVector] icon for display in the builder UI.
@@ -216,7 +230,7 @@ private fun SecondaryWidgetDropdown(
                     leadingIcon = {
                         Icon(
                             getWidgetIcon(widget),
-                            contentDescription = getWidgetNameString(widget),
+                            contentDescription = null,
                         )
                     },
                     onClick = {
@@ -257,7 +271,11 @@ fun WidgetSelectionRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(stringResource(Res.string.add_widget), style = MaterialTheme.typography.titleMedium)
+        Text(
+            stringResource(Res.string.add_widget),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() },
+        )
 
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             primaryWidgets.forEach { widget ->
@@ -403,7 +421,7 @@ private fun OptionItemRow(
         Text(stringResource(Res.string.bullet_format, option), modifier = Modifier.weight(1f))
         IconButton(
             onClick = onDelete,
-            modifier = Modifier.size(32.dp),
+            modifier = Modifier.minimumInteractiveComponentSize(),
         ) {
             Icon(
                 Icons.Default.Delete,
@@ -504,7 +522,10 @@ fun BuilderItemOptions(
                 stringResource(Res.string.at_least_one_option_required),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(bottom = 4.dp),
+                modifier =
+                    Modifier
+                        .padding(bottom = 4.dp)
+                        .semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
         item.options.forEachIndexed { index, option ->
@@ -518,6 +539,7 @@ fun BuilderItemOptions(
 /**
  * Actions for builder item row.
  *
+ * @param itemLabel The item label.
  * @param canMoveUp Can move up.
  * @param canMoveDown Can move down.
  * @param actions The actions.
@@ -525,20 +547,34 @@ fun BuilderItemOptions(
  */
 @Composable
 private fun BuilderItemActionButtons(
+    itemLabel: String,
     canMoveUp: Boolean,
     canMoveDown: Boolean,
     actions: BuilderItemRowActions,
     onShowDeleteConfirm: () -> Unit,
 ) {
     Column {
-        IconButton(onClick = actions.onMoveUp, enabled = canMoveUp) {
-            Icon(Icons.Default.KeyboardArrowUp, contentDescription = stringResource(Res.string.cd_move_up))
+        val moveUpCd = stringResource(Res.string.cd_move_item_up, itemLabel)
+        val moveDownCd = stringResource(Res.string.cd_move_item_down, itemLabel)
+        IconButton(
+            onClick = actions.onMoveUp,
+            enabled = canMoveUp,
+            modifier = Modifier.minimumInteractiveComponentSize(),
+        ) {
+            Icon(Icons.Default.KeyboardArrowUp, contentDescription = moveUpCd)
         }
-        IconButton(onClick = onShowDeleteConfirm) {
+        IconButton(
+            onClick = onShowDeleteConfirm,
+            modifier = Modifier.minimumInteractiveComponentSize(),
+        ) {
             Icon(Icons.Default.Delete, contentDescription = stringResource(Res.string.cd_delete_item))
         }
-        IconButton(onClick = actions.onMoveDown, enabled = canMoveDown) {
-            Icon(Icons.Default.KeyboardArrowDown, contentDescription = stringResource(Res.string.cd_move_down))
+        IconButton(
+            onClick = actions.onMoveDown,
+            enabled = canMoveDown,
+            modifier = Modifier.minimumInteractiveComponentSize(),
+        ) {
+            Icon(Icons.Default.KeyboardArrowDown, contentDescription = moveDownCd)
         }
     }
 }
@@ -624,6 +660,9 @@ fun BuilderItemRow(
 
     val focusRequester = remember { FocusRequester() }
     val borderColor = if (item.isError) MaterialTheme.colorScheme.error else null
+    val moveUpLabel = stringResource(Res.string.cd_move_item_up, item.label)
+    val moveDownLabel = stringResource(Res.string.cd_move_item_down, item.label)
+    val itemValidationError = stringResource(Res.string.error_item_validation)
 
     Card(
         modifier =
@@ -632,7 +671,27 @@ fun BuilderItemRow(
                 .padding(vertical = 4.dp)
                 .semantics {
                     if (item.isError) {
-                        error("Validation error in item")
+                        error(itemValidationError)
+                    }
+                    val actionsList = mutableListOf<CustomAccessibilityAction>()
+                    if (canMoveUp) {
+                        actionsList.add(
+                            CustomAccessibilityAction(moveUpLabel) {
+                                actions.onMoveUp()
+                                true
+                            },
+                        )
+                    }
+                    if (canMoveDown) {
+                        actionsList.add(
+                            CustomAccessibilityAction(moveDownLabel) {
+                                actions.onMoveDown()
+                                true
+                            },
+                        )
+                    }
+                    if (actionsList.isNotEmpty()) {
+                        customActions = actionsList
                     }
                 },
         border = borderColor?.let { BorderStroke(1.dp, it) },
@@ -669,7 +728,7 @@ fun BuilderItemRow(
 
                 BuilderItemOptions(item, focusManager, actions)
             }
-            BuilderItemActionButtons(canMoveUp, canMoveDown, actions) { showDeleteConfirm = true }
+            BuilderItemActionButtons(item.label, canMoveUp, canMoveDown, actions) { showDeleteConfirm = true }
         }
     }
 }
@@ -787,7 +846,10 @@ private fun BuilderActiveView(
         Text(
             text = stringResource(Res.string.error_duplicate_id),
             color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.padding(bottom = 8.dp),
+            modifier =
+                Modifier
+                    .padding(bottom = 8.dp)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
         )
     }
     val titleError = state.title.isBlank()
@@ -808,8 +870,20 @@ private fun BuilderActiveView(
         keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
     )
 
+    val newWidgetItemTemplate = stringResource(Res.string.new_widget_item)
+    val newItemLabel = stringResource(Res.string.new_item)
+    val widgetNames = WidgetType.entries.associateWith { getWidgetNameString(it) }
     WidgetSelectionRow(
-        onWidgetSelected = { viewModel.addItem(it) },
+        onWidgetSelected = { widgetType ->
+            val widgetName = widgetNames[widgetType] ?: widgetType.name
+            val label =
+                if (newWidgetItemTemplate.contains("%1\$s") || newWidgetItemTemplate.contains("%s")) {
+                    newWidgetItemTemplate.replace("%1\$s", widgetName).replace("%s", widgetName)
+                } else {
+                    "$widgetName - $newItemLabel"
+                }
+            viewModel.addItem(widgetType, label)
+        },
         modifier = Modifier.padding(bottom = 8.dp),
     )
 

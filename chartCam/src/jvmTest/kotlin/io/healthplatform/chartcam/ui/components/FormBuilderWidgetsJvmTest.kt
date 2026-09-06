@@ -147,4 +147,84 @@ class FormBuilderWidgetsJvmTest {
             onNodeWithTag("Switch Switch").assert(hasErrorMatcher)
             onNodeWithTag("CheckboxRow Checkbox").assert(hasErrorMatcher)
         }
+
+    /**
+     * Tests FormBuilderRangeSlider visual numeric readout and accessibility state description.
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testFormBuilderRangeSliderA11yAndReadout() =
+        runComposeUiTest {
+            var sliderVal = 5.0f
+            setContent {
+                FormBuilderRangeSlider(
+                    value = sliderVal,
+                    valueRange = 0f..10f,
+                    onValueChange = { sliderVal = it },
+                    label = "Pain Scale",
+                    isError = true,
+                    errorMessage = "Value out of range",
+                )
+            }
+
+            onNodeWithTag("RangeSlider Pain Scale").assertExists()
+            onNodeWithTag("SliderControl Pain Scale").assertExists()
+            onNodeWithText("Pain Scale").assertExists()
+            onNodeWithText("Value out of range").assertExists()
+
+            val hasStateDescMatcher =
+                SemanticsMatcher("has state description") { node ->
+                    node.config.getOrNull(SemanticsProperties.StateDescription) != null
+                }
+            onNodeWithTag("SliderControl Pain Scale").assert(hasStateDescMatcher)
+        }
+
+    /**
+     * Tests FormBuilderPhotoCamera and FormBuilderVideoCamera buttons.
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testFormBuilderCameraButtons() =
+        runComposeUiTest {
+            var photoClicked = false
+            var videoClicked = false
+            setContent {
+                Column {
+                    FormBuilderPhotoCamera(
+                        label = "Take Skin Photo",
+                        onClick = { photoClicked = true },
+                    )
+                    FormBuilderVideoCamera(
+                        label = "Record Video",
+                        onClick = { videoClicked = true },
+                    )
+                }
+            }
+
+            onNodeWithTag("PhotoCamera Take Skin Photo").assertExists().performClick()
+            assertTrue(photoClicked)
+
+            onNodeWithTag("VideoCamera Record Video").assertExists().performClick()
+            assertTrue(videoClicked)
+        }
+
+    /**
+     * Tests FormBuilderNumericInput decimal input with both comma and dot.
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testFormBuilderNumericInputComma() =
+        runComposeUiTest {
+            var numVal = ""
+            setContent {
+                FormBuilderNumericInput(
+                    label = "Weight",
+                    value = numVal,
+                    onValueChange = { numVal = it },
+                )
+            }
+
+            onNodeWithTag("NumericInput Weight").performTextInput("12,5")
+            assertEquals("12,5", numVal)
+        }
 }

@@ -236,6 +236,43 @@ class FhirModelsTest {
         val emptyPatient = Patient.Builder().build()
         assertEquals("", emptyPatient.mrn)
         assertEquals("", emptyPatient.customBirthDate)
-        assertEquals("Unknown, Unknown", emptyPatient.fullName)
+        assertEquals("Unknown", emptyPatient.fullName)
+    }
+
+    /**
+     * Tests culturally sensitive person name formatting across Western and East Asian locales.
+     */
+    @Test
+    fun testCulturalPersonNameFormatting() {
+        val patient = createFhirPatient("p1", "Wei", "Chen", kotlinx.datetime.LocalDate(1990, 1, 1), "123")
+        assertEquals("Chen, Wei", patient.getFullName("en"))
+        assertEquals("Chen, Wei", patient.getFullName("es"))
+        assertEquals("Chen, Wei", patient.getFullName("he"))
+        assertEquals("ChenWei", patient.getFullName("zh"))
+        assertEquals("ChenWei", patient.getFullName("zh-TW"))
+        assertEquals("ChenWei", patient.getFullName("ja"))
+
+        val cjkPatient = createFhirPatient("p2", "偉", "陳", kotlinx.datetime.LocalDate(1990, 1, 1), "124")
+        assertEquals("陳偉", cjkPatient.getFullName("zh"))
+        assertEquals("陳偉", cjkPatient.getFullName("ja"))
+
+        val emptyPatient = Patient.Builder().build()
+        assertEquals("Unknown", emptyPatient.getFullName("en"))
+        assertEquals("Desconocido", emptyPatient.getFullName("es"))
+        assertEquals("לא ידוע", emptyPatient.getFullName("he"))
+        assertEquals("未知", emptyPatient.getFullName("zh"))
+        assertEquals("不明", emptyPatient.getFullName("ja"))
+
+        val practitioner = createFhirPractitioner("pr1", "Tanaka", "Ken", true)
+        assertEquals("Tanaka, Ken", practitioner.getFullName("en"))
+        assertEquals("TanakaKen", practitioner.getFullName("ja"))
+        assertEquals("TanakaKen", practitioner.getFullName("zh"))
+
+        val partialNameOnlyFamily = formatPersonName("Smith", null, "en")
+        assertEquals("Smith", partialNameOnlyFamily)
+        val partialNameOnlyGiven = formatPersonName(null, "John", "en")
+        assertEquals("John", partialNameOnlyGiven)
+        val partialNameBothNull = formatPersonName(null, null, "en")
+        assertEquals("Unknown", partialNameBothNull)
     }
 }

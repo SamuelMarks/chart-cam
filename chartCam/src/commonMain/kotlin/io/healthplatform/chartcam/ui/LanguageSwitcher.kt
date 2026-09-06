@@ -55,3 +55,23 @@ fun getLayoutDirectionForLanguage(language: String): androidx.compose.ui.unit.La
     } else {
         androidx.compose.ui.unit.LayoutDirection.Ltr
     }
+
+/**
+ * Determines whether a given language code corresponds to Traditional Chinese or a Chinese dialect.
+ *
+ * @param language The ISO 639 language code or BCP 47 language tag (e.g. "zh", "zh-TW", "zh-Hant").
+ * @return True if Traditional Chinese or Chinese language, false otherwise.
+ */
+fun isTraditionalChinese(language: String): Boolean {
+    val lower = language.lowercase()
+    val base = lower.split("-", "_").first()
+    return base == "zh" || lower.contains("hant") || lower.contains("tw") || lower.contains("hk")
+}
+
+/**
+ * Determines whether the given language supports vertical column text layout (豎排 / 直書).
+ *
+ * @param language The language tag.
+ * @return True if vertical column writing is applicable, false otherwise.
+ */
+fun isVerticalTextLanguage(language: String): Boolean = isTraditionalChinese(language)

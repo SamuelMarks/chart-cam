@@ -5,7 +5,9 @@
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -155,7 +157,7 @@ class QuestionnaireListScreenTest {
             waitForIdle()
 
             onNodeWithText("Preview Me").performClick()
-            onNodeWithContentDescription("Cancel").assertExists() // Checks if the preview dialog has a Cancel button
+            onAllNodesWithContentDescription("Back").assertCountEquals(2)
         }
 
     /**

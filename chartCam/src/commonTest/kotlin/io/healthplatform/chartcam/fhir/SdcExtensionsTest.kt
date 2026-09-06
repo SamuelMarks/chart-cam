@@ -127,4 +127,49 @@ class SdcExtensionsTest {
         assertNull(emptyItem.getMinValue())
         assertNull(emptyItem.getMaxValue())
     }
+
+    /**
+     * Test getting the localized text via translation extensions.
+     */
+    @Test
+    fun testGetLocalizedText() {
+        val langExt =
+            Extension.Builder(url = "lang").apply {
+                value = Extension.Value.String(str("es").build())
+            }
+        val contentExt =
+            Extension.Builder(url = "content").apply {
+                value = Extension.Value.String(str("Notas Clínicas").build())
+            }
+
+        val transExt =
+            Extension.Builder(url = SdcExtensions.TRANSLATION).apply {
+                extension.add(langExt)
+                extension.add(contentExt)
+            }
+
+        val item =
+            Questionnaire.Item
+                .Builder(
+                    linkId = str("1"),
+                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                ).apply {
+                    text = str("Clinical Notes")
+                    extension.add(transExt)
+                }.build()
+
+        assertEquals("Notas Clínicas", item.getLocalizedText("es"))
+        assertEquals("Clinical Notes", item.getLocalizedText("en"))
+
+        val itemNoExt =
+            Questionnaire.Item
+                .Builder(
+                    linkId = str("2"),
+                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                ).apply {
+                    text = str("Default Text")
+                }.build()
+
+        assertEquals("Default Text", itemNoExt.getLocalizedText("ja"))
+    }
 }

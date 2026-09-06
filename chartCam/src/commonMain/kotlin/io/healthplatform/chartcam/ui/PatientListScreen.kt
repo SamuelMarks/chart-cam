@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -58,9 +59,12 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -86,9 +90,11 @@ import chartcam.chartcam.generated.resources.export_all_patients
 import chartcam.chartcam.generated.resources.export_data
 import chartcam.chartcam.generated.resources.export_password_label
 import chartcam.chartcam.generated.resources.export_password_title
+import chartcam.chartcam.generated.resources.hebrew
 import chartcam.chartcam.generated.resources.import_action
 import chartcam.chartcam.generated.resources.import_title
 import chartcam.chartcam.generated.resources.japanese
+import chartcam.chartcam.generated.resources.legal_disclaimer
 import chartcam.chartcam.generated.resources.logout
 import chartcam.chartcam.generated.resources.mrn_dob_format
 import chartcam.chartcam.generated.resources.no_patients_found
@@ -102,6 +108,9 @@ import chartcam.chartcam.generated.resources.share_file
 import chartcam.chartcam.generated.resources.share_password
 import chartcam.chartcam.generated.resources.show_all_patients
 import chartcam.chartcam.generated.resources.show_my_patients_only
+import chartcam.chartcam.generated.resources.state_selected
+import chartcam.chartcam.generated.resources.state_unselected
+import chartcam.chartcam.generated.resources.traditional_chinese
 import chartcam.chartcam.generated.resources.version_text
 import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.models.customBirthDate
@@ -188,21 +197,35 @@ fun PatientListScreen(
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.english)) },
                                 onClick = {
-                                    // setAppLanguage("en")
+                                    setAppLanguage("en")
                                     showLanguageMenu = false
                                 },
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.espanol)) },
                                 onClick = {
-                                    // setAppLanguage("es")
+                                    setAppLanguage("es")
                                     showLanguageMenu = false
                                 },
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.japanese)) },
                                 onClick = {
-                                    // setAppLanguage("ja")
+                                    setAppLanguage("ja")
+                                    showLanguageMenu = false
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.hebrew)) },
+                                onClick = {
+                                    setAppLanguage("he")
+                                    showLanguageMenu = false
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.traditional_chinese)) },
+                                onClick = {
+                                    setAppLanguage("zh")
                                     showLanguageMenu = false
                                 },
                             )
@@ -266,17 +289,6 @@ fun PatientListScreen(
                             onClick = {
                                 showMenu = false
                                 actions.onLogout()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    stringResource(Res.string.questionnaires),
-                                )
-                            },
-                            onClick = {
-                                showMenu = false
-                                actions.onNavigateToQuestionnaires()
                             },
                         )
                         DropdownMenuItem(
@@ -423,21 +435,26 @@ fun PatientListScreen(
                             }),
                         singleLine = true,
                     )
+                    val selectedText = stringResource(Res.string.state_selected)
+                    val unselectedText = stringResource(Res.string.state_unselected)
                     Row(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .padding(top = 16.dp)
                                 .minimumInteractiveComponentSize()
-                                .clickable(role = Role.Checkbox) {
-                                    exportAllVisits =
-                                        !exportAllVisits
-                                },
+                                .semantics {
+                                    stateDescription = if (exportAllVisits) selectedText else unselectedText
+                                }.toggleable(
+                                    value = exportAllVisits,
+                                    role = Role.Checkbox,
+                                    onValueChange = { exportAllVisits = it },
+                                ),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Checkbox(
                             checked = exportAllVisits,
-                            onCheckedChange = { exportAllVisits = it },
+                            onCheckedChange = null,
                         )
                         Text(stringResource(Res.string.export_all_patients), modifier = Modifier.padding(start = 8.dp))
                     }
@@ -537,15 +554,7 @@ fun PatientListScreen(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text =
-                            "THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, " +
-                                "EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES " +
-                                "OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND " +
-                                "NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT " +
-                                "HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, " +
-                                "WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING " +
-                                "FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR " +
-                                "OTHER DEALINGS IN THE SOFTWARE.",
+                        text = stringResource(Res.string.legal_disclaimer),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -648,7 +657,10 @@ fun PatientListScreen(
                         Text(
                             stringResource(err),
                             color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(top = 8.dp),
+                            modifier =
+                                Modifier
+                                    .padding(top = 8.dp)
+                                    .semantics { liveRegion = LiveRegionMode.Polite },
                         )
                     }
                 }

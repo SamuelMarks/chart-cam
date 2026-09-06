@@ -74,8 +74,8 @@ class FormBuilderE2EJvmTest {
 
         // 2. Form Submission Journey
         // The UI should now render the io.healthplatform.chartcam.sdc.SdcQuestionnaireForm
-        // Our added widget is a Single Line Text item with default label "New SINGLE_LINE_TEXT Item"
-        rule.onNodeWithText("New SINGLE_LINE_TEXT Item", substring = true).assertIsDisplayed()
+        // Our added widget is a Single Line Text item with default label "New Single Line Text Item"
+        rule.onNodeWithText("New Single Line Text Item", substring = true).assertIsDisplayed()
     }
 
     /**

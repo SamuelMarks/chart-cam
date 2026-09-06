@@ -38,8 +38,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
@@ -133,9 +135,12 @@ fun TriageScreen(
                             )
                         },
                         modifier =
-                            Modifier.minimumInteractiveComponentSize().clickable(
-                                role = Role.Button,
-                            ) { viewModel.selectPatient(patient) },
+                            Modifier
+                                .minimumInteractiveComponentSize()
+                                .semantics(mergeDescendants = true) {}
+                                .clickable(
+                                    role = Role.Button,
+                                ) { viewModel.selectPatient(patient) },
                     )
                     HorizontalDivider()
                 }
@@ -193,7 +198,12 @@ private fun TriagePatientSelectionHeader(
                 )
             }
         },
-        modifier = Modifier.padding(8.dp),
+        modifier =
+            Modifier
+                .padding(8.dp)
+                .semantics {
+                    liveRegion = LiveRegionMode.Polite
+                },
     )
 }
 

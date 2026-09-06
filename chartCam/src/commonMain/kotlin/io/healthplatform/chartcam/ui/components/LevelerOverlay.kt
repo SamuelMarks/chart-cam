@@ -11,8 +11,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -28,6 +32,7 @@ import chartcam.chartcam.generated.resources.cd_leveler_status
 import chartcam.chartcam.generated.resources.level_status_level
 import chartcam.chartcam.generated.resources.level_status_tilted
 import io.healthplatform.chartcam.sensors.SensorManager
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
 
@@ -78,16 +83,29 @@ fun LevelerOverlay(
         }
     val cdStatus = stringResource(Res.string.cd_leveler_status, statusText)
 
+    var lastAnnouncedLevel by remember { mutableStateOf<Boolean?>(null) }
+    var currentAnnouncement by remember { mutableStateOf(cdStatus) }
+
+    LaunchedEffect(isLevel) {
+        delay(LevelerConstants.DEBOUNCE_DELAY_MS)
+        if (lastAnnouncedLevel != isLevel) {
+            lastAnnouncedLevel = isLevel
+            currentAnnouncement = cdStatus
+        }
+    }
+
     Box(
-        modifier =
-            Modifier.fillMaxSize().semantics(mergeDescendants = true) {
-                contentDescription = cdStatus
-                liveRegion = LiveRegionMode.Polite
-            },
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
         // Crosshair
-        Canvas(modifier = Modifier.size(200.dp)) {
+        Canvas(
+            modifier =
+                Modifier.size(200.dp).semantics(mergeDescendants = true) {
+                    contentDescription = currentAnnouncement
+                    liveRegion = LiveRegionMode.Polite
+                },
+        ) {
             val center = center
             val lineLength = 50.dp.toPx()
 
@@ -138,4 +156,5 @@ fun LevelerOverlay(
 private object LevelerConstants {
     const val LEVEL_COLOR_HEX = 0xFF52854C
     const val MAX_DEFLECTION = 20.0
+    const val DEBOUNCE_DELAY_MS = 500L
 }

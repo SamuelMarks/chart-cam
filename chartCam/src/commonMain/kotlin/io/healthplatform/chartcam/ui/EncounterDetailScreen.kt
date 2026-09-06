@@ -54,8 +54,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
@@ -72,12 +74,14 @@ import chartcam.chartcam.generated.resources.delete_visit_title
 import chartcam.chartcam.generated.resources.edit_visit
 import chartcam.chartcam.generated.resources.finalize_visit
 import chartcam.chartcam.generated.resources.image_load_error
+import chartcam.chartcam.generated.resources.loading
 import chartcam.chartcam.generated.resources.mrn_date_format
 import chartcam.chartcam.generated.resources.no
 import chartcam.chartcam.generated.resources.no_notes
 import chartcam.chartcam.generated.resources.provider_format
 import chartcam.chartcam.generated.resources.questionnaire
 import chartcam.chartcam.generated.resources.questionnaire_format
+import chartcam.chartcam.generated.resources.recovered_form
 import chartcam.chartcam.generated.resources.select_questionnaire
 import chartcam.chartcam.generated.resources.syncing_to_server
 import chartcam.chartcam.generated.resources.take_photos
@@ -152,12 +156,14 @@ fun EncounterDetailScreen(
     actions: EncounterDetailActions,
     newlyCreatedQuestionnaireId: String? = null,
 ) {
+    val recoveredFormLabel = stringResource(Res.string.recovered_form)
     val viewModel =
         androidx.lifecycle.viewmodel.compose.viewModel {
             EncounterDetailViewModel(
                 dependencies.fhirRepository,
                 dependencies.authRepository,
                 dependencies.questionnaireRepository,
+                recoveredFormResolver = { recoveredFormLabel },
             )
         }
 
@@ -365,9 +371,25 @@ private fun EncounterDetailContent(
     viewModel: EncounterDetailViewModel,
 ) {
     if (state.isLoading || state.isSyncing) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        val loadingText =
+            if (state.isSyncing) {
+                stringResource(Res.string.syncing_to_server)
+            } else {
+                stringResource(Res.string.loading)
+            }
+        Box(
+            Modifier
+                .fillMaxSize()
+                .semantics {
+                    liveRegion = LiveRegionMode.Polite
+                    contentDescription = loadingText
+                },
+            contentAlignment = Alignment.Center,
+        ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(
+                    modifier = Modifier.semantics { contentDescription = loadingText },
+                )
                 if (state.isSyncing) {
                     Text(
                         stringResource(Res.string.syncing_to_server),
@@ -445,7 +467,14 @@ private fun PatientAndPractitionerInfo(state: EncounterUiState) {
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.semantics { heading() },
         )
-        val encDate = state.encounter?.encounterDate ?: ""
+        val rawDate = state.encounter?.encounterDate ?: ""
+        val encDate =
+            if (rawDate.isNotEmpty()) {
+                io.healthplatform.chartcam.utils
+                    .formatLocalizedDate(rawDate)
+            } else {
+                ""
+            }
         Text(
             text = stringResource(Res.string.mrn_date_format, patient.mrn, encDate),
             style = MaterialTheme.typography.bodyMedium,
@@ -489,7 +518,7 @@ private fun QuestionnaireSelector(
                     state.selectedQuestionnaire?.title?.value ?: "",
                 ),
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(vertical = 8.dp),
+            modifier = Modifier.padding(vertical = 8.dp).semantics { heading() },
         )
     } else {
         ExposedDropdownMenuBox(
@@ -565,7 +594,7 @@ private fun QuestionnaireFormArea(
         Text(
             stringResource(Res.string.captured_photos_format, state.photos.size, targetPhotosCount),
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp),
+            modifier = Modifier.padding(bottom = 8.dp).semantics { heading() },
         )
         Button(onClick = { actions.onTakePhotos(state.selectedQuestionnaire?.id, null) }) {
             Text(stringResource(Res.string.take_photos))
@@ -610,9 +639,7 @@ fun PhotoGridItem(doc: DocumentReference) {
             if (bytes.isNotEmpty()) {
                 Image(
                     bitmap = bytes.decodeToImageBitmap(),
-                    contentDescription =
-                        doc.description?.value
-                            ?: stringResource(Res.string.cd_patient_photo),
+                    contentDescription = null,
                     modifier = Modifier.fillMaxWidth().height(150.dp),
                     contentScale = ContentScale.Crop,
                 )

@@ -30,6 +30,7 @@ import com.google.fhir.model.r4.Reference
 import com.google.fhir.model.r4.String
 import com.google.fhir.model.r4.Uri
 import com.google.fhir.model.r4.terminologies.DocumentReferenceStatus
+import io.healthplatform.chartcam.ui.currentLanguageState
 import kotlinx.datetime.LocalDate
 
 /**
@@ -93,22 +94,94 @@ val HumanName.givenName: kotlin.String
     get() = given.firstOrNull()?.value ?: "Unknown"
 
 /**
- * Extension property to get the full formatted name from a [Patient].
+ * Resolves the localized fallback string for an unknown person name.
+ *
+ * @param language The IETF BCP-47 language tag or ISO-639 code.
+ * @return The localized unknown string placeholder.
  */
-val Patient.fullName: kotlin.String
-    get() {
-        val n = name.firstOrNull()
-        return if (n != null) "${n.familyName}, ${n.givenName}" else "Unknown, Unknown"
+fun getLocalizedUnknownName(language: kotlin.String = currentLanguageState.value): kotlin.String {
+    val lang = language.lowercase().split("-", "_").first()
+    return when (lang) {
+        "es" -> "Desconocido"
+        "ja" -> "不明"
+        "he", "iw" -> "לא ידוע"
+        "zh" -> "未知"
+        else -> "Unknown"
     }
+}
 
 /**
- * Extension property to get the full formatted name from a [Practitioner].
+ * Formats a person's family and given names according to cultural conventions of the specified locale.
+ *
+ * @param familyName The family name or surname.
+ * @param givenName The given name or first name.
+ * @param language The language tag to determine naming order.
+ * @return The culturally formatted full name.
+ */
+fun formatPersonName(
+    familyName: kotlin.String?,
+    givenName: kotlin.String?,
+    language: kotlin.String = currentLanguageState.value,
+): kotlin.String {
+    val fallback = getLocalizedUnknownName(language)
+    val family = familyName?.takeIf { it.isNotBlank() }
+    val given = givenName?.takeIf { it.isNotBlank() }
+
+    if (family == null && given == null) {
+        return fallback
+    }
+
+    val lang = language.lowercase().split("-", "_").first()
+    val isEastAsian = lang == "zh" || lang == "ja"
+
+    return if (isEastAsian) {
+        listOfNotNull(family, given).joinToString("")
+    } else {
+        if (family != null && given != null) {
+            "$family, $given"
+        } else {
+            family ?: given ?: fallback
+        }
+    }
+}
+
+/**
+ * Extension function to get the culturally formatted full name from a [Patient] for a specific language.
+ *
+ * @param language The language tag to use for formatting.
+ * @return The formatted full name.
+ */
+fun Patient.getFullName(language: kotlin.String = currentLanguageState.value): kotlin.String {
+    val n = name.firstOrNull() ?: return getLocalizedUnknownName(language)
+    val fam = n.family?.value
+    val giv = n.given.firstOrNull()?.value
+    return formatPersonName(fam, giv, language)
+}
+
+/**
+ * Extension property to get the full formatted name from a [Patient] using the active application language.
+ */
+val Patient.fullName: kotlin.String
+    get() = getFullName()
+
+/**
+ * Extension function to get the culturally formatted full name from a [Practitioner] for a specific language.
+ *
+ * @param language The language tag to use for formatting.
+ * @return The formatted full name.
+ */
+fun Practitioner.getFullName(language: kotlin.String = currentLanguageState.value): kotlin.String {
+    val n = name.firstOrNull() ?: return getLocalizedUnknownName(language)
+    val fam = n.family?.value
+    val giv = n.given.firstOrNull()?.value
+    return formatPersonName(fam, giv, language)
+}
+
+/**
+ * Extension property to get the full formatted name from a [Practitioner] using the active application language.
  */
 val Practitioner.fullName: kotlin.String
-    get() {
-        val n = name.firstOrNull()
-        return if (n != null) "${n.familyName}, ${n.givenName}" else "Unknown, Unknown"
-    }
+    get() = getFullName()
 
 /**
  * Creates a FHIR Practitioner resource.

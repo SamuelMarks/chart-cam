@@ -97,10 +97,18 @@ enum class WidgetType {
  *
  * @param repository The repository to save the resulting FHIR Questionnaire.
  * @param duplicateFromId Optional ID of a questionnaire to duplicate from.
+ * @param copyTitleResolver Function to generate duplicate questionnaire title.
+ * @param defaultItemLabelResolver Function to provide fallback item label when missing.
+ * @param widgetItemLabelResolver Function to generate default label for a newly added widget.
+ * @param unknownTitleResolver Function to provide fallback title for unknown questionnaire.
  */
 class QuestionnaireBuilderViewModel(
     private val repository: QuestionnaireRepository,
     private val duplicateFromId: kotlin.String? = null,
+    private val copyTitleResolver: (kotlin.String) -> kotlin.String = { "$it (Copy)" },
+    private val defaultItemLabelResolver: () -> kotlin.String = { "New Item" },
+    private val widgetItemLabelResolver: (WidgetType) -> kotlin.String = { "New ${it.name} Item" },
+    private val unknownTitleResolver: () -> kotlin.String = { "Unknown" },
 ) : ViewModel() {
     private val _state = MutableStateFlow(QuestionnaireBuilderState())
     private var nextItemId = 1
@@ -111,9 +119,10 @@ class QuestionnaireBuilderViewModel(
     init {
         if (duplicateFromId != null) {
             repository.getQuestionnaire(duplicateFromId)?.let { source ->
+                val sourceTitle = source.title?.value ?: unknownTitleResolver()
                 _state.update {
                     it.copy(
-                        title = "${source.title?.value ?: "Unknown"} (Copy)",
+                        title = copyTitleResolver(sourceTitle),
                         items =
                             source.item.map { fhirItem ->
                                 val widgetType =
@@ -169,7 +178,7 @@ class QuestionnaireBuilderViewModel(
 
                                 BuilderItem(
                                     linkId = fhirItem.linkId.value ?: "item_${nextItemId++}",
-                                    label = fhirItem.text?.value ?: "New Item",
+                                    label = fhirItem.text?.value ?: defaultItemLabelResolver(),
                                     widgetType = widgetType,
                                     options = options,
                                     isError = false,
@@ -200,8 +209,12 @@ class QuestionnaireBuilderViewModel(
      * Adds a new item to the builder.
      *
      * @param widgetType The type of widget to add.
+     * @param label Optional custom label for the item. Defaults to localized widget item name.
      */
-    fun addItem(widgetType: WidgetType) {
+    fun addItem(
+        widgetType: WidgetType,
+        label: kotlin.String? = null,
+    ) {
         val currentItems = _state.value.items
         val newId = "item_${nextItemId++}"
 
@@ -210,7 +223,7 @@ class QuestionnaireBuilderViewModel(
         val newItem =
             BuilderItem(
                 linkId = newId,
-                label = "New ${widgetType.name} Item",
+                label = label ?: widgetItemLabelResolver(widgetType),
                 widgetType = widgetType,
                 options = emptyList(),
                 isError = isError,

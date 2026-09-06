@@ -134,13 +134,21 @@ private fun PatientDetailContent(
         Text(
             text = stringResource(Res.string.visit_history),
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(16.dp),
+            modifier =
+                Modifier
+                    .padding(16.dp)
+                    .semantics { heading() },
         )
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(state.encounters) { encounter ->
                 ListItem(
-                    headlineContent = { Text(encounter.encounterDate) },
+                    headlineContent = {
+                        Text(
+                            io.healthplatform.chartcam.utils
+                                .formatLocalizedDate(encounter.encounterDate),
+                        )
+                    },
                     supportingContent = {
                         Text(
                             encounter.text

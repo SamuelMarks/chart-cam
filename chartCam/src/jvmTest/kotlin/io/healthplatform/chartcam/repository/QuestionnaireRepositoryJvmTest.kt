@@ -184,4 +184,56 @@ class QuestionnaireRepositoryJvmTest {
             kotlinx.coroutines.delay(100)
             assertTrue(fhirRepo.deletedResources.contains("q-delete"))
         }
+
+    /**
+     * Tests localization of standard forms in Spanish, Japanese, Hebrew, and Traditional Chinese.
+     */
+    @Test
+    fun testLocalizeDefaultForms() =
+        runTest {
+            val qrRepo = QuestionnaireRepository(null)
+            qrRepo.loadDefaultForms()
+
+            // English (Default)
+            val stdEn = qrRepo.getQuestionnaire("std-form", "en")
+            assertNotNull(stdEn)
+            assertEquals("Standard Clinical Photo", stdEn.title?.value)
+
+            // Spanish
+            val stdEs = qrRepo.getQuestionnaire("std-form", "es")
+            assertNotNull(stdEs)
+            assertEquals("Formulario Clínico Estándar", stdEs.title?.value)
+            val frontEs = stdEs.item.find { it.linkId.value == "front" }
+            assertEquals("Frente", frontEs?.text?.value)
+
+            // Japanese
+            val stdJa = qrRepo.getQuestionnaire("std-form", "ja")
+            assertNotNull(stdJa)
+            assertEquals("標準臨床問診票", stdJa.title?.value)
+            val frontJa = stdJa.item.find { it.linkId.value == "front" }
+            assertEquals("正面", frontJa?.text?.value)
+
+            // Hebrew
+            val stdHe = qrRepo.getQuestionnaire("std-form", "he")
+            assertNotNull(stdHe)
+            assertEquals("טופס קליני סטנדרטי", stdHe.title?.value)
+            val frontHe = stdHe.item.find { it.linkId.value == "front" }
+            assertEquals("חזית", frontHe?.text?.value)
+
+            // Traditional Chinese
+            val stdZh = qrRepo.getQuestionnaire("std-form", "zh")
+            assertNotNull(stdZh)
+            assertEquals("標準臨床問診表", stdZh.title?.value)
+
+            // Basic followup localization
+            val followEs = qrRepo.getQuestionnaire("basic-followup", "es")
+            assertNotNull(followEs)
+            assertEquals("Seguimiento Básico", followEs.title?.value)
+            val consentEs = followEs.item.find { it.linkId.value == "patient_consent" }
+            assertEquals("El paciente consintió las fotos", consentEs?.text?.value)
+
+            // Available questionnaires with localization
+            val availableEs = qrRepo.getAvailableQuestionnaires("es")
+            assertTrue(availableEs.any { it.title?.value == "Formulario Clínico Estándar" })
+        }
 }

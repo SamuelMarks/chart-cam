@@ -21,14 +21,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cameraswitch
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,26 +49,37 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.camera_permission_required
 import chartcam.chartcam.generated.resources.cancel
+import chartcam.chartcam.generated.resources.capturing_photo
 import chartcam.chartcam.generated.resources.cd_camera_preview
 import chartcam.chartcam.generated.resources.cd_review
 import chartcam.chartcam.generated.resources.cd_switch_camera
+import chartcam.chartcam.generated.resources.clear
 import chartcam.chartcam.generated.resources.confirm
+import chartcam.chartcam.generated.resources.error_camera_capture_failed
+import chartcam.chartcam.generated.resources.error_capture_empty_image
+import chartcam.chartcam.generated.resources.error_capture_save_failed
 import chartcam.chartcam.generated.resources.open_settings
 import chartcam.chartcam.generated.resources.retake
 import chartcam.chartcam.generated.resources.step_count_format
 import chartcam.chartcam.generated.resources.take_photo
+import chartcam.chartcam.generated.resources.unknown_error
 import com.google.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.camera.CameraManager
 import io.healthplatform.chartcam.camera.PermissionStatus
 import io.healthplatform.chartcam.camera.rememberCameraManager
 import io.healthplatform.chartcam.camera.rememberPermissionManager
+import io.healthplatform.chartcam.capture.CaptureError
 import io.healthplatform.chartcam.capture.CaptureUiState
 import io.healthplatform.chartcam.capture.CaptureViewModel
 import io.healthplatform.chartcam.capture.PhotoStep
@@ -116,7 +130,10 @@ private fun PermissionDeniedScreen(
             Text(
                 text = stringResource(Res.string.camera_permission_required),
                 color = Color.White,
-                modifier = Modifier.padding(16.dp),
+                modifier =
+                    Modifier
+                        .padding(16.dp)
+                        .semantics { heading() },
             )
             Button(onClick = onOpenSettings) {
                 Text(stringResource(Res.string.open_settings))
@@ -160,12 +177,14 @@ data class ControlsState(
  * @property onRetake Callback triggered when the user rejects the photo.
  * @property onConfirm Callback triggered when the user accepts the photo.
  * @property onCancel Callback triggered when the cancel button is clicked.
+ * @property onDismissError Callback triggered when dismissing an error banner.
  */
 private data class CaptureActions(
     val onCapture: () -> Unit,
     val onRetake: () -> Unit,
     val onConfirm: () -> Unit,
     val onCancel: () -> Unit,
+    val onDismissError: () -> Unit = {},
 )
 
 /**
@@ -271,6 +290,7 @@ private fun CaptureScreenContent(
                 onRetake = { viewModel.onRetake() },
                 onConfirm = { viewModel.onConfirm() },
                 onCancel = handleCancel,
+                onDismissError = { viewModel.clearError() },
             )
         }
 
@@ -331,12 +351,57 @@ private fun CaptureBox(
                         .clickable(
                             interactionSource = interactionSource,
                             indication = null,
+                            onClickLabel = stringResource(Res.string.take_photo),
                             role = Role.Button,
-                        ) { actions.onCapture() },
+                        ) { actions.onCapture() }
+                        .clearAndSetSemantics {},
             )
         }
 
         LevelerOverlay(sensorManager)
+
+        val localizedErrorText =
+            when (val err = state.error) {
+                is CaptureError.EmptyImage -> stringResource(Res.string.error_capture_empty_image)
+                is CaptureError.SaveFailed -> stringResource(Res.string.error_capture_save_failed)
+                is CaptureError.CameraFailed -> stringResource(Res.string.error_camera_capture_failed, err.detail)
+                null ->
+                    state.errorMessageResource?.let { stringResource(it) }
+                        ?: state.errorMessage?.let { stringResource(Res.string.unknown_error) }
+            }
+
+        if (localizedErrorText != null) {
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                        .padding(16.dp)
+                        .semantics {
+                            liveRegion = LiveRegionMode.Polite
+                        },
+                shape = RoundedCornerShape(8.dp),
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = localizedErrorText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(onClick = actions.onDismissError) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(Res.string.clear),
+                        )
+                    }
+                }
+            }
+        }
 
         if (state.reviewImageBytes != null) {
             ReviewLayer(
@@ -410,17 +475,31 @@ private fun ControlsTopBar(
     count: Int,
     total: Int,
 ) {
+    val currentLang by io.healthplatform.chartcam.ui.currentLanguageState
+        .collectAsState()
+    val formattedCount =
+        io.healthplatform.chartcam.utils
+            .formatLocalizedDecimal(count.toDouble(), currentLang, decimalPlaces = 0)
+    val formattedTotal =
+        io.healthplatform.chartcam.utils
+            .formatLocalizedDecimal(total.toDouble(), currentLang, decimalPlaces = 0)
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(Color.Black.copy(alpha = 0.7f), CircleShape)
-                .padding(12.dp),
+                .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(16.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(stepName, color = Color.White, style = MaterialTheme.typography.titleMedium)
         Text(
-            text = stringResource(Res.string.step_count_format, count.toString(), total.toString()),
+            text = stepName,
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp),
+        )
+        Text(
+            text = stringResource(Res.string.step_count_format, formattedCount, formattedTotal),
             color = Color.White,
             style = MaterialTheme.typography.titleMedium,
         )
@@ -444,13 +523,22 @@ private fun ControlsBottomBar(
     onCancel: () -> Unit,
     onToggleLens: () -> Unit,
 ) {
+    val capturingPhotoText = stringResource(Res.string.capturing_photo)
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.Start,
     ) {
         Button(
             onClick = onCapture,
-            modifier = Modifier.padding(bottom = 16.dp),
+            modifier =
+                Modifier
+                    .padding(bottom = 16.dp)
+                    .semantics {
+                        if (isCapturing) {
+                            contentDescription = capturingPhotoText
+                            liveRegion = LiveRegionMode.Polite
+                        }
+                    },
             enabled = !isCapturing,
             colors =
                 ButtonDefaults.buttonColors(
@@ -460,7 +548,10 @@ private fun ControlsBottomBar(
         ) {
             if (isCapturing) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
+                    modifier =
+                        Modifier
+                            .size(24.dp)
+                            .semantics { contentDescription = capturingPhotoText },
                     color = MaterialTheme.colorScheme.onPrimary,
                 )
             } else {

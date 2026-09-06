@@ -27,6 +27,17 @@ class LanguageSwitcherJvmTest {
             setAppLanguage("es")
             assertEquals("es", currentLanguageState.value)
             assertEquals("es", Locale.getDefault().language)
+
+            setAppLanguage("he")
+            assertEquals("he", currentLanguageState.value)
+            // Java maps Hebrew to "he" or legacy "iw"
+            val heLang = Locale.getDefault().language
+            kotlin.test.assertTrue(heLang == "he" || heLang == "iw")
+
+            setAppLanguage("zh-TW")
+            assertEquals("zh-TW", currentLanguageState.value)
+            assertEquals("zh", Locale.getDefault().language)
+            assertEquals("TW", Locale.getDefault().country)
         } finally {
             Locale.setDefault(originalLocale)
             currentLanguageState.value = originalLocale.language

@@ -60,7 +60,7 @@ class QuestionnaireBuilderScreenTest {
                 onNodeWithText(getString(Res.string.preview_mode)).assertIsDisplayed()
 
                 // We should see the new item listed
-                onNodeWithText("New SINGLE_LINE_TEXT Item").assertIsDisplayed()
+                onNodeWithText("New Single Line Text Item").assertIsDisplayed()
             }
         }
 

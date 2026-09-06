@@ -8,7 +8,6 @@ import platform.Foundation.NSDateFormatter
 import platform.Foundation.NSDateFormatterMediumStyle
 import platform.Foundation.NSISO8601DateFormatter
 import platform.Foundation.NSLocale
-import platform.Foundation.currentLocale
 
 /**
  * Helper to parse date.
@@ -27,15 +26,19 @@ private fun parseFhirDate(fhirDate: String): NSDate? {
  * Formats a FHIR date or datetime string into a localized format.
  *
  * @param fhirDate The date string.
+ * @param language The language code.
  * @return The localized date string.
  */
-actual fun formatLocalizedDate(fhirDate: String): String {
+actual fun formatLocalizedDate(
+    fhirDate: String,
+    language: String,
+): String {
     var res = fhirDate
     if (fhirDate.isNotBlank()) {
         val date = parseFhirDate(fhirDate)
         if (date != null) {
             val formatter = NSDateFormatter()
-            formatter.locale = NSLocale.currentLocale
+            formatter.locale = NSLocale(localeIdentifier = language)
             formatter.dateStyle = NSDateFormatterMediumStyle
             formatter.timeStyle = if (fhirDate.contains("T")) NSDateFormatterMediumStyle else 0UL
 

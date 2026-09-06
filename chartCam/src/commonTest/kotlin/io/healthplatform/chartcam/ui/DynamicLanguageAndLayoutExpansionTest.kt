@@ -5,6 +5,7 @@
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.unit.LayoutDirection
+import io.healthplatform.chartcam.ui.components.splitTextIntoVerticalColumns
 import io.healthplatform.chartcam.utils.formatLocalizedDecimal
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -196,5 +197,94 @@ class DynamicLanguageAndLayoutExpansionTest {
         // Whole number where fraction part is empty
         val wholeNumber = formatLocalizedDecimal(50.0, localeTag = "en", decimalPlaces = 2)
         assertEquals("50", wholeNumber)
+    }
+
+    /**
+     * Verify Hebrew RTL script recognition and layout direction mapping.
+     */
+    @Test
+    fun testHebrewRtlFlowAndLanguageDetection() {
+        assertTrue(isRtlLanguage("he"), "Hebrew standard code 'he' must be recognized as RTL")
+        assertTrue(isRtlLanguage("he-IL"), "Hebrew 'he-IL' must be recognized as RTL")
+        assertTrue(isRtlLanguage("iw"), "Hebrew legacy code 'iw' must be recognized as RTL")
+        assertTrue(isRtlLanguage("iw-IL"), "Hebrew legacy 'iw-IL' must be recognized as RTL")
+
+        assertEquals(LayoutDirection.Rtl, getLayoutDirectionForLanguage("he"))
+        assertEquals(LayoutDirection.Rtl, getLayoutDirectionForLanguage("he-IL"))
+        assertEquals(LayoutDirection.Rtl, getLayoutDirectionForLanguage("iw"))
+    }
+
+    /**
+     * Verify Traditional Chinese language detection and vertical writing compatibility.
+     */
+    @Test
+    fun testTraditionalChineseLanguageDetection() {
+        assertTrue(isTraditionalChinese("zh"), "Base 'zh' should match Chinese")
+        assertTrue(isTraditionalChinese("zh-TW"), "Taiwan Traditional Chinese 'zh-TW' should match")
+        assertTrue(isTraditionalChinese("zh-Hant"), "Script tag 'zh-Hant' should match")
+        assertTrue(isTraditionalChinese("zh-HK"), "Hong Kong Traditional Chinese 'zh-HK' should match")
+        assertFalse(isTraditionalChinese("en"), "English is not Chinese")
+        assertFalse(isTraditionalChinese("ja"), "Japanese is not Chinese")
+        assertFalse(isTraditionalChinese("he"), "Hebrew is not Chinese")
+
+        assertTrue(isVerticalTextLanguage("zh"), "Vertical text support must be enabled for Chinese")
+        assertTrue(isVerticalTextLanguage("zh-TW"), "Vertical text support must be enabled for zh-TW")
+        assertFalse(isVerticalTextLanguage("en"), "Vertical text should not be enabled by default for English")
+
+        assertEquals(LayoutDirection.Ltr, getLayoutDirectionForLanguage("zh"))
+        assertEquals(LayoutDirection.Ltr, getLayoutDirectionForLanguage("zh-TW"))
+    }
+
+    /**
+     * Verify text segmentation for Traditional Chinese vertical column writing mode.
+     */
+    @Test
+    fun testSplitTextIntoVerticalColumns() {
+        // Empty text
+        assertEquals(emptyList(), splitTextIntoVerticalColumns("", 5))
+        // Invalid maxCharsPerColumn
+        assertEquals(emptyList(), splitTextIntoVerticalColumns("測試", 0))
+        assertEquals(emptyList(), splitTextIntoVerticalColumns("測試", -1))
+
+        // Single line split into columns
+        val text = "拍攝記錄照護"
+        val cols = splitTextIntoVerticalColumns(text, maxCharsPerColumn = 2)
+        assertEquals(3, cols.size)
+        assertEquals(listOf("拍", "攝"), cols[0])
+        assertEquals(listOf("記", "錄"), cols[1])
+        assertEquals(listOf("照", "護"), cols[2])
+
+        // Explicit newlines starting new columns
+        val multilineText = "病患\n就診\n\n記錄"
+        val multilineCols = splitTextIntoVerticalColumns(multilineText, maxCharsPerColumn = 5)
+        assertEquals(4, multilineCols.size)
+        assertEquals(listOf("病", "患"), multilineCols[0])
+        assertEquals(listOf("就", "診"), multilineCols[1])
+        assertEquals(listOf(" "), multilineCols[2])
+        assertEquals(listOf("記", "錄"), multilineCols[3])
+    }
+
+    /**
+     * Verify runtime switching to Hebrew and Traditional Chinese preserves form inputs.
+     */
+    @Test
+    fun testHebrewAndChineseRuntimeSwitchingPreservesData() {
+        val clinicalInputs = mutableMapOf("chief_complaint" to "Acute abdominal pain")
+
+        // Switch to Hebrew (RTL)
+        currentLanguageState.value = "he"
+        assertEquals("he", currentLanguageState.value)
+        assertEquals("Acute abdominal pain", clinicalInputs["chief_complaint"])
+        assertEquals(LayoutDirection.Rtl, getLayoutDirectionForLanguage(currentLanguageState.value))
+
+        // Switch to Traditional Chinese
+        currentLanguageState.value = "zh"
+        assertEquals("zh", currentLanguageState.value)
+        assertEquals("Acute abdominal pain", clinicalInputs["chief_complaint"])
+        assertEquals(LayoutDirection.Ltr, getLayoutDirectionForLanguage(currentLanguageState.value))
+        assertTrue(isTraditionalChinese(currentLanguageState.value))
+
+        // Restore
+        currentLanguageState.value = "en"
     }
 }

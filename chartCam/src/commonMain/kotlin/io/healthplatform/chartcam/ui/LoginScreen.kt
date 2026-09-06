@@ -59,7 +59,16 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -76,12 +85,17 @@ import chartcam.chartcam.generated.resources.espanol
 import chartcam.chartcam.generated.resources.feature_capture
 import chartcam.chartcam.generated.resources.feature_secure
 import chartcam.chartcam.generated.resources.feature_sync
+import chartcam.chartcam.generated.resources.hebrew
 import chartcam.chartcam.generated.resources.japanese
+import chartcam.chartcam.generated.resources.legal_disclaimer
 import chartcam.chartcam.generated.resources.login_signup
 import chartcam.chartcam.generated.resources.logo
 import chartcam.chartcam.generated.resources.offline_mode
 import chartcam.chartcam.generated.resources.password
+import chartcam.chartcam.generated.resources.state_unselected
+import chartcam.chartcam.generated.resources.traditional_chinese
 import chartcam.chartcam.generated.resources.username
+import io.healthplatform.chartcam.ui.components.TraditionalChineseVerticalBanner
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -162,18 +176,35 @@ private fun LanguageMenu() {
             DropdownMenuItem(
                 text = { Text(stringResource(Res.string.english)) },
                 onClick = {
+                    setAppLanguage("en")
                     showLanguageMenu = false
                 },
             )
             DropdownMenuItem(
                 text = { Text(stringResource(Res.string.espanol)) },
                 onClick = {
+                    setAppLanguage("es")
                     showLanguageMenu = false
                 },
             )
             DropdownMenuItem(
                 text = { Text(stringResource(Res.string.japanese)) },
                 onClick = {
+                    setAppLanguage("ja")
+                    showLanguageMenu = false
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.hebrew)) },
+                onClick = {
+                    setAppLanguage("he")
+                    showLanguageMenu = false
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.traditional_chinese)) },
+                onClick = {
+                    setAppLanguage("zh")
                     showLanguageMenu = false
                 },
             )
@@ -186,25 +217,38 @@ private fun LanguageMenu() {
  */
 @Composable
 private fun LoginHeader() {
+    val currentLang by currentLanguageState.collectAsState()
+    var isVerticalMode by remember { mutableStateOf(true) }
+
     Image(
         painter = painterResource(Res.drawable.logo),
         contentDescription = null, // Decorative logo; app title is read out directly below
         modifier = Modifier.size(120.dp).padding(bottom = 16.dp),
     )
 
-    Text(
-        text = stringResource(Res.string.app_name_title),
-        style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(bottom = 8.dp),
-    )
+    if (isTraditionalChinese(currentLang)) {
+        TraditionalChineseVerticalBanner(
+            title = stringResource(Res.string.app_name_title),
+            subtitle = stringResource(Res.string.app_slogan),
+            onToggleMode = { isVerticalMode = !isVerticalMode },
+            isVerticalMode = isVerticalMode,
+            modifier = Modifier.padding(bottom = 16.dp),
+        )
+    } else {
+        Text(
+            text = stringResource(Res.string.app_name_title),
+            style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = 8.dp).semantics { heading() },
+        )
 
-    Text(
-        text = stringResource(Res.string.app_slogan),
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(bottom = 32.dp),
-    )
+        Text(
+            text = stringResource(Res.string.app_slogan),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 32.dp),
+        )
+    }
 }
 
 /**
@@ -253,6 +297,7 @@ private fun LoginCard(
                 },
                 isLoading = isLoading,
                 isError = formError != null,
+                errorMessage = formError,
             )
 
             PasswordField(
@@ -264,6 +309,7 @@ private fun LoginCard(
                 isLoading = isLoading,
                 isError = formError != null,
                 onLogin = attemptLogin,
+                errorMessage = formError,
             )
 
             OfflineModeSwitch()
@@ -291,13 +337,7 @@ private fun LoginCard(
 @Composable
 private fun LegalDisclaimer() {
     Text(
-        text =
-            "THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, " +
-                "INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A " +
-                "PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR " +
-                "COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER " +
-                "IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN " +
-                "CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.",
+        text = stringResource(Res.string.legal_disclaimer),
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center,
@@ -310,6 +350,7 @@ private fun LegalDisclaimer() {
  * @param onUsernameChange The onUsernameChange.
  * @param isLoading The isLoading.
  * @param isError The isError.
+ * @param errorMessage The errorMessage.
  */
 @Composable
 private fun UsernameField(
@@ -317,25 +358,38 @@ private fun UsernameField(
     onUsernameChange: (String) -> Unit,
     isLoading: Boolean,
     isError: Boolean,
+    errorMessage: String? = null,
 ) {
     val focusManager = LocalFocusManager.current
     OutlinedTextField(
         value = username,
         onValueChange = onUsernameChange,
         label = { Text(stringResource(Res.string.username)) },
+        supportingText = {
+            if (isError && errorMessage != null) {
+                Text(errorMessage)
+            }
+        },
         modifier =
-            Modifier.fillMaxWidth().padding(bottom = 16.dp).onKeyEvent {
-                if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                    val dir = if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next
-                    focusManager.moveFocus(dir)
-                    true
-                } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                    focusManager.moveFocus(FocusDirection.Next)
-                    true
-                } else {
-                    false
-                }
-            },
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+                .semantics {
+                    if (isError && errorMessage != null) {
+                        error(errorMessage)
+                    }
+                }.onKeyEvent {
+                    if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                        val dir = if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next
+                        focusManager.moveFocus(dir)
+                        true
+                    } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+                        focusManager.moveFocus(FocusDirection.Next)
+                        true
+                    } else {
+                        false
+                    }
+                },
         singleLine = true,
         enabled = !isLoading,
         isError = isError,
@@ -351,6 +405,7 @@ private fun UsernameField(
  * @param isLoading The isLoading.
  * @param isError The isError.
  * @param onLogin The onLogin.
+ * @param errorMessage The errorMessage.
  */
 @Composable
 private fun PasswordField(
@@ -359,25 +414,38 @@ private fun PasswordField(
     isLoading: Boolean,
     isError: Boolean,
     onLogin: () -> Unit,
+    errorMessage: String? = null,
 ) {
     val focusManager = LocalFocusManager.current
     OutlinedTextField(
         value = password,
         onValueChange = onPasswordChange,
         label = { Text(stringResource(Res.string.password)) },
+        supportingText = {
+            if (isError && errorMessage != null) {
+                Text(errorMessage)
+            }
+        },
         modifier =
-            Modifier.fillMaxWidth().padding(bottom = 24.dp).onKeyEvent {
-                if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                    val dir = if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next
-                    focusManager.moveFocus(dir)
-                    true
-                } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                    onLogin()
-                    true
-                } else {
-                    false
-                }
-            },
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp)
+                .semantics {
+                    if (isError && errorMessage != null) {
+                        error(errorMessage)
+                    }
+                }.onKeyEvent {
+                    if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+                        val dir = if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next
+                        focusManager.moveFocus(dir)
+                        true
+                    } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+                        onLogin()
+                        true
+                    } else {
+                        false
+                    }
+                },
         singleLine = true,
         visualTransformation = PasswordVisualTransformation(),
         isError = isError,
@@ -396,13 +464,24 @@ private fun PasswordField(
  */
 @Composable
 private fun OfflineModeSwitch() {
+    val offlineModeLabel = stringResource(Res.string.offline_mode)
+    val unselectedText = stringResource(Res.string.state_unselected)
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+                .semantics(mergeDescendants = true) {
+                    contentDescription = offlineModeLabel
+                    role = Role.Switch
+                    disabled()
+                    stateDescription = unselectedText
+                },
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
-            text = stringResource(Res.string.offline_mode),
+            text = offlineModeLabel,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
@@ -425,7 +504,13 @@ private fun ErrorMessage(text: String) {
         color = MaterialTheme.colorScheme.error,
         style = MaterialTheme.typography.bodySmall,
         textAlign = TextAlign.Center,
-        modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth(),
+        modifier =
+            Modifier
+                .padding(bottom = 16.dp)
+                .fillMaxWidth()
+                .semantics {
+                    liveRegion = LiveRegionMode.Polite
+                },
     )
 }
 
@@ -447,12 +532,12 @@ private fun LoginButton(onClick: () -> Unit) {
             colors =
                 ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = androidx.compose.ui.graphics.Color.White,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
         ) {
             Text(
                 text = stringResource(Res.string.login_signup),
-                color = androidx.compose.ui.graphics.Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Normal),
             )
         }
@@ -494,7 +579,7 @@ fun FeatureIcon(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = label,
+            contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(32.dp).padding(bottom = 4.dp),
         )

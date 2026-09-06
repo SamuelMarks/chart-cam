@@ -11,17 +11,24 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import io.healthplatform.chartcam.navigation.AppNavigation
+import io.healthplatform.chartcam.ui.currentLanguageState
+import io.healthplatform.chartcam.ui.getLayoutDirectionForLanguage
 import io.healthplatform.chartcam.ui.theme.AppTheme
 
 /**
  * The Root Composable Configurator.
  * Applies the AppTheme for Material Design 3 styling and sets up the primary
  * surface which fills the entire screen, serving as the container for the
- * main [AppNavigation] graph.
+ * main [AppNavigation] graph. Dynamically observes the current language state
+ * to apply the appropriate [LocalLayoutDirection] (LTR or RTL).
  * **State & Side Effects:**
  * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
@@ -30,12 +37,17 @@ import io.healthplatform.chartcam.ui.theme.AppTheme
 @Composable
 @Preview
 fun App(darkTheme: Boolean = isSystemInDarkTheme()) {
-    AppTheme(darkTheme = darkTheme) {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = Color.Transparent,
-        ) {
-            AppNavigation()
+    val currentLang by currentLanguageState.collectAsState()
+    val layoutDirection = getLayoutDirectionForLanguage(currentLang)
+
+    CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
+        AppTheme(darkTheme = darkTheme) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = Color.Transparent,
+            ) {
+                AppNavigation()
+            }
         }
     }
 }

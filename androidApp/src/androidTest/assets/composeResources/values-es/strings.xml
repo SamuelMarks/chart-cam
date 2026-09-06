@@ -1,26 +1,18 @@
-<?xml version='1.0' encoding='utf-8'?>
 <resources>
-    
     <string name="camera_permission_required">Se requiere permiso de cámara</string>
     <string name="open_settings">Abrir Configuración</string>
     <string name="cancel">Cancelar</string>
     <string name="take_photo">Tomar Foto</string>
     <string name="retake">Volver a Tomar</string>
     <string name="confirm">Confirmar</string>
-
-    
     <string name="triage_select_patient">Triaje: Seleccionar Paciente</string>
-    
     <plurals name="selected_photos_ready">
-        <item quantity="one">[ES] Selected. 1 photo ready.</item>
-        <item quantity="other">[ES] Selected. %1$d photos ready.</item>
+        <item quantity="one">Seleccionado. 1 foto lista.</item>
+        <item quantity="other">Seleccionados. %1$d fotos listas.</item>
     </plurals>
-    
     <string name="search_placeholder">Buscar Nombre o N.º de Historia...</string>
     <string name="mrn_dob_format">N.º: %1$s | Fecha: %2$s</string>
     <string name="no_patients_found">No se encontraron pacientes.</string>
-
-    
     <string name="patient_directory">Directorio de Pacientes</string>
     <string name="show_my_patients_only">Mostrar Solo Mis Pacientes</string>
     <string name="show_all_patients">Mostrar Todos Los Pacientes</string>
@@ -29,36 +21,27 @@
     <string name="logout">Cerrar Sesión</string>
     <string name="about">Acerca de</string>
     <string name="delete_my_account">Eliminar Mi Cuenta</string>
-
     <string name="export_password_title">Contraseña de Exportación</string>
     <string name="export_password_label">Ingrese contraseña para encriptar</string>
     <string name="export_all_patients">Exportar todas las visitas de todos los pacientes</string>
     <string name="export">Exportar</string>
-
     <string name="data_exported_title">Datos Exportados</string>
     <string name="data_exported_message">Los datos han sido encriptados. Comparta el archivo y la contraseña por separado.</string>
     <string name="share_password">Compartir Contraseña</string>
     <string name="share_file">Compartir Archivo</string>
     <string name="close">Cerrar</string>
-
     <string name="about_title">Acerca de ChartCam</string>
     <string name="version_text">Versión: %1$s</string>
     <string name="ok">Aceptar</string>
-
     <string name="delete_account_title">Eliminar Cuenta</string>
     <string name="delete_account_message">¿Está seguro de que desea eliminar su cuenta? Esto eliminará permanentemente todos sus pacientes, visitas, fotos y notas. Esto no se puede deshacer.</string>
     <string name="delete">Eliminar</string>
-
     <string name="import_title">Importar Datos</string>
     <string name="paste_data_here">Pegue los Datos Aquí</string>
     <string name="password">Contraseña</string>
     <string name="import_action">Importar</string>
-
-    
     <string name="username">Nombre de Usuario</string>
     <string name="login_signup">Iniciar sesión / Registrarse</string>
-
-    
     <string name="new_patient">Nuevo Paciente</string>
     <string name="first_name">Nombre</string>
     <string name="last_name">Apellido</string>
@@ -66,35 +49,25 @@
     <string name="dob_label">Fecha Nacimiento (AAAA-MM-DD)</string>
     <string name="dob_placeholder">1990-01-01</string>
     <string name="create">Crear</string>
-
-    
     <string name="create_questionnaire">Crear Cuestionario</string>
     <string name="title">Título</string>
     <string name="number_of_photos">Número de Fotos</string>
     <string name="labels_comma">Etiquetas (separadas por coma)</string>
-
     <string name="visit_detail">Detalle de Visita</string>
     <string name="delete_visit">Eliminar Visita</string>
     <string name="delete_visit_message">¿Está seguro de que desea eliminar esta visita? Esto eliminará permanentemente sus fotos y notas. Esto no se puede deshacer.</string>
     <string name="syncing_to_server">Sincronizando al Servidor...</string>
-
     <string name="questionnaire">Cuestionario</string>
     <string name="questionnaire_format">Cuestionario: %1$s</string>
-
     <string name="create_new">Crear nuevo...</string>
     <string name="take_photos">Tomar Fotos</string>
     <string name="image_load_error">Error de Carga de Imagen</string>
-
-    
     <string name="patient_detail">Detalle del Paciente</string>
     <string name="delete_patient">Eliminar Paciente</string>
     <string name="delete_patient_message">¿Está seguro de que desea eliminar este paciente? Esto eliminará permanentemente todas sus visitas, fotos y notas. Esto no se puede deshacer.</string>
     <string name="no_visits_found">No se encontraron visitas</string>
-
     <string name="no_notes">Sin notas</string>
     <string name="initializing_camera">Inicializando cámara...</string>
-
-    
     <string name="cd_camera_preview">Vista previa de la cámara</string>
     <string name="cd_switch_camera">Cambiar Cámara</string>
     <string name="cd_review">Revisar</string>
@@ -113,9 +86,7 @@
     <string name="cd_patient_photo">Foto del Paciente</string>
     <string name="cd_item">Elemento %1$s</string>
     <string name="cd_new_visit">Nueva Visita</string>
-
     <string name="cd_search_icon">Icono de búsqueda</string>
-
     <string name="feature_capture">Captura</string>
     <string name="feature_secure">Seguro</string>
     <string name="feature_sync">Sincroniza</string>
@@ -159,8 +130,8 @@
     <string name="widget_datetime">Fecha y hora</string>
     <string name="widget_numeric">Numérico</string>
     <string name="widget_range">Rango</string>
-    <string name="date_format_label">%1$s (AAAA-MM-DD)</string>
-    <string name="datetime_format_label">%1$s (AAAA-MM-DD HH:MM)</string>
+    <string name="date_format_label">%1$s (%2$s)</string>
+    <string name="datetime_format_label">%1$s (%2$s)</string>
     <string name="questionnaires">Cuestionarios</string>
     <string name="import_questionnaire">Importar Cuestionario</string>
     <string name="import_error_format">Error de importación: %1$s</string>
@@ -173,7 +144,7 @@
     <string name="copy_to_clipboard">Copiar al portapapeles</string>
     <string name="share_text_json">Compartir texto/JSON</string>
     <string name="qr_code_coming_soon">Código QR próximamente</string>
-    <string name="recovered_form">Formulario Recuperado</string>
+    <string name="recovered_form">Formulario recuperado</string>
     <string name="yes">Sí</string>
     <string name="no">No</string>
     <string name="add_option">Añadir opción</string>
@@ -184,4 +155,69 @@
     <string name="cd_unnamed_item">Pregunta sin nombre</string>
     <string name="cd_unnamed_group">Sección sin nombre</string>
     <string name="error_required_field">Este campo es obligatorio</string>
-<string name="japanese">[ES] 日本語</string><string name="cd_more_options">[ES] More options</string><string name="new_item">[ES] New Item</string><string name="state_selected">[ES] Selected</string><string name="at_least_one_option_required">[ES] At least one option is required</string><string name="espanol">[ES] Español</string><string name="not_answered">[ES] Not answered</string><string name="error_duplicate_id">[ES] A questionnaire with this generated ID already exists. Please change the title to make it unique.</string><string name="new_widget_item">[ES] New %1$s Item</string><string name="clear">[ES] Clear</string><string name="bullet_format">[ES] • %1$s</string><string name="cd_camera_icon">[ES] Camera icon</string><string name="invalid_credentials">[ES] Invalid Credentials</string><string name="state_unselected">[ES] Unselected</string><string name="cd_move_up">[ES] Move Up</string><string name="cd_delete">[ES] Delete</string><string name="unknown_error">[ES] Unknown error</string><string name="unknown_copy">[ES] %1$s (Copy)</string><string name="confirm_delete_option_title">[ES] Delete Option?</string><string name="camera_unavailable">[ES] Camera unavailable or permission denied.</string><string name="id_format">[ES] ID: %1$s</string><string name="english">[ES] English</string><string name="cd_move_down">[ES] Move Down</string><string name="clipboard_data_label">[ES] ChartCam Clipboard Data</string><string name="edit_visit">[ES] Edit visit</string><string name="failed_to_load_patients">[ES] Failed to load patients</string><string name="invalid_fhir_format">[ES] Invalid format: JSON is not a valid FHIR Questionnaire.</string><string name="incorrect_password">[ES] Incorrect password</string><string name="level_status_tilted">[ES] Camera is tilted</string><string name="finalize_visit">[ES] Finalize Visit</string><string name="error">[ES] Error</string><string name="cd_video_icon">[ES] Video icon</string><string name="confirm_delete_option_message">[ES] Are you sure you want to delete this option?</string><string name="confirm_delete_item_message">[ES] Are you sure you want to delete this item? This cannot be undone.</string><string name="cd_duplicate">[ES] Duplicate</string><string name="cd_leveler_status">[ES] Camera Leveler: %1$s</string><string name="confirm_delete_item_title">[ES] Delete Item?</string><string name="failed_to_import">[ES] Failed to import. Wrong password or bad data.</string><string name="decryption_failed">[ES] Decryption failed or data is empty.</string><string name="cd_select_date">[ES] Select Date</string><string name="invalid_fhir_json_format">[ES] Invalid FHIR JSON format</string><string name="mrn_date_format">[ES] MRN: %1$s | %2$s</string><string name="level_status_level">[ES] Camera is level</string><string name="delete_visit_title">[ES] Delete Visit</string></resources>
+    <string name="japanese">日本語</string>
+    <string name="cd_more_options">Más opciones</string>
+    <string name="new_item">Nuevo elemento</string>
+    <string name="state_selected">Seleccionado</string>
+    <string name="at_least_one_option_required">Se requiere al menos una opción</string>
+    <string name="espanol">Español</string>
+    <string name="not_answered">Sin responder</string>
+    <string name="error_duplicate_id">Ya existe un cuestionario con este ID generado. Cambie el título para que sea único.</string>
+    <string name="new_widget_item">Nuevo elemento %1$s</string>
+    <string name="clear">Borrar</string>
+    <string name="bullet_format">• %1$s</string>
+    <string name="cd_camera_icon">Icono de cámara</string>
+    <string name="invalid_credentials">Credenciales inválidas</string>
+    <string name="state_unselected">No seleccionado</string>
+    <string name="cd_move_up">Subir</string>
+    <string name="cd_delete">Eliminar</string>
+    <string name="unknown_error">Error desconocido</string>
+    <string name="unknown_copy">%1$s (Copia)</string>
+    <string name="confirm_delete_option_title">¿Eliminar opción?</string>
+    <string name="camera_unavailable">Cámara no disponible o permiso denegado.</string>
+    <string name="id_format">ID: %1$s</string>
+    <string name="english">English</string>
+    <string name="cd_move_down">Bajar</string>
+    <string name="clipboard_data_label">Datos del portapapeles de ChartCam</string>
+    <string name="edit_visit">Editar consulta</string>
+    <string name="failed_to_load_patients">Error al cargar los pacientes</string>
+    <string name="invalid_fhir_format">Formato no válido: el JSON no es un cuestionario FHIR válido.</string>
+    <string name="incorrect_password">Contraseña incorrecta</string>
+    <string name="level_status_tilted">La cámara está inclinada</string>
+    <string name="finalize_visit">Finalizar consulta</string>
+    <string name="error">Error</string>
+    <string name="cd_video_icon">Icono de video</string>
+    <string name="confirm_delete_option_message">¿Está seguro de que desea eliminar esta opción?</string>
+    <string name="confirm_delete_item_message">¿Está seguro de que desea eliminar este elemento? Esta acción no se puede deshacer.</string>
+    <string name="cd_duplicate">Duplicar</string>
+    <string name="cd_leveler_status">Nivelador de cámara: %1$s</string>
+    <string name="confirm_delete_item_title">¿Eliminar elemento?</string>
+    <string name="failed_to_import">Error al importar. Contraseña incorrecta o datos dañados.</string>
+    <string name="decryption_failed">Error de descifrado o los datos están vacíos.</string>
+    <string name="cd_select_date">Seleccionar fecha</string>
+    <string name="cd_select_datetime">Seleccionar fecha y hora</string>
+    <string name="invalid_fhir_json_format">Formato JSON FHIR no válido</string>
+    <string name="mrn_date_format">N.º: %1$s | %2$s</string>
+    <string name="level_status_level">La cámara está nivelada</string>
+    <string name="delete_visit_title">Eliminar consulta</string>
+    <string name="hebrew">עברית</string>
+    <string name="traditional_chinese">繁體中文</string>
+    <string name="vertical_column_mode">Modo de columna vertical</string>
+    <string name="horizontal_mode">Modo horizontal</string>
+    <string name="cd_toggle_vertical_text">Alternar diseño de texto en columna vertical</string>
+    <plurals name="attachments_count">
+        <item quantity="one">%1$d adjunto</item>
+        <item quantity="other">%1$d adjuntos</item>
+    </plurals>
+    <string name="error_capture_empty_image">La imagen capturada está vacía o fue interrumpida.</string>
+    <string name="error_capture_save_failed">Error al guardar la foto: almacenamiento lleno o error de disco.</string>
+    <string name="error_camera_capture_failed">Error al capturar la cámara: %1$s</string>
+    <string name="cd_move_item_up">Subir %1$s</string>
+    <string name="cd_move_item_down">Bajar %1$s</string>
+    <string name="legal_disclaimer">EL SOFTWARE SE PROPORCIONA “TAL CUAL”, SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO SIN LIMITARSE A LAS GARANTÍAS DE COMERCIABILIDAD, IDONEIDAD PARA UN PROPÓSITO PARTICULAR Y NO INFRACCIÓN. EN NINGÚN CASO LOS AUTORES O TITULARES DE DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGUNA RECLAMACIÓN, DAÑOS U OTRA RESPONSABILIDAD, YA SEA EN UNA ACCIÓN CONTRACTUAL, EXTRACONTRACTUAL O DE OTRO TIPO, QUE SURJA DE, O EN CONEXIÓN CON EL SOFTWARE O EL USO U OTROS TRATOS EN EL SOFTWARE.</string>
+    <string name="error_item_validation">Error de validación en el elemento</string>
+    <string name="capturing_photo">Tomando foto</string>
+    <string name="loading">Cargando</string>
+    <string name="select_time">Seleccionar hora</string>
+    <string name="label_value_format">%1$s: %2$s</string>
+</resources>

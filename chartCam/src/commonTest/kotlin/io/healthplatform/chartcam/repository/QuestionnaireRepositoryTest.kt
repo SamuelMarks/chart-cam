@@ -98,4 +98,79 @@ class QuestionnaireRepositoryTest {
             repo.deleteQuestionnaire(questionnaireId)
             assertNull(repo.getQuestionnaire(questionnaireId), "Questionnaire should be deleted")
         }
+
+    /**
+     * Validates that localizeQuestionnaire translates bundled questionnaire titles and item labels.
+     */
+    @Test
+    fun testLocalizeQuestionnaire() {
+        val repo = QuestionnaireRepository()
+        val itemNotes =
+            Questionnaire.Item
+                .Builder(
+                    linkId = String.Builder().apply { value = "notes" },
+                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                ).apply {
+                    text = String.Builder().apply { value = "Clinical Notes" }
+                }.build()
+
+        val stdQ =
+            Questionnaire
+                .Builder(Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active))
+                .apply {
+                    id = "std-form"
+                    title = String.Builder().apply { value = "Standard Clinical Photo" }
+                    item.add(itemNotes.toBuilder())
+                }.build()
+
+        val enQ = repo.localizeQuestionnaire(stdQ, "en")
+        assertEquals("Standard Clinical Photo", enQ.title?.value)
+        assertEquals(
+            "Clinical Notes",
+            enQ.item
+                .first()
+                .text
+                ?.value,
+        )
+
+        val esQ = repo.localizeQuestionnaire(stdQ, "es")
+        assertEquals("Formulario Clínico Estándar", esQ.title?.value)
+        assertEquals(
+            "Notas Clínicas",
+            esQ.item
+                .first()
+                .text
+                ?.value,
+        )
+
+        val jaQ = repo.localizeQuestionnaire(stdQ, "ja")
+        assertEquals("標準臨床問診票", jaQ.title?.value)
+        assertEquals(
+            "臨床記録",
+            jaQ.item
+                .first()
+                .text
+                ?.value,
+        )
+
+        val heQ = repo.localizeQuestionnaire(stdQ, "he")
+        assertEquals("טופס קליני סטנדרטי", heQ.title?.value)
+        assertEquals(
+            "הערות קליניות",
+            heQ.item
+                .first()
+                .text
+                ?.value,
+        )
+
+        val zhQ = repo.localizeQuestionnaire(stdQ, "zh")
+        assertEquals("標準臨床問診表", zhQ.title?.value)
+        assertEquals(
+            "臨床筆記",
+            zhQ.item
+                .first()
+                .text
+                ?.value,
+        )
+    }
 }

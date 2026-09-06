@@ -12,16 +12,19 @@ import java.util.Locale
 /**
  * Changes the current application language on the Android platform.
  *
- * This function updates the default locale and creates a new configuration context
- * to apply the new locale setting.
+ * This function updates the default locale and updates the active resources configuration
+ * to ensure application-level resource lookups react immediately.
  *
- * @param language The ISO language code (e.g., "en", "es") to set as the new app language.
+ * @param language The IETF BCP 47 language tag (e.g., "en", "es", "ja", "he", "zh-TW") to set as the new app language.
  */
+@Suppress("DEPRECATION")
 actual fun changeAppLanguage(language: String) {
-    val locale = Locale.Builder().setLanguage(language).build()
+    val locale = Locale.forLanguageTag(language)
     Locale.setDefault(locale)
     val context = AndroidAppInit.getContext()
-    val config = context.resources.configuration
+    val resources = context.resources
+    val config = resources.configuration
     config.setLocale(locale)
+    resources.updateConfiguration(config, resources.displayMetrics)
     context.createConfigurationContext(config)
 }

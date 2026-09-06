@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -32,7 +30,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,21 +43,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cancel
 import chartcam.chartcam.generated.resources.cd_back
 import chartcam.chartcam.generated.resources.cd_delete
 import chartcam.chartcam.generated.resources.cd_duplicate
+import chartcam.chartcam.generated.resources.clipboard_is_empty
 import chartcam.chartcam.generated.resources.copy_to_clipboard
-import chartcam.chartcam.generated.resources.create
 import chartcam.chartcam.generated.resources.create_questionnaire
 import chartcam.chartcam.generated.resources.file_import_coming_soon
 import chartcam.chartcam.generated.resources.id_format
@@ -69,21 +66,17 @@ import chartcam.chartcam.generated.resources.import_confirmation
 import chartcam.chartcam.generated.resources.import_error_format
 import chartcam.chartcam.generated.resources.import_questionnaire
 import chartcam.chartcam.generated.resources.invalid_fhir_format
-import chartcam.chartcam.generated.resources.labels_comma
 import chartcam.chartcam.generated.resources.number_of_items_format
-import chartcam.chartcam.generated.resources.number_of_photos
 import chartcam.chartcam.generated.resources.paste_from_clipboard
 import chartcam.chartcam.generated.resources.qr_code_coming_soon
 import chartcam.chartcam.generated.resources.questionnaires
 import chartcam.chartcam.generated.resources.share_questionnaire
 import chartcam.chartcam.generated.resources.share_text_json
-import chartcam.chartcam.generated.resources.title
 import chartcam.chartcam.generated.resources.title_format
 import chartcam.chartcam.generated.resources.unknown
 import com.google.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.repository.QuestionnaireSharingService
-import io.healthplatform.chartcam.ui.components.tabFocusNext
 import io.healthplatform.chartcam.utils.createShareService
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -106,13 +99,7 @@ fun QuestionnaireListScreen(
     onBack: () -> Unit,
     onNavigateToBuilder: (String?) -> Unit = {},
 ) {
-    val focusManager = LocalFocusManager.current
     var questionnaires by remember { mutableStateOf(questionnaireRepository.getAvailableQuestionnaires()) }
-    var showCreateDialog by remember { mutableStateOf(false) }
-
-    var newTitle by remember { mutableStateOf("") }
-    var newPhotosCount by remember { mutableStateOf("") }
-    var newLabels by remember { mutableStateOf("") }
 
     val shareService = remember { createShareService() }
     val questionnaireSharingService = remember { QuestionnaireSharingService() }
@@ -171,19 +158,33 @@ fun QuestionnaireListScreen(
                 Text(
                     text = stringResource(Res.string.import_error_format, importError ?: ""),
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(16.dp),
+                    modifier =
+                        Modifier
+                            .padding(16.dp)
+                            .semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(questionnaires) { q ->
                     val titleText = q.title?.value ?: q.id ?: stringResource(Res.string.unknown)
+                    val shareLabel = stringResource(Res.string.share_questionnaire)
                     ListItem(
                         modifier =
-                            Modifier.minimumInteractiveComponentSize().clickable(role = Role.Button) {
-                                selectedQuestionnaireForView =
-                                    q
-                            },
+                            Modifier
+                                .fillMaxWidth()
+                                .minimumInteractiveComponentSize()
+                                .semantics {
+                                    customActions =
+                                        listOf(
+                                            CustomAccessibilityAction(shareLabel) {
+                                                selectedQuestionnaireForShare = q
+                                                true
+                                            },
+                                        )
+                                }.clickable(role = Role.Button) {
+                                    selectedQuestionnaireForView = q
+                                },
                         headlineContent = { Text(titleText, style = MaterialTheme.typography.titleMedium) },
                         supportingContent = {
                             Text(
@@ -192,12 +193,13 @@ fun QuestionnaireListScreen(
                             )
                         },
                         trailingContent = {
-                            IconButton(onClick = {
-                                selectedQuestionnaireForShare = q
-                            }) {
+                            IconButton(
+                                onClick = { selectedQuestionnaireForShare = q },
+                                modifier = Modifier.minimumInteractiveComponentSize(),
+                            ) {
                                 Icon(
                                     Icons.Default.Share,
-                                    contentDescription = stringResource(Res.string.share_questionnaire),
+                                    contentDescription = shareLabel,
                                 )
                             }
                         },
@@ -231,7 +233,7 @@ fun QuestionnaireListScreen(
                             IconButton(onClick = { selectedQuestionnaireForView = null }) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(Res.string.cancel),
+                                    contentDescription = stringResource(Res.string.cd_back),
                                 )
                             }
                         },
@@ -297,6 +299,7 @@ fun QuestionnaireListScreen(
                 )
 
                 val invalidFormatStr = stringResource(Res.string.invalid_fhir_format)
+                val emptyClipboardStr = stringResource(Res.string.clipboard_is_empty)
                 Button(
                     onClick = {
                         coroutineScope
@@ -308,7 +311,7 @@ fun QuestionnaireListScreen(
                                             questionnaireSharingService.deserializeQuestionnaire(text)
                                         importError = null
                                     } else {
-                                        importError = "Empty"
+                                        importError = emptyClipboardStr
                                     }
                                 } catch (e: IllegalArgumentException) {
                                     println(e.message)
@@ -349,7 +352,8 @@ fun QuestionnaireListScreen(
             },
             text = {
                 Column {
-                    val qTitle = q.title?.value ?: q.id ?: "Unknown"
+                    val unknownStr = stringResource(Res.string.unknown)
+                    val qTitle = q.title?.value ?: q.id ?: unknownStr
                     Text(stringResource(Res.string.title_format, qTitle))
                     val sizeStr = q.item.size.toString()
                     Text(stringResource(Res.string.number_of_items_format, sizeStr))
@@ -446,74 +450,5 @@ fun QuestionnaireListScreen(
                 )
             }
         }
-    }
-
-    if (showCreateDialog) {
-        AlertDialog(
-            onDismissRequest = { showCreateDialog = false },
-            title = {
-                Text(
-                    stringResource(Res.string.create_questionnaire),
-                    modifier = Modifier.semantics { heading() },
-                )
-            },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = newTitle,
-                        onValueChange = { newTitle = it },
-                        label = { Text(stringResource(Res.string.title)) },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).tabFocusNext(focusManager),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
-                    )
-                    OutlinedTextField(
-                        value = newPhotosCount,
-                        onValueChange = { newPhotosCount = it },
-                        label = { Text(stringResource(Res.string.number_of_photos)) },
-                        keyboardOptions =
-                            KeyboardOptions(keyboardType = KeyboardType.Number)
-                                .copy(imeAction = ImeAction.Next),
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).tabFocusNext(focusManager),
-                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
-                    )
-                    OutlinedTextField(
-                        value = newLabels,
-                        onValueChange = { newLabels = it },
-                        label = { Text(stringResource(Res.string.labels_comma)) },
-                        modifier = Modifier.fillMaxWidth().tabFocusNext(focusManager),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val count = newPhotosCount.toIntOrNull() ?: 0
-                    questionnaireRepository.createQuestionnaire(
-                        title = newTitle,
-                        photos = count,
-                        labels = newLabels,
-                    )
-                    questionnaires = questionnaireRepository.getAvailableQuestionnaires()
-                    showCreateDialog = false
-                    newTitle = ""
-                    newPhotosCount = ""
-                    newLabels = ""
-                }) {
-                    Text(stringResource(Res.string.create))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showCreateDialog = false
-                    newTitle = ""
-                    newPhotosCount = ""
-                    newLabels = ""
-                }) {
-                    Text(stringResource(Res.string.cancel))
-                }
-            },
-        )
     }
 }

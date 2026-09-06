@@ -22,14 +22,20 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,16 +58,20 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.attachments_count
 import chartcam.chartcam.generated.resources.cd_unnamed_group
 import chartcam.chartcam.generated.resources.cd_unnamed_item
 import chartcam.chartcam.generated.resources.error_required_field
+import chartcam.chartcam.generated.resources.label_value_format
 import chartcam.chartcam.generated.resources.no
 import chartcam.chartcam.generated.resources.not_answered
 import chartcam.chartcam.generated.resources.select_an_option
+import chartcam.chartcam.generated.resources.take_photo
 import chartcam.chartcam.generated.resources.yes
 import com.google.fhir.model.r4.DocumentReference
 import com.google.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.fhir.getItemControl
+import io.healthplatform.chartcam.fhir.getLocalizedText
 import io.healthplatform.chartcam.fhir.getMaxValue
 import io.healthplatform.chartcam.fhir.getMinValue
 import io.healthplatform.chartcam.fhir.isHidden
@@ -72,6 +82,8 @@ import io.healthplatform.chartcam.ui.components.FormBuilderNumericInput
 import io.healthplatform.chartcam.ui.components.FormBuilderRangeSlider
 import io.healthplatform.chartcam.ui.components.FormBuilderTextArea
 import io.healthplatform.chartcam.ui.components.tabFocusNext
+import io.healthplatform.chartcam.utils.formatLocalizedDecimal
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 private const val ALPHA_DISABLED = 0.5f
@@ -231,8 +243,13 @@ private fun RenderQuestionnaireItemImpl(
 ) {
     val linkId = item.linkId.value!!
     val type = item.type.value!!
+    val currentLang by io.healthplatform.chartcam.ui.currentLanguageState
+        .collectAsState()
+    val localizedText = item.getLocalizedText(currentLang)
     val displayLabel =
-        item.text?.value ?: if (type == Questionnaire.QuestionnaireItemType.Group) {
+        if (localizedText.isNotBlank()) {
+            localizedText
+        } else if (type == Questionnaire.QuestionnaireItemType.Group) {
             stringResource(Res.string.cd_unnamed_group)
         } else {
             stringResource(Res.string.cd_unnamed_item)
@@ -332,7 +349,7 @@ private fun RenderGroupItem(ctx: RenderContext) {
             Text(
                 text = ctx.displayLabel,
                 style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp),
+                modifier = Modifier.padding(bottom = 8.dp).semantics { heading() },
             )
             ctx.item.item.forEach { nestedItem ->
                 RenderQuestionnaireItem(
@@ -390,14 +407,15 @@ private fun RenderReadOnlyField(ctx: RenderContext) {
         RenderReadOnlyAttachment(ctx)
     } else {
         val notAnsweredString = stringResource(Res.string.not_answered)
+        val disp = if (answerDisplay.isNotBlank()) answerDisplay else notAnsweredString
+        val readOnlyContentDescription = stringResource(Res.string.label_value_format, ctx.displayLabel, disp)
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp)
                     .semantics(mergeDescendants = true) {
-                        val disp = if (answerDisplay.isNotBlank()) answerDisplay else notAnsweredString
-                        contentDescription = "${ctx.displayLabel}: $disp"
+                        contentDescription = readOnlyContentDescription
                     },
         ) {
             Text(
@@ -445,14 +463,17 @@ private fun getAnswerDisplayText(
     item: Questionnaire.Item,
     linkId: String,
     answers: Map<String, Any>,
-): String =
-    when (type) {
+): String {
+    val currentLang by io.healthplatform.chartcam.ui.currentLanguageState
+        .collectAsState()
+    return when (type) {
         Questionnaire.QuestionnaireItemType.Boolean -> getBooleanAnswerText(answers[linkId] as? Boolean)
         Questionnaire.QuestionnaireItemType.Choice -> getChoiceAnswerText(item, answers[linkId])
-        Questionnaire.QuestionnaireItemType.Integer -> getIntegerAnswerText(answers[linkId])
+        Questionnaire.QuestionnaireItemType.Integer -> getIntegerAnswerText(answers[linkId], currentLang)
         Questionnaire.QuestionnaireItemType.Attachment -> ""
         else -> answers[linkId]?.toString() ?: ""
     }
+}
 
 /**
  * Internal helper function.
@@ -485,11 +506,18 @@ private fun getChoiceAnswerText(
 /**
  * Internal helper function.
  * @param answer The answer.
+ * @param language The language tag to format the decimal answer.
  * @return The result.
  */
-private fun getIntegerAnswerText(answer: Any?): String {
-    val v = (answer as? Float) ?: (answer as? String)?.toFloatOrNull()
-    return v?.let { if (it % 1.0f == 0.0f) it.toInt().toString() else it.toString() } ?: ""
+private fun getIntegerAnswerText(
+    answer: Any?,
+    language: String,
+): String {
+    val v = (answer as? Number)?.toDouble() ?: (answer as? String)?.toDoubleOrNull()
+    return v?.let {
+        val places = if (it % 1.0 == 0.0) 0 else 2
+        formatLocalizedDecimal(it, language, places)
+    } ?: ""
 }
 
 /**
@@ -534,10 +562,17 @@ private fun RenderReadOnlyAttachment(ctx: RenderContext) {
                 ?.value == ctx.linkId
         }
     if (relatedAttachments.isNotEmpty()) {
+        val attachmentsCountText =
+            pluralStringResource(
+                Res.plurals.attachments_count,
+                relatedAttachments.size,
+                relatedAttachments.size,
+            )
+        val cdWithAttachments = stringResource(Res.string.label_value_format, ctx.displayLabel, attachmentsCountText)
         Column(
             modifier =
                 Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics(mergeDescendants = true) {
-                    contentDescription = "${ctx.displayLabel}: ${relatedAttachments.size} attachments"
+                    contentDescription = cdWithAttachments
                 },
         ) {
             Text(
@@ -549,13 +584,14 @@ private fun RenderReadOnlyAttachment(ctx: RenderContext) {
         }
     } else {
         val notAnsweredString = stringResource(Res.string.not_answered)
+        val cdNoAttachments = stringResource(Res.string.label_value_format, ctx.displayLabel, notAnsweredString)
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
                     .semantics(mergeDescendants = true) {
-                        contentDescription = "${ctx.displayLabel}: $notAnsweredString"
+                        contentDescription = cdNoAttachments
                     },
         ) {
             Text(
@@ -745,8 +781,7 @@ private fun RenderRadioOrCheckboxGroup(
         modifier =
             Modifier
                 .padding(vertical = 8.dp)
-                .semantics(mergeDescendants = true) {
-                    contentDescription = ctx.displayLabel
+                .semantics {
                     if (ctx.isError && ctx.errorMessage != null) {
                         error(ctx.errorMessage)
                     }
@@ -762,7 +797,10 @@ private fun RenderRadioOrCheckboxGroup(
                 ctx.errorMessage,
                 color = androidx.compose.material3.MaterialTheme.colorScheme.error,
                 style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(bottom = 4.dp),
+                modifier =
+                    Modifier
+                        .padding(bottom = 4.dp)
+                        .semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
         options.forEach { option ->
@@ -793,6 +831,8 @@ private fun RenderRadioOrCheckboxOption(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .minimumInteractiveComponentSize()
+                .semantics(mergeDescendants = true) {}
                 .then(
                     if (isMultiSelect) {
                         Modifier.toggleable(
@@ -855,11 +895,7 @@ private fun RenderDropdownField(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp)
-                .semantics(mergeDescendants = true) {
-                    contentDescription = ctx.displayLabel
-                    if (ctx.isError && ctx.errorMessage != null) error(ctx.errorMessage)
-                },
+                .padding(vertical = 8.dp),
     ) {
         OutlinedTextField(
             value = selectedOption.ifEmpty { stringResource(Res.string.select_an_option) },
@@ -877,7 +913,9 @@ private fun RenderDropdownField(
                 Modifier
                     .menuAnchor(androidx.compose.material3.ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                     .fillMaxWidth()
-                    .tabFocusNext(ctx.focusManager),
+                    .semantics {
+                        if (ctx.isError && ctx.errorMessage != null) error(ctx.errorMessage)
+                    }.tabFocusNext(ctx.focusManager),
         )
         ExposedDropdownMenu(
             expanded = expanded,
@@ -921,6 +959,22 @@ private fun RenderAttachmentField(ctx: RenderContext) {
                     contentDescription = ctx.displayLabel
                 },
         )
+
+        Button(
+            onClick = { ctx.onTakePhotoRequested(ctx.linkId) },
+            modifier =
+                Modifier
+                    .padding(top = 8.dp)
+                    .minimumInteractiveComponentSize()
+                    .testTag("AttachmentCaptureButton ${ctx.linkId}"),
+        ) {
+            Icon(
+                Icons.Default.CameraAlt,
+                contentDescription = null,
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            Text(stringResource(Res.string.take_photo))
+        }
 
         if (relatedAttachments.isNotEmpty()) {
             RenderAttachmentGrid(relatedAttachments)

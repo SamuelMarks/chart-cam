@@ -5,6 +5,7 @@
 package io.healthplatform.chartcam.ui.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -42,6 +43,7 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,9 +53,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
@@ -61,14 +66,19 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cancel
-import chartcam.chartcam.generated.resources.cd_camera_icon
-import chartcam.chartcam.generated.resources.cd_video_icon
+import chartcam.chartcam.generated.resources.cd_select_date
+import chartcam.chartcam.generated.resources.cd_select_datetime
 import chartcam.chartcam.generated.resources.clear
 import chartcam.chartcam.generated.resources.date_format_label
 import chartcam.chartcam.generated.resources.datetime_format_label
+import chartcam.chartcam.generated.resources.not_answered
 import chartcam.chartcam.generated.resources.ok
+import chartcam.chartcam.generated.resources.select_time
 import chartcam.chartcam.generated.resources.state_selected
 import chartcam.chartcam.generated.resources.state_unselected
+import io.healthplatform.chartcam.utils.formatLocalizedDecimal
+import io.healthplatform.chartcam.utils.getLocalizedDatePattern
+import io.healthplatform.chartcam.utils.getLocalizedDateTimePattern
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
@@ -222,7 +232,7 @@ fun FormBuilderSwitch(
         modifier =
             modifier
                 .fillMaxWidth()
-                .semantics {
+                .semantics(mergeDescendants = true) {
                     stateDescription = if (checked) selectedText else unselectedText
                     if (isError && errorMessage != null) {
                         error(errorMessage)
@@ -276,7 +286,7 @@ fun FormBuilderCheckbox(
         modifier =
             modifier
                 .fillMaxWidth()
-                .semantics {
+                .semantics(mergeDescendants = true) {
                     stateDescription = if (checked) selectedText else unselectedText
                     if (isError && errorMessage != null) {
                         error(errorMessage)
@@ -332,7 +342,7 @@ fun FormBuilderNumericInput(
                 focusManager.moveFocus(FocusDirection.Next)
                 return@OutlinedTextField
             }
-            if (newVal.isEmpty() || newVal.matches(Regex("^\\d*\\.?\\d*$"))) {
+            if (newVal.isEmpty() || newVal.matches(Regex("^\\d*[.,]?\\d*$"))) {
                 onValueChange(newVal)
             }
         },
@@ -377,7 +387,7 @@ fun FormBuilderNumericInput(
  * @param modifier The modifier to be applied to the widget.
  */
 @Composable
-@Suppress("LongParameterList", "UnusedParameter")
+@Suppress("LongParameterList")
 fun FormBuilderRangeSlider(
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
@@ -388,20 +398,55 @@ fun FormBuilderRangeSlider(
     errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
+    val currentLang by io.healthplatform.chartcam.ui.currentLanguageState
+        .collectAsState()
+    val formattedValue = formatLocalizedDecimal(value.toDouble(), currentLang, decimalPlaces = 1)
     Column(
         modifier =
             modifier
                 .padding(vertical = 8.dp)
                 .minimumInteractiveComponentSize()
-                .testTag("RangeSlider $label"),
+                .semantics {
+                    if (isError && errorMessage != null) {
+                        error(errorMessage)
+                    }
+                }.testTag("RangeSlider $label"),
     ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FormLabel(text = label, isRequired = isRequired)
+            Text(
+                text = formattedValue,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Slider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
-            modifier = Modifier.fillMaxWidth().testTag("SliderControl $label"),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .semantics {
+                        contentDescription = label
+                        stateDescription = formattedValue
+                    }.testTag("SliderControl $label"),
         )
+        if (isError && errorMessage != null) {
+            Text(
+                errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier =
+                    Modifier
+                        .padding(top = 4.dp)
+                        .semantics { liveRegion = LiveRegionMode.Polite },
+            )
+        }
     }
 }
 
@@ -511,7 +556,11 @@ fun FormBuilderMultiSelectDropdown(
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
                 .minimumInteractiveComponentSize()
-                .testTag("MultiSelectDropdown $label"),
+                .semantics {
+                    if (isError && errorMessage != null) {
+                        error(errorMessage)
+                    }
+                }.testTag("MultiSelectDropdown $label"),
     ) {
         FormLabel(label, isRequired, modifier = Modifier.padding(bottom = 4.dp))
         if (isError && errorMessage != null) {
@@ -519,7 +568,10 @@ fun FormBuilderMultiSelectDropdown(
                 errorMessage,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(bottom = 4.dp),
+                modifier =
+                    Modifier
+                        .padding(bottom = 4.dp)
+                        .semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
         FlowRow(
@@ -604,40 +656,69 @@ fun FormBuilderDatePicker(
         }
     }
 
-    androidx.compose.foundation.layout.Box(
-        modifier =
-            modifier.fillMaxWidth().clickable(role = androidx.compose.ui.semantics.Role.Button) {
-                showDialog =
-                    true
-            },
+    val currentLang by io.healthplatform.chartcam.ui.currentLanguageState
+        .collectAsState()
+    val displayValue =
+        if (value.isNotEmpty()) {
+            io.healthplatform.chartcam.utils
+                .formatLocalizedDate(value, currentLang)
+        } else {
+            ""
+        }
+    val notAnsweredText = stringResource(Res.string.not_answered)
+    val selectDateLabel = stringResource(Res.string.cd_select_date)
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = { },
-            readOnly = true,
-            enabled = false,
-            label = { FormLabel(stringResource(Res.string.date_format_label, label), isRequired) },
-            isError = isError,
-            supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
-            trailingIcon = {
-                if (value.isNotEmpty()) {
-                    IconButton(onClick = { onValueChange("") }) {
-                        Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
-                    }
-                }
-            },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().testTag("DatePicker $label"),
-            colors =
-                androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                    disabledBorderColor = MaterialTheme.colorScheme.outline,
-                    disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-        )
+        androidx.compose.foundation.layout.Box(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = selectDateLabel) {
+                        showDialog = true
+                    }.semantics {
+                        contentDescription =
+                            "$label: ${if (displayValue.isNotEmpty()) displayValue else notAnsweredText}"
+                        if (isError && errorMessage != null) {
+                            error(errorMessage)
+                        }
+                    }.testTag("DatePicker $label"),
+        ) {
+            OutlinedTextField(
+                value = displayValue,
+                onValueChange = { },
+                readOnly = true,
+                enabled = false,
+                label = {
+                    val pattern = getLocalizedDatePattern(currentLang)
+                    val patternLabel = stringResource(Res.string.date_format_label, label, pattern)
+                    FormLabel(patternLabel, isRequired)
+                },
+                isError = isError,
+                supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                colors =
+                    androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+            )
+        }
+        if (value.isNotEmpty()) {
+            IconButton(
+                onClick = { onValueChange("") },
+                modifier = Modifier.padding(start = 4.dp).minimumInteractiveComponentSize(),
+            ) {
+                Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
+            }
+        }
     }
 }
 
@@ -706,6 +787,12 @@ fun FormBuilderDateTimePicker(
     if (showTimeDialog) {
         AlertDialog(
             onDismissRequest = { showTimeDialog = false },
+            title = {
+                Text(
+                    stringResource(Res.string.select_time),
+                    modifier = Modifier.semantics { heading() },
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     val hour = timePickerState.hour.toString().padStart(2, '0')
@@ -729,40 +816,69 @@ fun FormBuilderDateTimePicker(
         )
     }
 
-    androidx.compose.foundation.layout.Box(
-        modifier =
-            modifier.fillMaxWidth().clickable(role = androidx.compose.ui.semantics.Role.Button) {
-                showDateDialog =
-                    true
-            },
+    val currentLang by io.healthplatform.chartcam.ui.currentLanguageState
+        .collectAsState()
+    val displayValue =
+        if (value.isNotEmpty()) {
+            io.healthplatform.chartcam.utils
+                .formatLocalizedDate(value, currentLang)
+        } else {
+            ""
+        }
+    val notAnsweredText = stringResource(Res.string.not_answered)
+    val selectDateTimeLabel = stringResource(Res.string.cd_select_datetime)
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = { },
-            readOnly = true,
-            enabled = false,
-            label = { FormLabel(stringResource(Res.string.datetime_format_label, label), isRequired) },
-            isError = isError,
-            supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
-            trailingIcon = {
-                if (value.isNotEmpty()) {
-                    IconButton(onClick = { onValueChange("") }) {
-                        Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
-                    }
-                }
-            },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().testTag("DateTimePicker $label"),
-            colors =
-                androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                    disabledBorderColor = MaterialTheme.colorScheme.outline,
-                    disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-        )
+        androidx.compose.foundation.layout.Box(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = selectDateTimeLabel) {
+                        showDateDialog = true
+                    }.semantics {
+                        contentDescription =
+                            "$label: ${if (displayValue.isNotEmpty()) displayValue else notAnsweredText}"
+                        if (isError && errorMessage != null) {
+                            error(errorMessage)
+                        }
+                    }.testTag("DateTimePicker $label"),
+        ) {
+            OutlinedTextField(
+                value = displayValue,
+                onValueChange = { },
+                readOnly = true,
+                enabled = false,
+                label = {
+                    val pattern = getLocalizedDateTimePattern(currentLang)
+                    val patternLabel = stringResource(Res.string.datetime_format_label, label, pattern)
+                    FormLabel(patternLabel, isRequired)
+                },
+                isError = isError,
+                supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                colors =
+                    androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+            )
+        }
+        if (value.isNotEmpty()) {
+            IconButton(
+                onClick = { onValueChange("") },
+                modifier = Modifier.padding(start = 4.dp).minimumInteractiveComponentSize(),
+            ) {
+                Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
+            }
+        }
     }
 }
 
@@ -793,7 +909,7 @@ fun FormBuilderPhotoCamera(
     ) {
         Icon(
             Icons.Default.CameraAlt,
-            contentDescription = stringResource(Res.string.cd_camera_icon),
+            contentDescription = null,
             modifier = Modifier.size(24.dp),
         )
         Text(text = label, modifier = Modifier.padding(start = 8.dp))
@@ -827,7 +943,7 @@ fun FormBuilderVideoCamera(
     ) {
         Icon(
             Icons.Default.Videocam,
-            contentDescription = stringResource(Res.string.cd_video_icon),
+            contentDescription = null,
             modifier = Modifier.size(24.dp),
         )
         Text(text = label, modifier = Modifier.padding(start = 8.dp))

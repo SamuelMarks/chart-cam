@@ -1,0 +1,2 @@
+/* Spanish InfoPlist.strings */
+"NSCameraUsageDescription" = "ChartCam necesita acceso a la cámara para capturar fotos clínicas.";

@@ -30,6 +30,9 @@ object SdcExtensions {
     /** The initialExpression extension URL. */
     const val INITIAL_EXPRESSION =
         "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-initialExpression"
+
+    /** The translation extension URL. */
+    const val TRANSLATION = "http://hl7.org/fhir/StructureDefinition/translation"
 }
 
 /**
@@ -103,3 +106,41 @@ fun Questionnaire.Item.getMaxValue(): Float? =
         ?.value
         ?.value
         ?.toFloat()
+
+/**
+ * Retrieves the localized text for a questionnaire item using the FHIR translation extension.
+ *
+ * @param language The language tag to search for (e.g. "es", "ja", "he", "zh").
+ * @return The localized text string if present, or the item's default text.
+ */
+fun Questionnaire.Item.getLocalizedText(language: String = io.healthplatform.chartcam.ui.currentLanguageState.value): String {
+    val langPrefix = language.lowercase().split("-", "_").first()
+    val transExt = this.extension.filter { it.url == SdcExtensions.TRANSLATION }
+    for (ext in transExt) {
+        val langExt = ext.extension.firstOrNull { it.url == "lang" }
+        val langCode =
+            langExt
+                ?.value
+                ?.asCode()
+                ?.value
+                ?.value
+                ?: langExt
+                    ?.value
+                    ?.asString()
+                    ?.value
+                    ?.value
+        if (langCode?.lowercase()?.startsWith(langPrefix) == true) {
+            val contentExt = ext.extension.firstOrNull { it.url == "content" }
+            val content =
+                contentExt
+                    ?.value
+                    ?.asString()
+                    ?.value
+                    ?.value
+            if (!content.isNullOrBlank()) {
+                return content
+            }
+        }
+    }
+    return this.text?.value ?: ""
+}

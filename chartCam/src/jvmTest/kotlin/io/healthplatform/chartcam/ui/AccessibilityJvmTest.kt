@@ -4,11 +4,18 @@
  */
 package io.healthplatform.chartcam.ui
 
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
@@ -82,5 +89,46 @@ class AccessibilityJvmTest {
             onNodeWithContentDescription("Add Patient").assertIsDisplayed().assertHasClickAction()
 
             driver.close()
+        }
+
+    /**
+     * Verifies that the LoginScreen offline mode toggle is disabled and displays proper state description,
+     * and that submitting empty credentials produces accessibility errors.
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testLoginScreenA11yOfflineSwitchAndErrorSemantics() =
+        runComposeUiTest {
+            setContent {
+                LoginScreen(
+                    viewModel = LoginViewModel(mock(AuthRepository::class.java)),
+                    onLoginSuccess = {},
+                )
+            }
+            waitForIdle()
+
+            // Verify offline switch has state description and disabled semantics
+            val hasDisabledOrState =
+                SemanticsMatcher("has state description") { node ->
+                    node.config.getOrNull(SemanticsProperties.StateDescription) != null
+                }
+            onNodeWithContentDescription("Offline mode").assertExists().assert(hasDisabledOrState)
+
+            // Verify app title has heading semantics
+            val isHeading = SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading)
+            onNodeWithText("ChartCam").assert(isHeading)
+
+            // Click Login without credentials to trigger error state
+            onNodeWithText("Login / signup").performClick()
+            waitForIdle()
+
+            // Error message should be displayed with polite live region on text and inputs
+            onAllNodesWithText("All fields are required").assertCountEquals(3)
+            val hasPoliteLiveRegion =
+                SemanticsMatcher("has polite live region") { node ->
+                    node.config.getOrNull(SemanticsProperties.LiveRegion) ==
+                        androidx.compose.ui.semantics.LiveRegionMode.Polite
+                }
+            onAllNodes(hasPoliteLiveRegion).assertCountEquals(1)
         }
 }

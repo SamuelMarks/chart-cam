@@ -73,11 +73,13 @@ data class EncounterUiState(
  * @param fhirRepository The repository providing FHIR data access.
  * @param authRepository The repository providing authentication state.
  * @param questionnaireRepository The repository for managing and retrieving questionnaires.
+ * @param recoveredFormResolver Function providing the localized title for recovered questionnaires.
  */
 class EncounterDetailViewModel(
     private val fhirRepository: FhirRepository,
     private val authRepository: AuthRepository,
     private val questionnaireRepository: QuestionnaireRepository,
+    private val recoveredFormResolver: () -> String = { "Recovered Form" },
 ) : ViewModel() {
     /** Internal mutable state flow holding the Encounter UI state. */
     private val _uiState = MutableStateFlow(EncounterUiState())
@@ -203,7 +205,7 @@ class EncounterDetailViewModel(
         val resolvedQId = rawCanonical.substringAfterLast("/")
         var existingSelectedQ = questionnaires.find { it.id == resolvedQId }
         if (existingSelectedQ == null) {
-            existingSelectedQ = createRecoveredQuestionnaire(latestQr)
+            existingSelectedQ = createRecoveredQuestionnaire(latestQr, recoveredFormResolver())
         }
         io.healthplatform.chartcam.utils.QuestionnaireUtils
             .extractAnswersRecursively(latestQr.item, existingAnswers)
