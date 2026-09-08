@@ -17,8 +17,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,26 +30,34 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cancel
+import chartcam.chartcam.generated.resources.cd_action_view_encounter
 import chartcam.chartcam.generated.resources.cd_back
 import chartcam.chartcam.generated.resources.cd_more
 import chartcam.chartcam.generated.resources.cd_new_visit
@@ -61,7 +71,7 @@ import chartcam.chartcam.generated.resources.patient_detail
 import chartcam.chartcam.generated.resources.visit_history
 import io.healthplatform.chartcam.models.customBirthDate
 import io.healthplatform.chartcam.models.encounterDate
-import io.healthplatform.chartcam.models.fullName
+import io.healthplatform.chartcam.models.getFullName
 import io.healthplatform.chartcam.models.mrn
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.viewmodel.PatientDetailViewModel
@@ -100,17 +110,27 @@ fun PatientDetailScreen(
         viewModel.loadPatientData(patientId)
     }
 
-    Scaffold(
-        topBar = {
-            PatientDetailTopBar(onBack = onBack, onDeletePatient = { viewModel.deletePatient { onBack() } })
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = onNewVisit) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.cd_new_visit))
-            }
-        },
-    ) { padding ->
-        PatientDetailContent(padding, state, onVisitSelected)
+    val currentLang by currentLanguageState.collectAsState()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
+    key(currentLang) {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                PatientDetailTopBar(
+                    onBack = onBack,
+                    onDeletePatient = { viewModel.deletePatient { onBack() } },
+                    scrollBehavior = scrollBehavior,
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(onClick = onNewVisit) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.cd_new_visit))
+                }
+            },
+        ) { padding ->
+            PatientDetailContent(padding, state, onVisitSelected)
+        }
     }
 }
 
@@ -126,6 +146,7 @@ private fun PatientDetailContent(
     state: io.healthplatform.chartcam.viewmodel.PatientDetailUiState,
     onVisitSelected: (String) -> Unit,
 ) {
+    val currentLang by currentLanguageState.collectAsState()
     Column(modifier = Modifier.padding(padding).fillMaxSize()) {
         state.patient?.let { PatientInfo(it) }
 
@@ -146,30 +167,38 @@ private fun PatientDetailContent(
                     headlineContent = {
                         Text(
                             io.healthplatform.chartcam.utils
-                                .formatLocalizedDate(encounter.encounterDate),
+                                .formatLocalizedDate(encounter.encounterDate, currentLang),
                         )
                     },
                     supportingContent = {
                         Text(
-                            encounter.text
-                                ?.div
-                                ?.value
-                                ?.removePrefix("<div>")
-                                ?.removeSuffix("</div>") ?: stringResource(Res.string.no_notes),
+                            io.healthplatform.chartcam.utils.QuestionnaireUtils.stripNarrativeDiv(
+                                encounter.text?.div?.value,
+                            ) ?: stringResource(Res.string.no_notes),
                         )
                     },
                     modifier =
                         Modifier
                             .minimumInteractiveComponentSize()
                             .semantics(mergeDescendants = true) {}
-                            .clickable(role = Role.Button) { onVisitSelected(encounter.id ?: "") },
+                            .clickable(
+                                role = Role.Button,
+                                onClickLabel = stringResource(Res.string.cd_action_view_encounter),
+                            ) { onVisitSelected(encounter.id ?: "") },
                 )
                 HorizontalDivider()
             }
 
             if (state.encounters.isEmpty()) {
                 item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp)
+                                .semantics { liveRegion = LiveRegionMode.Polite },
+                        contentAlignment = Alignment.Center,
+                    ) {
                         Text(
                             stringResource(Res.string.no_visits_found),
                             color = MaterialTheme.colorScheme.secondary,
@@ -182,17 +211,21 @@ private fun PatientDetailContent(
 }
 
 /**
- * Internal helper.
- * @param onBack The onBack.
- * @param onDeletePatient The onDeletePatient.
+ * Internal helper for patient detail top app bar.
+ *
+ * @param onBack The onBack callback.
+ * @param onDeletePatient The onDeletePatient callback.
+ * @param scrollBehavior TopAppBar scroll behavior.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PatientDetailTopBar(
     onBack: () -> Unit,
     onDeletePatient: () -> Unit,
+    scrollBehavior: TopAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(),
 ) {
     TopAppBar(
+        scrollBehavior = scrollBehavior,
         title = {
             Text(
                 stringResource(Res.string.patient_detail),
@@ -220,11 +253,19 @@ private fun PatientDetailTopBar(
             ) {
                 DropdownMenuItem(
                     text = {
-                        Text(
-                            stringResource(Res.string.delete_patient),
-                            color = MaterialTheme.colorScheme.error,
+                        Text(stringResource(Res.string.delete_patient))
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = null,
                         )
                     },
+                    colors =
+                        MenuDefaults.itemColors(
+                            textColor = MaterialTheme.colorScheme.error,
+                            leadingIconColor = MaterialTheme.colorScheme.error,
+                        ),
                     onClick = {
                         showMenu = false
                         showDeleteConfirm = true
@@ -248,10 +289,12 @@ private fun PatientDetailTopBar(
  */
 @Composable
 private fun PatientInfo(patient: com.google.fhir.model.r4.Patient) {
+    val currentLang by currentLanguageState.collectAsState()
     Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Text(
-            text = patient.fullName,
+            text = patient.getFullName(currentLang),
             style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.semantics { heading() },
         )
         Text(
             text =
@@ -259,7 +302,7 @@ private fun PatientInfo(patient: com.google.fhir.model.r4.Patient) {
                     Res.string.mrn_dob_format,
                     patient.mrn,
                     io.healthplatform.chartcam.utils
-                        .formatLocalizedDate(patient.customBirthDate),
+                        .formatLocalizedDate(patient.customBirthDate, currentLang),
                 ),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.secondary,
@@ -288,11 +331,14 @@ private fun DeleteConfirmDialog(
         },
         text = { Text(stringResource(Res.string.delete_patient_message)) },
         confirmButton = {
-            TextButton(onClick = {
-                onDismiss()
-                onDeletePatient()
-            }) {
-                Text(stringResource(Res.string.delete), color = MaterialTheme.colorScheme.error)
+            TextButton(
+                onClick = {
+                    onDismiss()
+                    onDeletePatient()
+                },
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) {
+                Text(stringResource(Res.string.delete))
             }
         },
         dismissButton = {

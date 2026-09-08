@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -71,11 +72,10 @@ import chartcam.chartcam.generated.resources.cd_select_datetime
 import chartcam.chartcam.generated.resources.clear
 import chartcam.chartcam.generated.resources.date_format_label
 import chartcam.chartcam.generated.resources.datetime_format_label
+import chartcam.chartcam.generated.resources.label_value_format
 import chartcam.chartcam.generated.resources.not_answered
 import chartcam.chartcam.generated.resources.ok
 import chartcam.chartcam.generated.resources.select_time
-import chartcam.chartcam.generated.resources.state_selected
-import chartcam.chartcam.generated.resources.state_unselected
 import io.healthplatform.chartcam.utils.formatLocalizedDecimal
 import io.healthplatform.chartcam.utils.getLocalizedDatePattern
 import io.healthplatform.chartcam.utils.getLocalizedDateTimePattern
@@ -125,10 +125,23 @@ fun FormBuilderTextInput(
         },
         label = { FormLabel(label, isRequired) },
         isError = isError,
-        supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
+        supportingText = {
+            if (isError && errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            }
+        },
         trailingIcon = {
             if (value.isNotEmpty()) {
-                IconButton(onClick = { onValueChange("") }) {
+                IconButton(
+                    onClick = { onValueChange("") },
+                    modifier =
+                        Modifier
+                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                            .minimumInteractiveComponentSize(),
+                ) {
                     Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
                 }
             }
@@ -179,10 +192,23 @@ fun FormBuilderTextArea(
         onValueChange = onValueChange,
         label = { FormLabel(label, isRequired) },
         isError = isError,
-        supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
+        supportingText = {
+            if (isError && errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            }
+        },
         trailingIcon = {
             if (value.isNotEmpty()) {
-                IconButton(onClick = { onValueChange("") }) {
+                IconButton(
+                    onClick = { onValueChange("") },
+                    modifier =
+                        Modifier
+                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                            .minimumInteractiveComponentSize(),
+                ) {
                     Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
                 }
             }
@@ -225,15 +251,12 @@ fun FormBuilderSwitch(
     errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    val selectedText = stringResource(Res.string.state_selected)
-    val unselectedText = stringResource(Res.string.state_unselected)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier =
             modifier
                 .fillMaxWidth()
                 .semantics(mergeDescendants = true) {
-                    stateDescription = if (checked) selectedText else unselectedText
                     if (isError && errorMessage != null) {
                         error(errorMessage)
                     }
@@ -279,15 +302,12 @@ fun FormBuilderCheckbox(
     errorMessage: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    val selectedText = stringResource(Res.string.state_selected)
-    val unselectedText = stringResource(Res.string.state_unselected)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier =
             modifier
                 .fillMaxWidth()
                 .semantics(mergeDescendants = true) {
-                    stateDescription = if (checked) selectedText else unselectedText
                     if (isError && errorMessage != null) {
                         error(errorMessage)
                     }
@@ -321,6 +341,7 @@ fun FormBuilderCheckbox(
  * @param isError Whether the field is in an error state.
  * @param errorMessage The error message to display when in an error state.
  * @param modifier The modifier to be applied to the widget.
+ * @param keyboardType Keyboard type for software input. Defaults to [KeyboardType.Decimal].
  */
 @Composable
 @Suppress("LongParameterList")
@@ -332,8 +353,10 @@ fun FormBuilderNumericInput(
     isError: Boolean = false,
     errorMessage: String? = null,
     modifier: Modifier = Modifier,
+    keyboardType: KeyboardType = KeyboardType.Decimal,
 ) {
     val focusManager = LocalFocusManager.current
+    val validNumericPattern = Regex("^[+-]?[0-9\\u0660-\\u0669]*[.,\\u066B]?[0-9\\u0660-\\u0669]*$")
     OutlinedTextField(
         value = value,
         onValueChange = { newVal ->
@@ -342,22 +365,35 @@ fun FormBuilderNumericInput(
                 focusManager.moveFocus(FocusDirection.Next)
                 return@OutlinedTextField
             }
-            if (newVal.isEmpty() || newVal.matches(Regex("^\\d*[.,]?\\d*$"))) {
+            if (newVal.isEmpty() || newVal.matches(validNumericPattern)) {
                 onValueChange(newVal)
             }
         },
         label = { FormLabel(label, isRequired) },
         isError = isError,
-        supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
+        supportingText = {
+            if (isError && errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            }
+        },
         trailingIcon = {
             if (value.isNotEmpty()) {
-                IconButton(onClick = { onValueChange("") }) {
+                IconButton(
+                    onClick = { onValueChange("") },
+                    modifier =
+                        Modifier
+                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                            .minimumInteractiveComponentSize(),
+                ) {
                     Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
                 }
             }
         },
         singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = ImeAction.Next),
         keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
         modifier =
             modifier
@@ -384,6 +420,7 @@ fun FormBuilderNumericInput(
  * @param isRequired Whether the field is required.
  * @param isError Whether the field is in an error state.
  * @param errorMessage The error message to display when in an error state.
+ * @param steps The number of discrete steps between the minimum and maximum values.
  * @param modifier The modifier to be applied to the widget.
  */
 @Composable
@@ -396,11 +433,13 @@ fun FormBuilderRangeSlider(
     isRequired: Boolean = false,
     isError: Boolean = false,
     errorMessage: String? = null,
+    steps: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val currentLang by io.healthplatform.chartcam.ui.currentLanguageState
         .collectAsState()
-    val formattedValue = formatLocalizedDecimal(value.toDouble(), currentLang, decimalPlaces = 1)
+    val decimalPlaces = if (steps > 0) 0 else 1
+    val formattedValue = formatLocalizedDecimal(value.toDouble(), currentLang, decimalPlaces = decimalPlaces)
     Column(
         modifier =
             modifier
@@ -426,8 +465,12 @@ fun FormBuilderRangeSlider(
         }
         Slider(
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = { newVal ->
+                val adjusted = if (steps > 0) kotlin.math.round(newVal) else newVal
+                onValueChange(adjusted)
+            },
             valueRange = valueRange,
+            steps = steps,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -496,7 +539,14 @@ fun FormBuilderDropdown(
             readOnly = true,
             label = { FormLabel(label, isRequired) },
             isError = isError,
-            supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
+            supportingText = {
+                if (isError && errorMessage != null) {
+                    Text(
+                        text = errorMessage,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
+            },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
             modifier =
@@ -637,8 +687,7 @@ fun FormBuilderDatePicker(
                     val millis = datePickerState.selectedDateMillis
                     if (millis != null) {
                         val instant = kotlin.time.Instant.fromEpochMilliseconds(millis)
-                        val tz = kotlinx.datetime.TimeZone.currentSystemDefault()
-                        val localDate = instant.toLocalDateTime(tz).date
+                        val localDate = instant.toLocalDateTime(kotlinx.datetime.TimeZone.UTC).date
                         onValueChange(localDate.toString())
                     }
                     showDialog = false
@@ -667,6 +716,12 @@ fun FormBuilderDatePicker(
         }
     val notAnsweredText = stringResource(Res.string.not_answered)
     val selectDateLabel = stringResource(Res.string.cd_select_date)
+    val dateContentDescription =
+        stringResource(
+            Res.string.label_value_format,
+            label,
+            if (displayValue.isNotEmpty()) displayValue else notAnsweredText,
+        )
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -679,8 +734,7 @@ fun FormBuilderDatePicker(
                     .clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = selectDateLabel) {
                         showDialog = true
                     }.semantics {
-                        contentDescription =
-                            "$label: ${if (displayValue.isNotEmpty()) displayValue else notAnsweredText}"
+                        contentDescription = dateContentDescription
                         if (isError && errorMessage != null) {
                             error(errorMessage)
                         }
@@ -697,7 +751,14 @@ fun FormBuilderDatePicker(
                     FormLabel(patternLabel, isRequired)
                 },
                 isError = isError,
-                supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
+                supportingText = {
+                    if (isError && errorMessage != null) {
+                        Text(
+                            text = errorMessage,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        )
+                    }
+                },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 colors =
@@ -764,8 +825,7 @@ fun FormBuilderDateTimePicker(
                     val millis = datePickerState.selectedDateMillis
                     if (millis != null) {
                         val instant = kotlin.time.Instant.fromEpochMilliseconds(millis)
-                        val tz = kotlinx.datetime.TimeZone.currentSystemDefault()
-                        val localDate = instant.toLocalDateTime(tz).date
+                        val localDate = instant.toLocalDateTime(kotlinx.datetime.TimeZone.UTC).date
                         selectedDateStr = localDate.toString()
                         showDateDialog = false
                         showTimeDialog = true
@@ -821,12 +881,18 @@ fun FormBuilderDateTimePicker(
     val displayValue =
         if (value.isNotEmpty()) {
             io.healthplatform.chartcam.utils
-                .formatLocalizedDate(value, currentLang)
+                .formatLocalizedDateTime(value, currentLang)
         } else {
             ""
         }
     val notAnsweredText = stringResource(Res.string.not_answered)
     val selectDateTimeLabel = stringResource(Res.string.cd_select_datetime)
+    val dateTimeContentDescription =
+        stringResource(
+            Res.string.label_value_format,
+            label,
+            if (displayValue.isNotEmpty()) displayValue else notAnsweredText,
+        )
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -839,8 +905,7 @@ fun FormBuilderDateTimePicker(
                     .clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = selectDateTimeLabel) {
                         showDateDialog = true
                     }.semantics {
-                        contentDescription =
-                            "$label: ${if (displayValue.isNotEmpty()) displayValue else notAnsweredText}"
+                        contentDescription = dateTimeContentDescription
                         if (isError && errorMessage != null) {
                             error(errorMessage)
                         }
@@ -857,7 +922,14 @@ fun FormBuilderDateTimePicker(
                     FormLabel(patternLabel, isRequired)
                 },
                 isError = isError,
-                supportingText = { if (isError && errorMessage != null) Text(errorMessage) },
+                supportingText = {
+                    if (isError && errorMessage != null) {
+                        Text(
+                            text = errorMessage,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        )
+                    }
+                },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 colors =

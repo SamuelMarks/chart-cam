@@ -9,34 +9,39 @@ package io.healthplatform.chartcam.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -48,9 +53,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -62,6 +67,7 @@ import chartcam.chartcam.generated.resources.camera_permission_required
 import chartcam.chartcam.generated.resources.cancel
 import chartcam.chartcam.generated.resources.capturing_photo
 import chartcam.chartcam.generated.resources.cd_camera_preview
+import chartcam.chartcam.generated.resources.cd_photo_captured_review
 import chartcam.chartcam.generated.resources.cd_review
 import chartcam.chartcam.generated.resources.cd_switch_camera
 import chartcam.chartcam.generated.resources.clear
@@ -83,6 +89,7 @@ import io.healthplatform.chartcam.capture.CaptureError
 import io.healthplatform.chartcam.capture.CaptureUiState
 import io.healthplatform.chartcam.capture.CaptureViewModel
 import io.healthplatform.chartcam.capture.PhotoStep
+import io.healthplatform.chartcam.fhir.getLocalizedText
 import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.sensors.SensorManager
@@ -92,21 +99,24 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import org.jetbrains.compose.resources.stringResource
 
-// Extracts a flattened list of [PhotoStep]s from a list of Questionnaire items.
-
 /**
- * Internal helper function.
- * @param items The items.
- * @return The result.
+ * Extracts a flattened list of [PhotoStep]s from a list of Questionnaire items, localized to the given language.
+ *
+ * @param items The items to extract steps from.
+ * @param language The BCP-47 language tag for localization.
+ * @return The list of extracted photo steps.
  */
-private fun extractSteps(items: List<Questionnaire.Item>): List<PhotoStep> {
+internal fun extractSteps(
+    items: List<Questionnaire.Item>,
+    language: String = currentLanguageState.value,
+): List<PhotoStep> {
     val result = mutableListOf<PhotoStep>()
     for (item in items) {
         if (item.type.value == Questionnaire.QuestionnaireItemType.Attachment) {
-            result.add(PhotoStep(item.linkId.value ?: "", item.text?.value ?: ""))
+            result.add(PhotoStep(item.linkId.value ?: "", item.getLocalizedText(language)))
         }
         if (item.item.isNotEmpty()) {
-            result.addAll(extractSteps(item.item))
+            result.addAll(extractSteps(item.item, language))
         }
     }
     return result
@@ -123,31 +133,46 @@ private fun PermissionDeniedScreen(
     onCancel: () -> Unit,
 ) {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.scrim)
+                .statusBarsPadding()
+                .navigationBarsPadding(),
         contentAlignment = Alignment.Center,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = stringResource(Res.string.camera_permission_required),
-                color = Color.White,
-                modifier =
-                    Modifier
-                        .padding(16.dp)
-                        .semantics { heading() },
-            )
-            Button(onClick = onOpenSettings) {
-                Text(stringResource(Res.string.open_settings))
-            }
-            Button(
-                onClick = onCancel,
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                modifier = Modifier.padding(top = 8.dp),
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(24.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(stringResource(Res.string.cancel))
+                Text(
+                    text = stringResource(Res.string.camera_permission_required),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier =
+                        Modifier
+                            .padding(bottom = 16.dp)
+                            .semantics { heading() },
+                )
+                Button(onClick = onOpenSettings) {
+                    Text(stringResource(Res.string.open_settings))
+                }
+                Button(
+                    onClick = onCancel,
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Text(stringResource(Res.string.cancel))
+                }
             }
         }
     }
@@ -208,32 +233,35 @@ fun CaptureScreen(
     onFinished: (Map<String, String>) -> Unit,
     onCancel: () -> Unit = {},
 ) {
-    val permissionManager = rememberPermissionManager()
-    var permissionGranted by remember {
-        mutableStateOf(permissionManager.getCameraPermissionStatus() == PermissionStatus.GRANTED)
-    }
+    val currentLang by currentLanguageState.collectAsState()
 
-    LaunchedEffect(Unit) {
+    key(currentLang) {
+        val permissionManager = rememberPermissionManager()
+        var permissionGranted by remember {
+            mutableStateOf(permissionManager.getCameraPermissionStatus() == PermissionStatus.GRANTED)
+        }
+
+        LaunchedEffect(Unit) {
+            if (!permissionGranted) {
+                permissionGranted = permissionManager.requestCameraPermission()
+            }
+        }
+
         if (!permissionGranted) {
-            permissionGranted = permissionManager.requestCameraPermission()
+            PermissionDeniedScreen(
+                onOpenSettings = { permissionManager.openSettings() },
+                onCancel = onCancel,
+            )
+        } else {
+            CaptureScreenContent(
+                questionnaireId = questionnaireId,
+                linkId = linkId,
+                questionnaireRepository = questionnaireRepository,
+                onFinished = onFinished,
+                onCancel = onCancel,
+            )
         }
     }
-
-    if (!permissionGranted) {
-        PermissionDeniedScreen(
-            onOpenSettings = { permissionManager.openSettings() },
-            onCancel = onCancel,
-        )
-        return
-    }
-
-    CaptureScreenContent(
-        questionnaireId = questionnaireId,
-        linkId = linkId,
-        questionnaireRepository = questionnaireRepository,
-        onFinished = onFinished,
-        onCancel = onCancel,
-    )
 }
 
 /**
@@ -257,13 +285,14 @@ private fun CaptureScreenContent(
     val fileStorage = remember { createFileStorage() }
     val viewModel = remember { CaptureViewModel(cameraManager, fileStorage) }
 
+    val currentLang by currentLanguageState.collectAsState()
     val state by viewModel.uiState.collectAsState()
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
         val q = questionnaireRepository.getQuestionnaire(questionnaireId)
-        val allSteps = q?.item?.let { extractSteps(it) } ?: emptyList()
+        val allSteps = q?.item?.let { extractSteps(it, currentLang) } ?: emptyList()
         val steps = if (linkId != null) allSteps.filter { it.id == linkId } else allSteps
         viewModel.initSteps(steps)
     }
@@ -336,8 +365,6 @@ private fun CaptureBox(
                     }
                 },
     ) {
-        val interactionSource = remember { MutableInteractionSource() }
-
         CameraPreview(
             modifier = Modifier.fillMaxSize().semantics { contentDescription = cdCameraPreview },
             cameraManager = cameraManager,
@@ -348,13 +375,9 @@ private fun CaptureBox(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                            onClickLabel = stringResource(Res.string.take_photo),
-                            role = Role.Button,
-                        ) { actions.onCapture() }
-                        .clearAndSetSemantics {},
+                        .pointerInput(Unit) {
+                            detectTapGestures(onTap = { actions.onCapture() })
+                        }.clearAndSetSemantics {},
             )
         }
 
@@ -382,7 +405,7 @@ private fun CaptureBox(
                         .semantics {
                             liveRegion = LiveRegionMode.Polite
                         },
-                shape = RoundedCornerShape(8.dp),
+                shape = MaterialTheme.shapes.small,
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -410,10 +433,14 @@ private fun CaptureBox(
                 onConfirm = actions.onConfirm,
             )
         } else {
+            val stepTitle =
+                state.currentStep?.let { step ->
+                    step.titleRes?.let { stringResource(it) } ?: step.title
+                } ?: ""
             ControlsLayer(
                 state =
                     ControlsState(
-                        stepName = state.currentStep?.title ?: "",
+                        stepName = stepTitle,
                         count = state.capturedCount,
                         total = state.totalSteps,
                         isCapturing = state.isCapturing,
@@ -487,20 +514,26 @@ private fun ControlsTopBar(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(16.dp))
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
+                    MaterialTheme.shapes.large,
+                ).padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = stepName,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp),
+            modifier =
+                Modifier
+                    .weight(1f, fill = false)
+                    .padding(end = 8.dp)
+                    .semantics { heading() },
         )
         Text(
             text = stringResource(Res.string.step_count_format, formattedCount, formattedTotal),
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.titleMedium,
         )
     }
@@ -526,12 +559,14 @@ private fun ControlsBottomBar(
     val capturingPhotoText = stringResource(Res.string.capturing_photo)
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
-        horizontalAlignment = Alignment.Start,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Button(
             onClick = onCapture,
             modifier =
                 Modifier
+                    .defaultMinSize(minHeight = 48.dp)
+                    .minimumInteractiveComponentSize()
                     .padding(bottom = 16.dp)
                     .semantics {
                         if (isCapturing) {
@@ -563,13 +598,8 @@ private fun ControlsBottomBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Button(
+            FilledTonalButton(
                 onClick = onCancel,
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
             ) {
                 Text(stringResource(Res.string.cancel))
             }
@@ -608,8 +638,18 @@ fun ReviewLayer(
     onConfirm: () -> Unit,
 ) {
     val bitmap = remember(bytes) { bytes.decodeToImageBitmap() }
+    val reviewAnnouncement = stringResource(Res.string.cd_photo_captured_review)
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.scrim)
+                .semantics {
+                    liveRegion = LiveRegionMode.Polite
+                    contentDescription = reviewAnnouncement
+                },
+    ) {
         Image(
             bitmap = bitmap,
             contentDescription = stringResource(Res.string.cd_review),
@@ -618,15 +658,20 @@ fun ReviewLayer(
         )
 
         Row(
-            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(32.dp),
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(32.dp),
             horizontalArrangement = Arrangement.SpaceAround,
         ) {
-            Button(
+            OutlinedButton(
                 onClick = onRetake,
                 colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
                     ),
             ) {
                 Text(stringResource(Res.string.retake))

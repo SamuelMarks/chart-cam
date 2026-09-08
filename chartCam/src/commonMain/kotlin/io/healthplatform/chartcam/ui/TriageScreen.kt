@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -45,16 +48,19 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.cd_action_select_patient
+import chartcam.chartcam.generated.resources.cd_back
 import chartcam.chartcam.generated.resources.cd_create_patient
 import chartcam.chartcam.generated.resources.cd_proceed
 import chartcam.chartcam.generated.resources.cd_search_icon
+import chartcam.chartcam.generated.resources.clear
 import chartcam.chartcam.generated.resources.mrn_dob_format
 import chartcam.chartcam.generated.resources.no_patients_found
 import chartcam.chartcam.generated.resources.search_placeholder
 import chartcam.chartcam.generated.resources.selected_photos_ready
 import chartcam.chartcam.generated.resources.triage_select_patient
 import io.healthplatform.chartcam.models.customBirthDate
-import io.healthplatform.chartcam.models.fullName
+import io.healthplatform.chartcam.models.getFullName
 import io.healthplatform.chartcam.models.mrn
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.ui.components.CreatePatientDialog
@@ -75,6 +81,7 @@ import org.jetbrains.compose.resources.stringResource
  * @param fhirRepository Repository used to search or create patients.
  * @param onProceedToEncounter Callback invoked with the selected patient ID and the `capturedPhotoPaths`
  *        map to initiate or append to a clinical encounter.
+ * @param onBack Callback invoked when navigation back is requested.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,6 +89,7 @@ fun TriageScreen(
     capturedPhotoPaths: Map<String, String>,
     fhirRepository: FhirRepository,
     onProceedToEncounter: (String, Map<String, String>) -> Unit,
+    onBack: () -> Unit = {},
 ) {
     val viewModel =
         androidx.lifecycle.viewmodel.compose
@@ -92,77 +100,106 @@ fun TriageScreen(
         viewModel.setPaths(capturedPhotoPaths)
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        stringResource(Res.string.triage_select_patient),
-                        modifier = Modifier.semantics { heading() },
-                    )
-                },
-            )
-        },
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            state.selectedPatient?.let { patient ->
-                TriagePatientSelectionHeader(
-                    patient = patient,
-                    photoCount = state.capturedPhotoPaths.size,
-                    onProceed = { onProceedToEncounter(patient.id ?: "", state.capturedPhotoPaths) },
-                )
-                HorizontalDivider()
-            }
+    val currentLang by currentLanguageState.collectAsState()
 
-            TriageSearchBar(
-                query = state.searchQuery,
-                onQueryChange = viewModel::onSearchQueryChanged,
-                onCreatePatientClick = { viewModel.showCreatePatient(true) },
-            )
-
-            LazyColumn {
-                items(state.searchResults) { patient ->
-                    ListItem(
-                        headlineContent = { Text(patient.fullName) },
-                        supportingContent = {
-                            Text(
-                                stringResource(
-                                    Res.string.mrn_dob_format,
-                                    patient.mrn,
-                                    io.healthplatform.chartcam.utils
-                                        .formatLocalizedDate(patient.customBirthDate),
-                                ),
+    key(currentLang) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            stringResource(Res.string.triage_select_patient),
+                            modifier = Modifier.semantics { heading() },
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(Res.string.cd_back),
                             )
-                        },
-                        modifier =
-                            Modifier
-                                .minimumInteractiveComponentSize()
-                                .semantics(mergeDescendants = true) {}
-                                .clickable(
-                                    role = Role.Button,
-                                ) { viewModel.selectPatient(patient) },
+                        }
+                    },
+                )
+            },
+        ) { padding ->
+            Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+                state.selectedPatient?.let { patient ->
+                    TriagePatientSelectionHeader(
+                        patient = patient,
+                        photoCount = state.capturedPhotoPaths.size,
+                        onProceed = { onProceedToEncounter(patient.id ?: "", state.capturedPhotoPaths) },
                     )
                     HorizontalDivider()
                 }
 
-                if (state.searchResults.isEmpty() && state.searchQuery.isNotBlank()) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            Text(stringResource(Res.string.no_patients_found))
+                TriageSearchBar(
+                    query = state.searchQuery,
+                    onQueryChange = viewModel::onSearchQueryChanged,
+                    onCreatePatientClick = { viewModel.showCreatePatient(true) },
+                )
+
+                LazyColumn {
+                    items(state.searchResults) { patient ->
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    patient.getFullName(currentLang),
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                            },
+                            supportingContent = {
+                                Text(
+                                    stringResource(
+                                        Res.string.mrn_dob_format,
+                                        patient.mrn,
+                                        io.healthplatform.chartcam.utils
+                                            .formatLocalizedDate(patient.customBirthDate, currentLang),
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            },
+                            modifier =
+                                Modifier
+                                    .minimumInteractiveComponentSize()
+                                    .semantics(mergeDescendants = true) {}
+                                    .clickable(
+                                        role = Role.Button,
+                                        onClickLabel = stringResource(Res.string.cd_action_select_patient),
+                                    ) { viewModel.selectPatient(patient) },
+                        )
+                        HorizontalDivider()
+                    }
+
+                    if (state.searchResults.isEmpty() && state.searchQuery.isNotBlank()) {
+                        item {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(32.dp)
+                                        .semantics { liveRegion = LiveRegionMode.Polite },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    stringResource(Res.string.no_patients_found),
+                                    color = MaterialTheme.colorScheme.secondary,
+                                )
+                            }
                         }
                     }
                 }
             }
         }
-    }
 
-    if (state.isCreatingPatient) {
-        CreatePatientDialog(
-            onDismissRequest = { viewModel.showCreatePatient(false) },
-            onConfirm = { f, l, mrn, dob, g ->
-                viewModel.createPatient(f, l, mrn, dob, g)
-            },
-        )
+        if (state.isCreatingPatient) {
+            CreatePatientDialog(
+                onDismissRequest = { viewModel.showCreatePatient(false) },
+                onConfirm = { f, l, mrn, dob, g ->
+                    viewModel.createPatient(f, l, mrn, dob, g)
+                },
+            )
+        }
     }
 }
 
@@ -179,8 +216,15 @@ private fun TriagePatientSelectionHeader(
     photoCount: Int,
     onProceed: () -> Unit,
 ) {
+    val currentLang by currentLanguageState.collectAsState()
+    val proceedLabel = stringResource(Res.string.cd_proceed)
     ListItem(
-        headlineContent = { Text(patient.fullName, style = MaterialTheme.typography.titleMedium) },
+        headlineContent = {
+            Text(
+                patient.getFullName(currentLang),
+                style = MaterialTheme.typography.titleMedium,
+            )
+        },
         supportingContent = {
             Text(
                 pluralStringResource(
@@ -191,16 +235,17 @@ private fun TriagePatientSelectionHeader(
             )
         },
         trailingContent = {
-            IconButton(onClick = onProceed) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = stringResource(Res.string.cd_proceed),
-                )
-            }
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+            )
         },
         modifier =
             Modifier
-                .padding(8.dp)
+                .fillMaxWidth()
+                .clickable(role = Role.Button, onClickLabel = proceedLabel) {
+                    onProceed()
+                }.padding(8.dp)
                 .semantics {
                     liveRegion = LiveRegionMode.Polite
                 },
@@ -240,6 +285,22 @@ private fun TriageSearchBar(
                             contentDescription = stringResource(Res.string.cd_search_icon),
                         )
                     },
+                    trailingIcon =
+                        if (query.isNotEmpty()) {
+                            {
+                                IconButton(
+                                    onClick = { onQueryChange("") },
+                                    modifier = Modifier.minimumInteractiveComponentSize(),
+                                ) {
+                                    Icon(
+                                        Icons.Default.Clear,
+                                        contentDescription = stringResource(Res.string.clear),
+                                    )
+                                }
+                            }
+                        } else {
+                            null
+                        },
                 )
             },
             expanded = false,

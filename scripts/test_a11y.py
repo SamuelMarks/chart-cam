@@ -33,7 +33,9 @@ def check_a11y(source_dirs):
     icon_pattern = re.compile(r"\bIcon\(")
     image_pattern = re.compile(r"\bImage\(")
     desc_pattern = re.compile(r"contentDescription\s*=")
-    hardcoded_cd_pattern = re.compile(r'contentDescription\s*=\s*"([A-Z][a-z0-9 ]{3,})"')
+    hardcoded_cd_pattern = re.compile(
+        r'contentDescription\s*=\s*"([A-Z][a-z0-9 ]{3,})"'
+    )
 
     for d in source_dirs:
         if not os.path.exists(d):
@@ -63,6 +65,17 @@ def check_a11y(source_dirs):
                             missing.append(
                                 f"{path}:{i + 1} Hardcoded contentDescription literal: '{m.group(1)}'"
                             )
+
+                    content = "".join(lines)
+                    # Check for clickable attached to clearAndSetSemantics
+                    if re.search(
+                        r"\.clickable\s*\(.*?\)\s*\.clearAndSetSemantics",
+                        content,
+                        re.DOTALL,
+                    ):
+                        missing.append(
+                            f"{path}: Interactive .clickable node cleared by .clearAndSetSemantics"
+                        )
 
     return missing
 

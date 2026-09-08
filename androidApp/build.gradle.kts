@@ -23,9 +23,13 @@ android {
             libs.versions.android.targetSdk
                 .get()
                 .toInt()
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 4
+        versionName = "1.0.3"
         vectorDrawables.useSupportLibrary = true
+    }
+
+    androidResources {
+        localeFilters += listOf("en", "es", "he", "ja", "zh-rTW")
     }
 
     val releaseStoreFilePath =

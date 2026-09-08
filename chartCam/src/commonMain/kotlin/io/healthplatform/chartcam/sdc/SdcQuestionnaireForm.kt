@@ -59,6 +59,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.attachments_count
+import chartcam.chartcam.generated.resources.cd_take_photo_for_item
 import chartcam.chartcam.generated.resources.cd_unnamed_group
 import chartcam.chartcam.generated.resources.cd_unnamed_item
 import chartcam.chartcam.generated.resources.error_required_field
@@ -82,6 +83,8 @@ import io.healthplatform.chartcam.ui.components.FormBuilderNumericInput
 import io.healthplatform.chartcam.ui.components.FormBuilderRangeSlider
 import io.healthplatform.chartcam.ui.components.FormBuilderTextArea
 import io.healthplatform.chartcam.ui.components.tabFocusNext
+import io.healthplatform.chartcam.utils.formatLocalizedDate
+import io.healthplatform.chartcam.utils.formatLocalizedDateTime
 import io.healthplatform.chartcam.utils.formatLocalizedDecimal
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -468,10 +471,63 @@ private fun getAnswerDisplayText(
         .collectAsState()
     return when (type) {
         Questionnaire.QuestionnaireItemType.Boolean -> getBooleanAnswerText(answers[linkId] as? Boolean)
-        Questionnaire.QuestionnaireItemType.Choice -> getChoiceAnswerText(item, answers[linkId])
+        Questionnaire.QuestionnaireItemType.Choice -> getChoiceAnswerText(item, answers[linkId], currentLang)
         Questionnaire.QuestionnaireItemType.Integer -> getIntegerAnswerText(answers[linkId], currentLang)
+        Questionnaire.QuestionnaireItemType.Decimal -> getIntegerAnswerText(answers[linkId], currentLang)
+        Questionnaire.QuestionnaireItemType.Date -> getDateAnswerText(answers[linkId], currentLang)
+        Questionnaire.QuestionnaireItemType.DateTime -> getDateTimeAnswerText(answers[linkId], currentLang)
         Questionnaire.QuestionnaireItemType.Attachment -> ""
         else -> answers[linkId]?.toString() ?: ""
+    }
+}
+
+/**
+ * Internal helper function to format a localized date answer string.
+ *
+ * @param answer The raw date answer.
+ * @param language The current language tag.
+ * @return The localized date string, or raw representation.
+ */
+private fun getDateAnswerText(
+    answer: Any?,
+    language: String,
+): String {
+    val raw: String =
+        when (answer) {
+            is String -> answer
+            is com.google.fhir.model.r4.Date -> answer.value?.toString() ?: ""
+            else -> answer?.toString() ?: ""
+        }
+    if (raw.isBlank()) return ""
+    return try {
+        formatLocalizedDate(raw, language)
+    } catch (_: Exception) {
+        raw
+    }
+}
+
+/**
+ * Internal helper function to format a localized datetime answer string.
+ *
+ * @param answer The raw datetime answer.
+ * @param language The current language tag.
+ * @return The localized datetime string, or raw representation.
+ */
+private fun getDateTimeAnswerText(
+    answer: Any?,
+    language: String,
+): String {
+    val raw: String =
+        when (answer) {
+            is String -> answer
+            is com.google.fhir.model.r4.DateTime -> answer.value?.toString() ?: ""
+            else -> answer?.toString() ?: ""
+        }
+    if (raw.isBlank()) return ""
+    return try {
+        formatLocalizedDateTime(raw, language)
+    } catch (_: Exception) {
+        raw
     }
 }
 
@@ -490,15 +546,23 @@ private fun getBooleanAnswerText(checked: Boolean?): String {
  * Internal helper function.
  * @param item The item.
  * @param answer The answer.
+ * @param language The language tag to choose the appropriate list separator.
  * @return The result.
  */
 private fun getChoiceAnswerText(
     item: Questionnaire.Item,
     answer: Any?,
+    language: String,
 ): String {
     if (item.repeats?.value == true) {
         val list = (answer as? List<*>)?.filterIsInstance<String>()
-        return list?.joinToString(", ") ?: ""
+        val separator =
+            when (language.lowercase().split("-", "_").first()) {
+                "zh", "ja" -> "、"
+                "ar", "fa", "ur" -> "، "
+                else -> ", "
+            }
+        return list?.joinToString(separator) ?: ""
     }
     return answer as? String ?: ""
 }
@@ -648,10 +712,10 @@ private fun RenderStringField(ctx: RenderContext) {
         modifier =
             Modifier
                 .padding(vertical = 8.dp)
-                .semantics(mergeDescendants = true) {
-                    contentDescription = ctx.displayLabel
+                .semantics {
                     if (ctx.isError && ctx.errorMessage != null) {
                         error(ctx.errorMessage)
+                        liveRegion = LiveRegionMode.Polite
                     }
                 }.tabFocusNext(ctx.focusManager),
     )
@@ -906,7 +970,14 @@ private fun RenderDropdownField(
                     .FormLabel(ctx.displayLabel, ctx.isRequired)
             },
             isError = ctx.isError,
-            supportingText = { if (ctx.isError && ctx.errorMessage != null) Text(ctx.errorMessage) },
+            supportingText = {
+                if (ctx.isError && ctx.errorMessage != null) {
+                    Text(
+                        text = ctx.errorMessage,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
+            },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
             modifier =
@@ -960,13 +1031,18 @@ private fun RenderAttachmentField(ctx: RenderContext) {
                 },
         )
 
+        val buttonContentDescription =
+            stringResource(Res.string.cd_take_photo_for_item, ctx.displayLabel)
         Button(
             onClick = { ctx.onTakePhotoRequested(ctx.linkId) },
             modifier =
                 Modifier
                     .padding(top = 8.dp)
                     .minimumInteractiveComponentSize()
-                    .testTag("AttachmentCaptureButton ${ctx.linkId}"),
+                    .testTag("AttachmentCaptureButton ${ctx.linkId}")
+                    .semantics {
+                        contentDescription = buttonContentDescription
+                    },
         ) {
             Icon(
                 Icons.Default.CameraAlt,
@@ -997,8 +1073,7 @@ private fun RenderTextField(ctx: RenderContext) {
         isError = ctx.isError,
         errorMessage = ctx.errorMessage,
         modifier =
-            Modifier.semantics(mergeDescendants = true) {
-                contentDescription = ctx.displayLabel
+            Modifier.semantics {
                 if (ctx.isError && ctx.errorMessage != null) {
                     error(ctx.errorMessage)
                     liveRegion = LiveRegionMode.Polite
@@ -1063,7 +1138,13 @@ private fun RenderDateTimeField(ctx: RenderContext) {
  */
 @Composable
 private fun RenderDecimalField(ctx: RenderContext) {
-    val text = ctx.state.answers[ctx.linkId] as? String ?: ""
+    val rawAns = ctx.state.answers[ctx.linkId]
+    val text =
+        when (rawAns) {
+            is Number -> rawAns.toString()
+            is String -> rawAns
+            else -> ""
+        }
     FormBuilderNumericInput(
         value = text,
         onValueChange = { ctx.onAnswerChanged(ctx.linkId, it) },
@@ -1072,8 +1153,7 @@ private fun RenderDecimalField(ctx: RenderContext) {
         isError = ctx.isError,
         errorMessage = ctx.errorMessage,
         modifier =
-            Modifier.semantics(mergeDescendants = true) {
-                contentDescription = ctx.displayLabel
+            Modifier.semantics {
                 if (ctx.isError && ctx.errorMessage != null) {
                     error(ctx.errorMessage)
                     liveRegion = LiveRegionMode.Polite
@@ -1090,19 +1170,22 @@ private fun RenderDecimalField(ctx: RenderContext) {
 private fun RenderIntegerField(ctx: RenderContext) {
     val minValue = ctx.item.getMinValue() ?: DEFAULT_MIN_VALUE
     val maxValue = ctx.item.getMaxValue() ?: DEFAULT_MAX_VALUE
-    val val1 = ctx.state.answers[ctx.linkId] as? Float
-    val val2 = (ctx.state.answers[ctx.linkId] as? String)?.toFloatOrNull()
+    val rawAns = ctx.state.answers[ctx.linkId]
+    val val1 = (rawAns as? Number)?.toFloat()
+    val val2 = (rawAns as? String)?.toFloatOrNull()
     val value = val1 ?: val2 ?: minValue
+    val steps = ((maxValue - minValue).toInt() - 1).coerceAtLeast(0)
     io.healthplatform.chartcam.ui.components.FormBuilderRangeSlider(
         value = value,
         valueRange = minValue..maxValue,
-        onValueChange = { ctx.onAnswerChanged(ctx.linkId, it) },
+        steps = steps,
+        onValueChange = { ctx.onAnswerChanged(ctx.linkId, kotlin.math.round(it)) },
         label = ctx.displayLabel,
         isRequired = ctx.isRequired,
         isError = ctx.isError,
         errorMessage = ctx.errorMessage,
         modifier =
-            Modifier.semantics(mergeDescendants = true) {
+            Modifier.semantics {
                 contentDescription = ctx.displayLabel
                 if (ctx.isError && ctx.errorMessage != null) {
                     error(ctx.errorMessage)

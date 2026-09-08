@@ -5,6 +5,7 @@
 package io.healthplatform.chartcam.fhir
 
 import com.google.fhir.model.r4.Questionnaire
+import io.healthplatform.chartcam.ui.currentLanguageState
 
 /**
  * Structured Data Capture (SDC) Extension definitions and helpers.
@@ -113,7 +114,7 @@ fun Questionnaire.Item.getMaxValue(): Float? =
  * @param language The language tag to search for (e.g. "es", "ja", "he", "zh").
  * @return The localized text string if present, or the item's default text.
  */
-fun Questionnaire.Item.getLocalizedText(language: String = io.healthplatform.chartcam.ui.currentLanguageState.value): String {
+fun Questionnaire.Item.getLocalizedText(language: String = currentLanguageState.value): String {
     val langPrefix = language.lowercase().split("-", "_").first()
     val transExt = this.extension.filter { it.url == SdcExtensions.TRANSLATION }
     for (ext in transExt) {

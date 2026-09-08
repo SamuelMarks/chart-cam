@@ -212,4 +212,66 @@ class LoginViewModelTest {
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(chartcam.chartcam.generated.resources.Res.string.unknown_error, viewModel.uiState.value.errorMessage)
         }
+
+    /**
+     * Tests the scenario where demo login succeeds.
+     */
+    @Test
+    fun testOnDemoLoginSuccess() =
+        runTest {
+            authRepository = AuthRepository(mockStorage)
+            val viewModel = LoginViewModel(authRepository)
+
+            var callbackInvoked = false
+            viewModel.onDemoLoginClicked { callbackInvoked = true }
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value.isLoggedIn)
+            assertFalse(viewModel.uiState.value.isDemoLoading)
+            assertNull(viewModel.uiState.value.errorMessage)
+            assertTrue(callbackInvoked)
+        }
+
+    /**
+     * Tests the scenario where demo login fails.
+     */
+    @Test
+    fun testOnDemoLoginFailure() =
+        runTest {
+            val failingRepo =
+                object : AuthRepository(mockStorage) {
+                    /**
+                     * Override loginAsDemo to always fail.
+                     *
+                     * @return Failure result.
+                     */
+                    override suspend fun loginAsDemo(): Result<com.google.fhir.model.r4.Practitioner> =
+                        Result.failure(Exception("Demo error"))
+                }
+            val viewModel = LoginViewModel(failingRepo)
+
+            viewModel.onDemoLoginClicked()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.isLoggedIn)
+            assertFalse(viewModel.uiState.value.isDemoLoading)
+            assertEquals(chartcam.chartcam.generated.resources.Res.string.unknown_error, viewModel.uiState.value.errorMessage)
+        }
+
+    /**
+     * Tests toggling tutorial overlay visibility.
+     */
+    @Test
+    fun testShowTutorial() {
+        authRepository = AuthRepository(mockStorage)
+        val viewModel = LoginViewModel(authRepository)
+
+        assertFalse(viewModel.uiState.value.isTutorialVisible)
+
+        viewModel.showTutorial(true)
+        assertTrue(viewModel.uiState.value.isTutorialVisible)
+
+        viewModel.showTutorial(false)
+        assertFalse(viewModel.uiState.value.isTutorialVisible)
+    }
 }

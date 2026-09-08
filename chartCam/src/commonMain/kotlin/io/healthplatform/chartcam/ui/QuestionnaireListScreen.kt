@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.FileCopy
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -31,18 +32,24 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -53,12 +60,17 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cancel
+import chartcam.chartcam.generated.resources.cd_action_view_questionnaire
 import chartcam.chartcam.generated.resources.cd_back
 import chartcam.chartcam.generated.resources.cd_delete
 import chartcam.chartcam.generated.resources.cd_duplicate
 import chartcam.chartcam.generated.resources.clipboard_is_empty
+import chartcam.chartcam.generated.resources.confirm_delete_item_message
+import chartcam.chartcam.generated.resources.confirm_delete_item_title
+import chartcam.chartcam.generated.resources.copied_to_clipboard
 import chartcam.chartcam.generated.resources.copy_to_clipboard
 import chartcam.chartcam.generated.resources.create_questionnaire
+import chartcam.chartcam.generated.resources.delete
 import chartcam.chartcam.generated.resources.file_import_coming_soon
 import chartcam.chartcam.generated.resources.id_format
 import chartcam.chartcam.generated.resources.import_action
@@ -66,7 +78,7 @@ import chartcam.chartcam.generated.resources.import_confirmation
 import chartcam.chartcam.generated.resources.import_error_format
 import chartcam.chartcam.generated.resources.import_questionnaire
 import chartcam.chartcam.generated.resources.invalid_fhir_format
-import chartcam.chartcam.generated.resources.number_of_items_format
+import chartcam.chartcam.generated.resources.number_of_items
 import chartcam.chartcam.generated.resources.paste_from_clipboard
 import chartcam.chartcam.generated.resources.qr_code_coming_soon
 import chartcam.chartcam.generated.resources.questionnaires
@@ -79,6 +91,7 @@ import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.repository.QuestionnaireSharingService
 import io.healthplatform.chartcam.utils.createShareService
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -114,156 +127,205 @@ fun QuestionnaireListScreen(
 
     val bottomSheetState = rememberModalBottomSheetState()
     val importBottomSheetState = rememberModalBottomSheetState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val currentLang by currentLanguageState.collectAsState()
+    val copiedConfirmationText = stringResource(Res.string.copied_to_clipboard)
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        stringResource(Res.string.questionnaires),
-                        modifier = Modifier.semantics { heading() },
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(Res.string.cd_back),
+    key(currentLang) {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = {
+                TopAppBar(
+                    scrollBehavior = scrollBehavior,
+                    title = {
+                        Text(
+                            stringResource(Res.string.questionnaires),
+                            modifier = Modifier.semantics { heading() },
                         )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showImportOptions = true }) {
-                        Icon(
-                            Icons.Default.Download,
-                            contentDescription = stringResource(Res.string.import_questionnaire),
-                        )
-                    }
-                },
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { onNavigateToBuilder(null) }) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.create_questionnaire))
-            }
-        },
-    ) { paddingValues ->
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-        ) {
-            if (importError != null) {
-                Text(
-                    text = stringResource(Res.string.import_error_format, importError ?: ""),
-                    color = MaterialTheme.colorScheme.error,
-                    modifier =
-                        Modifier
-                            .padding(16.dp)
-                            .semantics { liveRegion = LiveRegionMode.Polite },
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(Res.string.cd_back),
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { showImportOptions = true }) {
+                            Icon(
+                                Icons.Default.Download,
+                                contentDescription = stringResource(Res.string.import_questionnaire),
+                            )
+                        }
+                    },
                 )
-            }
-
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(questionnaires) { q ->
-                    val titleText = q.title?.value ?: q.id ?: stringResource(Res.string.unknown)
-                    val shareLabel = stringResource(Res.string.share_questionnaire)
-                    ListItem(
+            },
+            floatingActionButton = {
+                FloatingActionButton(onClick = { onNavigateToBuilder(null) }) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.create_questionnaire))
+                }
+            },
+        ) { paddingValues ->
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+            ) {
+                if (importError != null) {
+                    Text(
+                        text = stringResource(Res.string.import_error_format, importError ?: ""),
+                        color = MaterialTheme.colorScheme.error,
                         modifier =
                             Modifier
-                                .fillMaxWidth()
-                                .minimumInteractiveComponentSize()
-                                .semantics {
-                                    customActions =
-                                        listOf(
-                                            CustomAccessibilityAction(shareLabel) {
-                                                selectedQuestionnaireForShare = q
-                                                true
-                                            },
-                                        )
-                                }.clickable(role = Role.Button) {
-                                    selectedQuestionnaireForView = q
-                                },
-                        headlineContent = { Text(titleText, style = MaterialTheme.typography.titleMedium) },
-                        supportingContent = {
-                            Text(
-                                stringResource(Res.string.id_format, q.id ?: stringResource(Res.string.unknown)),
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        },
-                        trailingContent = {
-                            IconButton(
-                                onClick = { selectedQuestionnaireForShare = q },
-                                modifier = Modifier.minimumInteractiveComponentSize(),
-                            ) {
-                                Icon(
-                                    Icons.Default.Share,
-                                    contentDescription = shareLabel,
-                                )
-                            }
-                        },
+                                .padding(16.dp)
+                                .semantics { liveRegion = LiveRegionMode.Polite },
                     )
-                    HorizontalDivider()
+                }
+
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(questionnaires) { q ->
+                        val titleText = q.title?.value ?: q.id ?: stringResource(Res.string.unknown)
+                        val shareLabel = stringResource(Res.string.share_questionnaire)
+                        val viewQuestionnaireLabel = stringResource(Res.string.cd_action_view_questionnaire)
+                        ListItem(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .minimumInteractiveComponentSize()
+                                    .semantics {
+                                        customActions =
+                                            listOf(
+                                                CustomAccessibilityAction(shareLabel) {
+                                                    selectedQuestionnaireForShare = q
+                                                    true
+                                                },
+                                            )
+                                    }.clickable(
+                                        role = Role.Button,
+                                        onClickLabel = viewQuestionnaireLabel,
+                                    ) {
+                                        selectedQuestionnaireForView = q
+                                    },
+                            headlineContent = { Text(titleText, style = MaterialTheme.typography.titleMedium) },
+                            supportingContent = {
+                                Text(
+                                    stringResource(Res.string.id_format, q.id ?: stringResource(Res.string.unknown)),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            },
+                            trailingContent = {
+                                IconButton(
+                                    onClick = { selectedQuestionnaireForShare = q },
+                                    modifier = Modifier.minimumInteractiveComponentSize(),
+                                ) {
+                                    Icon(
+                                        Icons.Default.Share,
+                                        contentDescription = shareLabel,
+                                    )
+                                }
+                            },
+                        )
+                        HorizontalDivider()
+                    }
                 }
             }
         }
-    }
 
-    selectedQuestionnaireForView?.let { q ->
-        androidx.compose.ui.window.Dialog(
-            onDismissRequest = { selectedQuestionnaireForView = null },
-            properties =
-                androidx.compose.ui.window
-                    .DialogProperties(usePlatformDefaultWidth = false),
-        ) {
-            androidx.compose.material3.Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background,
-            ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    TopAppBar(
-                        title = {
-                            Text(
-                                q.title?.value ?: q.id ?: stringResource(Res.string.unknown),
-                                modifier = Modifier.semantics { heading() },
-                            )
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = { selectedQuestionnaireForView = null }) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(Res.string.cd_back),
-                                )
-                            }
-                        },
-                        actions = {
-                            IconButton(onClick = {
-                                q.id?.let { id ->
-                                    selectedQuestionnaireForView = null
-                                    onNavigateToBuilder(id)
-                                }
-                            }) {
-                                Icon(
-                                    Icons.Default.FileCopy,
-                                    contentDescription = stringResource(Res.string.cd_duplicate),
-                                )
-                            }
-                            IconButton(onClick = {
+        selectedQuestionnaireForView?.let { q ->
+            var showDeleteConfirm by remember { mutableStateOf(false) }
+
+            if (showDeleteConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteConfirm = false },
+                    title = {
+                        Text(
+                            stringResource(Res.string.confirm_delete_item_title),
+                            modifier = Modifier.semantics { heading() },
+                        )
+                    },
+                    text = {
+                        Text(stringResource(Res.string.confirm_delete_item_message))
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showDeleteConfirm = false
                                 q.id?.let { id ->
                                     questionnaireRepository.deleteQuestionnaire(id)
                                     questionnaires = questionnaireRepository.getAvailableQuestionnaires()
                                 }
                                 selectedQuestionnaireForView = null
-                            }) {
-                                Icon(Icons.Default.Delete, contentDescription = stringResource(Res.string.cd_delete))
-                            }
-                        },
-                    )
+                            },
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        ) {
+                            Text(stringResource(Res.string.delete))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteConfirm = false }) {
+                            Text(stringResource(Res.string.cancel))
+                        }
+                    },
+                )
+            }
+
+            androidx.compose.ui.window.Dialog(
+                onDismissRequest = { selectedQuestionnaireForView = null },
+                properties =
+                    androidx.compose.ui.window
+                        .DialogProperties(usePlatformDefaultWidth = false),
+            ) {
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            title = {
+                                Text(
+                                    q.title?.value ?: q.id ?: stringResource(Res.string.unknown),
+                                    modifier = Modifier.semantics { heading() },
+                                )
+                            },
+                            navigationIcon = {
+                                IconButton(onClick = { selectedQuestionnaireForView = null }) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = stringResource(Res.string.cd_back),
+                                    )
+                                }
+                            },
+                            actions = {
+                                IconButton(onClick = {
+                                    q.id?.let { id ->
+                                        selectedQuestionnaireForView = null
+                                        onNavigateToBuilder(id)
+                                    }
+                                }) {
+                                    Icon(
+                                        Icons.Default.FileCopy,
+                                        contentDescription = stringResource(Res.string.cd_duplicate),
+                                    )
+                                }
+                                IconButton(onClick = {
+                                    showDeleteConfirm = true
+                                }) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = stringResource(Res.string.cd_delete),
+                                    )
+                                }
+                            },
+                        )
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                ) { innerPadding ->
                     Column(
                         modifier =
                             Modifier
                                 .fillMaxSize()
+                                .padding(innerPadding)
                                 .verticalScroll(rememberScrollState())
                                 .padding(16.dp),
                     ) {
@@ -279,175 +341,176 @@ fun QuestionnaireListScreen(
                 }
             }
         }
-    }
 
-    if (showImportOptions) {
-        ModalBottomSheet(
-            onDismissRequest = { showImportOptions = false },
-            sheetState = importBottomSheetState,
-        ) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+        if (showImportOptions) {
+            ModalBottomSheet(
+                onDismissRequest = { showImportOptions = false },
+                sheetState = importBottomSheetState,
             ) {
-                Text(
-                    text = stringResource(Res.string.import_questionnaire),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                )
-
-                val invalidFormatStr = stringResource(Res.string.invalid_fhir_format)
-                val emptyClipboardStr = stringResource(Res.string.clipboard_is_empty)
-                Button(
-                    onClick = {
-                        coroutineScope
-                            .launch {
-                                try {
-                                    val text = clipboard.getPlainText() ?: ""
-                                    if (text.isNotBlank()) {
-                                        previewQuestionnaire =
-                                            questionnaireSharingService.deserializeQuestionnaire(text)
-                                        importError = null
-                                    } else {
-                                        importError = emptyClipboardStr
-                                    }
-                                } catch (e: IllegalArgumentException) {
-                                    println(e.message)
-
-                                    importError = invalidFormatStr
-                                }
-                                importBottomSheetState.hide()
-                            }.invokeOnCompletion {
-                                if (!importBottomSheetState.isVisible) {
-                                    showImportOptions = false
-                                }
-                            }
-                    },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                 ) {
-                    Text(stringResource(Res.string.paste_from_clipboard))
-                }
-
-                // Placeholder for File Import and QR Code Scanner
-                Text(
-                    text = stringResource(Res.string.file_import_coming_soon),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
-                )
-            }
-        }
-    }
-
-    previewQuestionnaire?.let { q ->
-        AlertDialog(
-            onDismissRequest = { previewQuestionnaire = null },
-            title = {
-                Text(
-                    stringResource(Res.string.import_questionnaire),
-                    modifier = Modifier.semantics { heading() },
-                )
-            },
-            text = {
-                Column {
-                    val unknownStr = stringResource(Res.string.unknown)
-                    val qTitle = q.title?.value ?: q.id ?: unknownStr
-                    Text(stringResource(Res.string.title_format, qTitle))
-                    val sizeStr = q.item.size.toString()
-                    Text(stringResource(Res.string.number_of_items_format, sizeStr))
                     Text(
-                        stringResource(Res.string.import_confirmation),
+                        text = stringResource(Res.string.import_questionnaire),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(bottom = 16.dp).semantics { heading() },
+                    )
+
+                    val invalidFormatStr = stringResource(Res.string.invalid_fhir_format)
+                    val emptyClipboardStr = stringResource(Res.string.clipboard_is_empty)
+                    Button(
+                        onClick = {
+                            coroutineScope
+                                .launch {
+                                    try {
+                                        val text = clipboard.getPlainText() ?: ""
+                                        if (text.isNotBlank()) {
+                                            previewQuestionnaire =
+                                                questionnaireSharingService.deserializeQuestionnaire(text)
+                                            importError = null
+                                        } else {
+                                            importError = emptyClipboardStr
+                                        }
+                                    } catch (e: IllegalArgumentException) {
+                                        println(e.message)
+
+                                        importError = invalidFormatStr
+                                    }
+                                    importBottomSheetState.hide()
+                                }.invokeOnCompletion {
+                                    if (!importBottomSheetState.isVisible) {
+                                        showImportOptions = false
+                                    }
+                                }
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    ) {
+                        Text(stringResource(Res.string.paste_from_clipboard))
+                    }
+
+                    // Placeholder for File Import and QR Code Scanner
+                    Text(
+                        text = stringResource(Res.string.file_import_coming_soon),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
                     )
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    questionnaireRepository.saveQuestionnaire(q)
-                    questionnaires = questionnaireRepository.getAvailableQuestionnaires()
-                    previewQuestionnaire = null
-                }) {
-                    Text(stringResource(Res.string.import_action))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { previewQuestionnaire = null }) {
-                    Text(stringResource(Res.string.cancel))
-                }
-            },
-        )
-    }
+            }
+        }
 
-    selectedQuestionnaireForShare?.let { q ->
-        ModalBottomSheet(
-            onDismissRequest = { selectedQuestionnaireForShare = null },
-            sheetState = bottomSheetState,
-        ) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+        previewQuestionnaire?.let { q ->
+            AlertDialog(
+                onDismissRequest = { previewQuestionnaire = null },
+                title = {
+                    Text(
+                        stringResource(Res.string.import_questionnaire),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
+                text = {
+                    Column {
+                        val unknownStr = stringResource(Res.string.unknown)
+                        val qTitle = q.title?.value ?: q.id ?: unknownStr
+                        Text(stringResource(Res.string.title_format, qTitle))
+                        val size = q.item.size
+                        Text(pluralStringResource(Res.plurals.number_of_items, size, size))
+                        Text(
+                            stringResource(Res.string.import_confirmation),
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        questionnaireRepository.saveQuestionnaire(q)
+                        questionnaires = questionnaireRepository.getAvailableQuestionnaires()
+                        previewQuestionnaire = null
+                    }) {
+                        Text(stringResource(Res.string.import_action))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { previewQuestionnaire = null }) {
+                        Text(stringResource(Res.string.cancel))
+                    }
+                },
+            )
+        }
+
+        selectedQuestionnaireForShare?.let { q ->
+            ModalBottomSheet(
+                onDismissRequest = { selectedQuestionnaireForShare = null },
+                sheetState = bottomSheetState,
             ) {
-                Text(
-                    text = stringResource(Res.string.share_questionnaire),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                )
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.share_questionnaire),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(bottom = 16.dp).semantics { heading() },
+                    )
 
-                Button(
-                    onClick = {
-                        coroutineScope
-                            .launch {
-                                try {
-                                    val json = questionnaireSharingService.serializeQuestionnaire(q)
-                                    clipboard.setPlainText(json)
-                                } catch (e: IllegalArgumentException) {
-                                    println(e.message)
+                    Button(
+                        onClick = {
+                            coroutineScope
+                                .launch {
+                                    try {
+                                        val json = questionnaireSharingService.serializeQuestionnaire(q)
+                                        clipboard.setPlainText(json)
+                                        snackbarHostState.showSnackbar(copiedConfirmationText)
+                                    } catch (e: IllegalArgumentException) {
+                                        println(e.message)
 
-                                    // Handle error
+                                        // Handle error
+                                    }
+                                    bottomSheetState.hide()
+                                }.invokeOnCompletion {
+                                    if (!bottomSheetState.isVisible) {
+                                        selectedQuestionnaireForShare = null
+                                    }
                                 }
-                                bottomSheetState.hide()
-                            }.invokeOnCompletion {
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    ) {
+                        Text(stringResource(Res.string.copy_to_clipboard))
+                    }
+
+                    Button(
+                        onClick = {
+                            try {
+                                val json = questionnaireSharingService.serializeQuestionnaire(q)
+                                shareService.shareText(json)
+                            } catch (e: IllegalArgumentException) {
+                                println(e.message)
+
+                                // Handle error
+                            }
+                            coroutineScope.launch { bottomSheetState.hide() }.invokeOnCompletion {
                                 if (!bottomSheetState.isVisible) {
                                     selectedQuestionnaireForShare = null
                                 }
                             }
-                    },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                ) {
-                    Text(stringResource(Res.string.copy_to_clipboard))
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    ) {
+                        Text(stringResource(Res.string.share_text_json))
+                    }
+
+                    // Placeholder for QR Code and direct file export
+                    Text(
+                        text = stringResource(Res.string.qr_code_coming_soon),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
+                    )
                 }
-
-                Button(
-                    onClick = {
-                        try {
-                            val json = questionnaireSharingService.serializeQuestionnaire(q)
-                            shareService.shareText(json)
-                        } catch (e: IllegalArgumentException) {
-                            println(e.message)
-
-                            // Handle error
-                        }
-                        coroutineScope.launch { bottomSheetState.hide() }.invokeOnCompletion {
-                            if (!bottomSheetState.isVisible) {
-                                selectedQuestionnaireForShare = null
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                ) {
-                    Text(stringResource(Res.string.share_text_json))
-                }
-
-                // Placeholder for QR Code and direct file export
-                Text(
-                    text = stringResource(Res.string.qr_code_coming_soon),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
-                )
             }
         }
     }

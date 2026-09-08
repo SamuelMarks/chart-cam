@@ -36,12 +36,18 @@ open class AuthRepository(
     private val storage: SecureStorage,
 ) {
     private val _currentUser = MutableStateFlow<Practitioner?>(null)
+    private val _isDemoSession = MutableStateFlow(false)
     private val refreshMutex = Mutex()
 
     /**
      * Observable stream of the currently logged-in practitioner.
      */
     open val currentUser: StateFlow<Practitioner?> = _currentUser.asStateFlow()
+
+    /**
+     * Observable stream indicating whether the current active session is in demo mode.
+     */
+    open val isDemoSession: StateFlow<kotlin.Boolean> = _isDemoSession.asStateFlow()
 
     /**
      * Constants used by the AuthRepository for storage keys.
@@ -55,6 +61,15 @@ open class AuthRepository(
 
         /** Key used for storing the current authenticated user's username. */
         const val KEY_CURRENT_USERNAME = "current_username"
+
+        /** Key used for storing whether the session is a demo session. */
+        const val KEY_IS_DEMO = "is_demo_session"
+
+        /** Username associated with the one-click demo practitioner. */
+        const val DEMO_USERNAME = "DemoClinician"
+
+        /** Fixed identifier for the demo practitioner profile. */
+        const val DEMO_PRACTITIONER_ID = "prac_demo_user"
     }
 
     /**
@@ -158,6 +173,46 @@ open class AuthRepository(
         }
 
     /**
+     * Authenticates a pre-configured synthetic demo practitioner without requiring credential entry.
+     * Sets [isDemoSession] to true and persists demo tokens in secure storage.
+     *
+     * @return Result wrapping the demo [Practitioner] profile.
+     */
+    open suspend fun loginAsDemo(): Result<Practitioner> {
+        val username = DEMO_USERNAME
+        val tokenResponse =
+            TokenResponse(
+                accessToken = "demo_access_token",
+                refreshToken = "demo_refresh_token",
+                expiresIn = 86400,
+                tokenType = "Bearer",
+            )
+
+        storage.save(KEY_ACCESS_TOKEN, tokenResponse.accessToken)
+        storage.save(KEY_REFRESH_TOKEN, tokenResponse.refreshToken)
+        storage.save(KEY_CURRENT_USERNAME, username)
+        storage.save(KEY_IS_DEMO, "true")
+
+        val practitioner =
+            Practitioner
+                .Builder()
+                .apply {
+                    id = DEMO_PRACTITIONER_ID
+                    active = Boolean.Builder().apply { value = true }
+                    name.add(
+                        HumanName.Builder().apply {
+                            family = String.Builder().apply { value = "Clinician" }
+                            given.add(String.Builder().apply { value = "Dr. Demo" })
+                        },
+                    )
+                }.build()
+
+        _currentUser.value = practitioner
+        _isDemoSession.value = true
+        return Result.success(practitioner)
+    }
+
+    /**
      * Checks if a valid token exists in storage and restores the session if it does.
      * Sets the [currentUser] flow with the restored profile.
      *
@@ -167,21 +222,28 @@ open class AuthRepository(
         val token = storage.getString(KEY_ACCESS_TOKEN)
         val username = storage.getString(KEY_CURRENT_USERNAME) ?: "Doe"
         if (!token.isNullOrEmpty()) {
+            val isDemo = storage.getString(KEY_IS_DEMO) == "true"
+            _isDemoSession.value = isDemo
+            val pracId = if (isDemo) DEMO_PRACTITIONER_ID else "prac_${username.hashCode()}"
+            val familyName = if (isDemo) "Clinician" else username
+            val givenName = if (isDemo) "Dr. Demo" else "Dr."
+
             _currentUser.value =
                 Practitioner
                     .Builder()
                     .apply {
-                        id = "prac_${username.hashCode()}"
+                        id = pracId
                         active = Boolean.Builder().apply { value = true }
                         name.add(
                             HumanName.Builder().apply {
-                                family = String.Builder().apply { value = username }
-                                given.add(String.Builder().apply { value = "Dr." })
+                                family = String.Builder().apply { value = familyName }
+                                given.add(String.Builder().apply { value = givenName })
                             },
                         )
                     }.build()
             return true
         }
+        _isDemoSession.value = false
         return false
     }
 
@@ -192,7 +254,9 @@ open class AuthRepository(
         storage.delete(KEY_ACCESS_TOKEN)
         storage.delete(KEY_REFRESH_TOKEN)
         storage.delete(KEY_CURRENT_USERNAME)
+        storage.delete(KEY_IS_DEMO)
         _currentUser.value = null
+        _isDemoSession.value = false
     }
 
     /**

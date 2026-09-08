@@ -230,7 +230,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "io.healthplatform.chartcam"
-            packageVersion = "1.0.0"
+            packageVersion = "1.0.3"
             macOS {
                 iconFile.set(project.file("src/jvmMain/resources/icon.icns"))
             }

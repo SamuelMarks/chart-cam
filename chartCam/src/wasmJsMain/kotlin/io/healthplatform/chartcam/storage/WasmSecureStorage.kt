@@ -1,6 +1,5 @@
 /**
  * @file WasmSecureStorage.kt
- * @file WasmSecureStorage.kt
  *
  * Provides the WebAssembly (WasmJs) implementation of [SecureStorage].
  * Uses browser `localStorage` in combination with AES encryption from the `crypto-js` library.
@@ -91,6 +90,22 @@ external fun cpToString(cp: CipherParams): String
 external interface WordArray : JsAny
 
 /**
+ * Safely decrypts a ciphertext string using a secret key, catching JavaScript exceptions.
+ *
+ * @param aes The AES object.
+ * @param ciphertext The encrypted string to decrypt.
+ * @param key The secret key used for decryption.
+ * @return The resulting word array, or null if decryption fails.
+ */
+@OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+@JsFun("(aes, ciphertext, key) => { try { return aes.decrypt(ciphertext, key); } catch (e) { return null; } }")
+external fun safeDecrypt(
+    aes: AESObj,
+    ciphertext: String,
+    key: String,
+): WordArray?
+
+/**
  * Converts a [WordArray] to a string using a specific encoding (e.g., UTF-8) via a JS function.
  *
  * @param wa The word array to convert.
@@ -98,9 +113,9 @@ external interface WordArray : JsAny
  * @return The decoded plaintext string.
  */
 @OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
-@JsFun("(wa, enc) => wa.toString(enc)")
+@JsFun("(wa, enc) => { try { return wa ? wa.toString(enc) : ''; } catch (e) { return ''; } }")
 external fun waToString(
-    wa: WordArray,
+    wa: WordArray?,
     enc: JsAny,
 ): String
 
@@ -142,13 +157,9 @@ class WasmSecureStorage : SecureStorage {
      */
     override fun getString(key: String): String? {
         val stored = localStorage.getItem(key) ?: return null
-        return try {
-            val wa = CryptoJS.AES.decrypt(stored, secretKey)
-            val result = waToString(wa, CryptoJS.enc.utf8)
-            if (result.isEmpty()) stored else result // fallback if decryption yields empty
-        } catch (_: Throwable) {
-            stored
-        }
+        val wa = safeDecrypt(CryptoJS.AES, stored, secretKey)
+        val result = if (wa != null) waToString(wa, CryptoJS.enc.utf8) else ""
+        return if (result.isEmpty()) stored else result
     }
 
     /**

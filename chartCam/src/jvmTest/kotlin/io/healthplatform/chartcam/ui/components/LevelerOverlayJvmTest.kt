@@ -5,7 +5,10 @@
 package io.healthplatform.chartcam.ui.components
 
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.v2.runComposeUiTest
+import io.healthplatform.chartcam.ui.setAppLanguage
 import kotlin.test.Test
 
 /**
@@ -13,16 +16,34 @@ import kotlin.test.Test
  */
 class LevelerOverlayJvmTest {
     /**
-     * Test leveler overlay on JVM.
+     * Test leveler overlay on JVM when device is level.
      */
     @OptIn(ExperimentalTestApi::class)
     @Test
-    fun testLevelerOverlay() =
+    fun testLevelerOverlayWhenLevel() {
+        setAppLanguage("en")
         runComposeUiTest {
             setContent {
                 LevelerOverlay(pitch = 0f, roll = 0f)
             }
-            // Since LevelerOverlay draws on canvas, there is no text usually unless we use content descriptions/semantics.
-            // If it doesn't crash, the UI test passes.
+            waitForIdle()
+            onNodeWithContentDescription("Camera Leveler: Camera is level").assertIsDisplayed()
         }
+    }
+
+    /**
+     * Test leveler overlay on JVM when device is tilted.
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testLevelerOverlayWhenTilted() {
+        setAppLanguage("en")
+        runComposeUiTest {
+            setContent {
+                LevelerOverlay(pitch = 15f, roll = 15f)
+            }
+            waitForIdle()
+            onNodeWithContentDescription("Camera Leveler: Camera is tilted").assertIsDisplayed()
+        }
+    }
 }

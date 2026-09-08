@@ -90,6 +90,8 @@ enum class WidgetType {
     RANGE,
 }
 
+private const val UUID_SLUG_PREFIX_LENGTH = 8
+
 /**
  * ViewModel for managing the state of the Questionnaire Builder.
  * This ViewModel directly consumes and emits native FHIR R4 `Resource` models
@@ -342,7 +344,16 @@ class QuestionnaireBuilderViewModel(
      */
     fun buildQuestionnaire(): Questionnaire {
         val currentState = _state.value
-        val id = "custom-${currentState.title.lowercase().replace(Regex("[^a-z0-9]+"), "-")}"
+        val rawSlug =
+            currentState.title
+                .lowercase()
+                .replace(Regex("[^a-z0-9]+"), "-")
+                .trim('-')
+        val fallbackUuid =
+            io.healthplatform.chartcam.utils.UUID
+                .randomUUID()
+                .take(UUID_SLUG_PREFIX_LENGTH)
+        val id = if (rawSlug.isNotEmpty()) "custom-$rawSlug" else "custom-$fallbackUuid"
 
         val fhirItems = currentState.items.map { mapBuilderItemToFhir(it) }
 

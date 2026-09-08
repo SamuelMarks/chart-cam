@@ -9,15 +9,22 @@ package io.healthplatform.chartcam.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +36,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -52,15 +60,24 @@ import chartcam.chartcam.generated.resources.all_fields_required
 import chartcam.chartcam.generated.resources.cancel
 import chartcam.chartcam.generated.resources.cd_select_date
 import chartcam.chartcam.generated.resources.create
-import chartcam.chartcam.generated.resources.dob_label
+import chartcam.chartcam.generated.resources.dob_format_label
+import chartcam.chartcam.generated.resources.dob_placeholder
+import chartcam.chartcam.generated.resources.dob_title
 import chartcam.chartcam.generated.resources.first_name
+import chartcam.chartcam.generated.resources.gender
+import chartcam.chartcam.generated.resources.gender_female
+import chartcam.chartcam.generated.resources.gender_male
+import chartcam.chartcam.generated.resources.gender_other
+import chartcam.chartcam.generated.resources.gender_unknown
 import chartcam.chartcam.generated.resources.invalid_date_format
 import chartcam.chartcam.generated.resources.last_name
 import chartcam.chartcam.generated.resources.mrn
 import chartcam.chartcam.generated.resources.new_patient
 import chartcam.chartcam.generated.resources.ok
 import io.healthplatform.chartcam.ui.currentLanguageState
-import io.healthplatform.chartcam.utils.formatLocalizedDate
+import io.healthplatform.chartcam.utils.DatePattern
+import io.healthplatform.chartcam.utils.getLocalizedDatePattern
+import io.healthplatform.chartcam.utils.resolveDatePattern
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -78,22 +95,6 @@ private const val CENTURY_BASE = 2000
  * @return True if at least one field is blank.
  */
 private fun hasBlankField(vararg fields: String): Boolean = fields.any { it.isBlank() }
-
-/**
- * Determines whether a given language/locale tag primarily uses Day-Month-Year ordering.
- *
- * @param language The IETF BCP-47 language tag (e.g., "en-GB", "en-AU", "es", "he").
- * @return True if the locale uses DD/MM/YYYY by convention.
- */
-private fun isDayFirstLocale(language: String): Boolean {
-    val lower = language.lowercase()
-    val parts = lower.split("-", "_")
-    val lang = parts.first()
-    val region = if (parts.size > 1) parts[1] else ""
-    val isCommonwealthEnglish = lang == "en" && region in setOf("gb", "uk", "au", "nz", "ie", "za", "in", "sg")
-    val isDayFirstLanguage = lang in setOf("es", "he", "iw", "fr", "de", "it", "pt", "ru")
-    return isCommonwealthEnglish || isDayFirstLanguage
-}
 
 /**
  * Resolves a two-digit or four-digit year string to a four-digit integer year.
@@ -151,12 +152,20 @@ private fun parsePartsToDate(
     language: String,
 ): LocalDate? =
     try {
+        val pattern = resolveDatePattern(language)
         if (parts[0].length == FOUR_DIGIT_YEAR_LENGTH) {
             LocalDate(nums[0], nums[1], nums[2])
+        } else if (pattern == DatePattern.YEAR_FIRST) {
+            val year = resolveYear(parts[0], nums[0])
+            if (year != null) {
+                LocalDate(year, nums[1], nums[2])
+            } else {
+                null
+            }
         } else {
             val year = resolveYear(parts[2], nums[2])
             if (year != null) {
-                val isDayFirst = isDayFirstLocale(language)
+                val isDayFirst = pattern == DatePattern.DAY_FIRST
                 tryConstructDate(year, nums[0], nums[1], tryFirstAsMonth = !isDayFirst)
             } else {
                 null
@@ -288,22 +297,10 @@ fun CreatePatientDialog(
     val errorInvalidDate = stringResource(Res.string.invalid_date_format)
 
     val currentLang by currentLanguageState.collectAsState()
-    val localizedDatePattern =
-        when (currentLang.lowercase().split("-", "_").first()) {
-            "zh", "ja" -> "YYYY/MM/DD"
-            "es", "he" -> "DD/MM/YYYY"
-            else -> "YYYY-MM-DD"
-        }
-    val sampleDate = formatLocalizedDate("1990-01-01", currentLang)
-    val baseDobLabel = stringResource(Res.string.dob_label)
-    val dobLabelText =
-        if (localizedDatePattern == "YYYY-MM-DD") {
-            baseDobLabel
-        } else {
-            baseDobLabel
-                .replace("YYYY-MM-DD", localizedDatePattern)
-                .replace("AAAA-MM-DD", localizedDatePattern)
-        }
+    val localizedDatePattern = getLocalizedDatePattern(currentLang)
+    val sampleDate = stringResource(Res.string.dob_placeholder)
+    val dobTitle = stringResource(Res.string.dob_title)
+    val dobLabelText = stringResource(Res.string.dob_format_label, dobTitle, localizedDatePattern)
 
     /**
      * Lambda function invoked to validate form input and submit the data if validation passes.
@@ -326,226 +323,368 @@ fun CreatePatientDialog(
     val isMrnError = error != null && mrn.isBlank()
     val isDobError = error != null && (dobString.isBlank() || error == errorInvalidDate)
     val dobValidationMessage = if (dobString.isBlank()) errorAllFields else errorInvalidDate
+    val isEastAsianLocale =
+        when (currentLang.lowercase().split("-", "_").first()) {
+            "zh", "ja" -> true
+            else -> false
+        }
 
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = {
-            Text(
-                stringResource(Res.string.new_patient),
-                modifier = Modifier.semantics { heading() },
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = firstName,
-                    onValueChange = {
-                        firstName = it
-                        if (isFirstNameError) error = null
-                    },
-                    label = { Text(stringResource(Res.string.first_name)) },
-                    isError = isFirstNameError,
-                    supportingText = {
-                        if (isFirstNameError) {
-                            Text(errorAllFields)
-                        }
-                    },
-                    singleLine = true,
+    key(currentLang) {
+        AlertDialog(
+            onDismissRequest = onDismissRequest,
+            title = {
+                Text(
+                    stringResource(Res.string.new_patient),
+                    modifier = Modifier.semantics { heading() },
+                )
+            },
+            text = {
+                Column(
                     modifier =
                         Modifier
-                            .fillMaxWidth()
-                            .semantics {
-                                if (isFirstNameError) {
-                                    error(errorAllFields)
-                                }
-                            }.tabFocusNext(focusManager)
-                            .onPreviewKeyEvent {
-                                if (it.key == Key.Enter &&
-                                    it.type == KeyEventType.KeyUp
-                                ) {
-                                    focusManager.moveFocus(FocusDirection.Next)
-                                    true
-                                } else {
-                                    false
-                                }
+                            .imePadding()
+                            .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (isEastAsianLocale) {
+                        PatientLastNameField(
+                            lastName = lastName,
+                            onLastNameChange = {
+                                lastName = it
+                                if (isLastNameError) error = null
                             },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
-                )
-                OutlinedTextField(
-                    value = lastName,
-                    onValueChange = {
-                        lastName = it
-                        if (isLastNameError) error = null
-                    },
-                    label = { Text(stringResource(Res.string.last_name)) },
-                    isError = isLastNameError,
-                    supportingText = {
-                        if (isLastNameError) {
-                            Text(errorAllFields)
-                        }
-                    },
-                    singleLine = true,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .semantics {
-                                if (isLastNameError) {
-                                    error(errorAllFields)
-                                }
-                            }.tabFocusNext(focusManager)
-                            .onPreviewKeyEvent {
-                                if (it.key == Key.Enter &&
-                                    it.type == KeyEventType.KeyUp
-                                ) {
-                                    focusManager.moveFocus(FocusDirection.Next)
-                                    true
-                                } else {
-                                    false
-                                }
+                            isError = isLastNameError,
+                            errorMessage = errorAllFields,
+                            focusManager = focusManager,
+                        )
+                        PatientFirstNameField(
+                            firstName = firstName,
+                            onFirstNameChange = {
+                                firstName = it
+                                if (isFirstNameError) error = null
                             },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
-                )
-                OutlinedTextField(
-                    value = mrn,
-                    onValueChange = {
-                        mrn = it
-                        if (isMrnError) error = null
-                    },
-                    label = { Text(stringResource(Res.string.mrn)) },
-                    isError = isMrnError,
-                    supportingText = {
-                        if (isMrnError) {
-                            Text(errorAllFields)
-                        }
-                    },
-                    singleLine = true,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .semantics {
-                                if (isMrnError) {
-                                    error(errorAllFields)
-                                }
-                            }.tabFocusNext(focusManager)
-                            .onPreviewKeyEvent {
-                                if (it.key == Key.Enter &&
-                                    it.type == KeyEventType.KeyUp
-                                ) {
-                                    focusManager.moveFocus(FocusDirection.Next)
-                                    true
-                                } else {
-                                    false
-                                }
+                            isError = isFirstNameError,
+                            errorMessage = errorAllFields,
+                            focusManager = focusManager,
+                        )
+                    } else {
+                        PatientFirstNameField(
+                            firstName = firstName,
+                            onFirstNameChange = {
+                                firstName = it
+                                if (isFirstNameError) error = null
                             },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
-                )
-                OutlinedTextField(
-                    value = dobString,
-                    onValueChange = {
-                        dobString = it
-                        if (isDobError) error = null
-                    },
-                    label = { Text(dobLabelText) },
-                    isError = isDobError,
-                    supportingText = {
-                        if (isDobError) {
-                            Text(dobValidationMessage)
-                        } else {
-                            Text(sampleDate)
-                        }
-                    },
-                    singleLine = true,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .semantics {
-                                if (isDobError) {
-                                    error(dobValidationMessage)
-                                }
-                            }.tabFocusNext(focusManager)
-                            .onPreviewKeyEvent {
-                                if (it.key == Key.Enter &&
-                                    it.type == KeyEventType.KeyUp
-                                ) {
-                                    showDatePicker = true
-                                    true
-                                } else {
-                                    false
-                                }
+                            isError = isFirstNameError,
+                            errorMessage = errorAllFields,
+                            focusManager = focusManager,
+                        )
+                        PatientLastNameField(
+                            lastName = lastName,
+                            onLastNameChange = {
+                                lastName = it
+                                if (isLastNameError) error = null
                             },
-                    placeholder = { Text(sampleDate) },
-                    trailingIcon = {
-                        IconButton(onClick = { showDatePicker = true }) {
-                            Icon(
-                                imageVector = Icons.Default.DateRange,
-                                contentDescription = stringResource(Res.string.cd_select_date),
-                            )
-                        }
-                    },
-                )
-
-                if (showDatePicker) {
-                    DatePickerDialog(
-                        onDismissRequest = { showDatePicker = false },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                showDatePicker = false
-                                datePickerState.selectedDateMillis?.let { millis ->
-                                    val instant = kotlin.time.Instant.fromEpochMilliseconds(millis)
-                                    val date = instant.toLocalDateTime(TimeZone.UTC).date
-                                    val iso = date.toString()
-                                    val parts = iso.split("-")
-                                    dobString =
-                                        when (localizedDatePattern) {
-                                            "DD/MM/YYYY" -> "${parts[2]}/${parts[1]}/${parts[0]}"
-                                            "YYYY/MM/DD" -> "${parts[0]}/${parts[1]}/${parts[2]}"
-                                            else -> iso
-                                        }
-                                }
-                            }) {
-                                Text(stringResource(Res.string.ok))
+                            isError = isLastNameError,
+                            errorMessage = errorAllFields,
+                            focusManager = focusManager,
+                        )
+                    }
+                    OutlinedTextField(
+                        value = mrn,
+                        onValueChange = {
+                            mrn = it
+                            if (isMrnError) error = null
+                        },
+                        label = { Text(stringResource(Res.string.mrn)) },
+                        isError = isMrnError,
+                        supportingText = {
+                            if (isMrnError) {
+                                Text(errorAllFields)
                             }
                         },
-                        dismissButton = {
-                            TextButton(onClick = { showDatePicker = false }) {
-                                Text(stringResource(Res.string.cancel))
+                        singleLine = true,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .semantics {
+                                    if (isMrnError) {
+                                        error(errorAllFields)
+                                    }
+                                }.tabFocusNext(focusManager)
+                                .onPreviewKeyEvent {
+                                    if (it.key == Key.Enter &&
+                                        it.type == KeyEventType.KeyUp
+                                    ) {
+                                        focusManager.moveFocus(FocusDirection.Next)
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
+                    )
+                    OutlinedTextField(
+                        value = dobString,
+                        onValueChange = {
+                            dobString = it
+                            if (isDobError) error = null
+                        },
+                        label = { Text(dobLabelText) },
+                        isError = isDobError,
+                        supportingText = {
+                            if (isDobError) {
+                                Text(dobValidationMessage)
+                            } else {
+                                Text(sampleDate)
                             }
                         },
+                        singleLine = true,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .semantics {
+                                    if (isDobError) {
+                                        error(dobValidationMessage)
+                                    }
+                                }.tabFocusNext(focusManager)
+                                .onPreviewKeyEvent {
+                                    if (it.key == Key.Enter &&
+                                        it.type == KeyEventType.KeyUp
+                                    ) {
+                                        showDatePicker = true
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                },
+                        placeholder = { Text(sampleDate) },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
+                        trailingIcon = {
+                            IconButton(onClick = { showDatePicker = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.DateRange,
+                                    contentDescription = stringResource(Res.string.cd_select_date),
+                                )
+                            }
+                        },
+                    )
+
+                    if (showDatePicker) {
+                        DatePickerDialog(
+                            onDismissRequest = { showDatePicker = false },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    showDatePicker = false
+                                    datePickerState.selectedDateMillis?.let { millis ->
+                                        val instant = kotlin.time.Instant.fromEpochMilliseconds(millis)
+                                        val date = instant.toLocalDateTime(TimeZone.UTC).date
+                                        val iso = date.toString()
+                                        val parts = iso.split("-")
+                                        val pattern = resolveDatePattern(currentLang)
+                                        dobString =
+                                            when (pattern) {
+                                                DatePattern.DAY_FIRST -> "${parts[2]}/${parts[1]}/${parts[0]}"
+                                                DatePattern.YEAR_FIRST -> "${parts[0]}/${parts[1]}/${parts[2]}"
+                                                DatePattern.ISO_STANDARD -> iso
+                                            }
+                                    }
+                                }) {
+                                    Text(stringResource(Res.string.ok))
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDatePicker = false }) {
+                                    Text(stringResource(Res.string.cancel))
+                                }
+                            },
+                        ) {
+                            DatePicker(state = datePickerState)
+                        }
+                    }
+
+                    var genderExpanded by remember { mutableStateOf(false) }
+                    val genderOptions =
+                        listOf(
+                            "unknown" to Res.string.gender_unknown,
+                            "female" to Res.string.gender_female,
+                            "male" to Res.string.gender_male,
+                            "other" to Res.string.gender_other,
+                        )
+                    val currentGenderLabel =
+                        when (gender) {
+                            "male" -> stringResource(Res.string.gender_male)
+                            "female" -> stringResource(Res.string.gender_female)
+                            "other" -> stringResource(Res.string.gender_other)
+                            else -> stringResource(Res.string.gender_unknown)
+                        }
+
+                    ExposedDropdownMenuBox(
+                        expanded = genderExpanded,
+                        onExpandedChange = { genderExpanded = it },
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
-                        DatePicker(state = datePickerState)
+                        OutlinedTextField(
+                            value = currentGenderLabel,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(stringResource(Res.string.gender)) },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderExpanded)
+                            },
+                            singleLine = true,
+                            modifier =
+                                Modifier
+                                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                                    .fillMaxWidth(),
+                        )
+                        ExposedDropdownMenu(
+                            expanded = genderExpanded,
+                            onDismissRequest = { genderExpanded = false },
+                        ) {
+                            genderOptions.forEach { (code, labelRes) ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(labelRes)) },
+                                    onClick = {
+                                        gender = code
+                                        genderExpanded = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                    if (error != null) {
+                        Text(
+                            text = error!!,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier =
+                                Modifier.semantics {
+                                    liveRegion = LiveRegionMode.Polite
+                                    this.error(error!!)
+                                },
+                        )
                     }
                 }
-
-                if (error != null) {
-                    Text(
-                        text = error!!,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier =
-                            Modifier.semantics {
-                                liveRegion = LiveRegionMode.Polite
-                                this.error(error!!)
-                            },
-                    )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        submitForm()
+                    },
+                ) {
+                    Text(stringResource(Res.string.create))
                 }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissRequest) {
+                    Text(stringResource(Res.string.cancel))
+                }
+            },
+        )
+    }
+}
+
+/**
+ * Internal helper for patient first name input.
+ *
+ * @param firstName The current first name value.
+ * @param onFirstNameChange Callback for first name change.
+ * @param isError True if there is an error.
+ * @param errorMessage The error message to display.
+ * @param focusManager Focus manager for keyboard navigation.
+ */
+@Composable
+private fun PatientFirstNameField(
+    firstName: String,
+    onFirstNameChange: (String) -> Unit,
+    isError: Boolean,
+    errorMessage: String,
+    focusManager: androidx.compose.ui.focus.FocusManager,
+) {
+    OutlinedTextField(
+        value = firstName,
+        onValueChange = onFirstNameChange,
+        label = { Text(stringResource(Res.string.first_name)) },
+        isError = isError,
+        supportingText = {
+            if (isError) {
+                Text(errorMessage)
             }
         },
-        confirmButton = {
-            Button(
-                onClick = {
-                    submitForm()
+        singleLine = true,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics {
+                    if (isError) {
+                        error(errorMessage)
+                    }
+                }.tabFocusNext(focusManager)
+                .onPreviewKeyEvent {
+                    if (it.key == Key.Enter &&
+                        it.type == KeyEventType.KeyUp
+                    ) {
+                        focusManager.moveFocus(FocusDirection.Next)
+                        true
+                    } else {
+                        false
+                    }
                 },
-            ) {
-                Text(stringResource(Res.string.create))
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
+    )
+}
+
+/**
+ * Internal helper for patient last name input.
+ *
+ * @param lastName The current last name value.
+ * @param onLastNameChange Callback for last name change.
+ * @param isError True if there is an error.
+ * @param errorMessage The error message to display.
+ * @param focusManager Focus manager for keyboard navigation.
+ */
+@Composable
+private fun PatientLastNameField(
+    lastName: String,
+    onLastNameChange: (String) -> Unit,
+    isError: Boolean,
+    errorMessage: String,
+    focusManager: androidx.compose.ui.focus.FocusManager,
+) {
+    OutlinedTextField(
+        value = lastName,
+        onValueChange = onLastNameChange,
+        label = { Text(stringResource(Res.string.last_name)) },
+        isError = isError,
+        supportingText = {
+            if (isError) {
+                Text(errorMessage)
             }
         },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(stringResource(Res.string.cancel))
-            }
-        },
+        singleLine = true,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics {
+                    if (isError) {
+                        error(errorMessage)
+                    }
+                }.tabFocusNext(focusManager)
+                .onPreviewKeyEvent {
+                    if (it.key == Key.Enter &&
+                        it.type == KeyEventType.KeyUp
+                    ) {
+                        focusManager.moveFocus(FocusDirection.Next)
+                        true
+                    } else {
+                        false
+                    }
+                },
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
     )
 }

@@ -11,12 +11,15 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
+import androidx.compose.ui.unit.dp
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.google.fhir.model.r4.Practitioner
@@ -73,6 +76,7 @@ class AccessibilityJvmTest {
 
             val practitioner = Practitioner.Builder().apply { id = "prac-1" }.build()
             `when`(authRepository.currentUser).thenReturn(MutableStateFlow(practitioner))
+            `when`(authRepository.isDemoSession).thenReturn(MutableStateFlow(false))
 
             setContent {
                 PatientListScreen(
@@ -130,5 +134,57 @@ class AccessibilityJvmTest {
                         androidx.compose.ui.semantics.LiveRegionMode.Polite
                 }
             onAllNodes(hasPoliteLiveRegion).assertCountEquals(1)
+        }
+
+    /**
+     * Verifies that the patient full name on PatientDetailScreen has heading semantics.
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testPatientDetailScreenHeadingSemantics() =
+        runComposeUiTest {
+            val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+            ChartCamDatabase.Schema.synchronous().create(driver)
+            val fhirRepository = FhirRepository(ChartCamDatabase(driver))
+
+            setContent {
+                PatientDetailScreen(
+                    patientId = "pat-1",
+                    fhirRepository = fhirRepository,
+                    onBack = {},
+                    onNewVisit = {},
+                    onVisitSelected = {},
+                )
+            }
+            waitForIdle()
+
+            val isHeading = SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading)
+            onNodeWithText("Patient Detail").assert(isHeading)
+
+            driver.close()
+        }
+
+    /**
+     * Verifies that clear buttons in FormBuilderWidgets meet minimum 48dp dimensions.
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testFormBuilderClearButtonTouchTarget() =
+        runComposeUiTest {
+            setContent {
+                io.healthplatform.chartcam.ui.components.FormBuilderTextInput(
+                    value = "Sample text",
+                    onValueChange = {},
+                    label = "Clinical Notes",
+                )
+            }
+            waitForIdle()
+
+            val clearNode = onNodeWithContentDescription("Clear")
+            clearNode
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .assertWidthIsAtLeast(48.dp)
+                .assertHeightIsAtLeast(48.dp)
         }
 }

@@ -479,6 +479,44 @@ class QuestionnaireBuilderViewModelJvmTest {
     }
 
     /**
+     * Verifies that localized title and item resolvers are utilized during questionnaire duplication and item creation.
+     */
+    @Test
+    fun testLocalizedResolvers() {
+        val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
+        val sourceViewModel =
+            QuestionnaireBuilderViewModel(
+                repository = repo,
+                copyTitleResolver = { "$it (Copia)" },
+                defaultItemLabelResolver = { "Nuevo Elemento" },
+                widgetItemLabelResolver = { "Nuevo ${it.name}" },
+                unknownTitleResolver = { "Desconocido" },
+            )
+        sourceViewModel.updateTitle("Formulario Fuente")
+        sourceViewModel.addItem(WidgetType.SINGLE_LINE_TEXT)
+        assertEquals(
+            "Nuevo SINGLE_LINE_TEXT",
+            sourceViewModel.state.value.items
+                .first()
+                .label,
+        )
+        val sourceId = sourceViewModel.saveQuestionnaire()
+        assertTrue(sourceId != null)
+
+        val dupViewModel =
+            QuestionnaireBuilderViewModel(
+                repository = repo,
+                duplicateFromId = sourceId,
+                copyTitleResolver = { "$it (Copia)" },
+                defaultItemLabelResolver = { "Nuevo Elemento" },
+                widgetItemLabelResolver = { "Nuevo ${it.name}" },
+                unknownTitleResolver = { "Desconocido" },
+            )
+        assertEquals("Formulario Fuente (Copia)", dupViewModel.state.value.title)
+    }
+
+    /**
      * Test testValidateCatchesItemError.
      */
     @Test
@@ -498,5 +536,23 @@ class QuestionnaireBuilderViewModelJvmTest {
         )
 
         assertFalse(viewModel.validate())
+    }
+
+    /**
+     * Verifies that non-Latin titles (Hebrew/CJK) generate valid, non-empty custom UUID-based IDs.
+     */
+    @Test
+    fun testNonLatinTitleGeneratesValidId() {
+        val repo = QuestionnaireRepository()
+        kotlinx.coroutines.runBlocking { repo.loadDefaultForms() }
+        val viewModel = QuestionnaireBuilderViewModel(repo)
+
+        viewModel.updateTitle("臨床評估問卷")
+        viewModel.addItem(WidgetType.SINGLE_LINE_TEXT)
+        val q = viewModel.buildQuestionnaire()
+        val qId = q.id
+        assertNotNull(qId)
+        assertTrue(qId.startsWith("custom-"))
+        assertTrue(qId.length > "custom-".length)
     }
 }

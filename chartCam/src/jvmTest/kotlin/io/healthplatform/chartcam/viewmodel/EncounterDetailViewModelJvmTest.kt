@@ -425,6 +425,52 @@ class EncounterDetailViewModelJvmTest {
         }
 
     /**
+     * Verifies that finalizeEncounter uses explicit localized strings for boolean answers and notes.
+     */
+    @Test
+    fun testFinalizeEncounterWithLocalizedStrings() =
+        runTest {
+            val encounter =
+                createFhirEncounter(
+                    id = "enc_loc",
+                    patientId = "pat1",
+                    practitionerId = "prac1",
+                    dateStr = "2026-07-09",
+                )
+            val patient = Patient.Builder().apply { id = "pat1" }.build()
+            val itemBool =
+                Questionnaire.Item
+                    .Builder(
+                        String.Builder().apply { value = "fever" },
+                        Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                    ).apply {
+                        text = String.Builder().apply { value = "Fiebre" }
+                    }
+            val q =
+                Questionnaire
+                    .Builder(
+                        Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active),
+                    ).apply {
+                        id = "q_loc"
+                        item.add(itemBool)
+                    }.build()
+
+            `when`(fhirRepository.getPatient("pat1")).thenReturn(patient)
+            `when`(fhirRepository.getEncounter("enc_loc")).thenReturn(encounter)
+            `when`(fhirRepository.getPhotosForEncounter("enc_loc")).thenReturn(emptyList())
+            `when`(fhirRepository.getQuestionnaireResponsesForEncounter("enc_loc")).thenReturn(emptyList())
+            `when`(questionnaireRepository.getAvailableQuestionnaires()).thenReturn(listOf(q))
+
+            viewModel.initialize("pat1", "enc_loc", emptyMap())
+            viewModel.onAnswerChanged("fever", true)
+
+            viewModel.finalizeEncounter(yesStr = "Sí", noStr = "No", noNotesStr = "Sin notas")
+            advanceUntilIdle()
+
+            verify(fhirRepository).updateEncounterStatus("enc_loc", "finished", "Fiebre: Sí.")
+        }
+
+    /**
      * Test loading existing encounter with existing responses.
      */
     @Test

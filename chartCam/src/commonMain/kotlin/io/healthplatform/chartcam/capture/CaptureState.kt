@@ -6,6 +6,15 @@
  */
 package io.healthplatform.chartcam.capture
 
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.photo_step_back
+import chartcam.chartcam.generated.resources.photo_step_back_ruler
+import chartcam.chartcam.generated.resources.photo_step_front
+import chartcam.chartcam.generated.resources.photo_step_front_ruler
+import chartcam.chartcam.generated.resources.photo_step_left
+import chartcam.chartcam.generated.resources.photo_step_left_ruler
+import chartcam.chartcam.generated.resources.photo_step_right
+import chartcam.chartcam.generated.resources.photo_step_right_ruler
 import org.jetbrains.compose.resources.StringResource
 
 /**
@@ -31,12 +40,15 @@ sealed interface CaptureError {
 /**
  * Represents a specific angle or type of photo required in the clinical sequence.
  * The order of these steps dictates the state machine progression during capture.
+ *
+ * @property id Unique identifier for this step.
+ * @property title Human readable name displayed in the UI.
+ * @property titleRes Optional localized string resource for standard steps.
  */
 data class PhotoStep(
-    /** Unique identifier for this step. */
     val id: String,
-    /** Human readable name displayed in the UI. */
     val title: String,
+    val titleRes: StringResource? = null,
 ) {
     /**
      * Companion object holding predefined constant sequences.
@@ -47,14 +59,14 @@ data class PhotoStep(
          */
         val STANDARD_STEPS =
             listOf(
-                PhotoStep("front", "Front"),
-                PhotoStep("front_ruler", "Front + Ruler"),
-                PhotoStep("right", "Right Side"),
-                PhotoStep("right_ruler", "Right Side + Ruler"),
-                PhotoStep("back", "Back"),
-                PhotoStep("back_ruler", "Back + Ruler"),
-                PhotoStep("left", "Left Side"),
-                PhotoStep("left_ruler", "Left Side + Ruler"),
+                PhotoStep("front", "Front", Res.string.photo_step_front),
+                PhotoStep("front_ruler", "Front + Ruler", Res.string.photo_step_front_ruler),
+                PhotoStep("right", "Right Side", Res.string.photo_step_right),
+                PhotoStep("right_ruler", "Right Side + Ruler", Res.string.photo_step_right_ruler),
+                PhotoStep("back", "Back", Res.string.photo_step_back),
+                PhotoStep("back_ruler", "Back + Ruler", Res.string.photo_step_back_ruler),
+                PhotoStep("left", "Left Side", Res.string.photo_step_left),
+                PhotoStep("left_ruler", "Left Side + Ruler", Res.string.photo_step_left_ruler),
             )
     }
 }

@@ -14,6 +14,8 @@ if /i "%~1"=="build_release_wasm" goto build_release_wasm
 if /i "%~1"=="run_android" goto run_android
 if /i "%~1"=="run_ios" goto run_ios
 if /i "%~1"=="run_jvm" goto run_jvm
+if /i "%~1"=="bump_patch" goto bump_patch
+if /i "%~1"=="bump_version" goto bump_patch
 
 :help
 echo Available targets:
@@ -28,6 +30,8 @@ echo   build_release_wasm
 echo   run_android
 echo   run_ios
 echo   run_jvm
+echo   bump_patch
+echo   bump_version
 goto end
 
 :build
@@ -92,6 +96,10 @@ goto end
 
 :run_jvm
 call gradlew.bat :chartCam:run
+goto end
+
+:bump_patch
+python scripts\bump_version.py --patch
 goto end
 
 :end

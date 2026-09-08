@@ -1,6 +1,6 @@
 -include .env
 
-.PHONY: clean build test lint build_release_android build_release_ios build_adhoc_ios deploy_ios_to_firebase build_release_jvm build_release_js build_release_wasm run_android run_ios run_jvm
+.PHONY: clean build test lint build_release_android build_release_ios build_adhoc_ios deploy_ios_to_firebase build_release_jvm build_release_js build_release_wasm run_android run_ios run_jvm bump_patch bump_version
 
 clean:
 	./gradlew --console=plain clean
@@ -131,3 +131,9 @@ run_ios:
 
 run_jvm:
 	./gradlew --console=plain :chartCam:run
+
+bump_patch:
+	python3 scripts/bump_version.py --patch
+
+bump_version: bump_patch
+

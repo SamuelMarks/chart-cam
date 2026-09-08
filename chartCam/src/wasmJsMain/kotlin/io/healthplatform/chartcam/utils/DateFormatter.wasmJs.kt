@@ -51,3 +51,19 @@ actual fun formatLocalizedDate(
     val jsResult = formatLocalizedDateJs(fhirDate.toJsString(), language.toJsString())
     return jsResult.toString()
 }
+
+/**
+ * Formats a FHIR datetime string into a localized, human-readable format on the WasmJS platform.
+ *
+ * @param fhirDateTime The datetime string in FHIR standard format (e.g., ISO 8601).
+ * @param language The BCP-47 language tag to format the datetime with.
+ * @return The localized datetime string, or the original [fhirDateTime] if parsing fails.
+ */
+actual fun formatLocalizedDateTime(
+    fhirDateTime: String,
+    language: String,
+): String {
+    if (fhirDateTime.isBlank()) return fhirDateTime
+    val jsResult = formatLocalizedDateJs(fhirDateTime.toJsString(), language.toJsString())
+    return jsResult.toString()
+}

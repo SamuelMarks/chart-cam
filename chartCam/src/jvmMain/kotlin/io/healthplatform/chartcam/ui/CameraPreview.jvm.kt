@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,10 +25,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.camera_unavailable
@@ -105,7 +110,7 @@ actual fun CameraPreview(
         }
     }
 
-    Box(modifier = modifier.background(Color.Black), contentAlignment = Alignment.Center) {
+    Box(modifier = modifier.background(MaterialTheme.colorScheme.surface), contentAlignment = Alignment.Center) {
         if (imageBitmap != null) {
             Image(
                 bitmap = imageBitmap!!,
@@ -114,20 +119,37 @@ actual fun CameraPreview(
                 contentScale = ContentScale.Crop,
             )
         } else if (hasError) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            val errorMsg = stringResource(Res.string.camera_unavailable)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier =
+                    Modifier.semantics {
+                        error(errorMsg)
+                        liveRegion = LiveRegionMode.Polite
+                    },
+            ) {
                 Icon(
                     Icons.Default.Warning,
-                    contentDescription = stringResource(Res.string.error),
-                    tint = Color.White,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
                 )
                 Text(
-                    stringResource(Res.string.camera_unavailable),
-                    color = Color.White,
+                    text = errorMsg,
+                    color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
         } else {
-            Text(stringResource(Res.string.initializing_camera), color = Color.White)
+            val initMsg = stringResource(Res.string.initializing_camera)
+            Text(
+                text = initMsg,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier =
+                    Modifier.semantics {
+                        liveRegion = LiveRegionMode.Polite
+                        contentDescription = initMsg
+                    },
+            )
         }
     }
 }

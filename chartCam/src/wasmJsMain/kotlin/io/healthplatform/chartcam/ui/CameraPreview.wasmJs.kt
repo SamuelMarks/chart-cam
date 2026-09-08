@@ -11,6 +11,7 @@ package io.healthplatform.chartcam.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,7 +19,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import chartcam.chartcam.generated.resources.Res
@@ -100,11 +100,11 @@ actual fun CameraPreview(
             Image(
                 bitmap = imageBitmap!!,
                 contentDescription = stringResource(Res.string.cd_camera_preview),
-                modifier = modifier.background(Color.Black),
+                modifier = modifier.background(MaterialTheme.colorScheme.surface),
                 contentScale = ContentScale.Crop,
             )
         } else {
-            Box(modifier = modifier.background(Color.Black))
+            Box(modifier = modifier.background(MaterialTheme.colorScheme.surface))
         }
     }
 }

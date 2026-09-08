@@ -456,4 +456,18 @@ object QuestionnaireUtils {
             answer.value.value?.let { existingAnswers[linkId] = it.toString() }
         }
     }
+
+    /**
+     * Strips enclosing XHTML `<div>` tags (including any XML namespace attributes) from a FHIR narrative.
+     *
+     * @param div The raw XHTML string from a FHIR narrative div.
+     * @return Clean narrative plain text with outer div tags stripped, or null if input was null.
+     */
+    fun stripNarrativeDiv(div: String?): String? {
+        if (div == null) return null
+        val trimmed = div.trim()
+        val regex = Regex("^<div(?:\\s+[^>]*)?>([\\s\\S]*)</div>$")
+        val match = regex.find(trimmed)
+        return match?.groupValues?.get(1)?.trim() ?: trimmed
+    }
 }

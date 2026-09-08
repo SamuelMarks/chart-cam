@@ -7,17 +7,15 @@
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -44,10 +42,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -55,7 +55,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -63,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cancel
 import chartcam.chartcam.generated.resources.captured_photos_format
+import chartcam.chartcam.generated.resources.cd_action_view_photo
 import chartcam.chartcam.generated.resources.cd_back
 import chartcam.chartcam.generated.resources.cd_more_options
 import chartcam.chartcam.generated.resources.cd_patient_photo
@@ -78,6 +81,7 @@ import chartcam.chartcam.generated.resources.loading
 import chartcam.chartcam.generated.resources.mrn_date_format
 import chartcam.chartcam.generated.resources.no
 import chartcam.chartcam.generated.resources.no_notes
+import chartcam.chartcam.generated.resources.ok
 import chartcam.chartcam.generated.resources.provider_format
 import chartcam.chartcam.generated.resources.questionnaire
 import chartcam.chartcam.generated.resources.questionnaire_format
@@ -98,6 +102,7 @@ import io.healthplatform.chartcam.navigation.PhotoSessionManager
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
+import io.healthplatform.chartcam.ui.components.DemoModeBanner
 import io.healthplatform.chartcam.viewmodel.EncounterDetailViewModel
 import io.healthplatform.chartcam.viewmodel.EncounterUiState
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -168,6 +173,7 @@ fun EncounterDetailScreen(
         }
 
     val state by viewModel.uiState.collectAsState()
+    val currentLang by currentLanguageState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
@@ -184,21 +190,34 @@ fun EncounterDetailScreen(
         state = state,
     )
 
-    if (showDeleteConfirmDialog) {
-        DeleteConfirmDialog(
-            onConfirm = {
-                showDeleteConfirmDialog = false
-                viewModel.deleteEncounter { actions.onBack() }
-            },
-            onDismiss = { showDeleteConfirmDialog = false },
-        )
-    }
+    key(currentLang) {
+        if (showDeleteConfirmDialog) {
+            DeleteConfirmDialog(
+                onConfirm = {
+                    showDeleteConfirmDialog = false
+                    viewModel.deleteEncounter { actions.onBack() }
+                },
+                onDismiss = { showDeleteConfirmDialog = false },
+            )
+        }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = { EncounterTopBar(state, actions, viewModel) { showDeleteConfirmDialog = true } },
-    ) { padding ->
-        EncounterDetailContent(state, padding, actions, viewModel)
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = { EncounterTopBar(state, actions, viewModel) { showDeleteConfirmDialog = true } },
+        ) { padding ->
+            val isDemoSession by dependencies.authRepository.isDemoSession.collectAsState()
+            Column(modifier = Modifier.padding(padding)) {
+                if (isDemoSession) {
+                    DemoModeBanner(
+                        onExitDemo = {
+                            dependencies.authRepository.logout()
+                            actions.onBack()
+                        },
+                    )
+                }
+                EncounterDetailContent(state, actions, viewModel)
+            }
+        }
     }
 }
 
@@ -358,7 +377,6 @@ private fun EncounterTopBar(
 /**
  * Internal helper.
  * @param state The state.
- * @param padding The padding.
  * @param actions The actions.
  * @param viewModel The viewModel.
  */
@@ -366,7 +384,6 @@ private fun EncounterTopBar(
 @Composable
 private fun EncounterDetailContent(
     state: EncounterUiState,
-    padding: PaddingValues,
     actions: EncounterDetailActions,
     viewModel: EncounterDetailViewModel,
 ) {
@@ -401,14 +418,13 @@ private fun EncounterDetailContent(
     } else {
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
-            modifier = Modifier.padding(padding).fillMaxSize().padding(horizontal = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding =
-                PaddingValues(
-                    top = 16.dp,
-                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp,
-                ),
+            contentPadding = PaddingValues(vertical = 16.dp),
         ) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 EncounterDetailHeader(state, actions, viewModel)
@@ -586,13 +602,32 @@ private fun QuestionnaireFormArea(
             it.type.value == Questionnaire.QuestionnaireItemType.Attachment
         } ?: 0
 
+    val currentLang by io.healthplatform.chartcam.ui.currentLanguageState
+        .collectAsState()
+    val formattedPhotosCount =
+        io.healthplatform.chartcam.utils.formatLocalizedDecimal(
+            state.photos.size.toDouble(),
+            currentLang,
+            decimalPlaces = 0,
+        )
+    val formattedTargetCount =
+        io.healthplatform.chartcam.utils.formatLocalizedDecimal(
+            targetPhotosCount.toDouble(),
+            currentLang,
+            decimalPlaces = 0,
+        )
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            stringResource(Res.string.captured_photos_format, state.photos.size, targetPhotosCount),
+            stringResource(
+                Res.string.captured_photos_format,
+                formattedPhotosCount,
+                formattedTargetCount,
+            ),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp).semantics { heading() },
         )
@@ -610,32 +645,49 @@ private fun QuestionnaireFormArea(
 @OptIn(ExperimentalResourceApi::class)
 @Composable
 fun PhotoGridItem(doc: DocumentReference) {
-    ElevatedCard(
-        modifier = Modifier.semantics(mergeDescendants = true) {},
-    ) {
-        Column {
-            val bytes =
-                remember(
+    var showFullPhoto by remember { mutableStateOf(false) }
+    val photoDescription = doc.description?.value ?: stringResource(Res.string.cd_patient_photo)
+    val viewPhotoLabel = stringResource(Res.string.cd_action_view_photo)
+    val loadErrorText = stringResource(Res.string.image_load_error)
+
+    val bytes =
+        remember(
+            doc.content
+                .firstOrNull()
+                ?.attachment
+                ?.url
+                ?.value ?: "",
+        ) {
+            try {
+                val storage = createFileStorage()
+                storage.readImage(
                     doc.content
                         .firstOrNull()
                         ?.attachment
                         ?.url
                         ?.value ?: "",
-                ) {
-                    try {
-                        val storage = createFileStorage()
-                        storage.readImage(
-                            doc.content
-                                .firstOrNull()
-                                ?.attachment
-                                ?.url
-                                ?.value ?: "",
-                        )
-                    } catch (ignored: IllegalArgumentException) {
-                        ByteArray(0)
-                    }
-                }
+                )
+            } catch (ignored: IllegalArgumentException) {
+                ByteArray(0)
+            }
+        }
 
+    ElevatedCard(
+        modifier =
+            Modifier
+                .minimumInteractiveComponentSize()
+                .clickable(
+                    role = Role.Button,
+                    onClickLabel = viewPhotoLabel,
+                ) {
+                    if (bytes.isNotEmpty()) {
+                        showFullPhoto = true
+                    }
+                }.semantics(mergeDescendants = true) {
+                    contentDescription = photoDescription
+                },
+    ) {
+        Column {
             if (bytes.isNotEmpty()) {
                 Image(
                     bitmap = bytes.decodeToImageBitmap(),
@@ -648,15 +700,54 @@ fun PhotoGridItem(doc: DocumentReference) {
                     Modifier.fillMaxWidth().height(150.dp).padding(16.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(stringResource(Res.string.image_load_error))
+                    Text(
+                        text = loadErrorText,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier =
+                            Modifier.semantics {
+                                error(loadErrorText)
+                                liveRegion = LiveRegionMode.Polite
+                            },
+                    )
                 }
             }
 
             Text(
-                text = doc.description?.value ?: stringResource(Res.string.cd_patient_photo),
+                text = photoDescription,
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(8.dp),
             )
+        }
+    }
+
+    if (showFullPhoto && bytes.isNotEmpty()) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showFullPhoto = false },
+        ) {
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Image(
+                        bitmap = bytes.decodeToImageBitmap(),
+                        contentDescription = photoDescription,
+                        modifier = Modifier.fillMaxWidth().height(300.dp),
+                        contentScale = ContentScale.Fit,
+                    )
+                    Text(
+                        text = photoDescription,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                    )
+                    TextButton(onClick = { showFullPhoto = false }) {
+                        Text(stringResource(Res.string.ok))
+                    }
+                }
+            }
         }
     }
 }

@@ -7,7 +7,9 @@
 package io.healthplatform.chartcam.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -15,10 +17,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.noto_sans_jp
 import io.healthplatform.chartcam.ui.currentLanguageState
 import io.healthplatform.chartcam.ui.isRtlLanguage
+import io.healthplatform.chartcam.ui.isTraditionalChinese
 import org.jetbrains.compose.resources.Font
 import kotlin.math.pow
 
@@ -53,6 +57,20 @@ private object ThemeColors {
     const val DARK_OUTLINE = 0xFF8E918F
     const val DARK_ERROR_CONTAINER = 0xFF690005
     const val DARK_ON_ERROR_CONTAINER = 0xFFFFDAD6
+    const val LIGHT_ERROR = 0xFFBA1A1A
+    const val LIGHT_ON_ERROR = 0xFFFFFFFF
+    const val LIGHT_OUTLINE_VARIANT = 0xFFC4C7C5
+    const val LIGHT_SCRIM = 0x80000000
+    const val LIGHT_INVERSE_SURFACE = 0xFF313030
+    const val LIGHT_INVERSE_ON_SURFACE = 0xFFF4F0EF
+    const val LIGHT_INVERSE_PRIMARY = 0xFFFFB4AB
+    const val DARK_ERROR = 0xFFFFB4AB
+    const val DARK_ON_ERROR = 0xFF690005
+    const val DARK_OUTLINE_VARIANT = 0xFF444746
+    const val DARK_SCRIM = 0x80000000
+    const val DARK_INVERSE_SURFACE = 0xFFE5E2E1
+    const val DARK_INVERSE_ON_SURFACE = 0xFF313030
+    const val DARK_INVERSE_PRIMARY = 0xFFA51D24
 }
 
 /** Harvard Crimson brand color used as primary color. */
@@ -136,8 +154,22 @@ internal val LightColors =
         surfaceVariant = Color(ThemeColors.LIGHT_SURFACE_VARIANT),
         onSurfaceVariant = HarvardSlate,
         outline = Color(ThemeColors.LIGHT_OUTLINE),
+        outlineVariant = Color(ThemeColors.LIGHT_OUTLINE_VARIANT),
+        error = Color(ThemeColors.LIGHT_ERROR),
+        onError = Color(ThemeColors.LIGHT_ON_ERROR),
         errorContainer = Color(ThemeColors.LIGHT_ERROR_CONTAINER),
         onErrorContainer = Color(ThemeColors.LIGHT_ON_ERROR_CONTAINER),
+        scrim = Color(ThemeColors.LIGHT_SCRIM),
+        inverseSurface = Color(ThemeColors.LIGHT_INVERSE_SURFACE),
+        inverseOnSurface = Color(ThemeColors.LIGHT_INVERSE_ON_SURFACE),
+        inversePrimary = Color(ThemeColors.LIGHT_INVERSE_PRIMARY),
+        surfaceDim = Color(ThemeColors.PARCHMENT),
+        surfaceBright = Color.White,
+        surfaceContainerLowest = Color.White,
+        surfaceContainerLow = Color(ThemeColors.PARCHMENT),
+        surfaceContainer = Color(ThemeColors.LIGHT_SURFACE_VARIANT),
+        surfaceContainerHigh = Color(ThemeColors.LIGHT_SURFACE_VARIANT),
+        surfaceContainerHighest = Color(ThemeColors.LIGHT_OUTLINE_VARIANT),
     )
 
 /** Color scheme applied when the system is in dark mode. */
@@ -156,8 +188,32 @@ internal val DarkColors =
         surfaceVariant = Color(ThemeColors.DARK_SURFACE_VARIANT),
         onSurfaceVariant = Color(ThemeColors.DARK_ON_SURFACE_VARIANT),
         outline = Color(ThemeColors.DARK_OUTLINE),
+        outlineVariant = Color(ThemeColors.DARK_OUTLINE_VARIANT),
+        error = Color(ThemeColors.DARK_ERROR),
+        onError = Color(ThemeColors.DARK_ON_ERROR),
         errorContainer = Color(ThemeColors.DARK_ERROR_CONTAINER),
         onErrorContainer = Color(ThemeColors.DARK_ON_ERROR_CONTAINER),
+        scrim = Color(ThemeColors.DARK_SCRIM),
+        inverseSurface = Color(ThemeColors.DARK_INVERSE_SURFACE),
+        inverseOnSurface = Color(ThemeColors.DARK_INVERSE_ON_SURFACE),
+        inversePrimary = Color(ThemeColors.DARK_INVERSE_PRIMARY),
+        surfaceDim = Color(ThemeColors.BLACK),
+        surfaceBright = Color(ThemeColors.SURFACE_DARK),
+        surfaceContainerLowest = Color(ThemeColors.BLACK),
+        surfaceContainerLow = Color(ThemeColors.BLACK),
+        surfaceContainer = Color(ThemeColors.SURFACE_DARK),
+        surfaceContainerHigh = Color(ThemeColors.DARK_SURFACE_VARIANT),
+        surfaceContainerHighest = Color(ThemeColors.DARK_SURFACE_VARIANT),
+    )
+
+/** Application shape tokens based on Material 3 guidelines. */
+internal val AppShapes =
+    Shapes(
+        extraSmall = RoundedCornerShape(4.dp),
+        small = RoundedCornerShape(8.dp),
+        medium = RoundedCornerShape(12.dp),
+        large = RoundedCornerShape(16.dp),
+        extraLarge = RoundedCornerShape(28.dp),
     )
 
 /**
@@ -173,10 +229,11 @@ internal val DarkColors =
 fun getTypography(language: String = currentLanguageState.value): Typography {
     val defaultTypography = Typography()
     val fontFamily =
-        if (isRtlLanguage(language)) {
-            FontFamily.Default
-        } else {
-            FontFamily(Font(Res.font.noto_sans_jp))
+        when {
+            isRtlLanguage(language) -> FontFamily.Default
+            language.lowercase().startsWith("ja") -> FontFamily(Font(Res.font.noto_sans_jp))
+            isTraditionalChinese(language) -> FontFamily.SansSerif
+            else -> FontFamily.Default
         }
     return Typography(
         displayLarge = defaultTypography.displayLarge.copy(fontFamily = fontFamily),
@@ -218,6 +275,7 @@ fun AppTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = getTypography(currentLang),
+        shapes = AppShapes,
         content = content,
     )
 }

@@ -6,10 +6,14 @@ package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.unit.LayoutDirection
 import io.healthplatform.chartcam.ui.components.splitTextIntoVerticalColumns
+import io.healthplatform.chartcam.utils.DatePattern
 import io.healthplatform.chartcam.utils.formatLocalizedDecimal
+import io.healthplatform.chartcam.utils.parseLocalizedDecimal
+import io.healthplatform.chartcam.utils.resolveDatePattern
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -286,5 +290,41 @@ class DynamicLanguageAndLayoutExpansionTest {
 
         // Restore
         currentLanguageState.value = "en"
+    }
+
+    /**
+     * Verify bidirectional parsing of localized decimal numbers across western, comma, and Arabic formats.
+     */
+    @Test
+    fun testParseLocalizedDecimal() {
+        assertEquals(1234.56, parseLocalizedDecimal("1234.56"))
+        assertEquals(12.34, parseLocalizedDecimal("12,34"))
+        assertEquals(12.34, parseLocalizedDecimal("12٫34"))
+        assertEquals(90.0, parseLocalizedDecimal("٩٠"))
+        assertEquals(42.5, parseLocalizedDecimal("٤٢٫٥"))
+        assertEquals(-42.5, parseLocalizedDecimal("-٤٢٫٥"))
+        assertNull(parseLocalizedDecimal("12\u067034"))
+        assertNull(parseLocalizedDecimal(""))
+        assertNull(parseLocalizedDecimal("   "))
+        assertNull(parseLocalizedDecimal("abc"))
+    }
+
+    /**
+     * Verify DatePattern enum values and language resolution.
+     */
+    @Test
+    fun testDatePatternResolution() {
+        assertEquals(DatePattern.ISO_STANDARD, resolveDatePattern())
+        assertEquals(DatePattern.YEAR_FIRST, resolveDatePattern("zh"))
+        assertEquals(DatePattern.YEAR_FIRST, resolveDatePattern("ja"))
+        assertEquals(DatePattern.DAY_FIRST, resolveDatePattern("es"))
+        assertEquals(DatePattern.DAY_FIRST, resolveDatePattern("he"))
+        assertEquals(DatePattern.DAY_FIRST, resolveDatePattern("en-GB"))
+        assertEquals(DatePattern.ISO_STANDARD, resolveDatePattern("en-US"))
+        assertEquals(DatePattern.ISO_STANDARD, resolveDatePattern("unknown"))
+
+        assertEquals("DD/MM/YYYY", DatePattern.DAY_FIRST.pattern)
+        assertEquals("YYYY/MM/DD", DatePattern.YEAR_FIRST.pattern)
+        assertEquals("YYYY-MM-DD", DatePattern.ISO_STANDARD.pattern)
     }
 }

@@ -26,6 +26,10 @@ class DateFormatterAndroidTest {
         val dateTime = formatLocalizedDate("2023-10-15T14:30:00Z")
         assert(dateTime.isNotEmpty())
 
+        // DateTime without timezone (LocalDateTime fallback)
+        val localDateTime = formatLocalizedDate("2023-10-15T14:30:00")
+        assert(localDateTime.isNotEmpty())
+
         // Blank
         val blank = formatLocalizedDate("   ")
         assertEquals("   ", blank)
@@ -33,5 +37,26 @@ class DateFormatterAndroidTest {
         // Invalid parsing falls back to original string
         val invalid = formatLocalizedDate("Invalid Date")
         assertEquals("Invalid Date", invalid)
+    }
+
+    /**
+     * Test localized datetime formatting behaves correctly on Android.
+     */
+    @Test
+    fun testFormatLocalizedDateTime() {
+        val defaultDateTime = formatLocalizedDateTime("2023-10-15T14:30:00Z")
+        assert(defaultDateTime.isNotEmpty())
+
+        val dateTime = formatLocalizedDateTime("2023-10-15T14:30:00Z", "en")
+        assert(dateTime.isNotEmpty())
+
+        val localDateTime = formatLocalizedDateTime("2023-10-15T14:30:00", "en")
+        assert(localDateTime.isNotEmpty())
+
+        val blank = formatLocalizedDateTime("   ", "en")
+        assertEquals("   ", blank)
+
+        val invalid = formatLocalizedDateTime("Invalid DateTime", "en")
+        assertEquals("Invalid DateTime", invalid)
     }
 }

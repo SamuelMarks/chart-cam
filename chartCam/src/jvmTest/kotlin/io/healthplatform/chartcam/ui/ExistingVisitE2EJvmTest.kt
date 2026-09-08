@@ -53,6 +53,7 @@ class ExistingVisitE2EJvmTest {
                     .apply { id = "prac1" }
                     .build()
             `when`(authRepository.currentUser).thenReturn(MutableStateFlow(practitioner))
+            `when`(authRepository.isDemoSession).thenReturn(MutableStateFlow(false))
 
             val photoSessionManager = PhotoSessionManager()
 

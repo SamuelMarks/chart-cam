@@ -14,9 +14,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ViewColumn
 import androidx.compose.material.icons.filled.ViewStream
@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -69,11 +70,23 @@ fun splitTextIntoVerticalColumns(
             columns.add(listOf(" "))
             continue
         }
+        val glyphs = mutableListOf<String>()
+        var i = 0
+        while (i < rawLine.length) {
+            val ch = rawLine[i]
+            if (ch.isHighSurrogate() && i + 1 < rawLine.length && rawLine[i + 1].isLowSurrogate()) {
+                glyphs.add(rawLine.substring(i, i + 2))
+                i += 2
+            } else {
+                glyphs.add(ch.toString())
+                i += 1
+            }
+        }
+
         var startIndex = 0
-        while (startIndex < rawLine.length) {
-            val endIndex = (startIndex + maxCharsPerColumn).coerceAtMost(rawLine.length)
-            val chunk = rawLine.substring(startIndex, endIndex)
-            columns.add(chunk.map { it.toString() })
+        while (startIndex < glyphs.size) {
+            val endIndex = (startIndex + maxCharsPerColumn).coerceAtMost(glyphs.size)
+            columns.add(glyphs.subList(startIndex, endIndex))
             startIndex = endIndex
         }
     }
@@ -165,49 +178,77 @@ fun TraditionalChineseVerticalBanner(
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
             ),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
     ) {
-        Box(
+        Column(
             modifier =
                 Modifier
-                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                    .fillMaxWidth()
+                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), MaterialTheme.shapes.medium)
                     .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (isVerticalMode) {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                    Row(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.Top,
+            if (onToggleMode != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(
+                        onClick = onToggleMode,
+                        modifier = Modifier.minimumInteractiveComponentSize(),
                     ) {
-                        VerticalColumnText(
-                            text = title,
-                            maxCharsPerColumn = 8,
-                            textStyle =
-                                MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    letterSpacing = 2.sp,
-                                ),
-                            columnsRightToLeft = true,
+                        Icon(
+                            imageVector = if (isVerticalMode) Icons.Default.ViewStream else Icons.Default.ViewColumn,
+                            contentDescription = stringResource(Res.string.cd_toggle_vertical_text),
+                            tint = MaterialTheme.colorScheme.primary,
                         )
+                    }
+                }
+            }
 
-                        if (!subtitle.isNullOrBlank()) {
+            if (isVerticalMode) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.Top,
+                        ) {
                             VerticalColumnText(
-                                text = subtitle,
-                                maxCharsPerColumn = 10,
+                                text = title,
+                                maxCharsPerColumn = 8,
                                 textStyle =
-                                    MaterialTheme.typography.bodyMedium.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        letterSpacing = 2.sp,
                                     ),
                                 columnsRightToLeft = true,
                             )
+
+                            if (!subtitle.isNullOrBlank()) {
+                                VerticalColumnText(
+                                    text = subtitle,
+                                    maxCharsPerColumn = 10,
+                                    textStyle =
+                                        MaterialTheme.typography.bodyMedium.copy(
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        ),
+                                    columnsRightToLeft = true,
+                                )
+                            }
                         }
                     }
                 }
             } else {
                 Column(
-                    modifier = Modifier.align(Alignment.Center),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -216,6 +257,7 @@ fun TraditionalChineseVerticalBanner(
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.primary,
                         textAlign = TextAlign.Center,
+                        modifier = Modifier.semantics { heading() },
                     )
                     if (!subtitle.isNullOrBlank()) {
                         Text(
@@ -225,22 +267,6 @@ fun TraditionalChineseVerticalBanner(
                             textAlign = TextAlign.Center,
                         )
                     }
-                }
-            }
-
-            if (onToggleMode != null) {
-                IconButton(
-                    onClick = onToggleMode,
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopEnd)
-                            .minimumInteractiveComponentSize(),
-                ) {
-                    Icon(
-                        imageVector = if (isVerticalMode) Icons.Default.ViewStream else Icons.Default.ViewColumn,
-                        contentDescription = stringResource(Res.string.cd_toggle_vertical_text),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
                 }
             }
         }

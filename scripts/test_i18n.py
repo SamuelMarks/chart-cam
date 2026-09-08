@@ -56,7 +56,9 @@ def verify_translations():
     base_plurals = get_plurals(base_filepath)
 
     base_tree = ET.parse(base_filepath)
-    base_strings = {c.get("name"): c.text for c in base_tree.getroot() if c.tag == "string"}
+    base_strings = {
+        c.get("name"): c.text for c in base_tree.getroot() if c.tag == "string"
+    }
     fmt_pattern = re.compile(r"%(\d+\$)?[-#+ 0,(]*\d*(?:\.\d+)?[a-zA-Z]")
 
     locales = ["es", "ja", "he", "zh"]
@@ -102,8 +104,49 @@ def verify_translations():
                 }
                 for p_name, quantities in plurals_dict.items():
                     if "two" not in quantities:
-                        print(f"Missing dual (two) plural quantity in Hebrew for '{p_name}'")
+                        print(
+                            f"Missing dual (two) plural quantity in Hebrew for '{p_name}'"
+                        )
                         has_errors = True
+
+    # Verify parity with androidApp/src/androidTest/assets/composeResources
+    test_assets_dir = "androidApp/src/androidTest/assets/composeResources"
+    for loc_suffix in ["values", "values-es", "values-he", "values-ja", "values-zh"]:
+        src_file = os.path.join(
+            "chartCam/src/commonMain/composeResources", loc_suffix, "strings.xml"
+        )
+        dest_file = os.path.join(test_assets_dir, loc_suffix, "strings.xml")
+        if not os.path.exists(dest_file):
+            print(f"Missing androidTest strings asset: {dest_file}")
+            has_errors = True
+        else:
+            src_keys = get_keys(src_file)
+            dest_keys = get_keys(dest_file)
+            diff = src_keys - dest_keys
+            if diff:
+                print(
+                    f"androidTest assets {loc_suffix}/strings.xml is missing keys: {diff}"
+                )
+                has_errors = True
+
+    # Verify androidApp/src/main/res/xml/locales_config.xml exists and defines locales
+    locales_config = "androidApp/src/main/res/xml/locales_config.xml"
+    if not os.path.exists(locales_config):
+        print(f"Missing {locales_config}")
+        has_errors = True
+    else:
+        tree = ET.parse(locales_config)
+        root = tree.getroot()
+        configured_locales = {
+            c.get("{http://schemas.android.com/apk/res/android}name") or c.get("name")
+            for c in root
+            if c.tag == "locale"
+        }
+        required_locales = {"en", "es", "he", "ja", "zh-Hant"}
+        missing_locales = required_locales - configured_locales
+        if missing_locales:
+            print(f"locales_config.xml missing locales: {missing_locales}")
+            has_errors = True
 
     return not has_errors
 

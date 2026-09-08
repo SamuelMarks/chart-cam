@@ -101,6 +101,7 @@ fun NavGraphBuilder.triageDestination(
                 onProceedToEncounter = { patientId, _ ->
                     navController.navigate(NewVisitRoute(patientId))
                 },
+                onBack = { navController.popBackStack() },
             )
         }
     }

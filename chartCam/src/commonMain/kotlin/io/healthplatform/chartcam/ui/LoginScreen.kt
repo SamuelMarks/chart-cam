@@ -10,17 +10,19 @@ package io.healthplatform.chartcam.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -28,23 +30,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,6 +60,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -66,6 +68,7 @@ import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -79,26 +82,31 @@ import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.all_fields_required
 import chartcam.chartcam.generated.resources.app_name_title
 import chartcam.chartcam.generated.resources.app_slogan
-import chartcam.chartcam.generated.resources.cd_switch_language
-import chartcam.chartcam.generated.resources.english
-import chartcam.chartcam.generated.resources.espanol
+import chartcam.chartcam.generated.resources.cd_demo_app_tour_button
+import chartcam.chartcam.generated.resources.cd_demo_mode_button
+import chartcam.chartcam.generated.resources.demo_app_tour_button
+import chartcam.chartcam.generated.resources.demo_mode_button
 import chartcam.chartcam.generated.resources.feature_capture
 import chartcam.chartcam.generated.resources.feature_secure
 import chartcam.chartcam.generated.resources.feature_sync
-import chartcam.chartcam.generated.resources.hebrew
-import chartcam.chartcam.generated.resources.japanese
 import chartcam.chartcam.generated.resources.legal_disclaimer
 import chartcam.chartcam.generated.resources.login_signup
 import chartcam.chartcam.generated.resources.logo
 import chartcam.chartcam.generated.resources.offline_mode
 import chartcam.chartcam.generated.resources.password
 import chartcam.chartcam.generated.resources.state_unselected
-import chartcam.chartcam.generated.resources.traditional_chinese
 import chartcam.chartcam.generated.resources.username
+import io.healthplatform.chartcam.ui.components.LanguageMenu
 import io.healthplatform.chartcam.ui.components.TraditionalChineseVerticalBanner
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+
+/** Test tag for the one-click demo login button. */
+const val TAG_DEMO_BUTTON = "login_demo_button"
+
+/** Test tag for the workflow tutorial tour launcher button. */
+const val TAG_TOUR_BUTTON = "login_tour_button"
 
 /**
  * Screen enabling Practitioner authentication.
@@ -117,97 +125,55 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
+    val currentLang by currentLanguageState.collectAsState()
 
     // Side effect check: if user is logged in, navigate
     if (state.isLoggedIn) {
         onLoginSuccess()
     }
 
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-    ) {
-        Box(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            contentAlignment = Alignment.TopEnd,
-        ) {
-            LanguageMenu()
-        }
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            LoginHeader()
+    key(currentLang) {
+        if (state.isTutorialVisible) {
+            OnboardingTutorialScreen(
+                onDismiss = { viewModel.showTutorial(false) },
+                onComplete = { viewModel.showTutorial(false) },
+            )
+        } else {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .statusBarsPadding()
+                        .navigationBarsPadding()
+                        .imePadding()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    LanguageMenu()
+                }
 
-            val stateErrorMessageStr = state.errorMessage?.let { stringResource(it) }
-            LoginCard(
-                isLoading = state.isLoading,
-                stateErrorMessage = stateErrorMessageStr,
-                onLogin = { username, password -> viewModel.login(username, password) },
-            )
+                Spacer(modifier = Modifier.height(16.dp))
+                LoginHeader()
 
-            Spacer(modifier = Modifier.height(48.dp))
-            FeaturesRow()
-        }
-    }
-}
+                val stateErrorMessageStr = state.errorMessage?.let { stringResource(it) }
+                LoginCard(
+                    isLoading = state.isLoading,
+                    isDemoLoading = state.isDemoLoading,
+                    stateErrorMessage = stateErrorMessageStr,
+                    onLogin = { username, password -> viewModel.login(username, password) },
+                    onDemoLogin = { viewModel.onDemoLoginClicked() },
+                    onOpenTour = { viewModel.showTutorial(true) },
+                )
 
-/**
- * Internal helper.
- */
-@Composable
-private fun LanguageMenu() {
-    Box {
-        var showLanguageMenu by remember { mutableStateOf(false) }
-        IconButton(onClick = { showLanguageMenu = true }) {
-            Icon(Icons.Default.Translate, contentDescription = stringResource(Res.string.cd_switch_language))
-        }
-        DropdownMenu(
-            expanded = showLanguageMenu,
-            onDismissRequest = { showLanguageMenu = false },
-        ) {
-            DropdownMenuItem(
-                text = { Text(stringResource(Res.string.english)) },
-                onClick = {
-                    setAppLanguage("en")
-                    showLanguageMenu = false
-                },
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(Res.string.espanol)) },
-                onClick = {
-                    setAppLanguage("es")
-                    showLanguageMenu = false
-                },
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(Res.string.japanese)) },
-                onClick = {
-                    setAppLanguage("ja")
-                    showLanguageMenu = false
-                },
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(Res.string.hebrew)) },
-                onClick = {
-                    setAppLanguage("he")
-                    showLanguageMenu = false
-                },
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(Res.string.traditional_chinese)) },
-                onClick = {
-                    setAppLanguage("zh")
-                    showLanguageMenu = false
-                },
-            )
+                Spacer(modifier = Modifier.height(48.dp))
+                FeaturesRow()
+            }
         }
     }
 }
@@ -232,7 +198,7 @@ private fun LoginHeader() {
             subtitle = stringResource(Res.string.app_slogan),
             onToggleMode = { isVerticalMode = !isVerticalMode },
             isVerticalMode = isVerticalMode,
-            modifier = Modifier.padding(bottom = 16.dp),
+            modifier = Modifier.padding(bottom = 16.dp).semantics { heading() },
         )
     } else {
         Text(
@@ -254,14 +220,20 @@ private fun LoginHeader() {
 /**
  * Internal helper.
  * @param isLoading The isLoading.
+ * @param isDemoLoading The isDemoLoading.
  * @param stateErrorMessage The stateErrorMessage.
  * @param onLogin The onLogin.
+ * @param onDemoLogin Callback to trigger demo authentication.
+ * @param onOpenTour Callback to open onboarding tutorial.
  */
 @Composable
 private fun LoginCard(
     isLoading: Boolean,
+    isDemoLoading: Boolean = false,
     stateErrorMessage: String?,
     onLogin: (String, String) -> Unit,
+    onDemoLogin: () -> Unit = {},
+    onOpenTour: () -> Unit = {},
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -281,7 +253,7 @@ private fun LoginCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
@@ -325,9 +297,89 @@ private fun LoginCard(
                 LoginButton(onClick = attemptLogin)
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+            DemoLoginButton(
+                isDemoLoading = isDemoLoading,
+                onClick = onDemoLogin,
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+            AppTourButton(onClick = onOpenTour)
+
             Spacer(modifier = Modifier.height(16.dp))
             LegalDisclaimer()
         }
+    }
+}
+
+/**
+ * Renders an accessible secondary button for instant demo mode authentication.
+ *
+ * @param isDemoLoading Whether the demo session is currently loading.
+ * @param onClick Callback triggered when the demo button is clicked.
+ */
+@Composable
+private fun DemoLoginButton(
+    isDemoLoading: Boolean,
+    onClick: () -> Unit,
+) {
+    val cdDemo = stringResource(Res.string.cd_demo_mode_button)
+    OutlinedButton(
+        onClick = onClick,
+        enabled = !isDemoLoading,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                .testTag(TAG_DEMO_BUTTON)
+                .semantics {
+                    contentDescription = cdDemo
+                },
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        if (isDemoLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+        }
+        Text(
+            text = stringResource(Res.string.demo_mode_button),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+/**
+ * Renders a button allowing practitioners to launch the interactive workflow tutorial on demand.
+ *
+ * @param onClick Callback triggered when the tour button is clicked.
+ */
+@Composable
+private fun AppTourButton(onClick: () -> Unit) {
+    val cdTour = stringResource(Res.string.cd_demo_app_tour_button)
+    TextButton(
+        onClick = onClick,
+        modifier =
+            Modifier
+                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                .testTag(TAG_TOUR_BUTTON)
+                .semantics {
+                    contentDescription = cdTour
+                    onClick(label = cdTour) {
+                        onClick()
+                        true
+                    }
+                },
+    ) {
+        Text(
+            text = stringResource(Res.string.demo_app_tour_button),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
     }
 }
 
@@ -528,7 +580,7 @@ private fun LoginButton(onClick: () -> Unit) {
         Button(
             onClick = onClick,
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.medium,
             colors =
                 ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,

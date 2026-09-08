@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,11 +25,21 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.QuestionAnswer
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -38,16 +50,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -58,6 +72,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -67,15 +82,19 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.about
 import chartcam.chartcam.generated.resources.about_title
 import chartcam.chartcam.generated.resources.cancel
+import chartcam.chartcam.generated.resources.cd_action_view_patient
 import chartcam.chartcam.generated.resources.cd_add_patient
+import chartcam.chartcam.generated.resources.cd_hide_password
 import chartcam.chartcam.generated.resources.cd_more
 import chartcam.chartcam.generated.resources.cd_search_icon
-import chartcam.chartcam.generated.resources.cd_switch_language
+import chartcam.chartcam.generated.resources.cd_show_password
+import chartcam.chartcam.generated.resources.clear
 import chartcam.chartcam.generated.resources.close
 import chartcam.chartcam.generated.resources.data_exported_message
 import chartcam.chartcam.generated.resources.data_exported_title
@@ -83,17 +102,13 @@ import chartcam.chartcam.generated.resources.delete
 import chartcam.chartcam.generated.resources.delete_account_message
 import chartcam.chartcam.generated.resources.delete_account_title
 import chartcam.chartcam.generated.resources.delete_my_account
-import chartcam.chartcam.generated.resources.english
-import chartcam.chartcam.generated.resources.espanol
 import chartcam.chartcam.generated.resources.export
 import chartcam.chartcam.generated.resources.export_all_patients
 import chartcam.chartcam.generated.resources.export_data
 import chartcam.chartcam.generated.resources.export_password_label
 import chartcam.chartcam.generated.resources.export_password_title
-import chartcam.chartcam.generated.resources.hebrew
 import chartcam.chartcam.generated.resources.import_action
 import chartcam.chartcam.generated.resources.import_title
-import chartcam.chartcam.generated.resources.japanese
 import chartcam.chartcam.generated.resources.legal_disclaimer
 import chartcam.chartcam.generated.resources.logout
 import chartcam.chartcam.generated.resources.mrn_dob_format
@@ -110,16 +125,17 @@ import chartcam.chartcam.generated.resources.show_all_patients
 import chartcam.chartcam.generated.resources.show_my_patients_only
 import chartcam.chartcam.generated.resources.state_selected
 import chartcam.chartcam.generated.resources.state_unselected
-import chartcam.chartcam.generated.resources.traditional_chinese
 import chartcam.chartcam.generated.resources.version_text
 import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.models.customBirthDate
-import io.healthplatform.chartcam.models.fullName
+import io.healthplatform.chartcam.models.getFullName
 import io.healthplatform.chartcam.models.mrn
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.ui.components.CreatePatientDialog
+import io.healthplatform.chartcam.ui.components.DemoModeBanner
+import io.healthplatform.chartcam.ui.components.LanguageMenu
 import io.healthplatform.chartcam.ui.components.tabFocusNext
 import io.healthplatform.chartcam.utils.createShareService
 import io.healthplatform.chartcam.viewmodel.PatientListViewModel
@@ -162,529 +178,623 @@ fun PatientListScreen(
     var showExportPasswordDialog by remember { mutableStateOf(false) }
     var exportPassword by remember { mutableStateOf("") }
     var exportAllVisits by remember { mutableStateOf(true) }
+    var showExportPassword by remember { mutableStateOf(false) }
 
     var showImportDialog by remember { mutableStateOf(false) }
     var importText by remember { mutableStateOf("") }
     var importPassword by remember { mutableStateOf("") }
+    var showImportPassword by remember { mutableStateOf(false) }
 
     val shareService = remember { createShareService() }
     val fileStorage = remember { createFileStorage() }
 
     val focusManager = LocalFocusManager.current
+    val currentLang by currentLanguageState.collectAsState()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        stringResource(Res.string.patient_directory),
-                        modifier = Modifier.semantics { heading() },
-                    )
-                },
-                actions = {
-                    var showLanguageMenu by remember { mutableStateOf(false) }
-                    Box {
-                        IconButton(onClick = { showLanguageMenu = true }) {
+    key(currentLang) {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                TopAppBar(
+                    scrollBehavior = scrollBehavior,
+                    title = {
+                        Text(
+                            stringResource(Res.string.patient_directory),
+                            modifier = Modifier.semantics { heading() },
+                        )
+                    },
+                    actions = {
+                        LanguageMenu()
+                        IconButton(onClick = { showMenu = !showMenu }) {
                             Icon(
-                                Icons.Default.Translate,
-                                contentDescription = stringResource(Res.string.cd_switch_language),
+                                Icons.Default.MoreVert,
+                                contentDescription = stringResource(Res.string.cd_more),
                             )
                         }
                         DropdownMenu(
-                            expanded = showLanguageMenu,
-                            onDismissRequest = { showLanguageMenu = false },
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
                         ) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.english)) },
+                                text = { Text(stringResource(Res.string.questionnaires)) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.QuestionAnswer,
+                                        contentDescription = null,
+                                    )
+                                },
                                 onClick = {
-                                    setAppLanguage("en")
-                                    showLanguageMenu = false
+                                    showMenu = false
+                                    actions.onNavigateToQuestionnaires()
+                                },
+                            )
+
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        if (state.showAllPatients) {
+                                            stringResource(
+                                                Res.string.show_my_patients_only,
+                                            )
+                                        } else {
+                                            stringResource(Res.string.show_all_patients)
+                                        },
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.FilterList,
+                                        contentDescription = null,
+                                    )
+                                },
+                                onClick = {
+                                    viewModel.setShowAllPatients(!state.showAllPatients)
+                                    showMenu = false
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.espanol)) },
+                                text = {
+                                    Text(
+                                        stringResource(Res.string.export_data),
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.FileDownload,
+                                        contentDescription = null,
+                                    )
+                                },
                                 onClick = {
-                                    setAppLanguage("es")
-                                    showLanguageMenu = false
+                                    showExportPasswordDialog = true
+                                    showMenu = false
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.japanese)) },
+                                text = { Text(stringResource(Res.string.import_title)) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.FileUpload,
+                                        contentDescription = null,
+                                    )
+                                },
                                 onClick = {
-                                    setAppLanguage("ja")
-                                    showLanguageMenu = false
+                                    showImportDialog = true
+                                    showMenu = false
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.hebrew)) },
+                                text = { Text(stringResource(Res.string.logout)) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.Logout,
+                                        contentDescription = null,
+                                    )
+                                },
                                 onClick = {
-                                    setAppLanguage("he")
-                                    showLanguageMenu = false
+                                    showMenu = false
+                                    actions.onLogout()
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.traditional_chinese)) },
+                                text = {
+                                    Text(
+                                        stringResource(Res.string.about),
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Info,
+                                        contentDescription = null,
+                                    )
+                                },
                                 onClick = {
-                                    setAppLanguage("zh")
-                                    showLanguageMenu = false
+                                    showMenu = false
+                                    showAboutDialog = true
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stringResource(Res.string.delete_my_account),
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.DeleteForever,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                    )
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    showDeleteConfirm = true
                                 },
                             )
                         }
-                    }
-                    IconButton(onClick = { showMenu = !showMenu }) {
-                        Icon(
-                            Icons.Default.MoreVert,
-                            contentDescription = stringResource(Res.string.cd_more),
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false },
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.questionnaires)) },
-                            onClick = {
-                                showMenu = false
-                                actions.onNavigateToQuestionnaires()
-                            },
-                        )
-
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    if (state.showAllPatients) {
-                                        stringResource(
-                                            Res.string.show_my_patients_only,
-                                        )
-                                    } else {
-                                        stringResource(Res.string.show_all_patients)
-                                    },
-                                )
-                            },
-                            onClick = {
-                                viewModel.setShowAllPatients(!state.showAllPatients)
-                                showMenu = false
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    stringResource(Res.string.export_data),
-                                )
-                            },
-                            onClick = {
-                                showExportPasswordDialog = true
-                                showMenu = false
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.import_title)) },
-                            onClick = {
-                                showImportDialog = true
-                                showMenu = false
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.logout)) },
-                            onClick = {
-                                showMenu = false
-                                actions.onLogout()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    stringResource(Res.string.about),
-                                )
-                            },
-                            onClick = {
-                                showMenu = false
-                                showAboutDialog = true
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    stringResource(Res.string.delete_my_account),
-                                    color = MaterialTheme.colorScheme.error,
-                                )
-                            },
-                            onClick = {
-                                showMenu = false
-                                showDeleteConfirm = true
-                            },
-                        )
-                    }
-                },
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { viewModel.setCreateDialogVisible(true) }) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.cd_add_patient))
-            }
-        },
-    ) { paddingValues ->
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-        ) {
-            SearchBar(
-                inputField = {
-                    androidx.compose.material3.SearchBarDefaults.InputField(
-                        query = state.searchQuery,
-                        onQueryChange = { viewModel.onSearchQueryChanged(it) },
-                        onSearch = { },
-                        expanded = false,
-                        onExpandedChange = { },
-                        placeholder = { Text(stringResource(Res.string.search_placeholder)) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Default.Search,
-                                contentDescription = stringResource(Res.string.cd_search_icon),
-                            )
-                        },
-                    )
-                },
-                expanded = false,
-                onExpandedChange = { },
+                    },
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(onClick = { viewModel.setCreateDialogVisible(true) }) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.cd_add_patient))
+                }
+            },
+        ) { paddingValues ->
+            val isDemoSession by dependencies.authRepository.isDemoSession.collectAsState()
+            Column(
                 modifier =
                     Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-            ) {}
-
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(state.patients) { patient ->
-                    PatientListItem(
-                        patient = patient,
-                        onClick = { actions.onPatientSelected(patient.id ?: "") },
+                        .fillMaxSize()
+                        .padding(paddingValues),
+            ) {
+                if (isDemoSession) {
+                    DemoModeBanner(
+                        onExitDemo = {
+                            dependencies.authRepository.logout()
+                            actions.onLogout()
+                        },
                     )
-                    HorizontalDivider()
                 }
-                if (state.patients.isEmpty()) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            Text(
-                                stringResource(Res.string.no_patients_found),
-                                color = MaterialTheme.colorScheme.secondary,
-                            )
+                SearchBar(
+                    inputField = {
+                        androidx.compose.material3.SearchBarDefaults.InputField(
+                            query = state.searchQuery,
+                            onQueryChange = { viewModel.onSearchQueryChanged(it) },
+                            onSearch = { },
+                            expanded = false,
+                            onExpandedChange = { },
+                            placeholder = { Text(stringResource(Res.string.search_placeholder)) },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = stringResource(Res.string.cd_search_icon),
+                                )
+                            },
+                            trailingIcon =
+                                if (state.searchQuery.isNotEmpty()) {
+                                    {
+                                        IconButton(
+                                            onClick = { viewModel.onSearchQueryChanged("") },
+                                            modifier = Modifier.minimumInteractiveComponentSize(),
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Clear,
+                                                contentDescription = stringResource(Res.string.clear),
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    null
+                                },
+                        )
+                    },
+                    expanded = false,
+                    onExpandedChange = { },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                ) {}
+
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(state.patients) { patient ->
+                        PatientListItem(
+                            patient = patient,
+                            onClick = { actions.onPatientSelected(patient.id ?: "") },
+                        )
+                        HorizontalDivider()
+                    }
+                    if (state.patients.isEmpty()) {
+                        item {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(32.dp)
+                                        .semantics { liveRegion = LiveRegionMode.Polite },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    stringResource(Res.string.no_patients_found),
+                                    color = MaterialTheme.colorScheme.secondary,
+                                )
+                            }
                         }
                     }
                 }
             }
         }
-    }
 
-    if (state.isCreatingPatient) {
-        CreatePatientDialog(
-            onDismissRequest = { viewModel.setCreateDialogVisible(false) },
-            onConfirm = { f, l, mrn, dob, g ->
-                viewModel.createPatient(f, l, mrn, dob) { newPatientId ->
-                    actions.onPatientSelected(newPatientId)
-                }
-            },
-        )
-    }
-
-    if (showExportPasswordDialog) {
-        AlertDialog(
-            onDismissRequest = { showExportPasswordDialog = false },
-            title = {
-                Text(
-                    stringResource(Res.string.export_password_title),
-                    modifier = Modifier.semantics { heading() },
-                )
-            },
-            text = {
-                Column {
-                    TextField(
-                        value = exportPassword,
-                        onValueChange = { exportPassword = it },
-                        label = { Text(stringResource(Res.string.export_password_label)) },
-                        visualTransformation =
-                            PasswordVisualTransformation(),
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .tabFocusNext(focusManager)
-                                .onKeyEvent {
-                                    if (it.key == Key.Enter &&
-                                        it.type == KeyEventType.KeyUp
-                                    ) {
-                                        focusManager.clearFocus()
-                                        viewModel.exportData(exportPassword, exportAllVisits)
-                                        showExportPasswordDialog =
-                                            false
-                                        exportPassword = ""
-                                        exportAllVisits = true
-                                        true
-                                    } else {
-                                        false
-                                    }
-                                },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions =
-                            KeyboardActions(onDone = {
-                                focusManager.clearFocus()
-                                viewModel.exportData(exportPassword, exportAllVisits)
-                                showExportPasswordDialog = false
-                                exportPassword = ""
-                                exportAllVisits = true
-                            }),
-                        singleLine = true,
-                    )
-                    val selectedText = stringResource(Res.string.state_selected)
-                    val unselectedText = stringResource(Res.string.state_unselected)
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp)
-                                .minimumInteractiveComponentSize()
-                                .semantics {
-                                    stateDescription = if (exportAllVisits) selectedText else unselectedText
-                                }.toggleable(
-                                    value = exportAllVisits,
-                                    role = Role.Checkbox,
-                                    onValueChange = { exportAllVisits = it },
-                                ),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Checkbox(
-                            checked = exportAllVisits,
-                            onCheckedChange = null,
-                        )
-                        Text(stringResource(Res.string.export_all_patients), modifier = Modifier.padding(start = 8.dp))
+        if (state.isCreatingPatient) {
+            CreatePatientDialog(
+                onDismissRequest = { viewModel.setCreateDialogVisible(false) },
+                onConfirm = { f, l, mrn, dob, g ->
+                    viewModel.createPatient(f, l, mrn, dob) { newPatientId ->
+                        actions.onPatientSelected(newPatientId)
                     }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.exportData(exportPassword, exportAllVisits)
-                    showExportPasswordDialog = false
-                    exportPassword = ""
-                    exportAllVisits = true
-                }) {
-                    Text(stringResource(Res.string.export))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showExportPasswordDialog = false }) {
-                    Text(stringResource(Res.string.cancel))
-                }
-            },
-        )
-    }
+                },
+            )
+        }
 
-    if (state.exportedData != null) {
-        AlertDialog(
-            onDismissRequest = { viewModel.clearExportData() },
-            title = {
-                Text(
-                    stringResource(Res.string.data_exported_title),
-                    modifier = Modifier.semantics { heading() },
-                )
-            },
-            text = {
-                Column {
-                    Text(stringResource(Res.string.data_exported_message))
-                    TextButton(onClick = {
-                        state.exportPassword?.let { shareService.shareText(it) }
-                    }, modifier = Modifier.padding(top = 16.dp)) {
-                        Text(stringResource(Res.string.share_password))
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val bytes = state.exportedData!!.encodeToByteArray()
-                    val path = fileStorage.saveImage("export.enc", bytes)
-                    shareService.shareFile(path)
-                }) {
-                    Text(stringResource(Res.string.share_file))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.clearExportData() }) {
-                    Text(stringResource(Res.string.close))
-                }
-            },
-        )
-    }
-
-    if (showAboutDialog) {
-        AlertDialog(
-            onDismissRequest = { showAboutDialog = false },
-            title = { Text(stringResource(Res.string.about_title), modifier = Modifier.semantics { heading() }) },
-            text = {
-                Column {
-                    val fullText = stringResource(Res.string.version_text, "0.0.1 — https://healthplatform.io")
-                    val url = "https://healthplatform.io"
-                    val startIndex = fullText.indexOf(url)
-
-                    if (startIndex >= 0) {
-                        val annotatedString =
-                            androidx.compose.ui.text.buildAnnotatedString {
-                                append(fullText)
-                                addLink(
-                                    androidx.compose.ui.text.LinkAnnotation
-                                        .Url(url),
-                                    start = startIndex,
-                                    end = startIndex + url.length,
-                                )
-                                addStyle(
-                                    style =
-                                        androidx.compose.ui.text.SpanStyle(
-                                            color = MaterialTheme.colorScheme.primary,
-                                            textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
-                                        ),
-                                    start = startIndex,
-                                    end = startIndex + url.length,
-                                )
-                            }
-                        Text(
-                            text = annotatedString,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    } else {
-                        Text(fullText)
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
+        if (showExportPasswordDialog) {
+            AlertDialog(
+                onDismissRequest = { showExportPasswordDialog = false },
+                title = {
                     Text(
-                        text = stringResource(Res.string.legal_disclaimer),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        stringResource(Res.string.export_password_title),
+                        modifier = Modifier.semantics { heading() },
                     )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showAboutDialog = false }) {
-                    Text(stringResource(Res.string.ok))
-                }
-            },
-        )
-    }
-
-    if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            title = {
-                Text(
-                    stringResource(Res.string.delete_account_title),
-                    modifier = Modifier.semantics { heading() },
-                )
-            },
-            text = { Text(stringResource(Res.string.delete_account_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDeleteConfirm = false
-                    viewModel.deleteAccount {
-                        actions.onLogout()
-                    }
-                }) {
-                    Text(stringResource(Res.string.delete), color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text(stringResource(Res.string.cancel))
-                }
-            },
-        )
-    }
-
-    if (showImportDialog) {
-        AlertDialog(
-            onDismissRequest = { showImportDialog = false },
-            title = {
-                Text(
-                    stringResource(Res.string.import_title),
-                    modifier = Modifier.semantics { heading() },
-                )
-            },
-            text = {
-                Column {
-                    TextField(
-                        value = importText,
-                        onValueChange = { importText = it },
-                        label = { Text(stringResource(Res.string.paste_data_here)) },
-                        modifier =
-                            Modifier.fillMaxWidth().tabFocusNext(focusManager),
-                    )
-                    TextField(
-                        value = importPassword,
-                        onValueChange = { importPassword = it },
-                        label = { Text(stringResource(Res.string.password)) },
-                        visualTransformation =
-                            PasswordVisualTransformation(),
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp)
-                                .tabFocusNext(focusManager)
-                                .onKeyEvent {
-                                    if (it.key == Key.Enter &&
-                                        it.type == KeyEventType.KeyUp
-                                    ) {
-                                        focusManager.clearFocus()
-                                        viewModel.importData(importText, importPassword) {
-                                            showImportDialog =
-                                                false
-                                            ; importText = ""
-                                            importPassword = ""
+                },
+                text = {
+                    Column(modifier = Modifier.imePadding()) {
+                        OutlinedTextField(
+                            value = exportPassword,
+                            onValueChange = { exportPassword = it },
+                            label = { Text(stringResource(Res.string.export_password_label)) },
+                            visualTransformation =
+                                if (showExportPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(
+                                    onClick = { showExportPassword = !showExportPassword },
+                                    modifier =
+                                        Modifier
+                                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                            .minimumInteractiveComponentSize(),
+                                ) {
+                                    val icon =
+                                        if (showExportPassword) {
+                                            Icons.Default.VisibilityOff
+                                        } else {
+                                            Icons.Default.Visibility
                                         }
-                                        true
-                                    } else {
-                                        false
-                                    }
-                                },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions =
-                            KeyboardActions(onDone = {
-                                focusManager.clearFocus()
-                                viewModel.importData(importText, importPassword) {
-                                    showImportDialog = false
-                                    importText = ""
-                                    importPassword = ""
+                                    val iconCd =
+                                        if (showExportPassword) {
+                                            Res.string.cd_hide_password
+                                        } else {
+                                            Res.string.cd_show_password
+                                        }
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = stringResource(iconCd),
+                                    )
                                 }
-                            }),
-                        singleLine = true,
-                    )
-                    state.error?.let { err ->
-                        Text(
-                            stringResource(err),
-                            color = MaterialTheme.colorScheme.error,
+                            },
                             modifier =
                                 Modifier
-                                    .padding(top = 8.dp)
-                                    .semantics { liveRegion = LiveRegionMode.Polite },
+                                    .fillMaxWidth()
+                                    .tabFocusNext(focusManager)
+                                    .onKeyEvent {
+                                        if (it.key == Key.Enter &&
+                                            it.type == KeyEventType.KeyUp
+                                        ) {
+                                            focusManager.clearFocus()
+                                            viewModel.exportData(exportPassword, exportAllVisits)
+                                            showExportPasswordDialog =
+                                                false
+                                            exportPassword = ""
+                                            exportAllVisits = true
+                                            true
+                                        } else {
+                                            false
+                                        }
+                                    },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions =
+                                KeyboardActions(onDone = {
+                                    focusManager.clearFocus()
+                                    viewModel.exportData(exportPassword, exportAllVisits)
+                                    showExportPasswordDialog = false
+                                    exportPassword = ""
+                                    exportAllVisits = true
+                                }),
+                            singleLine = true,
+                        )
+                        val selectedText = stringResource(Res.string.state_selected)
+                        val unselectedText = stringResource(Res.string.state_unselected)
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp)
+                                    .minimumInteractiveComponentSize()
+                                    .semantics {
+                                        stateDescription = if (exportAllVisits) selectedText else unselectedText
+                                    }.toggleable(
+                                        value = exportAllVisits,
+                                        role = Role.Checkbox,
+                                        onValueChange = { exportAllVisits = it },
+                                    ),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Checkbox(
+                                checked = exportAllVisits,
+                                onCheckedChange = null,
+                            )
+                            Text(
+                                stringResource(Res.string.export_all_patients),
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.exportData(exportPassword, exportAllVisits)
+                        showExportPasswordDialog = false
+                        exportPassword = ""
+                        exportAllVisits = true
+                    }) {
+                        Text(stringResource(Res.string.export))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showExportPasswordDialog = false }) {
+                        Text(stringResource(Res.string.cancel))
+                    }
+                },
+            )
+        }
+
+        if (state.exportedData != null) {
+            AlertDialog(
+                onDismissRequest = { viewModel.clearExportData() },
+                title = {
+                    Text(
+                        stringResource(Res.string.data_exported_title),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
+                text = {
+                    Column {
+                        Text(stringResource(Res.string.data_exported_message))
+                        TextButton(onClick = {
+                            state.exportPassword?.let { shareService.shareText(it) }
+                        }, modifier = Modifier.padding(top = 16.dp)) {
+                            Text(stringResource(Res.string.share_password))
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val bytes = state.exportedData!!.encodeToByteArray()
+                        val path = fileStorage.saveImage("export.enc", bytes)
+                        shareService.shareFile(path)
+                    }) {
+                        Text(stringResource(Res.string.share_file))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.clearExportData() }) {
+                        Text(stringResource(Res.string.close))
+                    }
+                },
+            )
+        }
+
+        if (showAboutDialog) {
+            AlertDialog(
+                onDismissRequest = { showAboutDialog = false },
+                title = { Text(stringResource(Res.string.about_title), modifier = Modifier.semantics { heading() }) },
+                text = {
+                    Column {
+                        val fullText = stringResource(Res.string.version_text, "1.0.3 — https://healthplatform.io")
+                        val url = "https://healthplatform.io"
+                        val startIndex = fullText.indexOf(url)
+
+                        if (startIndex >= 0) {
+                            val annotatedString =
+                                androidx.compose.ui.text.buildAnnotatedString {
+                                    append(fullText)
+                                    addLink(
+                                        androidx.compose.ui.text.LinkAnnotation
+                                            .Url(url),
+                                        start = startIndex,
+                                        end = startIndex + url.length,
+                                    )
+                                    addStyle(
+                                        style =
+                                            androidx.compose.ui.text.SpanStyle(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                textDecoration =
+                                                    androidx.compose.ui.text.style.TextDecoration.Underline,
+                                            ),
+                                        start = startIndex,
+                                        end = startIndex + url.length,
+                                    )
+                                }
+                            Text(
+                                text = annotatedString,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        } else {
+                            Text(fullText)
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(Res.string.legal_disclaimer),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.importData(importText, importPassword) {
-                        showImportDialog = false
-                        importText = ""
-                        importPassword = ""
+                },
+                confirmButton = {
+                    TextButton(onClick = { showAboutDialog = false }) {
+                        Text(stringResource(Res.string.ok))
                     }
-                }) {
-                    Text(stringResource(Res.string.import_action))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showImportDialog = false
-                    viewModel.clearError()
-                }) {
-                    Text(stringResource(Res.string.cancel))
-                }
-            },
-        )
+                },
+            )
+        }
+
+        if (showDeleteConfirm) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirm = false },
+                title = {
+                    Text(
+                        stringResource(Res.string.delete_account_title),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
+                text = { Text(stringResource(Res.string.delete_account_message)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteConfirm = false
+                            viewModel.deleteAccount {
+                                actions.onLogout()
+                            }
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    ) {
+                        Text(stringResource(Res.string.delete))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteConfirm = false }) {
+                        Text(stringResource(Res.string.cancel))
+                    }
+                },
+            )
+        }
+
+        if (showImportDialog) {
+            AlertDialog(
+                onDismissRequest = { showImportDialog = false },
+                title = {
+                    Text(
+                        stringResource(Res.string.import_title),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
+                text = {
+                    Column(modifier = Modifier.imePadding()) {
+                        OutlinedTextField(
+                            value = importText,
+                            onValueChange = { importText = it },
+                            label = { Text(stringResource(Res.string.paste_data_here)) },
+                            modifier =
+                                Modifier.fillMaxWidth().tabFocusNext(focusManager),
+                        )
+                        OutlinedTextField(
+                            value = importPassword,
+                            onValueChange = { importPassword = it },
+                            label = { Text(stringResource(Res.string.password)) },
+                            visualTransformation =
+                                if (showImportPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(
+                                    onClick = { showImportPassword = !showImportPassword },
+                                    modifier =
+                                        Modifier
+                                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                            .minimumInteractiveComponentSize(),
+                                ) {
+                                    val icon =
+                                        if (showImportPassword) {
+                                            Icons.Default.VisibilityOff
+                                        } else {
+                                            Icons.Default.Visibility
+                                        }
+                                    val iconCd =
+                                        if (showImportPassword) {
+                                            Res.string.cd_hide_password
+                                        } else {
+                                            Res.string.cd_show_password
+                                        }
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = stringResource(iconCd),
+                                    )
+                                }
+                            },
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp)
+                                    .tabFocusNext(focusManager)
+                                    .onKeyEvent {
+                                        if (it.key == Key.Enter &&
+                                            it.type == KeyEventType.KeyUp
+                                        ) {
+                                            focusManager.clearFocus()
+                                            viewModel.importData(importText, importPassword) {
+                                                showImportDialog =
+                                                    false
+                                                importText = ""
+                                                importPassword = ""
+                                            }
+                                            true
+                                        } else {
+                                            false
+                                        }
+                                    },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions =
+                                KeyboardActions(onDone = {
+                                    focusManager.clearFocus()
+                                    viewModel.importData(importText, importPassword) {
+                                        showImportDialog = false
+                                        importText = ""
+                                        importPassword = ""
+                                    }
+                                }),
+                            singleLine = true,
+                        )
+                        state.error?.let { err ->
+                            Text(
+                                stringResource(err),
+                                color = MaterialTheme.colorScheme.error,
+                                modifier =
+                                    Modifier
+                                        .padding(top = 8.dp)
+                                        .semantics { liveRegion = LiveRegionMode.Polite },
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.importData(importText, importPassword) {
+                            showImportDialog = false
+                            importText = ""
+                            importPassword = ""
+                        }
+                    }) {
+                        Text(stringResource(Res.string.import_action))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showImportDialog = false
+                        viewModel.clearError()
+                    }) {
+                        Text(stringResource(Res.string.cancel))
+                    }
+                },
+            )
+        }
     }
 }
 
@@ -702,15 +812,21 @@ fun PatientListItem(
     patient: com.google.fhir.model.r4.Patient,
     onClick: () -> Unit,
 ) {
+    val currentLang by currentLanguageState.collectAsState()
     ListItem(
-        headlineContent = { Text(patient.fullName, style = MaterialTheme.typography.titleMedium) },
+        headlineContent = {
+            Text(
+                patient.getFullName(currentLang),
+                style = MaterialTheme.typography.titleMedium,
+            )
+        },
         supportingContent = {
             Text(
                 stringResource(
                     Res.string.mrn_dob_format,
                     patient.mrn,
                     io.healthplatform.chartcam.utils
-                        .formatLocalizedDate(patient.customBirthDate),
+                        .formatLocalizedDate(patient.customBirthDate, currentLang),
                 ),
                 style = MaterialTheme.typography.bodyMedium,
             )
@@ -719,7 +835,10 @@ fun PatientListItem(
             Modifier
                 .minimumInteractiveComponentSize()
                 .semantics(mergeDescendants = true) {}
-                .clickable(role = Role.Button) { onClick() },
+                .clickable(
+                    role = Role.Button,
+                    onClickLabel = stringResource(Res.string.cd_action_view_patient),
+                ) { onClick() },
     )
 }
 

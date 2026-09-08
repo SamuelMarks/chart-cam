@@ -45,6 +45,7 @@ class PatientListScreenJvmTest {
 
             val flow = MutableStateFlow<Practitioner?>(practitioner)
             `when`(authRepository.currentUser).thenReturn(flow)
+            `when`(authRepository.isDemoSession).thenReturn(MutableStateFlow(false))
 
             var navigated = false
             val deps = PatientListDependencies(fhirRepository, exportImportService, authRepository)

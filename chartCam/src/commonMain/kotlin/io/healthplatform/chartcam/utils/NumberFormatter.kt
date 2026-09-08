@@ -67,3 +67,28 @@ fun formatLocalizedDecimal(
         withSeparator
     }
 }
+
+/**
+ * Parses a localized numeric or decimal string back into a standard [Double].
+ *
+ * Handles localized decimal commas, standard decimal points, and Arabic-Indic numerals.
+ *
+ * @param text The localized decimal string representation to parse.
+ * @return The parsed [Double] value, or null if parsing fails.
+ */
+fun parseLocalizedDecimal(text: String): Double? {
+    if (text.isBlank()) return null
+    val arabicZero = '٠'.code
+    val normalized =
+        buildString(text.length) {
+            for (i in 0 until text.length) {
+                val ch = text[i]
+                when (ch) {
+                    '٫', ',' -> append('.')
+                    in '٠'..'٩' -> append((ch.code - arabicZero).toString())
+                    else -> append(ch)
+                }
+            }
+        }
+    return normalized.toDoubleOrNull()
+}

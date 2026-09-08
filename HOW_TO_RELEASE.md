@@ -47,18 +47,40 @@ Before generating any artifacts, ensure the codebase is stable and clean:
 
 Both App Stores will reject binaries if the version numbers are not strictly incremented from the previous release.
 
+### Automated Version Bumping (Recommended)
+You can automatically increment the patch version across all platforms (Android, iOS, JVM desktop, marketing version, and the About dialog) by running:
+```bash
+make bump_patch
+```
+*(On Windows: `make.bat bump_patch`)*
+
+This updates:
+- Android `versionCode` (+1) and `versionName` in `androidApp/build.gradle.kts`
+- iOS `CURRENT_PROJECT_VERSION` (+1) and `MARKETING_VERSION` in `iosApp/Configuration/Config.xcconfig` and `iosApp/iosApp.xcodeproj/project.pbxproj`
+- Desktop/JVM `packageVersion` in `chartCam/build.gradle.kts`
+- About screen version in `PatientListScreen.kt`
+
+### Manual Version Bumping (Alternative)
+
 ### 2.1 Android (Google Play)
-1. Open `chartCam/build.gradle.kts`.
+1. Open `androidApp/build.gradle.kts`.
 2. Increment `versionCode` (Integer used internally by Google Play. Must be +1 of the last release).
 3. Update `versionName` (The semantic public version, e.g., `"1.2.0"`).
 4. Sync the Gradle project.
 
 ### 2.2 iOS (App Store)
-1. Open `iosApp/iosApp.xcodeproj` in Xcode.
-2. Select the `iosApp` target in the left navigator.
-3. Under the **General** tab -> **Identity**:
-   * Update **Version** to match the Android `versionName` (e.g., `1.2.0`).
-   * Update **Build** to a unique number (e.g., `42`).
+1. Open `iosApp/Configuration/Config.xcconfig` (or open `iosApp/iosApp.xcodeproj` in Xcode).
+2. Under the **General** tab -> **Identity** (or in `Config.xcconfig`):
+   * Update **Version** (`MARKETING_VERSION`) to match the Android `versionName` (e.g., `1.2.0`).
+   * Update **Build** (`CURRENT_PROJECT_VERSION`) to a unique incremented integer (e.g., `42`).
+
+### 2.3 Desktop (JVM)
+1. Open `chartCam/build.gradle.kts`.
+2. Update `packageVersion` under `compose.desktop.application.nativeDistributions` to match the new version.
+
+### 2.4 About Dialog
+1. Open `chartCam/src/commonMain/kotlin/io/healthplatform/chartcam/ui/PatientListScreen.kt`.
+2. Update the version string passed to `Res.string.version_text`.
    
 *Pro-tip: To skip Apple's manual export compliance prompt every time you upload, ensure `ITSAppUsesNonExemptEncryption` is set to `NO` in your `Info.plist` (unless ChartCam uses proprietary encryption).*
 

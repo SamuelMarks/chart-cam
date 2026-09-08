@@ -268,4 +268,56 @@ class SdcQuestionnaireFormJvmTest {
             onNodeWithText("Option 2").performClick()
             assertEquals(null, answers["singleSelectChoice"] as? kotlin.String)
         }
+
+    /**
+     * Verifies that readOnly choice items with repeats format list separators correctly across locales.
+     */
+    @Test
+    fun testReadOnlyRepeatsChoiceSeparators() =
+        runComposeUiTest {
+            val choiceItemBuilder =
+                Questionnaire.Item
+                    .Builder(
+                        linkId =
+                            com.google.fhir.model.r4.String
+                                .Builder()
+                                .apply { value = "repeatsChoice" },
+                        type =
+                            Enumeration(
+                                value = Questionnaire.QuestionnaireItemType.Choice,
+                            ),
+                    ).apply {
+                        text =
+                            com.google.fhir.model.r4.String
+                                .Builder()
+                                .apply { value = "Select Options" }
+                        repeats =
+                            com.google.fhir.model.r4.Boolean
+                                .Builder()
+                                .apply { value = true }
+                    }
+
+            val questionnaire =
+                Questionnaire
+                    .Builder(
+                        Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active),
+                    ).apply {
+                        item.add(choiceItemBuilder)
+                    }.build()
+
+            val answers = mapOf("repeatsChoice" to listOf("Alpha", "Beta"))
+
+            io.healthplatform.chartcam.ui.currentLanguageState.value = "ar"
+            setContent {
+                SdcQuestionnaireForm(
+                    questionnaire = questionnaire,
+                    answers = answers,
+                    config = SdcFormConfig(readOnly = true),
+                    onFormUpdated = { _, _ -> },
+                )
+            }
+            onNodeWithText("Alpha، Beta").assertIsDisplayed()
+
+            io.healthplatform.chartcam.ui.currentLanguageState.value = "en"
+        }
 }

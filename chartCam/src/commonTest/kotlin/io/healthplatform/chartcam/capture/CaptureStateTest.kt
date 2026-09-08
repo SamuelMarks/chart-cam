@@ -7,6 +7,7 @@ package io.healthplatform.chartcam.capture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 
 /**
  * Tests for UI states and capture steps.
@@ -21,6 +22,9 @@ class CaptureStateTest {
         val step2 = PhotoStep("1", "Title 1")
         assertEquals(step1, step2)
         assertEquals(8, PhotoStep.STANDARD_STEPS.size)
+        PhotoStep.STANDARD_STEPS.forEach { step ->
+            assertNotNull(step.titleRes)
+        }
     }
 
     /**

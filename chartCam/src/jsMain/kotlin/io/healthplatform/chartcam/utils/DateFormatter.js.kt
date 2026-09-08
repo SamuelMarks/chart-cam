@@ -33,3 +33,28 @@ actual fun formatLocalizedDate(
         fhirDate
     }
 }
+
+/**
+ * Formats a FHIR datetime string into a localized, human-readable format on the JS platform.
+ *
+ * @param fhirDateTime The datetime string in FHIR standard format (e.g., ISO 8601).
+ * @param language The BCP-47 language tag to format the datetime with.
+ * @return The localized datetime string, or the original [fhirDateTime] if parsing fails.
+ */
+actual fun formatLocalizedDateTime(
+    fhirDateTime: String,
+    language: String,
+): String {
+    if (fhirDateTime.isBlank()) return fhirDateTime
+    return try {
+        val date = Date(fhirDateTime)
+        if (date.toString() == "Invalid Date") {
+            fhirDateTime
+        } else {
+            date.asDynamic().toLocaleString(language).unsafeCast<String>()
+        }
+    } catch (e: IllegalStateException) {
+        println(e.message)
+        fhirDateTime
+    }
+}

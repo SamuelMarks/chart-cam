@@ -10,6 +10,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -20,7 +21,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
@@ -73,7 +73,12 @@ fun LevelerOverlay(
     tolerance: Float = 3.0f,
 ) {
     val isLevel = abs(pitch) < tolerance && abs(roll) < tolerance
-    val color = if (isLevel) Color(LevelerConstants.LEVEL_COLOR_HEX) else Color.White
+    val color =
+        if (isLevel) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
 
     val statusText =
         if (isLevel) {
@@ -85,6 +90,7 @@ fun LevelerOverlay(
 
     var lastAnnouncedLevel by remember { mutableStateOf<Boolean?>(null) }
     var currentAnnouncement by remember { mutableStateOf(cdStatus) }
+    val surfaceColor = MaterialTheme.colorScheme.surface
 
     LaunchedEffect(isLevel) {
         delay(LevelerConstants.DEBOUNCE_DELAY_MS)
@@ -108,29 +114,73 @@ fun LevelerOverlay(
         ) {
             val center = center
             val lineLength = 50.dp.toPx()
+            val strokeWidth =
+                if (isLevel) {
+                    LevelerConstants.LEVEL_STROKE_WIDTH
+                } else {
+                    LevelerConstants.TILTED_STROKE_WIDTH
+                }
+            val lineAlpha =
+                if (isLevel) {
+                    LevelerConstants.LEVEL_LINE_ALPHA
+                } else {
+                    LevelerConstants.TILTED_LINE_ALPHA
+                }
+            val outlineColor = surfaceColor.copy(alpha = LevelerConstants.OUTLINE_ALPHA)
+            val outlineStrokeWidth = strokeWidth + LevelerConstants.OUTLINE_EXTRA_STROKE
+
+            // High-contrast backing outline for crosshair lines
+            drawLine(
+                color = outlineColor,
+                start = Offset(center.x - lineLength, center.y),
+                end = Offset(center.x + lineLength, center.y),
+                strokeWidth = outlineStrokeWidth,
+            )
+            drawLine(
+                color = outlineColor,
+                start = Offset(center.x, center.y - lineLength),
+                end = Offset(center.x, center.y + lineLength),
+                strokeWidth = outlineStrokeWidth,
+            )
+
+            // High-contrast backing outline for outer circle
+            drawCircle(
+                color = outlineColor,
+                radius = 40.dp.toPx(),
+                style = Stroke(width = outlineStrokeWidth),
+            )
 
             // Horizontal Line
             drawLine(
-                color = color.copy(alpha = 0.5f),
+                color = color.copy(alpha = lineAlpha),
                 start = Offset(center.x - lineLength, center.y),
                 end = Offset(center.x + lineLength, center.y),
-                strokeWidth = 4f,
+                strokeWidth = strokeWidth,
             )
 
             // Vertical Line
             drawLine(
-                color = color.copy(alpha = 0.5f),
+                color = color.copy(alpha = lineAlpha),
                 start = Offset(center.x, center.y - lineLength),
                 end = Offset(center.x, center.y + lineLength),
-                strokeWidth = 4f,
+                strokeWidth = strokeWidth,
             )
 
             // Outer Circle
             drawCircle(
-                color = color.copy(alpha = 0.8f),
+                color = color.copy(alpha = if (isLevel) 1.0f else 0.8f),
                 radius = 40.dp.toPx(),
-                style = Stroke(width = 4f),
+                style = Stroke(width = strokeWidth),
             )
+
+            // Secondary non-color geometric cue: inner concentric lock ring appears when level
+            if (isLevel) {
+                drawCircle(
+                    color = color.copy(alpha = LevelerConstants.LEVEL_LOCK_RING_ALPHA),
+                    radius = 20.dp.toPx(),
+                    style = Stroke(width = LevelerConstants.LEVEL_LOCK_RING_STROKE_WIDTH),
+                )
+            }
 
             // The "Bubble"
             // We map pitch/roll to X/Y offset limited to the circle radius
@@ -139,11 +189,17 @@ fun LevelerOverlay(
 
             val offsetX = (roll / maxDeflection).coerceIn(-1.0, 1.0) * radiusPx
             val offsetY = (pitch / maxDeflection).coerceIn(-1.0, 1.0) * radiusPx
+            val bubbleCenter = Offset(center.x + offsetX.toFloat(), center.y - offsetY.toFloat())
 
+            drawCircle(
+                color = outlineColor,
+                radius = LevelerConstants.BUBBLE_OUTLINE_RADIUS_DP.dp.toPx(),
+                center = bubbleCenter,
+            )
             drawCircle(
                 color = color,
                 radius = 10.dp.toPx(),
-                center = Offset(center.x + offsetX.toFloat(), center.y - offsetY.toFloat()),
+                center = bubbleCenter,
                 // Subtract pitch for Y because screen coordinates Y goes down
             )
         }
@@ -157,4 +213,13 @@ private object LevelerConstants {
     const val LEVEL_COLOR_HEX = 0xFF52854C
     const val MAX_DEFLECTION = 20.0
     const val DEBOUNCE_DELAY_MS = 500L
+    const val LEVEL_STROKE_WIDTH = 8f
+    const val TILTED_STROKE_WIDTH = 4f
+    const val LEVEL_LINE_ALPHA = 0.9f
+    const val TILTED_LINE_ALPHA = 0.5f
+    const val LEVEL_LOCK_RING_ALPHA = 0.7f
+    const val LEVEL_LOCK_RING_STROKE_WIDTH = 3f
+    const val OUTLINE_ALPHA = 0.85f
+    const val OUTLINE_EXTRA_STROKE = 4f
+    const val BUBBLE_OUTLINE_RADIUS_DP = 12
 }

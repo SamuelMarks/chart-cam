@@ -66,11 +66,43 @@ class DateFormatterJvmTest {
     }
 
     /**
+     * Tests formatLocalizedDate with local datetime without offset.
+     */
+    @Test
+    fun testFormatLocalizedDate_withLocalDateTimeNoOffset() {
+        val fhirDate = "2026-07-09T10:00:00"
+        val formatted = formatLocalizedDate(fhirDate)
+        assert(formatted.contains("2026"))
+        assert(formatted.contains("Jul"))
+        assert(formatted.contains("9"))
+    }
+
+    /**
      * Tests formatLocalizedDate exception fallback.
      */
     @Test
     fun testFormatLocalizedDate_exceptionFallback() {
         val invalidDate = "Invalid-Date-String"
         assertEquals("Invalid-Date-String", formatLocalizedDate(invalidDate))
+    }
+
+    /**
+     * Tests formatLocalizedDateTime with valid and invalid inputs on JVM.
+     */
+    @Test
+    fun testFormatLocalizedDateTime_jvm() {
+        assertEquals("", formatLocalizedDateTime(""))
+        val fhirDate = "2026-07-09T10:00:00Z"
+        val formatted = formatLocalizedDateTime(fhirDate, "en")
+        assert(formatted.contains("2026"))
+        assert(formatted.contains("Jul"))
+        assert(formatted.contains("9"))
+
+        val localNoOffset = "2026-07-09T10:00:00"
+        val formattedLocal = formatLocalizedDateTime(localNoOffset, "en")
+        assert(formattedLocal.contains("2026"))
+
+        val invalidDate = "Invalid-DateTime-String"
+        assertEquals("Invalid-DateTime-String", formatLocalizedDateTime(invalidDate, "en"))
     }
 }

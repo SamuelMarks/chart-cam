@@ -40,8 +40,12 @@ class DateFormatterTest {
         assertEquals("DD/MM/YYYY", getLocalizedDatePattern("es"))
         assertEquals("DD/MM/YYYY", getLocalizedDatePattern("he"))
         assertEquals("DD/MM/YYYY", getLocalizedDatePattern("es-ES"))
+        assertEquals("DD/MM/YYYY", getLocalizedDatePattern("en-GB"))
+        assertEquals("DD/MM/YYYY", getLocalizedDatePattern("en-AU"))
+        assertEquals("DD/MM/YYYY", getLocalizedDatePattern("fr"))
         assertEquals("YYYY-MM-DD", getLocalizedDatePattern("en"))
-        assertEquals("YYYY-MM-DD", getLocalizedDatePattern("fr"))
+        assertEquals("YYYY-MM-DD", getLocalizedDatePattern("en-US"))
+        assertEquals("YYYY-MM-DD", getLocalizedDatePattern("other"))
         assertTrue(getLocalizedDatePattern().isNotEmpty())
     }
 
@@ -56,5 +60,28 @@ class DateFormatterTest {
         assertEquals("DD/MM/YYYY HH:MM", getLocalizedDateTimePattern("he"))
         assertEquals("YYYY-MM-DD HH:MM", getLocalizedDateTimePattern("en"))
         assertTrue(getLocalizedDateTimePattern().isNotEmpty())
+    }
+
+    /**
+     * Verifies that formatting a raw FHIR datetime string returns a non-empty localized string.
+     */
+    @Test
+    fun testFormatLocalizedDateTime() {
+        val fhirDateTime = "2026-09-08T14:30:00Z"
+        val formatted = formatLocalizedDateTime(fhirDateTime, "en")
+        assertTrue(formatted.isNotEmpty(), "Formatted datetime should not be empty")
+        assertTrue(formatted.contains("2026"), "Formatted datetime should contain the year '2026'")
+
+        val emptyFormatted = formatLocalizedDateTime("", "en")
+        assertEquals("", emptyFormatted)
+
+        val invalidFormatted = formatLocalizedDateTime("invalid-datetime", "en")
+        assertEquals("invalid-datetime", invalidFormatted)
+
+        val esFormatted = formatLocalizedDateTime(fhirDateTime, "es")
+        assertTrue(esFormatted.isNotEmpty())
+
+        val jaFormatted = formatLocalizedDateTime(fhirDateTime, "ja")
+        assertTrue(jaFormatted.isNotEmpty())
     }
 }

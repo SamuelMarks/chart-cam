@@ -25,11 +25,15 @@ import org.jetbrains.compose.resources.StringResource
  * UI State definition for the Login Screen.
  *
  * @param isLoading Whether login processing is actively occurring.
+ * @param isDemoLoading Whether demo mode initialization is actively occurring.
+ * @param isTutorialVisible Whether the onboarding workflow tutorial overlay is active.
  * @param errorMessage Localized error message if login fails, or null if there is no error.
  * @param isLoggedIn Flag indicating successful authentication.
  */
 data class LoginUiState(
     val isLoading: Boolean = false,
+    val isDemoLoading: Boolean = false,
+    val isTutorialVisible: Boolean = false,
     val errorMessage: StringResource? = null,
     val isLoggedIn: Boolean = false,
 )
@@ -52,6 +56,40 @@ class LoginViewModel(
      * Public immutable state flow for the login UI state.
      */
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
+
+    /**
+     * Controls the visibility of the onboarding workflow tutorial dialog or carousel.
+     *
+     * @param show True to present the tutorial, false to dismiss it.
+     */
+    fun showTutorial(show: Boolean) {
+        _uiState.update { it.copy(isTutorialVisible = show) }
+    }
+
+    /**
+     * Initiates immediate one-click authentication in demo mode using synthetic clinical data.
+     *
+     * @param onSuccess Optional callback invoked when demo authentication succeeds.
+     */
+    fun onDemoLoginClicked(onSuccess: (() -> Unit)? = null) {
+        _uiState.update { it.copy(isDemoLoading = true, errorMessage = null) }
+        viewModelScope.launch {
+            val result = authRepository.loginAsDemo()
+            if (result.isSuccess) {
+                _uiState.update {
+                    it.copy(isDemoLoading = false, isLoggedIn = true)
+                }
+                onSuccess?.invoke()
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isDemoLoading = false,
+                        errorMessage = Res.string.unknown_error,
+                    )
+                }
+            }
+        }
+    }
 
     /**
      * Initiates the login process.

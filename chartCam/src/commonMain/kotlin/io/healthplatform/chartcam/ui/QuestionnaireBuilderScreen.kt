@@ -6,6 +6,7 @@
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,11 +14,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Notes
@@ -40,6 +44,7 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.ToggleOn
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -61,6 +66,7 @@ import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -81,6 +87,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.heading
@@ -97,6 +104,7 @@ import chartcam.chartcam.generated.resources.bullet_format
 import chartcam.chartcam.generated.resources.cancel
 import chartcam.chartcam.generated.resources.cd_back
 import chartcam.chartcam.generated.resources.cd_delete_item
+import chartcam.chartcam.generated.resources.cd_delete_item_format
 import chartcam.chartcam.generated.resources.cd_delete_option
 import chartcam.chartcam.generated.resources.cd_more_widgets
 import chartcam.chartcam.generated.resources.cd_move_item_down
@@ -111,10 +119,13 @@ import chartcam.chartcam.generated.resources.delete
 import chartcam.chartcam.generated.resources.error_duplicate_id
 import chartcam.chartcam.generated.resources.error_item_validation
 import chartcam.chartcam.generated.resources.error_required_field
+import chartcam.chartcam.generated.resources.item_moved_down_format
+import chartcam.chartcam.generated.resources.item_moved_up_format
 import chartcam.chartcam.generated.resources.label
 import chartcam.chartcam.generated.resources.new_item
 import chartcam.chartcam.generated.resources.new_widget_item
 import chartcam.chartcam.generated.resources.preview_mode
+import chartcam.chartcam.generated.resources.questionnaire_save_failed
 import chartcam.chartcam.generated.resources.questionnaire_title
 import chartcam.chartcam.generated.resources.type_format
 import chartcam.chartcam.generated.resources.widget_checkbox
@@ -266,18 +277,18 @@ fun WidgetSelectionRow(
         )
     val secondaryWidgets = WidgetType.entries - primaryWidgets.toSet()
 
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
             stringResource(Res.string.add_widget),
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.semantics { heading() },
+            modifier = Modifier.padding(bottom = 8.dp).semantics { heading() },
         )
 
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             primaryWidgets.forEach { widget ->
                 TooltipBox(
                     positionProvider =
@@ -316,42 +327,66 @@ fun QuestionnaireBuilderScreen(
     onSaved: (String) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
+    val currentLang by io.healthplatform.chartcam.ui.currentLanguageState
+        .collectAsState()
     val focusRequesters = remember { mutableMapOf<String, FocusRequester>() }
+    var a11yAnnouncement by remember { mutableStateOf<String?>(null) }
+    val saveFailedMsg = stringResource(Res.string.questionnaire_save_failed)
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        stringResource(Res.string.build_questionnaire),
-                        modifier = Modifier.semantics { heading() },
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(Res.string.cd_back),
+    key(currentLang) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            stringResource(Res.string.build_questionnaire),
+                            modifier = Modifier.semantics { heading() },
                         )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.togglePreviewMode() }) {
-                        Icon(Icons.Default.Preview, contentDescription = stringResource(Res.string.cd_preview))
-                    }
-                    IconButton(onClick = {
-                        val id = viewModel.saveQuestionnaire()
-                        if (id != null) {
-                            onSaved(id)
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(Res.string.cd_back),
+                            )
                         }
-                    }) {
-                        Icon(Icons.Default.Save, contentDescription = stringResource(Res.string.cd_save))
-                    }
-                },
+                    },
+                    actions = {
+                        IconButton(onClick = { viewModel.togglePreviewMode() }) {
+                            Icon(Icons.Default.Preview, contentDescription = stringResource(Res.string.cd_preview))
+                        }
+                        IconButton(onClick = {
+                            val id = viewModel.saveQuestionnaire()
+                            if (id != null) {
+                                onSaved(id)
+                            } else {
+                                a11yAnnouncement = saveFailedMsg
+                            }
+                        }) {
+                            Icon(Icons.Default.Save, contentDescription = stringResource(Res.string.cd_save))
+                        }
+                    },
+                )
+            },
+        ) { paddingValues ->
+            if (!a11yAnnouncement.isNullOrBlank()) {
+                Box(
+                    modifier =
+                        Modifier
+                            .semantics {
+                                liveRegion = LiveRegionMode.Polite
+                                contentDescription = a11yAnnouncement ?: ""
+                            },
+                )
+            }
+            QuestionnaireBuilderContent(
+                paddingValues = paddingValues,
+                state = state,
+                viewModel = viewModel,
+                focusRequesters = focusRequesters,
+                onAnnounce = { a11yAnnouncement = it },
             )
-        },
-    ) { paddingValues ->
-        QuestionnaireBuilderContent(paddingValues, state, viewModel, focusRequesters)
+        }
     }
 }
 
@@ -391,8 +426,11 @@ private fun DeleteOptionDialog(
         },
         text = { Text(stringResource(Res.string.confirm_delete_option_message)) },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(stringResource(Res.string.delete), color = MaterialTheme.colorScheme.error)
+            TextButton(
+                onClick = onConfirm,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) {
+                Text(stringResource(Res.string.delete))
             }
         },
         dismissButton = {
@@ -476,7 +514,10 @@ private fun AddOptionField(
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
         keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
         trailingIcon = {
-            IconButton(onClick = handleAddOption) {
+            IconButton(
+                onClick = handleAddOption,
+                modifier = Modifier.minimumInteractiveComponentSize(),
+            ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.add_option))
             }
         },
@@ -556,6 +597,12 @@ private fun BuilderItemActionButtons(
     Column {
         val moveUpCd = stringResource(Res.string.cd_move_item_up, itemLabel)
         val moveDownCd = stringResource(Res.string.cd_move_item_down, itemLabel)
+        val deleteCd =
+            if (itemLabel.isNotBlank()) {
+                stringResource(Res.string.cd_delete_item_format, itemLabel)
+            } else {
+                stringResource(Res.string.cd_delete_item)
+            }
         IconButton(
             onClick = actions.onMoveUp,
             enabled = canMoveUp,
@@ -567,7 +614,7 @@ private fun BuilderItemActionButtons(
             onClick = onShowDeleteConfirm,
             modifier = Modifier.minimumInteractiveComponentSize(),
         ) {
-            Icon(Icons.Default.Delete, contentDescription = stringResource(Res.string.cd_delete_item))
+            Icon(Icons.Default.Delete, contentDescription = deleteCd)
         }
         IconButton(
             onClick = actions.onMoveDown,
@@ -600,8 +647,11 @@ private fun DeleteItemDialog(
         },
         text = { Text(stringResource(Res.string.confirm_delete_item_message)) },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(stringResource(Res.string.delete), color = MaterialTheme.colorScheme.error)
+            TextButton(
+                onClick = onConfirm,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) {
+                Text(stringResource(Res.string.delete))
             }
         },
         dismissButton = {
@@ -739,12 +789,14 @@ fun BuilderItemRow(
  * @param itemsList The list.
  * @param viewModel The view model.
  * @param focusRequesters Focus requesters.
+ * @param onAnnounce Callback to trigger an accessibility announcement.
  */
 @Composable
 private fun BuilderItemList(
     itemsList: List<BuilderItem>,
     viewModel: QuestionnaireBuilderViewModel,
     focusRequesters: MutableMap<String, FocusRequester>,
+    onAnnounce: (String) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(
@@ -753,6 +805,10 @@ private fun BuilderItemList(
         ) { index ->
             val item = itemsList[index]
             val currentFocusRequester = focusRequesters.getOrPut(item.linkId) { FocusRequester() }
+            val itemMovedUpStr =
+                stringResource(Res.string.item_moved_up_format, item.label.ifEmpty { item.linkId })
+            val itemMovedDownStr =
+                stringResource(Res.string.item_moved_down_format, item.label.ifEmpty { item.linkId })
 
             BuilderItemRow(
                 item = item,
@@ -767,8 +823,14 @@ private fun BuilderItemList(
                             focusRequesters.remove(item.linkId)
                             viewModel.removeItem(item.linkId)
                         },
-                        onMoveUp = { viewModel.moveItemUp(item.linkId) },
-                        onMoveDown = { viewModel.moveItemDown(item.linkId) },
+                        onMoveUp = {
+                            viewModel.moveItemUp(item.linkId)
+                            onAnnounce(itemMovedUpStr)
+                        },
+                        onMoveDown = {
+                            viewModel.moveItemDown(item.linkId)
+                            onAnnounce(itemMovedDownStr)
+                        },
                     ),
                 modifier =
                     Modifier
@@ -802,27 +864,34 @@ private fun PreviewQuestionnaire(
     state: QuestionnaireBuilderState,
     viewModel: QuestionnaireBuilderViewModel,
 ) {
-    Text(
-        stringResource(Res.string.preview_mode),
-        style = MaterialTheme.typography.titleLarge,
-        modifier = Modifier.padding(bottom = 16.dp),
-    )
-
     val previewQuestionnaire =
         remember(state.items, state.title) {
             viewModel.buildQuestionnaire()
         }
     var previewAnswers by remember { mutableStateOf<Map<String, Any>>(emptyMap()) }
 
-    Card(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            SdcQuestionnaireForm(
-                questionnaire = previewQuestionnaire,
-                answers = previewAnswers,
-                onFormUpdated = { updatedAnswers, _ ->
-                    previewAnswers = updatedAnswers
-                },
-            )
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+    ) {
+        Text(
+            stringResource(Res.string.preview_mode),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 16.dp).semantics { heading() },
+        )
+
+        Card(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                SdcQuestionnaireForm(
+                    questionnaire = previewQuestionnaire,
+                    answers = previewAnswers,
+                    onFormUpdated = { updatedAnswers, _ ->
+                        previewAnswers = updatedAnswers
+                    },
+                )
+            }
         }
     }
 }
@@ -834,6 +903,7 @@ private fun PreviewQuestionnaire(
  * @param viewModel The VM.
  * @param focusRequesters Focus requesters.
  * @param focusManager Focus manager.
+ * @param onAnnounce Callback to trigger an accessibility announcement.
  */
 @Composable
 private fun BuilderActiveView(
@@ -841,6 +911,7 @@ private fun BuilderActiveView(
     viewModel: QuestionnaireBuilderViewModel,
     focusRequesters: MutableMap<String, FocusRequester>,
     focusManager: FocusManager,
+    onAnnounce: (String) -> Unit,
 ) {
     if (state.isDuplicateNameError) {
         Text(
@@ -870,24 +941,22 @@ private fun BuilderActiveView(
         keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
     )
 
-    val newWidgetItemTemplate = stringResource(Res.string.new_widget_item)
-    val newItemLabel = stringResource(Res.string.new_item)
+    val fallbackNewItem = stringResource(Res.string.new_item)
     val widgetNames = WidgetType.entries.associateWith { getWidgetNameString(it) }
+    val newWidgetItemLabels =
+        WidgetType.entries.associateWith { widgetType ->
+            val widgetName = widgetNames[widgetType] ?: widgetType.name
+            stringResource(Res.string.new_widget_item, widgetName)
+        }
     WidgetSelectionRow(
         onWidgetSelected = { widgetType ->
-            val widgetName = widgetNames[widgetType] ?: widgetType.name
-            val label =
-                if (newWidgetItemTemplate.contains("%1\$s") || newWidgetItemTemplate.contains("%s")) {
-                    newWidgetItemTemplate.replace("%1\$s", widgetName).replace("%s", widgetName)
-                } else {
-                    "$widgetName - $newItemLabel"
-                }
+            val label = newWidgetItemLabels[widgetType] ?: fallbackNewItem
             viewModel.addItem(widgetType, label)
         },
         modifier = Modifier.padding(bottom = 8.dp),
     )
 
-    BuilderItemList(state.items, viewModel, focusRequesters)
+    BuilderItemList(state.items, viewModel, focusRequesters, onAnnounce)
 }
 
 /**
@@ -897,6 +966,7 @@ private fun BuilderActiveView(
  * @param state The state.
  * @param viewModel The view model.
  * @param focusRequesters Focus requesters map.
+ * @param onAnnounce Callback to trigger an accessibility announcement.
  */
 @Composable
 private fun QuestionnaireBuilderContent(
@@ -904,6 +974,7 @@ private fun QuestionnaireBuilderContent(
     state: QuestionnaireBuilderState,
     viewModel: QuestionnaireBuilderViewModel,
     focusRequesters: MutableMap<String, FocusRequester>,
+    onAnnounce: (String) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     Column(
@@ -911,12 +982,13 @@ private fun QuestionnaireBuilderContent(
             Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .imePadding()
                 .padding(16.dp),
     ) {
         if (state.isPreviewMode) {
             PreviewQuestionnaire(state, viewModel)
         } else {
-            BuilderActiveView(state, viewModel, focusRequesters, focusManager)
+            BuilderActiveView(state, viewModel, focusRequesters, focusManager, onAnnounce)
         }
     }
 }

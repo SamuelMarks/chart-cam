@@ -50,6 +50,7 @@ class EncounterDetailScreenJvmTest {
                     .apply { id = "prac1" }
                     .build()
             `when`(authRepository.currentUser).thenReturn(MutableStateFlow(practitioner))
+            `when`(authRepository.isDemoSession).thenReturn(MutableStateFlow(false))
             `when`(fhirRepository.getPatient("patient-1")).thenReturn(Patient.Builder().apply { id = "patient-1" }.build())
 
             val enc =
@@ -85,6 +86,31 @@ class EncounterDetailScreenJvmTest {
             }
 
             // Let it load
+            rule.waitForIdle()
+        }
+
+    /**
+     * Tests PhotoGridItem rendering and interaction.
+     */
+    @Test
+    fun testPhotoGridItem() =
+        runTest {
+            val doc =
+                io.healthplatform.chartcam.models.createFhirDocumentReference(
+                    io.healthplatform.chartcam.models.DocumentReferenceCreationParams(
+                        id = "doc-test",
+                        patientId = "pat-1",
+                        encounterId = "enc-1",
+                        dateStr = "2026-07-09T10:00:00Z",
+                        desc = "Test Photo Description",
+                        mime = "image/jpeg",
+                        urlPath = "non_existent_file.jpg",
+                    ),
+                )
+
+            rule.setContent {
+                PhotoGridItem(doc)
+            }
             rule.waitForIdle()
         }
 }
