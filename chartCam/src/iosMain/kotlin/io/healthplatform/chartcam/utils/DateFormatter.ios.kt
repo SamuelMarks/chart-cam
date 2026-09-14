@@ -1,5 +1,6 @@
 /**
  * @file DateFormatter.ios.kt
+ * Contains declarations for DateFormatter.ios.kt.
  */
 package io.healthplatform.chartcam.utils
 
@@ -52,11 +53,13 @@ actual fun formatLocalizedDate(
             formatter.dateStyle = NSDateFormatterMediumStyle
             formatter.timeStyle = if (fhirDate.contains("T")) NSDateFormatterMediumStyle else 0UL
 
-            try {
-                res = formatter.stringFromDate(date)
-            } catch (ignored: Exception) {
-                println(ignored.message)
-            }
+            res =
+                runCatching {
+                    formatter.stringFromDate(date)
+                }.getOrElse { ignored ->
+                    println(ignored.message)
+                    res
+                }
         }
     }
     return res
@@ -82,11 +85,13 @@ actual fun formatLocalizedDateTime(
             formatter.dateStyle = NSDateFormatterMediumStyle
             formatter.timeStyle = NSDateFormatterMediumStyle
 
-            try {
-                res = formatter.stringFromDate(date)
-            } catch (ignored: Exception) {
-                println(ignored.message)
-            }
+            res =
+                runCatching {
+                    formatter.stringFromDate(date)
+                }.getOrElse { ignored ->
+                    println(ignored.message)
+                    res
+                }
         }
     }
     return res

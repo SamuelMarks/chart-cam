@@ -195,9 +195,9 @@ class JsPermissionManager : PermissionManager {
     /**
      * Requests camera permission. Web handles this on `getUserMedia`.
      *
-     * @return True if permission is assumed granted or will be prompted by the browser.
+     * @return A [Result] indicating success of the permission grant.
      */
-    override suspend fun requestCameraPermission() = true
+    override suspend fun requestCameraPermission(): Result<Unit> = Result.success(Unit)
 
     /**
      * Opens system settings. No-op on web platforms.

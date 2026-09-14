@@ -217,16 +217,17 @@ class TenPartFlowE2EJvmTest {
             assertEquals(2, readOnlyEncounterViewModel.uiState.value.photos.size, "Photos should be loaded")
 
             // Step 7: Export questionnaire
-            val serializedForm = questionnaireSharingService.serializeQuestionnaire(customQuestionnaire)
+            val serializedForm = questionnaireSharingService.serializeQuestionnaire(customQuestionnaire).getOrThrow()
             assertTrue(serializedForm.contains("Ten Part Form"), "Exported form should contain title")
             assertTrue(serializedForm.contains("Label0"), "Exported form should contain labels")
-            val deserializedForm = questionnaireSharingService.deserializeQuestionnaire(serializedForm)
+            val deserializedForm = questionnaireSharingService.deserializeQuestionnaire(serializedForm).getOrThrow()
             assertEquals(customQuestionnaire.id, deserializedForm.id, "Deserialized form should match original")
 
             // Step 8: Export dataset (incl. with password)
             // The exportData method typically writes a zip file and returns a success result.
             // In JVM context with createFileStorage it will create a real file.
-            exportImportService.exportData(password = "securePassword123")
+            val exportResult = exportImportService.exportData(password = "securePassword123")
+            assertTrue(exportResult.isSuccess)
             testDispatcher.scheduler.advanceUntilIdle()
 
             // Step 9: Logout

@@ -80,6 +80,13 @@ class MediaRecoveryExpansionTest {
 
         override fun readImage(path: String): ByteArray = savedFiles[path.substringAfterLast("/")] ?: ByteArray(0)
 
+        override fun deleteImage(path: String): Result<Unit> =
+            if (savedFiles.remove(path.substringAfterLast("/")) != null) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("File not found: $path"))
+            }
+
         override fun clearCache() {
             savedFiles.clear()
         }

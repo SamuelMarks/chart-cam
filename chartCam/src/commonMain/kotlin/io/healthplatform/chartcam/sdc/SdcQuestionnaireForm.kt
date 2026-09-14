@@ -670,11 +670,9 @@ private fun getDateAnswerText(
             else -> answer?.toString() ?: ""
         }
     if (raw.isBlank()) return ""
-    return try {
+    return runCatching {
         formatLocalizedDate(raw, language)
-    } catch (_: Exception) {
-        raw
-    }
+    }.getOrDefault(raw)
 }
 
 /**
@@ -695,11 +693,9 @@ private fun getDateTimeAnswerText(
             else -> answer?.toString() ?: ""
         }
     if (raw.isBlank()) return ""
-    return try {
+    return runCatching {
         formatLocalizedDateTime(raw, language)
-    } catch (_: Exception) {
-        raw
-    }
+    }.getOrDefault(raw)
 }
 
 /**

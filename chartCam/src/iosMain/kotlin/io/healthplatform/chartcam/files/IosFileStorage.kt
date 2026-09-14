@@ -61,6 +61,22 @@ class IosFileStorage : FileStorage {
         }
 
     /**
+     * Deletes the specified file from storage.
+     *
+     * @param path The absolute path of the file to delete.
+     * @return A [Result] indicating success or failure of the deletion.
+     */
+    override fun deleteImage(path: String): Result<Unit> {
+        val okPath = path.toPath()
+        return if (fileSystem.exists(okPath)) {
+            fileSystem.delete(okPath)
+            Result.success(Unit)
+        } else {
+            Result.failure(Exception("File not found: $path"))
+        }
+    }
+
+    /**
      * Clears cached files or specific directory contents.
      * Currently not implemented for iOS.
      */

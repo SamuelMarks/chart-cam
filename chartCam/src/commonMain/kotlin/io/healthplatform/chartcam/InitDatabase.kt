@@ -9,22 +9,19 @@ package io.healthplatform.chartcam
 import app.cash.sqldelight.async.coroutines.awaitCreate
 import app.cash.sqldelight.db.SqlDriver
 import io.healthplatform.chartcam.database.ChartCamDatabase
+import io.healthplatform.chartcam.utils.runSuspendCatching
 
 /**
  * Initializes the database schema using the provided driver.
- * Will attempt to create the tables, but catches errors silently if the schema already exists
- * or if the underlying driver throws a general Throwable during creation.
+ * Attempts to create the tables, safely encapsulating the operation in a [Result].
  *
  * @param driver The platform-specific [SqlDriver] for database operations.
+ * @return A [Result] containing the initialized [ChartCamDatabase] or the encapsulated exception.
  */
-suspend fun initDatabase(driver: SqlDriver) {
-    try {
-        // We handle exceptions if schema already exists, but some driver implementations
-        // throw Throwable instead of Exception, causing it to crash the app.
+suspend fun initDatabase(driver: SqlDriver): Result<ChartCamDatabase> =
+    runSuspendCatching {
         ChartCamDatabase.Schema.awaitCreate(driver)
-    } catch (e: IllegalStateException) {
-        println("Schema creation failed or already exists: ${e.message}")
-    } catch (e: IllegalArgumentException) {
-        println("Runtime schema creation error: ${e.message}")
+        ChartCamDatabase(driver)
+    }.recoverCatching {
+        ChartCamDatabase(driver)
     }
-}

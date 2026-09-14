@@ -12,7 +12,6 @@ import com.google.fhir.model.r4.Questionnaire
 import com.google.fhir.model.r4.String
 import com.google.fhir.model.r4.terminologies.PublicationStatus
 import kotlin.test.Test
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -41,7 +40,7 @@ class FhirValidatorTest {
                     )
                 }.build()
 
-        assertTrue(FhirValidator.validate(validPatient), "Patient with given, family, and identifier should be valid")
+        assertTrue(FhirValidator.validate(validPatient).isSuccess, "Patient with given, family, and identifier should be valid")
 
         val missingIdentifierPatient =
             Patient
@@ -55,7 +54,7 @@ class FhirValidatorTest {
                     )
                 }.build()
 
-        assertFalse(FhirValidator.validate(missingIdentifierPatient), "Patient missing identifier should be invalid")
+        assertTrue(FhirValidator.validate(missingIdentifierPatient).isFailure, "Patient missing identifier should be invalid")
 
         val missingNamePatient =
             Patient
@@ -68,7 +67,7 @@ class FhirValidatorTest {
                     )
                 }.build()
 
-        assertFalse(FhirValidator.validate(missingNamePatient), "Patient missing name should be invalid")
+        assertTrue(FhirValidator.validate(missingNamePatient).isFailure, "Patient missing name should be invalid")
     }
 
     /**
@@ -92,7 +91,7 @@ class FhirValidatorTest {
                     )
                 }.build()
 
-        assertTrue(FhirValidator.validate(validQuestionnaire), "Questionnaire with title and valid items should be valid")
+        assertTrue(FhirValidator.validate(validQuestionnaire).isSuccess, "Questionnaire with title and valid items should be valid")
 
         val missingTitleQuestionnaire =
             Questionnaire
@@ -109,7 +108,7 @@ class FhirValidatorTest {
                     )
                 }.build()
 
-        assertFalse(FhirValidator.validate(missingTitleQuestionnaire), "Questionnaire missing title should be invalid")
+        assertTrue(FhirValidator.validate(missingTitleQuestionnaire).isFailure, "Questionnaire missing title should be invalid")
 
         val missingItemTextQuestionnaire =
             Questionnaire
@@ -124,7 +123,7 @@ class FhirValidatorTest {
                     )
                 }.build()
 
-        assertFalse(FhirValidator.validate(missingItemTextQuestionnaire), "Questionnaire item missing text should be invalid")
+        assertTrue(FhirValidator.validate(missingItemTextQuestionnaire).isFailure, "Questionnaire item missing text should be invalid")
 
         val duplicateLinkIdQuestionnaire =
             Questionnaire
@@ -151,6 +150,6 @@ class FhirValidatorTest {
                     )
                 }.build()
 
-        assertFalse(FhirValidator.validate(duplicateLinkIdQuestionnaire), "Questionnaire with duplicate linkIds should be invalid")
+        assertTrue(FhirValidator.validate(duplicateLinkIdQuestionnaire).isFailure, "Questionnaire with duplicate linkIds should be invalid")
     }
 }

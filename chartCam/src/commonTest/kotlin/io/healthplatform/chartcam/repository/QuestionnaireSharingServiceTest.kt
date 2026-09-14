@@ -9,7 +9,8 @@ import com.google.fhir.model.r4.Questionnaire
 import com.google.fhir.model.r4.terminologies.PublicationStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * Tests for the Questionnaire sharing and serialization behavior.
@@ -34,15 +35,19 @@ class QuestionnaireSharingServiceTest {
                             .apply { value = "Test Title" }
                 }.build()
 
-        val json = service.serializeQuestionnaire(original)
+        val jsonResult = service.serializeQuestionnaire(original)
+        assertTrue(jsonResult.isSuccess)
+        val json = jsonResult.getOrNull() ?: ""
 
         // Ensure it's not empty and contains expected fields
         assertEquals(true, json.contains("test-form"))
 
-        val deserialized = service.deserializeQuestionnaire(json)
+        val deserializedResult = service.deserializeQuestionnaire(json)
+        assertTrue(deserializedResult.isSuccess)
+        val deserialized = deserializedResult.getOrNull()
 
-        assertEquals(original.id, deserialized.id)
-        assertEquals(original.title?.value, deserialized.title?.value)
+        assertEquals(original.id, deserialized?.id)
+        assertEquals(original.title?.value, deserialized?.title?.value)
     }
 
     /**
@@ -51,8 +56,8 @@ class QuestionnaireSharingServiceTest {
     @Test
     fun testDeserializeInvalidFormatFails() {
         val invalidJson = """not a json"""
-        assertFailsWith<IllegalArgumentException> {
-            service.deserializeQuestionnaire(invalidJson)
-        }
+        val result = service.deserializeQuestionnaire(invalidJson)
+        assertTrue(result.isFailure)
+        assertNotNull(result.exceptionOrNull())
     }
 }

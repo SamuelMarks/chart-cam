@@ -40,4 +40,37 @@ class CameraManagerTest {
             }
         assertNotNull(manager)
     }
+
+    /**
+     * Tests captureImageCatching extension returning Result.
+     */
+    @Test
+    fun testCaptureImageCatching() =
+        kotlinx.coroutines.test.runTest {
+            val failingManager =
+                object : CameraManager {
+                    override suspend fun captureImage(): ByteArray? = null
+
+                    override fun setFlash(on: Boolean) {}
+
+                    override fun toggleLens() {}
+
+                    override fun release() {}
+                }
+            kotlin.test.assertTrue(failingManager.captureImageCatching().isFailure)
+
+            val successManager =
+                object : CameraManager {
+                    override suspend fun captureImage(): ByteArray? = byteArrayOf(1, 2, 3)
+
+                    override fun setFlash(on: Boolean) {}
+
+                    override fun toggleLens() {}
+
+                    override fun release() {}
+                }
+            val result = successManager.captureImageCatching()
+            kotlin.test.assertTrue(result.isSuccess)
+            kotlin.test.assertEquals(3, result.getOrNull()?.size)
+        }
 }

@@ -24,6 +24,7 @@ import io.healthplatform.chartcam.database.DatabaseDriverFactory
 import io.healthplatform.chartcam.models.familyName
 import io.healthplatform.chartcam.models.givenName
 import io.healthplatform.chartcam.models.mrn
+import io.healthplatform.chartcam.utils.runSuspendCatching
 
 /**
  * Repository responsible for CRUD operations on FHIR resources persisted locally.
@@ -118,6 +119,9 @@ open class FhirRepository(
             dbQuery.insertStringIndex(resourceType, resourceId, "name", "${name.givenName} ${name.familyName}")
         }
         dbQuery.insertTokenIndex(resourceType, resourceId, "mrn", null, resource.mrn)
+        if (resource.mrn.isNotBlank()) {
+            dbQuery.insertStringIndex(resourceType, resourceId, "mrn", resource.mrn)
+        }
         dbQuery.insertTokenIndex(resourceType, resourceId, "gender", null, resource.gender?.value?.name ?: "")
         resource.birthDate?.value?.toString()?.let {
             dbQuery.insertDateIndex(resourceType, resourceId, "birthdate", it)
@@ -216,42 +220,46 @@ open class FhirRepository(
      * @param resourceId The resourceId.
      * @param resource The resource.
      * @param isLocalChange The isLocalChange.
+     * @return A [Result] indicating success or failure.
      */
     open suspend fun saveResource(
         resourceType: String,
         resourceId: String,
         resource: Resource,
         isLocalChange: Boolean = true,
-    ) {
-        val serialized = fhirJson.encodeToString(resource)
-        val now =
-            kotlin.time.Clock.System
-                .now()
-                .toString()
-        dbQuery.insertResource(resourceId, resourceType, serialized, now)
-        indexResource(resource, resourceType, resourceId)
+    ): Result<Unit> =
+        runSuspendCatching {
+            val serialized = fhirJson.encodeToString(resource)
+            val now =
+                kotlin.time.Clock.System
+                    .now()
+                    .toString()
+            dbQuery.insertResource(resourceId, resourceType, serialized, now)
+            indexResource(resource, resourceType, resourceId)
 
-        if (isLocalChange) {
-            val versionId = resource.meta?.versionId?.value
-            dbQuery.insertLocalChange(resourceType, resourceId, now, "UPDATE", serialized, versionId)
+            if (isLocalChange) {
+                val versionId = resource.meta?.versionId?.value
+                dbQuery.insertLocalChange(resourceType, resourceId, now, "UPDATE", serialized, versionId)
+            }
         }
-    }
 
     /**
      * Saves a FHIR Resource during a sync operation without creating a local change record.
      * @param resourceType The type of the resource.
      * @param resourceId The unique ID of the resource.
      * @param resource The FHIR Resource.
+     * @return A [Result] indicating success or failure.
      */
     open suspend fun saveResourceFromSync(
         resourceType: String,
         resourceId: String,
         resource: Resource,
-    ) {
-        saveResource(resourceType, resourceId, resource, isLocalChange = false)
-        // Ensure any pending local changes for this resource are cleared to prevent overwriting server state
-        dbQuery.deleteLocalChangesForResource(resourceType, resourceId)
-    }
+    ): Result<Unit> =
+        runSuspendCatching {
+            saveResource(resourceType, resourceId, resource, isLocalChange = false).getOrThrow()
+            // Ensure any pending local changes for this resource are cleared to prevent overwriting server state
+            dbQuery.deleteLocalChangesForResource(resourceType, resourceId)
+        }
 
     /**
      * Retrieves a FHIR Resource by type and ID.
@@ -272,22 +280,24 @@ open class FhirRepository(
      * @param resourceType The type of the resource.
      * @param resourceId The unique ID of the resource.
      * @param isLocalChange Whether this delete is a local user mutation (default true).
+     * @return A [Result] indicating success or failure.
      */
     open suspend fun deleteResource(
         resourceType: String,
         resourceId: String,
         isLocalChange: Boolean = true,
-    ) {
-        dbQuery.deleteResourceById(resourceType, resourceId)
+    ): Result<Unit> =
+        runSuspendCatching {
+            dbQuery.deleteResourceById(resourceType, resourceId)
 
-        if (isLocalChange) {
-            val now =
-                kotlin.time.Clock.System
-                    .now()
-                    .toString()
-            dbQuery.insertLocalChange(resourceType, resourceId, now, "DELETE", "", null)
+            if (isLocalChange) {
+                val now =
+                    kotlin.time.Clock.System
+                        .now()
+                        .toString()
+                dbQuery.insertLocalChange(resourceType, resourceId, now, "DELETE", "", null)
+            }
         }
-    }
 
     /**
      * Retrieves all pending local changes for synchronization.
@@ -310,12 +320,22 @@ open class FhirRepository(
     }
 
     /**
+     * Saves a Practitioner with default local change tracking.
+     * @param practitioner The Practitioner resource to persist.
+     * @return A [Result] indicating success or failure.
+     */
+    open suspend fun savePractitioner(practitioner: Practitioner): Result<Unit> = savePractitioner(practitioner, isLocalChange = true)
+
+    /**
      * Saves a Practitioner.
      * @param practitioner The Practitioner resource to persist.
+     * @param isLocalChange Whether this is a local change to record in sync tracking.
+     * @return A [Result] indicating success or failure.
      */
-    open suspend fun savePractitioner(practitioner: Practitioner) {
-        saveResource("Practitioner", practitioner.id ?: "", practitioner)
-    }
+    open suspend fun savePractitioner(
+        practitioner: Practitioner,
+        isLocalChange: Boolean,
+    ): Result<Unit> = saveResource("Practitioner", practitioner.id ?: "", practitioner, isLocalChange)
 
     /**
      * Retrieves a Practitioner.
@@ -327,17 +347,40 @@ open class FhirRepository(
     /**
      * Deletes a Practitioner.
      * @param id The unique identifier of the Practitioner to delete.
+     * @return A [Result] indicating success or failure.
      */
-    open suspend fun deletePractitioner(id: String) {
-        deleteResource("Practitioner", id)
-    }
+    open suspend fun deletePractitioner(id: String): Result<Unit> = deleteResource("Practitioner", id)
+
+    /**
+     * Saves a Patient with default local change tracking.
+     * @param patient The Patient resource to persist.
+     * @return A [Result] indicating success or failure.
+     */
+    open suspend fun savePatient(patient: Patient): Result<Unit> = savePatient(patient, isLocalChange = true)
 
     /**
      * Saves a Patient.
      * @param patient The Patient resource to persist.
+     * @param isLocalChange Whether this is a local change to record in sync tracking.
+     * @return A [Result] indicating success or failure.
      */
-    open suspend fun savePatient(patient: Patient) {
-        saveResource("Patient", patient.id ?: "", patient)
+    open suspend fun savePatient(
+        patient: Patient,
+        isLocalChange: Boolean,
+    ): Result<Unit> = saveResource("Patient", patient.id ?: "", patient, isLocalChange)
+
+    /**
+     * Retrieves a Patient by Medical Record Number (MRN).
+     *
+     * @param mrn The Medical Record Number to match.
+     * @return The matching [Patient], or null if not found.
+     */
+    open suspend fun getPatientByMrn(mrn: String): Patient? {
+        if (mrn.isBlank()) return null
+        val entity =
+            dbQuery.searchResourcesByToken("Patient", "mrn", null, mrn).awaitAsList().firstOrNull()
+                ?: dbQuery.searchResourcesByString("Patient", "mrn", mrn).awaitAsList().firstOrNull()
+        return entity?.let { fhirJson.decodeFromString(it.serializedResource) as? Patient }
     }
 
     /**
@@ -373,9 +416,23 @@ open class FhirRepository(
                 encounters
                     .mapNotNull {
                         val enc = fhirJson.decodeFromString(it.serializedResource) as Encounter
-                        enc.subject?.reference?.value
+                        enc.subject
+                            ?.reference
+                            ?.value
+                            ?.removePrefix("Patient/")
                     }.distinct()
-            patientIds.mapNotNull { getPatient(it) }
+            val all =
+                dbQuery.getAllResourcesByType("Patient").awaitAsList().map {
+                    fhirJson.decodeFromString(it.serializedResource) as Patient
+                }
+            all.filter { p ->
+                val pid = p.id?.removePrefix("Patient/") ?: ""
+                patientIds.contains(pid) ||
+                    p.managingOrganization
+                        ?.reference
+                        ?.value
+                        ?.contains(practitionerId) == true
+            }
         }
 
     /**
@@ -390,7 +447,10 @@ open class FhirRepository(
         showAll: Boolean = true,
         practitionerId: String? = null,
     ): List<Patient> {
-        val allEntities = dbQuery.searchResourcesByString("Patient", "name", query).awaitAsList()
+        val trimmedQuery = query.trim()
+        val nameEntities = dbQuery.searchResourcesByString("Patient", "name", trimmedQuery).awaitAsList()
+        val mrnEntities = dbQuery.searchResourcesByString("Patient", "mrn", trimmedQuery).awaitAsList()
+        val allEntities = (nameEntities + mrnEntities).distinctBy { it.resourceId }
         var patients = allEntities.map { fhirJson.decodeFromString(it.serializedResource) as Patient }
         if (!showAll && practitionerId != null) {
             val encounters =
@@ -403,28 +463,100 @@ open class FhirRepository(
             val patientIds =
                 encounters
                     .mapNotNull {
-                        (fhirJson.decodeFromString(it.serializedResource) as Encounter).subject?.reference?.value
+                        (fhirJson.decodeFromString(it.serializedResource) as Encounter)
+                            .subject
+                            ?.reference
+                            ?.value
+                            ?.removePrefix("Patient/")
                     }.distinct()
-            patients = patients.filter { patientIds.contains(it.id) }
+            patients =
+                patients.filter { p ->
+                    val pid = p.id?.removePrefix("Patient/") ?: ""
+                    patientIds.contains(pid) ||
+                        p.managingOrganization
+                            ?.reference
+                            ?.value
+                            ?.contains(practitionerId) == true
+                }
         }
         return patients
     }
 
     /**
+     * Safely retrieves a Resource, wrapping the operation in a [Result].
+     *
+     * @param resourceType The type of the resource.
+     * @param resourceId The unique ID of the resource.
+     * @return A [Result] enclosing the Resource or null if not found, or failure.
+     */
+    open suspend fun getResourceCatching(
+        resourceType: String,
+        resourceId: String,
+    ): Result<Resource?> = runSuspendCatching { getResource(resourceType, resourceId) }
+
+    /**
+     * Safely retrieves a Patient by ID, wrapping the operation in a [Result].
+     *
+     * @param id The ID of the patient.
+     * @return A [Result] enclosing the Patient or null if not found, or failure.
+     */
+    open suspend fun getPatientCatching(id: String): Result<Patient?> = runSuspendCatching { getPatient(id) }
+
+    /**
+     * Safely retrieves all Patients, wrapping the query in a [Result].
+     *
+     * @param showAll True to retrieve all patients regardless of practitioner scoping.
+     * @param practitionerId Optional practitioner ID to scope the results.
+     * @return A [Result] enclosing the list of matching Patients.
+     */
+    open suspend fun getAllPatientsCatching(
+        showAll: Boolean = false,
+        practitionerId: String? = null,
+    ): Result<List<Patient>> = runSuspendCatching { getAllPatients(showAll, practitionerId) }
+
+    /**
      * Deletes a Patient.
      * @param id The unique identifier of the Patient to delete.
+     * @return A [Result] indicating success or failure.
      */
-    open suspend fun deletePatient(id: String) {
-        deleteResource("Patient", id)
-    }
+    open suspend fun deletePatient(id: String): Result<Unit> = deletePatient(id, null)
+
+    /**
+     * Deletes a Patient.
+     * @param id The unique identifier of the Patient to delete.
+     * @param fileStorage Optional FileStorage to delete associated media.
+     * @return A [Result] indicating success or failure.
+     */
+    open suspend fun deletePatient(
+        id: String,
+        fileStorage: io.healthplatform.chartcam.files.FileStorage?,
+    ): Result<Unit> =
+        runSuspendCatching {
+            val cleanId = id.removePrefix("Patient/")
+            val encounters = getEncountersForPatient(cleanId)
+            encounters.forEach { enc ->
+                enc.id?.let { deleteEncounter(it, fileStorage) }
+            }
+            deleteResource("Patient", cleanId).getOrThrow()
+        }
+
+    /**
+     * Saves an Encounter with default local change tracking.
+     * @param encounter The Encounter resource to persist.
+     * @return A [Result] indicating success or failure.
+     */
+    open suspend fun saveEncounter(encounter: Encounter): Result<Unit> = saveEncounter(encounter, isLocalChange = true)
 
     /**
      * Saves an Encounter.
      * @param encounter The Encounter resource to persist.
+     * @param isLocalChange Whether this is a local change to record in sync tracking.
+     * @return A [Result] indicating success or failure.
      */
-    open suspend fun saveEncounter(encounter: Encounter) {
-        saveResource("Encounter", encounter.id ?: "", encounter)
-    }
+    open suspend fun saveEncounter(
+        encounter: Encounter,
+        isLocalChange: Boolean,
+    ): Result<Unit> = saveResource("Encounter", encounter.id ?: "", encounter, isLocalChange)
 
     /**
      * Retrieves an Encounter.
@@ -438,10 +570,16 @@ open class FhirRepository(
      * @param patientId The unique identifier of the Patient.
      * @return A list of Encounter resources.
      */
-    open suspend fun getEncountersForPatient(patientId: String): List<Encounter> =
-        dbQuery.searchResourcesByReferenceDesc("Encounter", "patient", patientId).awaitAsList().map {
+    open suspend fun getEncountersForPatient(patientId: String): List<Encounter> {
+        val cleanId = patientId.removePrefix("Patient/")
+        val withPrefix =
+            dbQuery.searchResourcesByReferenceDesc("Encounter", "patient", "Patient/$cleanId").awaitAsList()
+        val withoutPrefix =
+            dbQuery.searchResourcesByReferenceDesc("Encounter", "patient", cleanId).awaitAsList()
+        return (withPrefix + withoutPrefix).distinctBy { it.resourceId }.map {
             fhirJson.decodeFromString(it.serializedResource) as Encounter
         }
+    }
 
     /**
      * Updates Encounter status.
@@ -493,28 +631,75 @@ open class FhirRepository(
     /**
      * Deletes an Encounter.
      * @param id The unique identifier of the Encounter to delete.
+     * @return A [Result] indicating success or failure.
      */
-    open suspend fun deleteEncounter(id: String) {
-        deleteResource("Encounter", id)
-    }
+    open suspend fun deleteEncounter(id: String): Result<Unit> = deleteEncounter(id, null)
+
+    /**
+     * Deletes an Encounter and cascades deletion to linked photo references and questionnaire responses.
+     * @param id The unique identifier of the Encounter to delete.
+     * @param fileStorage Optional storage to delete associated image files from disk.
+     * @return A [Result] indicating success or failure.
+     */
+    open suspend fun deleteEncounter(
+        id: String,
+        fileStorage: io.healthplatform.chartcam.files.FileStorage?,
+    ): Result<Unit> =
+        runSuspendCatching {
+            val cleanId = id.removePrefix("Encounter/")
+            val photos = getPhotosForEncounter(cleanId)
+            photos.forEach { doc ->
+                doc.id?.let { deleteResource("DocumentReference", it) }
+                val path =
+                    doc.content
+                        .firstOrNull()
+                        ?.attachment
+                        ?.url
+                        ?.value
+                if (path != null && fileStorage != null) {
+                    fileStorage.deleteImage(path)
+                }
+            }
+            val responses = getQuestionnaireResponsesForEncounter(cleanId)
+            responses.forEach { qr ->
+                qr.id?.let { deleteResource("QuestionnaireResponse", it) }
+            }
+            deleteResource("Encounter", cleanId).getOrThrow()
+        }
+
+    /**
+     * Saves a DocumentReference (photo) with default local change tracking.
+     * @param doc The DocumentReference resource to persist.
+     * @return A [Result] indicating success or failure.
+     */
+    open suspend fun saveDocumentReference(doc: DocumentReference): Result<Unit> = saveDocumentReference(doc, isLocalChange = true)
 
     /**
      * Saves a DocumentReference (photo).
      * @param doc The DocumentReference resource to persist.
+     * @param isLocalChange Whether this is a local change to record in sync tracking.
+     * @return A [Result] indicating success or failure.
      */
-    open suspend fun saveDocumentReference(doc: DocumentReference) {
-        saveResource("DocumentReference", doc.id ?: "", doc)
-    }
+    open suspend fun saveDocumentReference(
+        doc: DocumentReference,
+        isLocalChange: Boolean,
+    ): Result<Unit> = saveResource("DocumentReference", doc.id ?: "", doc, isLocalChange)
 
     /**
      * Retrieves photos (DocumentReferences) for an Encounter.
      * @param encounterId The unique identifier of the Encounter.
      * @return A list of DocumentReference resources.
      */
-    open suspend fun getPhotosForEncounter(encounterId: String): List<DocumentReference> =
-        dbQuery.searchResourcesByReference("DocumentReference", "encounter", encounterId).awaitAsList().map {
+    open suspend fun getPhotosForEncounter(encounterId: String): List<DocumentReference> {
+        val cleanId = encounterId.removePrefix("Encounter/")
+        val withPrefix =
+            dbQuery.searchResourcesByReference("DocumentReference", "encounter", "Encounter/$cleanId").awaitAsList()
+        val withoutPrefix =
+            dbQuery.searchResourcesByReference("DocumentReference", "encounter", cleanId).awaitAsList()
+        return (withPrefix + withoutPrefix).distinctBy { it.resourceId }.map {
             fhirJson.decodeFromString(it.serializedResource) as DocumentReference
         }
+    }
 
     /**
      * Retrieves a single DocumentReference (photo) by ID.
@@ -524,12 +709,23 @@ open class FhirRepository(
     open suspend fun getDocumentReference(id: String): DocumentReference? = getResource("DocumentReference", id) as? DocumentReference
 
     /**
+     * Saves a QuestionnaireResponse with default local change tracking.
+     * @param qr The QuestionnaireResponse resource to persist.
+     * @return A [Result] indicating success or failure.
+     */
+    open suspend fun saveQuestionnaireResponse(qr: QuestionnaireResponse): Result<Unit> =
+        saveQuestionnaireResponse(qr, isLocalChange = true)
+
+    /**
      * Saves a QuestionnaireResponse.
      * @param qr The QuestionnaireResponse resource to persist.
+     * @param isLocalChange Whether this is a local change to record in sync tracking.
+     * @return A [Result] indicating success or failure.
      */
-    open suspend fun saveQuestionnaireResponse(qr: QuestionnaireResponse) {
-        saveResource("QuestionnaireResponse", qr.id ?: "", qr)
-    }
+    open suspend fun saveQuestionnaireResponse(
+        qr: QuestionnaireResponse,
+        isLocalChange: Boolean,
+    ): Result<Unit> = saveResource("QuestionnaireResponse", qr.id ?: "", qr, isLocalChange)
 
     /**
      * Retrieves QuestionnaireResponses for an Encounter.
@@ -553,12 +749,22 @@ open class FhirRepository(
     }
 
     /**
+     * Saves a Device with default local change tracking.
+     * @param device The Device resource to persist.
+     * @return A [Result] indicating success or failure.
+     */
+    open suspend fun saveDevice(device: Device): Result<Unit> = saveDevice(device, isLocalChange = true)
+
+    /**
      * Saves a Device.
      * @param device The Device resource to persist.
+     * @param isLocalChange Whether this is a local change to record in sync tracking.
+     * @return A [Result] indicating success or failure.
      */
-    open suspend fun saveDevice(device: Device) {
-        saveResource("Device", device.id ?: "", device)
-    }
+    open suspend fun saveDevice(
+        device: Device,
+        isLocalChange: Boolean,
+    ): Result<Unit> = saveResource("Device", device.id ?: "", device, isLocalChange)
 
     /**
      * Retrieves a Device.
@@ -568,7 +774,7 @@ open class FhirRepository(
     open suspend fun getDevice(id: String): Device? = getResource("Device", id) as? Device
 
     /**
-     * Saves a Provenance.
+     * Saves a Provenance with default local change tracking.
      * @param provenance The Provenance resource to persist.
      * @param encounterId Optional unique identifier of the Encounter.
      */
@@ -576,7 +782,21 @@ open class FhirRepository(
         provenance: Provenance,
         encounterId: String? = null,
     ) {
-        saveResource("Provenance", provenance.id ?: "", provenance)
+        saveProvenance(provenance, encounterId, isLocalChange = true)
+    }
+
+    /**
+     * Saves a Provenance.
+     * @param provenance The Provenance resource to persist.
+     * @param encounterId Optional unique identifier of the Encounter.
+     * @param isLocalChange Whether this is a local change to record in sync tracking.
+     */
+    open suspend fun saveProvenance(
+        provenance: Provenance,
+        encounterId: String? = null,
+        isLocalChange: Boolean,
+    ) {
+        saveResource("Provenance", provenance.id ?: "", provenance, isLocalChange)
         if (encounterId != null) {
             dbQuery.insertReferenceIndex("Provenance", provenance.id!!, "encounter", encounterId)
         }
@@ -620,13 +840,34 @@ open class FhirRepository(
         }
 
     /**
-     * Saves a Questionnaire resource.
+     * Saves a Questionnaire resource with default local change tracking.
      *
      * @param questionnaire The Questionnaire resource to persist.
      */
     open suspend fun saveQuestionnaire(questionnaire: Questionnaire) {
-        saveResource("Questionnaire", questionnaire.id ?: "", questionnaire)
+        saveQuestionnaire(questionnaire, isLocalChange = true)
     }
+
+    /**
+     * Saves a Questionnaire resource.
+     *
+     * @param questionnaire The Questionnaire resource to persist.
+     * @param isLocalChange Whether this is a local change to record in sync tracking.
+     */
+    open suspend fun saveQuestionnaire(
+        questionnaire: Questionnaire,
+        isLocalChange: Boolean,
+    ) {
+        saveResource("Questionnaire", questionnaire.id ?: "", questionnaire, isLocalChange)
+    }
+
+    /**
+     * Retrieves a Questionnaire resource by ID.
+     *
+     * @param id The unique identifier of the Questionnaire.
+     * @return The Questionnaire resource, or null if not found.
+     */
+    open suspend fun getQuestionnaire(id: String): Questionnaire? = getResource("Questionnaire", id) as? Questionnaire
 
     /**
      * Retrieves all Questionnaire resources.

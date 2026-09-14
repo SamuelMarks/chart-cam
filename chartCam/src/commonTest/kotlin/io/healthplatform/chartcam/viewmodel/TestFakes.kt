@@ -70,6 +70,18 @@ class FakeFileStorage : FileStorage {
      */
     override fun readImage(path: String): ByteArray = files[path] ?: ByteArray(0)
 
+    /**
+     * Delete an image from pseudo storage.
+     * @param path The path.
+     * @return Result indicating success or failure.
+     */
+    override fun deleteImage(path: String): Result<Unit> =
+        if (files.remove(path) != null) {
+            Result.success(Unit)
+        } else {
+            Result.failure(Exception("File not found: $path"))
+        }
+
     /** Clear the entire file cache. */
     override fun clearCache() {
         files.clear()

@@ -150,14 +150,21 @@ object QuestionnaireUtils {
      *
      * @param qItems The list of Questionnaire.Item to traverse.
      * @param answers The map of current answers.
+     * @param ancestors The list of ancestor items for hierarchy-aware enableWhen checks.
      * @return A list of populated QuestionnaireResponse.Item.Builder instances.
      */
     fun buildResponseItemsRecursively(
         qItems: List<Questionnaire.Item>,
         answers: Map<String, Any>,
+        ancestors: List<Questionnaire.Item> = emptyList(),
     ): List<QuestionnaireResponse.Item.Builder> {
         val responseItems = mutableListOf<QuestionnaireResponse.Item.Builder>()
         for (qItem in qItems) {
+            if (!io.healthplatform.chartcam.sdc.SdcEvaluator
+                    .isItemHierarchyEnabled(qItem, ancestors, answers)
+            ) {
+                continue
+            }
             val linkId = qItem.linkId.value ?: continue
             val qType = qItem.type.value ?: Questionnaire.QuestionnaireItemType.String
             val answer = answers[linkId]
@@ -179,7 +186,8 @@ object QuestionnaireUtils {
             }
 
             if (qItem.item.isNotEmpty()) {
-                val nestedItems = buildResponseItemsRecursively(qItem.item, answers)
+                val nextAncestors = ancestors + qItem
+                val nestedItems = buildResponseItemsRecursively(qItem.item, answers, nextAncestors)
                 if (nestedItems.isNotEmpty()) {
                     itemBuilder.item.addAll(nestedItems)
                     hasAnswer = true

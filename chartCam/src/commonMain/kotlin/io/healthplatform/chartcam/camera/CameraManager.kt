@@ -47,6 +47,21 @@ interface CameraManager {
 }
 
 /**
+ * Safely captures a still image from the camera, returning a [Result] enclosing the [ByteArray].
+ *
+ * @return A [Result] enclosing the non-null, non-empty image bytes, or an error.
+ */
+suspend fun CameraManager.captureImageCatching(): Result<ByteArray> =
+    io.healthplatform.chartcam.utils.runSuspendCatching {
+        val bytes = captureImage()
+        if (bytes != null && bytes.isNotEmpty()) {
+            bytes
+        } else {
+            error("Camera capture returned empty or null image data")
+        }
+    }
+
+/**
  * Factory function to create or remember a [CameraManager] instance scoped to a Composable.
  * Note: CameraManager usually requires binding to a lifecycle or view via platform-specific
  * implementations, so this factory is often used internally by the Preview composable.

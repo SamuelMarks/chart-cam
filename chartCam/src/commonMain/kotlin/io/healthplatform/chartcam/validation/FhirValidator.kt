@@ -9,6 +9,42 @@ import com.google.fhir.model.r4.Questionnaire
 import com.google.fhir.model.r4.Resource
 
 /**
+ * Base exception for structural validation failures on FHIR resources.
+ *
+ * @param message The detailed failure message.
+ */
+sealed class FhirValidationException(
+    override val message: String,
+) : Exception(message) {
+    /**
+     * Indicates that a required FHIR field is missing or empty.
+     *
+     * @param fieldName The name of the missing field.
+     */
+    class MissingRequiredFieldException(
+        val fieldName: String,
+    ) : FhirValidationException("Missing required field: $fieldName")
+
+    /**
+     * Indicates that duplicate link IDs were discovered in a questionnaire item hierarchy.
+     *
+     * @param linkId The conflicting link identifier.
+     */
+    class DuplicateLinkIdException(
+        val linkId: String,
+    ) : FhirValidationException("Duplicate linkId detected: $linkId")
+
+    /**
+     * Indicates that a Choice item has no answer options defined.
+     *
+     * @param linkId The link identifier of the Choice item.
+     */
+    class EmptyChoiceOptionsException(
+        val linkId: String,
+    ) : FhirValidationException("Choice question '$linkId' must define at least one answer option")
+}
+
+/**
  * Native kotlin-fhir validation engine wrapper.
  * Enforces StructureDefinition rules on FHIR resources.
  */
@@ -17,29 +53,38 @@ object FhirValidator {
      * Validates a FHIR resource against its StructureDefinition.
      *
      * @param resource The FHIR Resource to validate.
-     * @return True if valid, false otherwise.
+     * @return A [Result] indicating success if valid, or a [FhirValidationException] on failure.
      */
-    fun validate(resource: Resource): Boolean {
-        // Mock implementation of a validation engine checking structural requirements
-        return when (resource) {
+    fun validate(resource: Resource): Result<Unit> =
+        when (resource) {
             is Patient -> validatePatient(resource)
             is Questionnaire -> validateQuestionnaire(resource)
-            else -> true
+            else -> Result.success(Unit)
         }
-    }
 
     /**
      * Validates a Patient resource, ensuring it has necessary fields like name and identifier.
      *
      * @param patient The Patient resource to validate.
-     * @return True if valid, false otherwise.
+     * @return A [Result] indicating success or failure.
      */
-    private fun validatePatient(patient: Patient): Boolean {
-        if (patient.name.isEmpty()) return false
+    private fun validatePatient(patient: Patient): Result<Unit> {
+        if (patient.name.isEmpty()) {
+            return Result.failure(FhirValidationException.MissingRequiredFieldException("name"))
+        }
         val hasGiven = patient.name.any { it.given.isNotEmpty() }
+        if (!hasGiven) {
+            return Result.failure(FhirValidationException.MissingRequiredFieldException("name.given"))
+        }
         val hasFamily = patient.name.any { it.family?.value?.isNotEmpty() == true }
+        if (!hasFamily) {
+            return Result.failure(FhirValidationException.MissingRequiredFieldException("name.family"))
+        }
         val hasIdentifier = patient.identifier.isNotEmpty()
-        return hasGiven && hasFamily && hasIdentifier
+        if (!hasIdentifier) {
+            return Result.failure(FhirValidationException.MissingRequiredFieldException("identifier"))
+        }
+        return Result.success(Unit)
     }
 
     /**
@@ -48,25 +93,35 @@ object FhirValidator {
      * no duplicate linkIds exist, and that Choice items have at least one answer option.
      *
      * @param questionnaire The Questionnaire to validate.
-     * @return True if valid, false otherwise.
+     * @return A [Result] indicating success or failure.
      */
-    private fun validateQuestionnaire(questionnaire: Questionnaire): Boolean {
-        if (questionnaire.title?.value?.isEmpty() != false || questionnaire.item.isEmpty()) return false
+    private fun validateQuestionnaire(questionnaire: Questionnaire): Result<Unit> {
+        if (questionnaire.title?.value.isNullOrEmpty()) {
+            return Result.failure(FhirValidationException.MissingRequiredFieldException("title"))
+        }
+        if (questionnaire.item.isEmpty()) {
+            return Result.failure(FhirValidationException.MissingRequiredFieldException("item"))
+        }
 
         val linkIds = mutableSetOf<String>()
 
-        return questionnaire.item.all { item ->
+        for (item in questionnaire.item) {
             val id = item.linkId.value
-            val hasValidLinkAndText =
-                id?.isNotEmpty() == true &&
-                    item.text?.value?.isNotEmpty() == true
-
-            if (id != null && !linkIds.add(id)) return@all false
+            if (id.isNullOrEmpty()) {
+                return Result.failure(FhirValidationException.MissingRequiredFieldException("item.linkId"))
+            }
+            if (item.text?.value.isNullOrEmpty()) {
+                return Result.failure(FhirValidationException.MissingRequiredFieldException("item.text for '$id'"))
+            }
+            if (!linkIds.add(id)) {
+                return Result.failure(FhirValidationException.DuplicateLinkIdException(id))
+            }
 
             val isChoice = item.type.value == Questionnaire.QuestionnaireItemType.Choice
-            val hasValidOptions = if (isChoice) item.answerOption.isNotEmpty() else true
-
-            hasValidLinkAndText && hasValidOptions
+            if (isChoice && item.answerOption.isEmpty()) {
+                return Result.failure(FhirValidationException.EmptyChoiceOptionsException(id))
+            }
         }
+        return Result.success(Unit)
     }
 }

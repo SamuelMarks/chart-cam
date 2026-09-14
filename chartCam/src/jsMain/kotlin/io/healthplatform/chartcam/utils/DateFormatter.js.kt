@@ -1,6 +1,5 @@
 /**
  * @file DateFormatter.js.kt
- * @file DateFormatter.js.kt
  * Contains declarations for DateFormatter.js.kt.
  */
 package io.healthplatform.chartcam.utils
@@ -19,7 +18,7 @@ actual fun formatLocalizedDate(
     language: String,
 ): String {
     if (fhirDate.isBlank()) return fhirDate
-    return try {
+    return runCatching {
         val date = Date(fhirDate)
         if (date.toString() == "Invalid Date") {
             fhirDate
@@ -28,7 +27,7 @@ actual fun formatLocalizedDate(
         } else {
             date.asDynamic().toLocaleDateString(language).unsafeCast<String>()
         }
-    } catch (e: IllegalStateException) {
+    }.getOrElse { e ->
         println(e.message)
         fhirDate
     }
@@ -46,14 +45,14 @@ actual fun formatLocalizedDateTime(
     language: String,
 ): String {
     if (fhirDateTime.isBlank()) return fhirDateTime
-    return try {
+    return runCatching {
         val date = Date(fhirDateTime)
         if (date.toString() == "Invalid Date") {
             fhirDateTime
         } else {
             date.asDynamic().toLocaleString(language).unsafeCast<String>()
         }
-    } catch (e: IllegalStateException) {
+    }.getOrElse { e ->
         println(e.message)
         fhirDateTime
     }

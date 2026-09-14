@@ -45,10 +45,10 @@ class QuestionnaireBuilderViewModelJvmTest {
 
         // 1. Serialize to JSON
         val sharingService = QuestionnaireSharingService()
-        val jsonStr = sharingService.serializeQuestionnaire(builtQuestionnaire)
+        val jsonStr = sharingService.serializeQuestionnaire(builtQuestionnaire).getOrThrow()
 
         // 2. Deserialize from JSON
-        val deserializedQuestionnaire = sharingService.deserializeQuestionnaire(jsonStr)
+        val deserializedQuestionnaire = sharingService.deserializeQuestionnaire(jsonStr).getOrThrow()
 
         // 3. Save to repo manually to load it into a new ViewModel
         repo.saveQuestionnaire(deserializedQuestionnaire)
@@ -289,7 +289,7 @@ class QuestionnaireBuilderViewModelJvmTest {
         viewModel.addItem(WidgetType.SINGLE_LINE_TEXT)
 
         // At first they are different, should be valid
-        assertTrue(viewModel.validate())
+        assertTrue(viewModel.validate().isSuccess)
 
         val questionnaire = viewModel.buildQuestionnaire()
         // Duplicate the linkId in the FHIR object manually for validation check
@@ -309,9 +309,10 @@ class QuestionnaireBuilderViewModelJvmTest {
                     item.add(dupItemBuilder)
                     item.add(dupItemBuilder)
                 }.build()
-        assertFalse(
+        assertTrue(
             io.healthplatform.chartcam.validation.FhirValidator
-                .validate(duplicateQuestionnaire),
+                .validate(duplicateQuestionnaire)
+                .isFailure,
         )
     }
 
@@ -339,7 +340,7 @@ class QuestionnaireBuilderViewModelJvmTest {
                 .first()
                 .isError,
         )
-        assertFalse(viewModel.validate())
+        assertTrue(viewModel.validate().isFailure)
 
         // Add options, error should clear
         viewModel.updateItem(linkId, "Select One", listOf("Opt1"))
@@ -348,7 +349,7 @@ class QuestionnaireBuilderViewModelJvmTest {
                 .first()
                 .isError,
         )
-        assertTrue(viewModel.validate())
+        assertTrue(viewModel.validate().isSuccess)
 
         // Remove options again
         viewModel.updateItem(linkId, "Select One", emptyList())
@@ -357,7 +358,7 @@ class QuestionnaireBuilderViewModelJvmTest {
                 .first()
                 .isError,
         )
-        assertFalse(viewModel.validate())
+        assertTrue(viewModel.validate().isFailure)
     }
 
     /**
@@ -535,7 +536,7 @@ class QuestionnaireBuilderViewModelJvmTest {
                 .isError,
         )
 
-        assertFalse(viewModel.validate())
+        assertTrue(viewModel.validate().isFailure)
     }
 
     /**

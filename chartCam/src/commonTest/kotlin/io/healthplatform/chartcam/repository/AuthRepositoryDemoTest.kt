@@ -112,7 +112,7 @@ class AuthRepositoryDemoTest {
             // Create new repository instance pointing to same storage
             val newRepo = AuthRepository(storage)
             val restored = newRepo.checkSession()
-            assertTrue(restored)
+            assertTrue(restored.isSuccess)
             assertTrue(newRepo.isDemoSession.value)
             assertEquals(AuthRepository.DEMO_PRACTITIONER_ID, newRepo.currentUser.value?.id)
         }
@@ -130,7 +130,7 @@ class AuthRepositoryDemoTest {
             storage.save(AuthRepository.KEY_CURRENT_USERNAME, "dr_smith")
 
             val restored = repository.checkSession()
-            assertTrue(restored)
+            assertTrue(restored.isSuccess)
             assertFalse(repository.isDemoSession.value)
             assertEquals(
                 "dr_smith",
@@ -152,7 +152,7 @@ class AuthRepositoryDemoTest {
             val repository = AuthRepository(storage)
 
             val restored = repository.checkSession()
-            assertFalse(restored)
+            assertTrue(restored.isFailure)
             assertFalse(repository.isDemoSession.value)
             assertNull(repository.currentUser.value)
         }

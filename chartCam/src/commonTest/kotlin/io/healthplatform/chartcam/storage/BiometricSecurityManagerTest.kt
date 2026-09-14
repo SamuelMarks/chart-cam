@@ -117,6 +117,7 @@ class BiometricSecurityManagerTest {
         // Test with no hardware
         val noHardwareProvider = DefaultKeystoreHardwareProvider(isHardware = false, status = BiometricHardwareStatus.NO_HARDWARE)
         val managerNoHardware = BiometricSecurityManager(storage, hardwareProvider = noHardwareProvider)
+        assertTrue(managerNoHardware.checkHardwareBackedKeystore().isFailure)
         assertFalse(managerNoHardware.isHardwareBackedKeystore())
         assertEquals(BiometricHardwareStatus.NO_HARDWARE, managerNoHardware.checkKeystoreAvailability())
         val authNoHardware = managerNoHardware.authenticate(simulateSuccess = true)
@@ -132,6 +133,8 @@ class BiometricSecurityManagerTest {
         // Test not enrolled
         val notEnrolledProvider = DefaultKeystoreHardwareProvider(isHardware = true, status = BiometricHardwareStatus.NOT_ENROLLED)
         val managerNotEnrolled = BiometricSecurityManager(storage, hardwareProvider = notEnrolledProvider)
+        assertTrue(managerNotEnrolled.checkHardwareBackedKeystore().isSuccess)
+        assertTrue(managerNotEnrolled.isHardwareBackedKeystore())
         val authNotEnrolled = managerNotEnrolled.authenticate(simulateSuccess = true)
         assertTrue(authNotEnrolled is BiometricAuthResult.HardwareError)
     }

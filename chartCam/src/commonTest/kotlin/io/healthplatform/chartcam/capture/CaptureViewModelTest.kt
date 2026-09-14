@@ -94,6 +94,18 @@ class CaptureViewModelTest {
          */
         override fun readImage(path: String): ByteArray = files[path.substringAfterLast("/")] ?: ByteArray(0)
 
+        /**
+         * Delete image from map.
+         * @param path The path.
+         * @return Result indicating success or failure.
+         */
+        override fun deleteImage(path: String): Result<Unit> =
+            if (files.remove(path.substringAfterLast("/")) != null) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("File not found: $path"))
+            }
+
         /** Clear cache logic. */
         override fun clearCache() {
             files.clear()

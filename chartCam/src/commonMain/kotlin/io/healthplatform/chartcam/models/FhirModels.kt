@@ -41,6 +41,7 @@ import kotlinx.datetime.LocalDate
  * @param lastName The last name of the patient.
  * @param dob The date of birth of the patient.
  * @param mrnValue The Medical Record Number (MRN) of the patient.
+ * @param organizationId An optional managing organization or practitioner ID for data scoping.
  * @return A populated FHIR [Patient] object.
  */
 fun createFhirPatient(
@@ -49,6 +50,7 @@ fun createFhirPatient(
     lastName: kotlin.String,
     dob: LocalDate,
     mrnValue: kotlin.String,
+    organizationId: kotlin.String? = null,
 ): Patient =
     Patient
         .Builder()
@@ -67,6 +69,12 @@ fun createFhirPatient(
                     value = String.Builder().apply { value = mrnValue }
                 },
             )
+            if (organizationId != null) {
+                managingOrganization =
+                    Reference.Builder().apply {
+                        reference = String.Builder().apply { value = organizationId }
+                    }
+            }
         }.build()
 
 /**
@@ -301,10 +309,10 @@ fun createFhirDocumentReference(params: DocumentReferenceCreationParams): Docume
                     reference = String.Builder().apply { value = params.patientId }
                 }
             context = buildDocumentReferenceContext(params.encounterId, params.answerCode)
-            try {
+            runCatching {
                 // we ignore the date parse error just in case params.dateStr is wrong format
                 date = Instant.Builder().apply { value = FhirDateTime.fromString(params.dateStr) }
-            } catch (e: IllegalArgumentException) {
+            }.onFailure { e ->
                 println(e.message)
             }
             if (!params.desc.isNullOrBlank()) {
@@ -348,9 +356,9 @@ fun createFhirClinicalNote(
                     )
                 }
             type = buildClinicalNoteType()
-            try {
+            runCatching {
                 date = Instant.Builder().apply { value = FhirDateTime.fromString(dateStr) }
-            } catch (e: IllegalArgumentException) {
+            }.onFailure { e ->
                 println("Failed to parse clinical note date: ${e.message}")
             }
         }.build()

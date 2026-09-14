@@ -26,9 +26,9 @@ class PermissionManagerTest {
 
                 /**
                  * Mock requestCameraPermission.
-                 * @return Always returns false for this test.
+                 * @return Always returns failure for this test.
                  */
-                override suspend fun requestCameraPermission(): Boolean = false
+                override suspend fun requestCameraPermission(): Result<Unit> = Result.failure(PermissionDeniedException())
 
                 /** Mock openSettings. */
                 override fun openSettings() {}

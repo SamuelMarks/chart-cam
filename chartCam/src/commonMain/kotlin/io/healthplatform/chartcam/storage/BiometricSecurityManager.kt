@@ -75,9 +75,9 @@ interface KeystoreHardwareProvider {
     /**
      * Verifies whether hardware-backed key storage (e.g., Secure Enclave or StrongBox) is available.
      *
-     * @return True if hardware backed, false otherwise.
+     * @return A [Result] indicating success if hardware backed, or failure if software-only or unavailable.
      */
-    fun isHardwareBacked(): Boolean
+    fun checkHardwareBacked(): Result<Unit>
 
     /**
      * Retrieves the current biometric hardware status.
@@ -100,9 +100,14 @@ class DefaultKeystoreHardwareProvider(
     /**
      * Returns whether hardware keystore is backed.
      *
-     * @return True if hardware backed.
+     * @return A [Result] indicating success if hardware backed, failure otherwise.
      */
-    override fun isHardwareBacked(): Boolean = isHardware
+    override fun checkHardwareBacked(): Result<Unit> =
+        if (isHardware) {
+            Result.success(Unit)
+        } else {
+            Result.failure(IllegalStateException("Keystore is software-backed or unavailable"))
+        }
 
     /**
      * Returns the current hardware status.
@@ -162,9 +167,16 @@ class BiometricSecurityManager(
     /**
      * Checks if hardware keystore backing is available.
      *
-     * @return True if backed by Secure Enclave/StrongBox, false if software-only or unavailable.
+     * @return A [Result] indicating success if backed by Secure Enclave/StrongBox, or failure.
      */
-    fun isHardwareBackedKeystore(): Boolean = hardwareProvider.isHardwareBacked()
+    fun checkHardwareBackedKeystore(): Result<Unit> = hardwareProvider.checkHardwareBacked()
+
+    /**
+     * Helper to query hardware backed status as a boolean for backwards compatibility.
+     *
+     * @return True if backed by hardware, false otherwise.
+     */
+    fun isHardwareBackedKeystore(): Boolean = checkHardwareBackedKeystore().isSuccess
 
     /**
      * Called when host OS reports or keystore throws that biometric credentials have been added/modified,

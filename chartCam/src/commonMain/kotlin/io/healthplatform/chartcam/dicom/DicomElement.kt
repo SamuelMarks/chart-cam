@@ -174,14 +174,15 @@ data class DicomElement(
          * Creates a Date element in DICOM format (YYYYMMDD).
          *
          * @param tag The DICOM tag (usually VR = DA).
-         * @param dateText The date string in format YYYY-MM-DD or YYYYMMDD.
+         * @param dateText The date string in format YYYY-MM-DD, YYYYMMDD, or ISO-8601 datetime.
          * @return A DicomElement with VR.DA.
          */
         fun createDate(
             tag: Int,
             dateText: String,
         ): DicomElement {
-            val sanitized = dateText.replace("-", "").take(DATE_STR_LEN)
+            val dateOnly = if (dateText.contains("T")) dateText.substringBefore("T") else dateText
+            val sanitized = dateOnly.replace("-", "").take(DATE_STR_LEN)
             return createString(tag, DicomVR.DA, sanitized)
         }
 
@@ -189,15 +190,18 @@ data class DicomElement(
          * Creates a Time element in DICOM format (HHMMSS).
          *
          * @param tag The DICOM tag (usually VR = TM).
-         * @param timeText The time string in format HH:MM:SS or HHMMSS.
+         * @param timeText The time string in format HH:MM:SS, HHMMSS, or ISO-8601 datetime.
          * @return A DicomElement with VR.TM.
          */
         fun createTime(
             tag: Int,
             timeText: String,
         ): DicomElement {
-            val sanitized = timeText.replace(":", "").take(TIME_STR_LEN)
-            return createString(tag, DicomVR.TM, sanitized)
+            val rawTime = if (timeText.contains("T")) timeText.substringAfter("T") else timeText
+            val timePart = rawTime.takeWhile { it.isDigit() || it == ':' }
+            val sanitized = timePart.replace(":", "").take(TIME_STR_LEN)
+            val padded = sanitized.padEnd(TIME_STR_LEN, '0')
+            return createString(tag, DicomVR.TM, padded)
         }
 
         /**

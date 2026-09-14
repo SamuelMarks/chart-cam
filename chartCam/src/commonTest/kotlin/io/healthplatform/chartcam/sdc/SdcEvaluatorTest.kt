@@ -272,4 +272,61 @@ class SdcEvaluatorTest {
         val result = SdcEvaluator.evaluateCalculatedExpressions(q, answers)
         assertTrue(result.isEmpty())
     }
+
+    /** Test circular dependency detection returning Result. */
+    @Test
+    fun testDetectCircularDependenciesResult() {
+        val qClean = createQuestionnaireWithCalcExt("target", "5 + 5")
+        assertTrue(SdcEvaluator.detectCircularDependencies(qClean).isSuccess)
+
+        val qCycle =
+            Questionnaire
+                .Builder(status = Enumeration(value = PublicationStatus.Active))
+                .apply {
+                    item.add(
+                        Questionnaire.Item
+                            .Builder(
+                                linkId = FhirString.Builder().apply { value = "a" },
+                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            ).apply {
+                                extension.add(
+                                    Extension
+                                        .Builder(
+                                            url = "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression",
+                                        ).apply {
+                                            extension.add(
+                                                Extension.Builder(url = "expression").apply {
+                                                    value = Extension.Value.String(FhirString.Builder().apply { value = "%b + 1" }.build())
+                                                },
+                                            )
+                                        },
+                                )
+                            },
+                    )
+                    item.add(
+                        Questionnaire.Item
+                            .Builder(
+                                linkId = FhirString.Builder().apply { value = "b" },
+                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            ).apply {
+                                extension.add(
+                                    Extension
+                                        .Builder(
+                                            url = "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression",
+                                        ).apply {
+                                            extension.add(
+                                                Extension.Builder(url = "expression").apply {
+                                                    value = Extension.Value.String(FhirString.Builder().apply { value = "%a + 1" }.build())
+                                                },
+                                            )
+                                        },
+                                )
+                            },
+                    )
+                }.build()
+
+        val cycleResult = SdcEvaluator.detectCircularDependencies(qCycle)
+        assertTrue(cycleResult.isFailure)
+        assertTrue(cycleResult.exceptionOrNull() is CircularDependencyException)
+    }
 }

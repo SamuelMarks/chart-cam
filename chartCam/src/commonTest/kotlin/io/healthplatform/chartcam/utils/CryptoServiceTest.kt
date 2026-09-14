@@ -198,4 +198,30 @@ class CryptoServiceTest {
             val result = cryptoService.decrypt("not-valid-base-64!!!", "password")
             assertEquals("", result, "Decrypting invalid base64 should return empty string")
         }
+
+    /**
+     * Tests encryptCatching and decryptCatching Result APIs.
+     */
+    @Test
+    fun testEncryptAndDecryptCatching() =
+        runTest {
+            val cryptoService = CryptoService()
+            val plaintext = "Hello Encrypted World"
+            val password = "StrongPassword2026!"
+
+            val encryptResult = cryptoService.encryptCatching(plaintext, password)
+            assertTrue(encryptResult.isSuccess)
+
+            val ciphertext = encryptResult.getOrThrow()
+            val decryptResult = cryptoService.decryptCatching(ciphertext, password)
+            assertTrue(decryptResult.isSuccess)
+            assertEquals(plaintext, decryptResult.getOrThrow())
+
+            val badDecryptResult = cryptoService.decryptCatching("AAAAAAAAAAA=", password)
+            assertTrue(badDecryptResult.isFailure)
+
+            val emptyDecryptResult = cryptoService.decryptCatching("", password)
+            assertTrue(emptyDecryptResult.isSuccess)
+            assertEquals("", emptyDecryptResult.getOrThrow())
+        }
 }

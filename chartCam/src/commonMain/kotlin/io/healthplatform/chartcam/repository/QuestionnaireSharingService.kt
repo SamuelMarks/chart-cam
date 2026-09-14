@@ -18,21 +18,16 @@ class QuestionnaireSharingService {
      * Serializes a [Questionnaire] domain model directly to a FHIR JSON string.
      *
      * @param questionnaire The [Questionnaire] resource to serialize.
-     * @return The serialized JSON string.
+     * @return A [Result] enclosing the serialized JSON string or an error.
      */
-    fun serializeQuestionnaire(questionnaire: Questionnaire): String = fhirJson.encodeToString(questionnaire)
+    fun serializeQuestionnaire(questionnaire: Questionnaire): Result<String> = runCatching { fhirJson.encodeToString(questionnaire) }
 
     /**
      * Deserializes a FHIR JSON string back into a [Questionnaire] domain model.
      *
      * @param jsonString The JSON string representing a FHIR Questionnaire.
-     * @return The deserialized [Questionnaire] resource.
-     * @throws IllegalArgumentException If the format is invalid.
+     * @return A [Result] enclosing the deserialized [Questionnaire] resource or an error.
      */
-    fun deserializeQuestionnaire(jsonString: String): Questionnaire =
-        try {
-            fhirJson.decodeFromString(jsonString) as Questionnaire
-        } catch (e: IllegalArgumentException) {
-            throw IllegalArgumentException("Invalid FHIR JSON format", e)
-        }
+    fun deserializeQuestionnaire(jsonString: String): Result<Questionnaire> =
+        runCatching { fhirJson.decodeFromString(jsonString) as Questionnaire }
 }

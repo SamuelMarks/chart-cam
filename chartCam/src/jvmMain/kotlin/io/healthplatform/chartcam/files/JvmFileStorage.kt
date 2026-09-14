@@ -57,6 +57,22 @@ class JvmFileStorage : FileStorage {
     }
 
     /**
+     * Deletes the specified file from storage.
+     *
+     * @param path The absolute path to the file to be deleted.
+     * @return A [Result] indicating success or failure of the deletion.
+     */
+    override fun deleteImage(path: String): Result<Unit> {
+        val okPath = path.toPath()
+        return if (fileSystem.exists(okPath)) {
+            fileSystem.delete(okPath)
+            Result.success(Unit)
+        } else {
+            Result.failure(java.io.FileNotFoundException("File not found: $path"))
+        }
+    }
+
+    /**
      * Clears the file cache. This is currently a no-op on the JVM platform.
      */
     override fun clearCache() { /* no-op */ }

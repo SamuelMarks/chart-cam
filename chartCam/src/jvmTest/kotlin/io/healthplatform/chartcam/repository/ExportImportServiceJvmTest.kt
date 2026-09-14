@@ -74,7 +74,7 @@ class ExportImportServiceJvmTest {
 
             // Test Export
             val password = "securePassword123"
-            val encryptedData = service.exportData(password, exportAll = true)
+            val encryptedData = service.exportData(password, exportAll = true).getOrThrow()
 
             assertNotNull(encryptedData)
             assertTrue(encryptedData.isNotEmpty())
@@ -85,7 +85,7 @@ class ExportImportServiceJvmTest {
             val db2 = ChartCamDatabase(driver2)
             val service2 = ExportImportService(db2, fileStorage)
 
-            service2.importData(encryptedData, password)
+            service2.importData(encryptedData, password).getOrThrow()
 
             val fhirRepo2 = FhirRepository(db2)
             val importedPrac = fhirRepo2.getPractitioner("prac_1")
@@ -106,14 +106,8 @@ class ExportImportServiceJvmTest {
             val malformedJson = """{"resourceType": "Patient", "id": "fake"}"""
             val encryptedData = cryptoService.encrypt(malformedJson, password)
 
-            var exceptionThrown = false
-            try {
-                service.importData(encryptedData, password)
-            } catch (e: Exception) {
-                exceptionThrown = true
-            }
-
-            assertTrue(exceptionThrown, "Expected an exception when importing malformed FHIR data")
+            val result = service.importData(encryptedData, password)
+            assertTrue(result.isFailure, "Expected a failure result when importing malformed FHIR data")
         }
 
     /**
@@ -123,16 +117,10 @@ class ExportImportServiceJvmTest {
     fun testWrongPasswordFails() =
         runTest {
             val password = "securePassword123"
-            val encryptedData = service.exportData(password, exportAll = true)
+            val encryptedData = service.exportData(password, exportAll = true).getOrThrow()
 
-            var exceptionThrown = false
-            try {
-                service.importData(encryptedData, "wrong_password")
-            } catch (e: Exception) {
-                exceptionThrown = true
-            }
-
-            assertTrue(exceptionThrown, "Expected an exception when decrypting with the wrong password")
+            val result = service.importData(encryptedData, "wrong_password")
+            assertTrue(result.isFailure, "Expected a failure result when decrypting with the wrong password")
         }
 
     /**
@@ -156,7 +144,7 @@ class ExportImportServiceJvmTest {
                 )
             fhirRepo.saveDocumentReference(docRef)
 
-            val encryptedData = service.exportData("password", exportAll = true)
+            val encryptedData = service.exportData("password", exportAll = true).getOrThrow()
             assertTrue(encryptedData.isNotEmpty())
         }
 
@@ -186,7 +174,15 @@ class ExportImportServiceJvmTest {
          * @param path The path of the file.
          * @return The byte array.
          */
-        override fun readImage(path: String): ByteArray = files[path] ?: throw IllegalArgumentException("File not found")
+        override fun readImage(path: String): ByteArray = files[path] ?: ByteArray(0)
+
+        /**
+         * Delete an image.
+         * @param path The path of the file.
+         * @return True if deleted.
+         */
+        override fun deleteImage(path: String): Result<Unit> =
+            if (files.remove(path) != null) Result.success(Unit) else Result.failure(Exception("File not found: $path"))
 
         /** Clear cache. */
         override fun clearCache() {

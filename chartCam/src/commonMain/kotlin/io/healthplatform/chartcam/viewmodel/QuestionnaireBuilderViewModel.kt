@@ -11,6 +11,7 @@ import com.google.fhir.model.r4.Enumeration
 import com.google.fhir.model.r4.Integer
 import com.google.fhir.model.r4.Questionnaire
 import com.google.fhir.model.r4.String
+import com.google.fhir.model.r4.Uri
 import com.google.fhir.model.r4.terminologies.PublicationStatus
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import io.healthplatform.chartcam.fhir.getItemControl
@@ -383,13 +384,21 @@ class QuestionnaireBuilderViewModel(
      * for strict FHIR structural validation (such as ensuring Choice items have options).
      * Additionally, it checks the UI builder state to ensure no items are currently flagged with an error.
      *
-     * @return True if valid, false if there are validation errors.
+     * @return A [Result] enclosing the built [Questionnaire] if valid, or a failure result.
      */
-    fun validate(): kotlin.Boolean {
-        if (_state.value.items.any { it.isError }) return false
+    fun validate(): Result<Questionnaire> {
+        if (_state.value.items.any { it.isError }) {
+            return Result.failure(IllegalStateException("One or more questionnaire items contain errors"))
+        }
         val questionnaire = buildQuestionnaire()
-        return io.healthplatform.chartcam.validation.FhirValidator
-            .validate(questionnaire)
+        val validationResult =
+            io.healthplatform.chartcam.validation.FhirValidator
+                .validate(questionnaire)
+        return if (validationResult.isSuccess) {
+            Result.success(questionnaire)
+        } else {
+            Result.failure(validationResult.exceptionOrNull() ?: IllegalStateException("Validation failed"))
+        }
     }
 
     /**
@@ -455,11 +464,8 @@ class QuestionnaireBuilderViewModel(
                 .lowercase()
                 .replace(Regex("[^a-z0-9]+"), "-")
                 .trim('-')
-        val fallbackUuid =
-            io.healthplatform.chartcam.utils.UUID
-                .randomUUID()
-                .take(UUID_SLUG_PREFIX_LENGTH)
-        val id = if (rawSlug.isNotEmpty()) "custom-$rawSlug" else "custom-$fallbackUuid"
+        val titleHash = kotlin.math.abs(currentState.title.hashCode()).toString(16)
+        val id = if (rawSlug.isNotEmpty()) "custom-$rawSlug" else "custom-i18n-$titleHash"
 
         val fhirItems = currentState.items.map { mapBuilderItemToFhir(it) }
 
@@ -467,6 +473,7 @@ class QuestionnaireBuilderViewModel(
             .Builder(Enumeration(value = PublicationStatus.Active))
             .apply {
                 this.id = id
+                this.url = Uri.Builder().apply { value = "http://healthplatform.io/fhir/Questionnaire/$id" }
                 this.title = String.Builder().apply { value = currentState.title }
                 this.item.addAll(fhirItems)
             }.build()
@@ -704,8 +711,7 @@ class QuestionnaireBuilderViewModel(
     fun saveQuestionnaire(): kotlin.String? {
         var finalId: kotlin.String? = null
 
-        if (validate()) {
-            val questionnaire = buildQuestionnaire()
+        validate().onSuccess { questionnaire ->
             val currentId = questionnaire.id
 
             // Ensure uniqueness

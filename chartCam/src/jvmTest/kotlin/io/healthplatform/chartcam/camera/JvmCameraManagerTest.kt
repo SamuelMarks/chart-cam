@@ -74,7 +74,7 @@ class JvmCameraManagerTest {
             val manager = JvmPermissionManager()
 
             assertEquals(PermissionStatus.GRANTED, manager.getCameraPermissionStatus())
-            assertTrue(manager.requestCameraPermission())
+            assertTrue(manager.requestCameraPermission().isSuccess)
 
             // Ensure no-op doesn't crash
             manager.openSettings()

@@ -1,6 +1,5 @@
 /**
  * @file DateFormatter.jvm.kt
- * @file DateFormatter.jvm.kt
  * Contains declarations for DateFormatter.jvm.kt.
  */
 package io.healthplatform.chartcam.utils
@@ -24,12 +23,12 @@ actual fun formatLocalizedDate(
 ): String {
     if (fhirDate.isBlank()) return fhirDate
     val locale = Locale.forLanguageTag(language)
-    return try {
+    return runCatching {
         if (fhirDate.contains("T")) {
             val dateTime =
-                try {
+                runCatching {
                     ZonedDateTime.parse(fhirDate)
-                } catch (_: java.time.format.DateTimeParseException) {
+                }.getOrElse {
                     java.time.LocalDateTime
                         .parse(fhirDate)
                         .atZone(java.time.ZoneId.systemDefault())
@@ -41,7 +40,7 @@ actual fun formatLocalizedDate(
             val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
             date.format(formatter)
         }
-    } catch (e: java.time.format.DateTimeParseException) {
+    }.getOrElse { e ->
         println(e.message)
         fhirDate
     }
@@ -60,18 +59,18 @@ actual fun formatLocalizedDateTime(
 ): String {
     if (fhirDateTime.isBlank()) return fhirDateTime
     val locale = Locale.forLanguageTag(language)
-    return try {
+    return runCatching {
         val dateTime =
-            try {
+            runCatching {
                 ZonedDateTime.parse(fhirDateTime)
-            } catch (_: java.time.format.DateTimeParseException) {
+            }.getOrElse {
                 java.time.LocalDateTime
                     .parse(fhirDateTime)
                     .atZone(java.time.ZoneId.systemDefault())
             }
         val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(locale)
         dateTime.format(formatter)
-    } catch (e: java.time.format.DateTimeParseException) {
+    }.getOrElse { e ->
         println(e.message)
         fhirDateTime
     }

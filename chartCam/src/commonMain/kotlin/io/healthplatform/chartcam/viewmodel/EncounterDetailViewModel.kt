@@ -74,12 +74,14 @@ data class EncounterUiState(
  * @param authRepository The repository providing authentication state.
  * @param questionnaireRepository The repository for managing and retrieving questionnaires.
  * @param recoveredFormResolver Function providing the localized title for recovered questionnaires.
+ * @param fileStorage The file storage instance for media file operations.
  */
 class EncounterDetailViewModel(
     private val fhirRepository: FhirRepository,
     private val authRepository: AuthRepository,
     private val questionnaireRepository: QuestionnaireRepository,
     private val recoveredFormResolver: () -> String = { "Recovered Form" },
+    private val fileStorage: io.healthplatform.chartcam.files.FileStorage? = null,
 ) : ViewModel() {
     /** Internal mutable state flow holding the Encounter UI state. */
     private val _uiState = MutableStateFlow(EncounterUiState())
@@ -360,12 +362,50 @@ class EncounterDetailViewModel(
     }
 
     /**
+     * Sanitizes existing answers when switching questionnaires, retaining type-compatible values.
+     *
+     * @param currentAnswers The currently held map of answers.
+     * @param targetQ The target questionnaire being switched to.
+     * @return The filtered and type-compatible answers map.
+     */
+    private fun sanitizeAnswersForQuestionnaire(
+        currentAnswers: Map<String, Any>,
+        targetQ: Questionnaire,
+    ): Map<String, Any> {
+        val targetItems = mutableMapOf<String, Questionnaire.Item>()
+        val queue = ArrayDeque(targetQ.item)
+        while (queue.isNotEmpty()) {
+            val item = queue.removeFirst()
+            item.linkId.value?.let { targetItems[it] = item }
+            queue.addAll(item.item)
+        }
+
+        return currentAnswers.filter { (linkId, value) ->
+            val targetItem = targetItems[linkId] ?: return@filter true
+            when (targetItem.type.value) {
+                Questionnaire.QuestionnaireItemType.Integer ->
+                    value is Int || value is Long || value.toString().toIntOrNull() != null
+                Questionnaire.QuestionnaireItemType.Decimal ->
+                    value is Number || value.toString().toDoubleOrNull() != null
+                Questionnaire.QuestionnaireItemType.Boolean ->
+                    value is Boolean || value.toString().toBooleanStrictOrNull() != null
+                else -> true
+            }
+        }
+    }
+
+    /**
      * Changes the selected Questionnaire form.
      *
      * @param q The newly selected Questionnaire.
      */
     fun selectQuestionnaire(q: Questionnaire) {
-        _uiState.update { it.copy(selectedQuestionnaire = q) }
+        _uiState.update {
+            it.copy(
+                selectedQuestionnaire = q,
+                answers = sanitizeAnswersForQuestionnaire(it.answers, q),
+            )
+        }
     }
 
     /**
@@ -376,7 +416,12 @@ class EncounterDetailViewModel(
     fun selectQuestionnaireById(id: String) {
         val q = _uiState.value.availableQuestionnaires.find { it.id == id }
         if (q != null) {
-            _uiState.update { it.copy(selectedQuestionnaire = q) }
+            _uiState.update {
+                it.copy(
+                    selectedQuestionnaire = q,
+                    answers = sanitizeAnswersForQuestionnaire(it.answers, q),
+                )
+            }
         } else {
             // Might not be in the current state's list yet if it was just created
             val freshList = questionnaireRepository.getAvailableQuestionnaires()
@@ -386,6 +431,7 @@ class EncounterDetailViewModel(
                     it.copy(
                         availableQuestionnaires = freshList,
                         selectedQuestionnaire = freshQ,
+                        answers = sanitizeAnswersForQuestionnaire(it.answers, freshQ),
                     )
                 }
             }
@@ -539,7 +585,11 @@ class EncounterDetailViewModel(
     fun deleteEncounter(onSuccess: () -> Unit) {
         val encId = _uiState.value.encounter?.id ?: return
         viewModelScope.launch {
-            fhirRepository.deleteEncounter(encId)
+            if (fileStorage != null) {
+                fhirRepository.deleteEncounter(encId, fileStorage)
+            } else {
+                fhirRepository.deleteEncounter(encId)
+            }
             onSuccess()
         }
     }
@@ -569,7 +619,7 @@ class EncounterDetailViewModel(
                     this.encounter = buildEncounterReference(id)
                     this.questionnaire = Canonical.Builder().apply { value = q.id ?: "" }
 
-                    try {
+                    runCatching {
                         this.authored =
                             DateTime.Builder().apply {
                                 value =
@@ -579,8 +629,6 @@ class EncounterDetailViewModel(
                                             .toString(),
                                     )
                             }
-                    } catch (ignored: RuntimeException) {
-                        // Ignored
                     }
 
                     if (q.item.isNotEmpty()) {

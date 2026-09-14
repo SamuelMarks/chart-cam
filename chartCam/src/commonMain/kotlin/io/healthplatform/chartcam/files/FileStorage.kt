@@ -30,6 +30,14 @@ interface FileStorage {
     fun readImage(path: String): ByteArray
 
     /**
+     * Deletes the given file from storage.
+     *
+     * @param path The absolute path of the saved file.
+     * @return A [Result] indicating success or failure of the deletion.
+     */
+    fun deleteImage(path: String): Result<Unit>
+
+    /**
      * Deletes all temporary files in the capture cache.
      */
     fun clearCache()

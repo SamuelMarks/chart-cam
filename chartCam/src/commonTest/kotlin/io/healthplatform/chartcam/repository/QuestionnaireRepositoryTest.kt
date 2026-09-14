@@ -23,10 +23,12 @@ class FakeQuestionnaireRepository {
     /**
      * Saves a Questionnaire.
      * @param questionnaire The questionnaire.
+     * @return Result indicating success or failure if ID is missing.
      */
-    fun saveQuestionnaire(questionnaire: Questionnaire) {
-        val id = questionnaire.id ?: throw IllegalArgumentException("ID is required")
+    fun saveQuestionnaire(questionnaire: Questionnaire): Result<Unit> {
+        val id = questionnaire.id ?: return Result.failure(IllegalArgumentException("ID is required"))
         memoryDb[id] = questionnaire
+        return Result.success(Unit)
     }
 
     /**
@@ -245,5 +247,23 @@ class QuestionnaireRepositoryTest {
                 ?.display
                 ?.value
         assertEquals("常規", zhOptVal)
+    }
+
+    /**
+     * Verifies that saving a questionnaire without an ID returns Result.failure.
+     */
+    @Test
+    fun testSaveQuestionnaireWithoutIdReturnsFailure() {
+        val repo = QuestionnaireRepository()
+        val qWithoutId =
+            Questionnaire
+                .Builder(Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active))
+                .apply {
+                    title = String.Builder().apply { value = "No ID" }
+                }.build()
+
+        val result = repo.saveQuestionnaire(qWithoutId)
+        assertEquals(true, result.isFailure)
+        assertEquals(true, result.exceptionOrNull() is IllegalArgumentException)
     }
 }

@@ -62,4 +62,23 @@ class SecureStorageCommonTest {
         storage.delete("key")
         assertNull(storage.getString("key"))
     }
+
+    /**
+     * Tests safe Result-returning extensions for SecureStorage.
+     */
+    @Test
+    fun testSecureStorageCatching() {
+        val storage = MockSecureStorage()
+
+        val saveResult = storage.saveCatching("auth_token", "secret_123")
+        kotlin.test.assertTrue(saveResult.isSuccess)
+
+        val readResult = storage.getStringCatching("auth_token")
+        kotlin.test.assertTrue(readResult.isSuccess)
+        assertEquals("secret_123", readResult.getOrNull())
+
+        val deleteResult = storage.deleteCatching("auth_token")
+        kotlin.test.assertTrue(deleteResult.isSuccess)
+        assertNull(storage.getString("auth_token"))
+    }
 }

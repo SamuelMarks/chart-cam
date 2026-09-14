@@ -44,3 +44,31 @@ interface SecureStorage {
  * @return A concrete implementation of [SecureStorage] suitable for the current platform.
  */
 expect fun createSecureStorage(): SecureStorage
+
+/**
+ * Safely saves a key-value pair to secure storage, encapsulating any platform exceptions in a [Result].
+ *
+ * @param key The unique key to identify the data.
+ * @param value The sensitive string to store.
+ * @return A [Result] indicating success or failure.
+ */
+fun SecureStorage.saveCatching(
+    key: String,
+    value: String,
+): Result<Unit> = runCatching { save(key, value) }
+
+/**
+ * Safely retrieves a key from secure storage, encapsulating any platform exceptions in a [Result].
+ *
+ * @param key The key to look up.
+ * @return A [Result] enclosing the string value if found or null, or failure on storage error.
+ */
+fun SecureStorage.getStringCatching(key: String): Result<String?> = runCatching { getString(key) }
+
+/**
+ * Safely deletes a key from secure storage, encapsulating any platform exceptions in a [Result].
+ *
+ * @param key The key to remove.
+ * @return A [Result] indicating success or failure.
+ */
+fun SecureStorage.deleteCatching(key: String): Result<Unit> = runCatching { delete(key) }

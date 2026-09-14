@@ -54,6 +54,9 @@ class DicomExportServiceJvmTest {
 
         override fun readImage(path: kotlin.String): ByteArray = files[path] ?: ByteArray(0)
 
+        override fun deleteImage(path: kotlin.String): Result<Unit> =
+            if (files.remove(path) != null) Result.success(Unit) else Result.failure(Exception("File not found: $path"))
+
         override fun clearCache() {
             files.clear()
         }

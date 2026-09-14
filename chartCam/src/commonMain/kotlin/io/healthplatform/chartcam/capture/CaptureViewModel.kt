@@ -14,6 +14,7 @@ import chartcam.chartcam.generated.resources.error_capture_empty_image
 import chartcam.chartcam.generated.resources.error_capture_save_failed
 import io.healthplatform.chartcam.camera.CameraManager
 import io.healthplatform.chartcam.files.FileStorage
+import io.healthplatform.chartcam.utils.runSuspendCatching
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -55,12 +56,26 @@ class CaptureViewModel(
     fun initSteps(steps: List<PhotoStep>) {
         if (steps.isNotEmpty() && stepsSequence.isEmpty()) {
             stepsSequence = steps
-            currentStepIndex = 0
-            _uiState.update {
-                it.copy(
-                    currentStep = steps.first(),
-                    totalSteps = steps.size,
-                )
+            if (filePaths.isNotEmpty()) {
+                currentStepIndex = filePaths.size
+                val nextStep = if (currentStepIndex < steps.size) steps[currentStepIndex] else null
+                val isDone = currentStepIndex >= steps.size
+                _uiState.update {
+                    it.copy(
+                        currentStep = nextStep,
+                        totalSteps = steps.size,
+                        capturedCount = filePaths.size,
+                        isFinished = isDone,
+                    )
+                }
+            } else {
+                currentStepIndex = 0
+                _uiState.update {
+                    it.copy(
+                        currentStep = steps.first(),
+                        totalSteps = steps.size,
+                    )
+                }
             }
         } else if (steps.isEmpty()) {
             _uiState.update { it.copy(isFinished = true) }
@@ -77,8 +92,9 @@ class CaptureViewModel(
         _uiState.update { it.copy(isCapturing = true) }
 
         viewModelScope.launch {
-            try {
-                val bytes = cameraManager.captureImage()
+            runSuspendCatching {
+                cameraManager.captureImage()
+            }.onSuccess { bytes ->
                 if (bytes != null && bytes.isNotEmpty()) {
                     _uiState.update {
                         it.copy(
@@ -99,18 +115,7 @@ class CaptureViewModel(
                         )
                     }
                 }
-            } catch (e: IllegalStateException) {
-                println("Capture error: ${e.message}")
-                val detail = e.message ?: "Unknown error"
-                _uiState.update {
-                    it.copy(
-                        isCapturing = false,
-                        error = CaptureError.CameraFailed(detail),
-                        errorMessage = "Camera capture failed: $detail",
-                        errorMessageResource = Res.string.error_camera_capture_failed,
-                    )
-                }
-            } catch (e: IllegalArgumentException) {
+            }.onFailure { e ->
                 println("Capture error: ${e.message}")
                 val detail = e.message ?: "Unknown error"
                 _uiState.update {
@@ -134,7 +139,7 @@ class CaptureViewModel(
         val bytes = currentState.reviewImageBytes ?: return
         val currentStep = currentState.currentStep ?: return
 
-        try {
+        runCatching {
             // 1. Save File
             val fileName = "capture_${io.healthplatform.chartcam.utils.UUID.randomUUID()}_${currentStep.id}.jpg"
             val path = fileStorage.saveImage(fileName, bytes)
@@ -167,18 +172,8 @@ class CaptureViewModel(
                     )
                 }
             }
-        } catch (e: IllegalStateException) {
+        }.onFailure { e ->
             println("Storage error: ${e.message}")
-            _uiState.update {
-                it.copy(
-                    reviewImageBytes = null,
-                    error = CaptureError.SaveFailed,
-                    errorMessage = "Failed to save photo: storage is full or disk error occurred.",
-                    errorMessageResource = Res.string.error_capture_save_failed,
-                )
-            }
-        } catch (e: IllegalArgumentException) {
-            println("Argument error: ${e.message}")
             _uiState.update {
                 it.copy(
                     reviewImageBytes = null,

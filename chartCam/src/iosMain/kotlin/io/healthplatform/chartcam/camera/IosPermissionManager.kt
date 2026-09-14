@@ -52,19 +52,34 @@ class IosPermissionManager : PermissionManager {
      * If the status is undetermined, it prompts the user using
      * [requestAccessForMediaType] and suspends until the user responds.
      *
-     * @return `true` if permission is granted, `false` otherwise. Note that iOS
-     *         does not allow re-prompting once denied, so it will return `false`
-     *         immediately if previously denied.
+     * @return A [Result] indicating success if granted, or [PermissionDeniedException] if denied.
      */
-    override suspend fun requestCameraPermission(): Boolean {
+    override suspend fun requestCameraPermission(): Result<Unit> {
         val status = getCameraPermissionStatus()
         return when (status) {
-            PermissionStatus.GRANTED -> true
-            PermissionStatus.DENIED -> false
+            PermissionStatus.GRANTED -> Result.success(Unit)
+            PermissionStatus.DENIED ->
+                Result.failure(
+                    PermissionDeniedException(
+                        isPermanentlyDenied = true,
+                        message = "iOS camera access was previously denied",
+                    ),
+                )
             else ->
                 suspendCoroutine { continuation ->
                     AVCaptureDevice.requestAccessForMediaType(AVMediaTypeVideo) { granted ->
-                        continuation.resume(granted)
+                        if (granted) {
+                            continuation.resume(Result.success(Unit))
+                        } else {
+                            continuation.resume(
+                                Result.failure(
+                                    PermissionDeniedException(
+                                        isPermanentlyDenied = true,
+                                        message = "iOS camera permission prompt was denied",
+                                    ),
+                                ),
+                            )
+                        }
                     }
                 }
         }

@@ -121,3 +121,11 @@ fun getLocalizedDateTimePattern(language: String = io.healthplatform.chartcam.ui
     val datePattern = getLocalizedDatePattern(language)
     return "$datePattern HH:MM"
 }
+
+/**
+ * Safely parses an ISO date string into a [LocalDate], encapsulating the result in a [Result].
+ *
+ * @param dateStr The date string to parse.
+ * @return A [Result] containing the parsed [LocalDate] or failure.
+ */
+fun parseIsoDate(dateStr: String): Result<LocalDate> = runCatching { LocalDate.parse(dateStr.trim()) }

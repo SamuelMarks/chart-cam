@@ -13,6 +13,7 @@ import com.google.fhir.model.r4.Practitioner
 import com.google.fhir.model.r4.String
 import io.healthplatform.chartcam.models.TokenResponse
 import io.healthplatform.chartcam.storage.SecureStorage
+import io.healthplatform.chartcam.utils.runSuspendCatching
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -123,7 +124,7 @@ open class AuthRepository(
         username: kotlin.String,
         password: kotlin.String,
     ): Result<Practitioner> =
-        try {
+        runSuspendCatching {
             val hashKey = "hash_$username"
             val storedHash = storage.getString(hashKey)
             val inputHash = hashString(password)
@@ -165,11 +166,7 @@ open class AuthRepository(
                     }.build()
 
             _currentUser.value = practitioner
-            Result.success(practitioner)
-        } catch (e: IllegalArgumentException) {
-            Result.failure(e)
-        } catch (e: IllegalStateException) {
-            Result.failure(e)
+            practitioner
         }
 
     /**
@@ -216,9 +213,9 @@ open class AuthRepository(
      * Checks if a valid token exists in storage and restores the session if it does.
      * Sets the [currentUser] flow with the restored profile.
      *
-     * @return True if session successfully restored, False otherwise.
+     * @return A [Result] enclosing the restored [Practitioner] or an error if no active session exists.
      */
-    open suspend fun checkSession(): kotlin.Boolean {
+    open suspend fun checkSession(): Result<Practitioner> {
         val token = storage.getString(KEY_ACCESS_TOKEN)
         val username = storage.getString(KEY_CURRENT_USERNAME) ?: "Doe"
         if (!token.isNullOrEmpty()) {
@@ -228,7 +225,7 @@ open class AuthRepository(
             val familyName = if (isDemo) "Clinician" else username
             val givenName = if (isDemo) "Dr. Demo" else "Dr."
 
-            _currentUser.value =
+            val practitioner =
                 Practitioner
                     .Builder()
                     .apply {
@@ -241,10 +238,11 @@ open class AuthRepository(
                             },
                         )
                     }.build()
-            return true
+            _currentUser.value = practitioner
+            return Result.success(practitioner)
         }
         _isDemoSession.value = false
-        return false
+        return Result.failure(IllegalStateException("No active session or access token stored"))
     }
 
     /**
@@ -275,22 +273,18 @@ open class AuthRepository(
      * Updates the secure storage with the new access token on success.
      * Thread-safe against concurrent simultaneous background refresh requests.
      *
-     * @return Boolean indicating success or failure of the refresh operation.
+     * @return A [Result] enclosing the new access token or an error.
      */
-    open suspend fun refreshToken(): kotlin.Boolean =
+    open suspend fun refreshToken(): Result<kotlin.String> =
         refreshMutex.withLock {
-            val refreshToken = storage.getString(KEY_REFRESH_TOKEN) ?: return false
+            val refreshToken =
+                storage.getString(KEY_REFRESH_TOKEN)
+                    ?: return Result.failure(NoSuchElementException("No refresh token stored"))
 
-            try {
+            runCatching {
                 val newAccess = "refreshed_access_token_${Clock.System.now().toEpochMilliseconds()}"
                 storage.save(KEY_ACCESS_TOKEN, newAccess)
-                true
-            } catch (e: IllegalArgumentException) {
-                println("Failed to refresh token: ${e.message}")
-                false
-            } catch (e: IllegalStateException) {
-                println("Failed to refresh token: ${e.message}")
-                false
+                newAccess
             }
         }
 }

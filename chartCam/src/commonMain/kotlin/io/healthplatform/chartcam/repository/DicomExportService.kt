@@ -149,9 +149,18 @@ open class DicomExportService(
         anonymize: Boolean = false,
     ): ByteArray {
         val files = mutableMapOf<String, ByteArray>()
-        val patient = fhirRepo.getPatient(patientId)
-        val encounters = fhirRepo.getAllEncounters().filter { it.subject?.reference?.value == "Patient/$patientId" }
-        val encIds = encounters.mapNotNull { it.id }.toSet()
+        val cleanPatientId = patientId.removePrefix("Patient/")
+        val patient = fhirRepo.getPatient(cleanPatientId)
+        val encounters =
+            fhirRepo.getAllEncounters().filter {
+                val ref =
+                    it.subject
+                        ?.reference
+                        ?.value
+                        ?.removePrefix("Patient/")
+                ref == cleanPatientId
+            }
+        val encIds = encounters.mapNotNull { it.id?.removePrefix("Encounter/") }.toSet()
 
         val docRefs =
             fhirRepo.getAllDocumentReferences().filter { doc ->

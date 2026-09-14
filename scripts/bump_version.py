@@ -329,6 +329,50 @@ def update_build_metadata(
     return True
 
 
+def update_build_metadata_test(
+    file_path: str, new_version: str, dry_run: bool = False
+) -> bool:
+    """
+    Update the version string in BuildMetadataTest.kt.
+
+    :param file_path: Path to BuildMetadataTest.kt.
+    :type file_path: str
+    :param new_version: The new semantic version string.
+    :type new_version: str
+    :param dry_run: If True, do not write changes to disk.
+    :type dry_run: bool
+    :return: True if the file was modified or would be modified.
+    :rtype: bool
+    """
+    if not os.path.exists(file_path):
+        return False
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    pattern1 = r'assertEquals\("[^"]*",\s*BuildMetadata\.VERSION_NAME\)'
+    new_content, count1 = re.subn(
+        pattern1,
+        f'assertEquals("{new_version}", BuildMetadata.VERSION_NAME)',
+        content,
+    )
+    pattern2 = r'assertEquals\("[^"]*?\s*—\s*https://healthplatform\.io",\s*formatted\)'
+    new_content, count2 = re.subn(
+        pattern2,
+        f'assertEquals("{new_version} — https://healthplatform.io", formatted)',
+        new_content,
+    )
+
+    if count1 == 0 and count2 == 0:
+        return False
+
+    if not dry_run and new_content != content:
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(new_content)
+
+    return True
+
+
 def bump_all_components(
     project_root: str,
     new_version: Optional[str] = None,
@@ -389,6 +433,18 @@ def bump_all_components(
         "config",
         "BuildMetadata.kt",
     )
+    build_metadata_test = os.path.join(
+        project_root,
+        "chartCam",
+        "src",
+        "commonTest",
+        "kotlin",
+        "io",
+        "healthplatform",
+        "chartcam",
+        "config",
+        "BuildMetadataTest.kt",
+    )
 
     update_android_build(android_build, target_version, target_code, dry_run=dry_run)
     update_ios_xcconfig(ios_xcconfig, target_version, target_code, dry_run=dry_run)
@@ -396,6 +452,8 @@ def bump_all_components(
     update_jvm_package_version(jvm_build, target_version, dry_run=dry_run)
     if os.path.exists(build_metadata):
         update_build_metadata(build_metadata, target_version, dry_run=dry_run)
+    if os.path.exists(build_metadata_test):
+        update_build_metadata_test(build_metadata_test, target_version, dry_run=dry_run)
     if os.path.exists(about_screen):
         try:
             update_about_version(about_screen, target_version, dry_run=dry_run)

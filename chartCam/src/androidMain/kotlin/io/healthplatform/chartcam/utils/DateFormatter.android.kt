@@ -26,11 +26,11 @@ actual fun formatLocalizedDate(
         formatLocalizedDateTime(fhirDate, language)
     } else {
         val locale = Locale.forLanguageTag(language)
-        try {
+        runCatching {
             val date = LocalDate.parse(fhirDate)
             val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
             date.format(formatter)
-        } catch (e: java.time.format.DateTimeParseException) {
+        }.getOrElse { e ->
             println("Date parsing failed: ${e.message}")
             fhirDate // Fallback to raw string on parse error
         }
@@ -50,18 +50,18 @@ actual fun formatLocalizedDateTime(
 ): String {
     if (fhirDateTime.isBlank()) return fhirDateTime
     val locale = Locale.forLanguageTag(language)
-    return try {
+    return runCatching {
         val dateTime =
-            try {
+            runCatching {
                 ZonedDateTime.parse(fhirDateTime)
-            } catch (_: java.time.format.DateTimeParseException) {
+            }.getOrElse {
                 java.time.LocalDateTime
                     .parse(fhirDateTime)
                     .atZone(java.time.ZoneId.systemDefault())
             }
         val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(locale)
         dateTime.format(formatter)
-    } catch (e: java.time.format.DateTimeParseException) {
+    }.getOrElse { e ->
         println("DateTime parsing failed: ${e.message}")
         fhirDateTime
     }

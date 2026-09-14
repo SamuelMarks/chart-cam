@@ -9,7 +9,7 @@ package io.healthplatform.chartcam.config
  */
 object BuildMetadata {
     /** The application version name. */
-    const val VERSION_NAME: String = "1.0.3"
+    const val VERSION_NAME: String = "1.0.4"
 
     /** The official application website URL. */
     const val WEBSITE_URL: String = "https://healthplatform.io"

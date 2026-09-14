@@ -11,7 +11,6 @@ import io.healthplatform.chartcam.storage.SecureStorage
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -103,9 +102,9 @@ class AuthRepositoryJvmTest {
                 }
             val repo = AuthRepository(storage)
 
-            val success = repo.refreshToken()
+            val result = repo.refreshToken()
 
-            assertFalse(success)
+            assertTrue(result.isFailure)
         }
 
     /**
@@ -191,10 +190,10 @@ class AuthRepositoryJvmTest {
             val storage = MockStorage()
             val repo = AuthRepository(storage)
 
-            assertFalse(repo.checkSession())
+            assertTrue(repo.checkSession().isFailure)
 
             repo.login("dr_house", "password123")
-            assertTrue(repo.checkSession())
+            assertTrue(repo.checkSession().isSuccess)
             assertEquals(
                 "dr_house",
                 repo.currentUser.value
@@ -204,7 +203,7 @@ class AuthRepositoryJvmTest {
             )
 
             repo.logout()
-            assertFalse(repo.checkSession())
+            assertTrue(repo.checkSession().isFailure)
         }
 
     /**
@@ -218,7 +217,7 @@ class AuthRepositoryJvmTest {
 
             storage.save("access_token", "token")
 
-            assertTrue(repo.checkSession())
+            assertTrue(repo.checkSession().isSuccess)
             assertEquals(
                 "Doe",
                 repo.currentUser.value
@@ -239,9 +238,9 @@ class AuthRepositoryJvmTest {
 
             val repo = AuthRepository(storage)
 
-            val success = repo.refreshToken()
+            val result = repo.refreshToken()
 
-            assertTrue(success)
+            assertTrue(result.isSuccess)
             assertNotNull(storage.getString("access_token"))
         }
 
@@ -254,8 +253,8 @@ class AuthRepositoryJvmTest {
             val storage = MockStorage()
             val repo = AuthRepository(storage)
 
-            val success = repo.refreshToken()
+            val result = repo.refreshToken()
 
-            assertFalse(success)
+            assertTrue(result.isFailure)
         }
 }

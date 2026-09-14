@@ -34,7 +34,7 @@ object QuestionnaireResponseGenerator {
     ): QuestionnaireResponse {
         val responseItemBuilders =
             questionnaire.item.mapNotNull { item ->
-                createResponseItemBuilder(item, answers)
+                createResponseItemBuilder(item, emptyList(), answers)
             }
 
         return QuestionnaireResponse
@@ -53,16 +53,24 @@ object QuestionnaireResponseGenerator {
      * Creates a builder for a [QuestionnaireResponse.Item] from a given [Questionnaire.Item] and answers map.
      *
      * @param item The questionnaire item.
+     * @param ancestors The list of ancestor items.
      * @param answers The map of answers.
      * @return A builder for the questionnaire response item, or null if it cannot be built.
      */
     private fun createResponseItemBuilder(
         item: Questionnaire.Item,
+        ancestors: List<Questionnaire.Item>,
         answers: Map<kotlin.String, Any>,
     ): QuestionnaireResponse.Item.Builder? {
+        if (!io.healthplatform.chartcam.sdc.SdcEvaluator
+                .isItemHierarchyEnabled(item, ancestors, answers)
+        ) {
+            return null
+        }
         val linkId = item.linkId.value ?: return null
         val answerValue = answers[linkId]
-        val nestedItemBuilders = item.item.mapNotNull { createResponseItemBuilder(it, answers) }
+        val nextAncestors = ancestors + item
+        val nestedItemBuilders = item.item.mapNotNull { createResponseItemBuilder(it, nextAncestors, answers) }
 
         return if (answerValue == null && nestedItemBuilders.isEmpty()) {
             null
@@ -177,7 +185,7 @@ object QuestionnaireResponseGenerator {
         answerValue: Any,
     ) {
         val fl = (answerValue as? Number)?.toFloat() ?: (answerValue as? kotlin.String)?.toFloatOrNull()
-        if (fl != null) {
+        if (fl != null && !fl.isNaN() && !fl.isInfinite()) {
             val decimalValue = BigDecimal.parseString(fl.toString())
             builder.answer.add(
                 QuestionnaireResponse.Item.Answer.Builder().apply {

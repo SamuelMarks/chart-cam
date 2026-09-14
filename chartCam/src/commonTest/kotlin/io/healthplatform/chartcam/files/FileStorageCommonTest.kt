@@ -40,6 +40,18 @@ class FileStorageCommonTest {
          */
         override fun readImage(path: String): ByteArray = storage[path] ?: ByteArray(0)
 
+        /**
+         * Delete an image from the map.
+         * @param path The path.
+         * @return A Result indicating success or failure.
+         */
+        override fun deleteImage(path: String): Result<Unit> =
+            if (storage.remove(path) != null) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("File not found: $path"))
+            }
+
         /** Clear cache. */
         override fun clearCache() {
             storage.clear()
@@ -63,5 +75,16 @@ class FileStorageCommonTest {
         fs.clearCache()
         val emptyData = fs.readImage(path)
         assertEquals(0, emptyData.size)
+    }
+
+    /**
+     * Tests deleteImage in FileStorage.
+     */
+    @Test
+    fun testFileStorageDeleteImage() {
+        val fs = MockFileStorage()
+        val path = fs.saveImage("test.jpg", byteArrayOf(1, 2, 3))
+        kotlin.test.assertTrue(fs.deleteImage(path).isSuccess)
+        kotlin.test.assertTrue(fs.deleteImage(path).isFailure)
     }
 }

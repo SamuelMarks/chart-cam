@@ -4,6 +4,7 @@
  */
 package io.healthplatform.chartcam
 
+import io.healthplatform.chartcam.utils.runSuspendCatching
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -18,13 +19,10 @@ class InitDatabaseTest {
     @Test
     fun testInitDatabase() =
         runTest {
-            // We simulate catching the exception when driver is null
-            var caught = false
-            try {
-                throw IllegalArgumentException("Driver cannot be null")
-            } catch (e: Exception) {
-                caught = true
-            }
-            assertTrue(caught, "Should catch null driver exception")
+            val result =
+                runSuspendCatching {
+                    error("Driver cannot be null")
+                }
+            assertTrue(result.isFailure, "Should capture null driver exception as Result.failure")
         }
 }

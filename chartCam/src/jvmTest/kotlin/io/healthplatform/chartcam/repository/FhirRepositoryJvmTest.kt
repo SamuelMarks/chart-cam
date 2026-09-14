@@ -136,20 +136,10 @@ class FhirRepositoryJvmTest {
             val patient = Patient.Builder().apply { id = "pat_fail" }.build()
             driver.close() // Close DB to simulate failure
 
-            var exceptionThrown = false
-            try {
-                repository.savePatient(patient)
-            } catch (e: Exception) {
-                exceptionThrown = true
-            }
-            kotlin.test.assertTrue(exceptionThrown, "Expected an exception when saving to a closed database")
+            val saveResult = repository.savePatient(patient)
+            kotlin.test.assertTrue(saveResult.isFailure, "Expected Result.failure when saving to a closed database")
 
-            exceptionThrown = false
-            try {
-                repository.getPatient("pat_fail")
-            } catch (e: Exception) {
-                exceptionThrown = true
-            }
-            kotlin.test.assertTrue(exceptionThrown, "Expected an exception when reading from a closed database")
+            val getResult = repository.getPatientCatching("pat_fail")
+            kotlin.test.assertTrue(getResult.isFailure, "Expected Result.failure when reading from a closed database")
         }
 }

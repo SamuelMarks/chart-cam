@@ -47,6 +47,20 @@ class WasmJsFileStorage : FileStorage {
     }
 
     /**
+     * Deletes the specified image from `localStorage`.
+     *
+     * @param path The virtual path assigned when the image was saved.
+     * @return A [Result] indicating success or failure of the deletion.
+     */
+    override fun deleteImage(path: String): Result<Unit> =
+        if (localStorage.getItem(path) != null) {
+            localStorage.removeItem(path)
+            Result.success(Unit)
+        } else {
+            Result.failure(Exception("File not found: $path"))
+        }
+
+    /**
      * Clears all cached image files stored in `localStorage` by removing any keys
      * that match the `mem://path/` virtual prefix.
      */

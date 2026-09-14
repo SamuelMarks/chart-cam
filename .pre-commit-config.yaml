@@ -47,6 +47,12 @@ repos:
         entry: python3 scripts/check_env_leaks.py
         language: system
         pass_filenames: true
+    -   id: check-no-exceptions
+        name: Prevent new exception-using code
+        entry: python3 scripts/check_no_exceptions.py
+        language: system
+        files: \.kt$
+        pass_filenames: true
     -   id: doc-test-coverage
         name: Update Doc and Test Coverage Badges
         entry: python3 scripts/check_coverage.py

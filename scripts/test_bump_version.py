@@ -21,6 +21,8 @@ from scripts.bump_version import (
     detect_current_version,
     update_about_version,
     update_android_build,
+    update_build_metadata,
+    update_build_metadata_test,
     update_ios_pbxproj,
     update_ios_xcconfig,
     update_jvm_package_version,
@@ -257,6 +259,65 @@ class TestBumpVersion(unittest.TestCase):
             temp_file.close()
             with self.assertRaises(RuntimeError):
                 update_about_version(temp_file.name, "1.0.2")
+        finally:
+            os.remove(temp_file.name)
+
+    def test_update_build_metadata(self):
+        """
+        Verify updating the version string in BuildMetadata.kt.
+        """
+        temp_file = tempfile.NamedTemporaryFile("w+", delete=False, encoding="utf-8")
+        try:
+            content = 'object BuildMetadata {\n    const val VERSION_NAME: String = "1.0.0"\n}\n'
+            temp_file.write(content)
+            temp_file.close()
+
+            result = update_build_metadata(temp_file.name, "1.0.1", dry_run=False)
+            self.assertTrue(result)
+            with open(temp_file.name, "r", encoding="utf-8") as f:
+                updated = f.read()
+                self.assertIn('const val VERSION_NAME: String = "1.0.1"', updated)
+
+            self.assertFalse(
+                update_build_metadata("/non/existent/path/BuildMetadata.kt", "1.0.1")
+            )
+        finally:
+            os.remove(temp_file.name)
+
+    def test_update_build_metadata_test(self):
+        """
+        Verify updating the version strings in BuildMetadataTest.kt.
+        """
+        temp_file = tempfile.NamedTemporaryFile("w+", delete=False, encoding="utf-8")
+        try:
+            content = (
+                "class BuildMetadataTest {\n"
+                "    fun testBuildMetadataValues() {\n"
+                '        assertEquals("1.0.0", BuildMetadata.VERSION_NAME)\n'
+                '        assertEquals("1.0.0 — https://healthplatform.io", formatted)\n'
+                "    }\n"
+                "}\n"
+            )
+            temp_file.write(content)
+            temp_file.close()
+
+            result = update_build_metadata_test(temp_file.name, "1.0.1", dry_run=False)
+            self.assertTrue(result)
+            with open(temp_file.name, "r", encoding="utf-8") as f:
+                updated = f.read()
+                self.assertIn(
+                    'assertEquals("1.0.1", BuildMetadata.VERSION_NAME)', updated
+                )
+                self.assertIn(
+                    'assertEquals("1.0.1 — https://healthplatform.io", formatted)',
+                    updated,
+                )
+
+            self.assertFalse(
+                update_build_metadata_test(
+                    "/non/existent/path/BuildMetadataTest.kt", "1.0.1"
+                )
+            )
         finally:
             os.remove(temp_file.name)
 

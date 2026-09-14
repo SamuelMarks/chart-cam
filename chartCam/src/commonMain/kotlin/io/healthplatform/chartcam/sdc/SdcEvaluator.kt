@@ -10,6 +10,15 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
 
 /**
+ * Exception indicating a circular variable dependency detected in calculatedExpressions.
+ *
+ * @param message Detail message describing the cycle.
+ */
+class CircularDependencyException(
+    override val message: String = "Circular variable dependency detected in calculatedExpressions",
+) : Exception(message)
+
+/**
  * Basic evaluator for SDC expressions and constraints.
  */
 object SdcEvaluator {
@@ -28,10 +37,11 @@ object SdcEvaluator {
         questionnaire: Questionnaire,
         currentAnswers: Map<String, Any>,
     ): Map<String, Any> {
-        if (detectCircularDependencies(questionnaire)) {
+        val dependencyResult = detectCircularDependencies(questionnaire)
+        if (dependencyResult.isFailure) {
             println(
                 "Warning: Circular variable dependency detected in Questionnaire " +
-                    "calculatedExpressions. Aborting evaluation.",
+                    "calculatedExpressions: ${dependencyResult.exceptionOrNull()?.message}. Aborting evaluation.",
             )
             return currentAnswers
         }
@@ -59,9 +69,9 @@ object SdcEvaluator {
      * Detects whether there are circular variable dependencies between items in the Questionnaire.
      *
      * @param questionnaire The FHIR Questionnaire to check.
-     * @return True if a circular dependency is detected, false otherwise.
+     * @return A [Result] indicating success if no circular dependency exists, or [CircularDependencyException] on failure.
      */
-    fun detectCircularDependencies(questionnaire: Questionnaire): Boolean {
+    fun detectCircularDependencies(questionnaire: Questionnaire): Result<Unit> {
         val dependencyGraph = mutableMapOf<String, MutableSet<String>>()
         collectDependencies(questionnaire.item, dependencyGraph)
 
@@ -69,9 +79,11 @@ object SdcEvaluator {
         val inStack = mutableSetOf<String>()
 
         for (node in dependencyGraph.keys) {
-            if (checkCycle(node, dependencyGraph, visited, inStack)) return true
+            if (checkCycle(node, dependencyGraph, visited, inStack)) {
+                return Result.failure(CircularDependencyException("Circular variable dependency detected involving node: $node"))
+            }
         }
-        return false
+        return Result.success(Unit)
     }
 
     /**
@@ -284,7 +296,7 @@ object SdcEvaluator {
         // Replace any remaining unpopulated %variable with 0
         expr = expr.replace(Regex("%[a-zA-Z0-9_]+"), "0")
 
-        return try {
+        return runCatching {
             val result = evalSimpleMath(expr)
             if (result.isNaN() || result.isInfinite()) {
                 println("Warning: Arithmetic overflow or invalid math result: $result")
@@ -292,13 +304,9 @@ object SdcEvaluator {
             } else {
                 result
             }
-        } catch (e: NumberFormatException) {
+        }.onFailure { e ->
             println("Math evaluation error: ${e.message}")
-            null
-        } catch (e: IllegalArgumentException) {
-            println("Math evaluation error: ${e.message}")
-            null
-        }
+        }.getOrNull()
     }
 
     /**

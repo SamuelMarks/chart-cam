@@ -116,6 +116,21 @@ class AndroidFileStorage : FileStorage {
         }
 
     /**
+     * Deletes the specified image file from storage.
+     *
+     * @param path The absolute or relative path to the image file to delete.
+     * @return A [Result] indicating success or failure of the deletion.
+     */
+    override fun deleteImage(path: String): Result<Unit> {
+        val file = resolveImageFile(path) ?: return Result.failure(java.io.FileNotFoundException("File not found: $path"))
+        return if (file.delete() || !file.exists()) {
+            Result.success(Unit)
+        } else {
+            Result.failure(java.io.IOException("Failed to delete file: $path"))
+        }
+    }
+
+    /**
      * Deletes all files currently stored in the internal files directory and cache directory.
      */
     override fun clearCache() {

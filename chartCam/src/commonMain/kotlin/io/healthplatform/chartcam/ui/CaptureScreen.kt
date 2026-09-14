@@ -243,7 +243,7 @@ fun CaptureScreen(
 
         LaunchedEffect(Unit) {
             if (!permissionGranted) {
-                permissionGranted = permissionManager.requestCameraPermission()
+                permissionGranted = permissionManager.requestCameraPermission().isSuccess
             }
         }
 

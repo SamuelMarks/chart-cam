@@ -132,15 +132,11 @@ private fun tryConstructDate(
     second: Int,
     tryFirstAsMonth: Boolean,
 ): LocalDate? =
-    try {
+    runCatching {
         if (tryFirstAsMonth) LocalDate(year, first, second) else LocalDate(year, second, first)
-    } catch (_: IllegalArgumentException) {
-        try {
-            if (tryFirstAsMonth) LocalDate(year, second, first) else LocalDate(year, first, second)
-        } catch (_: IllegalArgumentException) {
-            null
-        }
-    }
+    }.recoverCatching {
+        if (tryFirstAsMonth) LocalDate(year, second, first) else LocalDate(year, first, second)
+    }.getOrNull()
 
 /**
  * Attempts to parse date parts into a [LocalDate].
@@ -155,7 +151,7 @@ private fun parsePartsToDate(
     nums: List<Int>,
     language: String,
 ): LocalDate? =
-    try {
+    runCatching {
         val pattern = resolveDatePattern(language)
         if (parts[0].length == FOUR_DIGIT_YEAR_LENGTH) {
             LocalDate(nums[0], nums[1], nums[2])
@@ -175,9 +171,7 @@ private fun parsePartsToDate(
                 null
             }
         }
-    } catch (_: IllegalArgumentException) {
-        null
-    }
+    }.getOrNull()
 
 /**
  * Attempts to parse a user-entered date string in either ISO-8601 (YYYY-MM-DD)
@@ -192,12 +186,7 @@ fun parseFlexibleDate(
     language: String = currentLanguageState.value,
 ): LocalDate? {
     val trimmed = input.trim()
-    val isoDate =
-        try {
-            LocalDate.parse(trimmed)
-        } catch (_: IllegalArgumentException) {
-            null
-        }
+    val isoDate = runCatching { LocalDate.parse(trimmed) }.getOrNull()
     if (isoDate != null) return isoDate
 
     val parts = trimmed.split(Regex("[/.-]")).filter { it.isNotBlank() }

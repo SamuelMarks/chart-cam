@@ -58,6 +58,15 @@ class FhirBundleImportExpansionTest {
 
         override fun readImage(path: String): ByteArray = files[path.substringAfterLast("/")] ?: ByteArray(0)
 
+        override fun deleteImage(path: String): Result<Unit> =
+            if (files.remove(path.substringAfterLast("/")) !=
+                null
+            ) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("File not found: $path"))
+            }
+
         override fun clearCache() {
             files.clear()
         }
@@ -120,7 +129,7 @@ class FhirBundleImportExpansionTest {
             assertTrue(jsonString.length > 100_000, "Bundle JSON should be substantial")
 
             val encrypted = cryptoService.encrypt(jsonString, password)
-            service.importData(encrypted, password)
+            service.importData(encrypted, password).getOrThrow()
 
             val importedPatients = fhirRepo.getAllPatients()
             val importedEncounters = fhirRepo.getAllEncounters()
@@ -185,7 +194,7 @@ class FhirBundleImportExpansionTest {
             val encrypted = cryptoService.encrypt(fhirJson.encodeToString(bundle), password)
 
             // Importing must not throw and must commit both valid patients
-            service.importData(encrypted, password)
+            service.importData(encrypted, password).getOrThrow()
 
             val patient1 = fhirRepo.getPatient("valid_patient_1")
             val patient2 = fhirRepo.getPatient("valid_patient_2")
@@ -268,7 +277,7 @@ class FhirBundleImportExpansionTest {
             fhirRepo.saveEncounter(encounter)
             fhirRepo.saveQuestionnaireResponse(qr)
 
-            val encryptedExport = service.exportData(password, exportAll = true)
+            val encryptedExport = service.exportData(password, exportAll = true).getOrThrow()
             assertTrue(encryptedExport.isNotEmpty())
 
             val driverFresh = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
@@ -276,7 +285,7 @@ class FhirBundleImportExpansionTest {
             val dbFresh = ChartCamDatabase(driverFresh)
             val serviceFresh = ExportImportService(dbFresh, fileStorage)
 
-            serviceFresh.importData(encryptedExport, password)
+            serviceFresh.importData(encryptedExport, password).getOrThrow()
 
             val fhirRepoFresh = FhirRepository(dbFresh)
             val importedP1 = fhirRepoFresh.getPatient("patient_cyclic_1")
@@ -337,7 +346,7 @@ class FhirBundleImportExpansionTest {
             val bundle = bundleBuilder.build()
             val encrypted = cryptoService.encrypt(fhirJson.encodeToString(bundle), password)
 
-            service.importData(encrypted, password)
+            service.importData(encrypted, password).getOrThrow()
 
             val imported = fhirRepo.getPatient("patient_future_ext")
             assertNotNull(imported)

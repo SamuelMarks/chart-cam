@@ -18,7 +18,8 @@ class ExportEmptyPasswordCrashTest {
 
             println("Exporting...")
             val result = service.exportData("", true, null)
-            println("Exported size: ${result.length}")
+            kotlin.test.assertTrue(result.isFailure)
+            println("Exported failure: ${result.exceptionOrNull()?.message}")
         }
     }
 }

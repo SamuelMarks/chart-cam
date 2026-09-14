@@ -97,4 +97,17 @@ class DateFormatterTest {
         assertEquals("2026/09/12", formatDateForPattern(date, DatePattern.YEAR_FIRST))
         assertEquals("2026-09-12", formatDateForPattern(date, DatePattern.ISO_STANDARD))
     }
+
+    /**
+     * Verifies safe parsing of ISO date strings into Result.
+     */
+    @Test
+    fun testParseIsoDate() {
+        val validResult = parseIsoDate("2026-09-12")
+        assertTrue(validResult.isSuccess)
+        assertEquals(LocalDate(2026, 9, 12), validResult.getOrNull())
+
+        val invalidResult = parseIsoDate("invalid-date-string")
+        assertTrue(invalidResult.isFailure)
+    }
 }

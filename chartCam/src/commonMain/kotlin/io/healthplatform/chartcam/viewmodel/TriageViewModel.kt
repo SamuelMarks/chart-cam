@@ -69,15 +69,16 @@ class TriageViewModel(
 
     /**
      * Updates the search query and loads search results.
-     * Search triggers if query length is greater than 1.
+     * Search triggers if query is not blank.
      *
      * @param query The new search query string.
      */
     fun onSearchQueryChanged(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
         viewModelScope.launch {
-            if (query.length > 1) {
-                val results = fhirRepository.searchPatients(query)
+            val trimmed = query.trim()
+            if (trimmed.isNotEmpty()) {
+                val results = fhirRepository.searchPatients(trimmed)
                 _uiState.update { it.copy(searchResults = results) }
             } else {
                 _uiState.update { it.copy(searchResults = emptyList()) }

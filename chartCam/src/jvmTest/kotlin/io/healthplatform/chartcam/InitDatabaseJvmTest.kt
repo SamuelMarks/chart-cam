@@ -31,8 +31,8 @@ class InitDatabaseJvmTest {
         runBlocking {
             val driver = Mockito.mock(SqlDriver::class.java)
             Mockito.doReturn(QueryResult.Value(1L)).`when`(driver).execute(anyOrNull(), anyString(), anyInt(), anyOrNull())
-            initDatabase(driver)
-            assertTrue(true)
+            val result = initDatabase(driver)
+            assertTrue(result.isSuccess)
         }
 
     /**
@@ -44,8 +44,8 @@ class InitDatabaseJvmTest {
             val driver = Mockito.mock(SqlDriver::class.java)
             val e = IllegalStateException("test")
             Mockito.doThrow(e).`when`(driver).execute(anyOrNull(), anyString(), anyInt(), anyOrNull())
-            initDatabase(driver)
-            assertTrue(true)
+            val result = initDatabase(driver)
+            assertTrue(result.isSuccess)
         }
 
     /**
@@ -57,7 +57,7 @@ class InitDatabaseJvmTest {
             val driver = Mockito.mock(SqlDriver::class.java)
             val e = IllegalArgumentException("test")
             Mockito.doThrow(e).`when`(driver).execute(anyOrNull(), anyString(), anyInt(), anyOrNull())
-            initDatabase(driver)
-            assertTrue(true)
+            val result = initDatabase(driver)
+            assertTrue(result.isSuccess)
         }
 }

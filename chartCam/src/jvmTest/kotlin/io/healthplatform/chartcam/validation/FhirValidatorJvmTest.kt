@@ -11,7 +11,6 @@ import com.google.fhir.model.r4.Patient
 import com.google.fhir.model.r4.Questionnaire
 import com.google.fhir.model.r4.String
 import com.google.fhir.model.r4.terminologies.PublicationStatus
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -40,7 +39,7 @@ class FhirValidatorJvmTest {
                         },
                     )
                 }.build()
-        assertTrue(FhirValidator.validate(patient))
+        assertTrue(FhirValidator.validate(patient).isSuccess)
     }
 
     /**
@@ -58,7 +57,7 @@ class FhirValidatorJvmTest {
                         },
                     )
                 }.build()
-        assertFalse(FhirValidator.validate(patient))
+        assertTrue(FhirValidator.validate(patient).isFailure)
     }
 
     /**
@@ -81,7 +80,7 @@ class FhirValidatorJvmTest {
                             },
                     )
                 }.build()
-        assertTrue(FhirValidator.validate(q))
+        assertTrue(FhirValidator.validate(q).isSuccess)
     }
 
     /**
@@ -95,7 +94,7 @@ class FhirValidatorJvmTest {
                 .apply {
                     title = String.Builder().apply { value = "Test Q" }
                 }.build()
-        assertFalse(FhirValidator.validate(q))
+        assertTrue(FhirValidator.validate(q).isFailure)
     }
 
     /**
@@ -119,6 +118,6 @@ class FhirValidatorJvmTest {
                             },
                     )
                 }.build()
-        assertFalse(FhirValidator.validate(q))
+        assertTrue(FhirValidator.validate(q).isFailure)
     }
 }

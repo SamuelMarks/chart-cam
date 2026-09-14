@@ -37,27 +37,23 @@ class QuestionnaireRepository(
                 .FhirR4Json()
 
         if (!inMemoryForms.containsKey("std-form")) {
-            try {
+            runCatching {
                 val stdBytes =
                     chartcam.chartcam.generated.resources.Res
                         .readBytes("files/default_templates/std-form.json")
                 val stdQ = fhirJson.decodeFromString(stdBytes.decodeToString()) as Questionnaire
                 inMemoryForms["std-form"] = stdQ
-            } catch (e: IllegalArgumentException) {
-                println("Error: ${e.message}")
-            } catch (e: IllegalStateException) {
+            }.onFailure { e ->
                 println("Error: ${e.message}")
             }
 
-            try {
+            runCatching {
                 val basicBytes =
                     chartcam.chartcam.generated.resources.Res
                         .readBytes("files/default_templates/basic-followup.json")
                 val basicQ = fhirJson.decodeFromString(basicBytes.decodeToString()) as Questionnaire
                 inMemoryForms["basic-followup"] = basicQ
-            } catch (e: IllegalArgumentException) {
-                println("Error: ${e.message}")
-            } catch (e: IllegalStateException) {
+            }.onFailure { e ->
                 println("Error: ${e.message}")
             }
         }
@@ -532,16 +528,20 @@ class QuestionnaireRepository(
      * Saves an externally created Questionnaire to the repository.
      *
      * @param questionnaire The Questionnaire to save.
+     * @return A [Result] indicating success or failure.
      */
-    fun saveQuestionnaire(questionnaire: Questionnaire) {
+    fun saveQuestionnaire(questionnaire: Questionnaire): Result<Unit> {
         val qId = questionnaire.id
-        if (qId != null) {
+        return if (qId != null) {
             inMemoryForms[qId] = questionnaire
             fhirRepository?.let { repo ->
                 CoroutineScope(Dispatchers.Default).launch {
                     repo.saveResource("Questionnaire", qId, questionnaire)
                 }
             }
+            Result.success(Unit)
+        } else {
+            Result.failure(IllegalArgumentException("Questionnaire ID must not be null"))
         }
     }
 
@@ -549,13 +549,15 @@ class QuestionnaireRepository(
      * Deletes a Questionnaire from the repository.
      *
      * @param id The ID of the Questionnaire to delete.
+     * @return A [Result] indicating success or failure.
      */
-    fun deleteQuestionnaire(id: kotlin.String) {
+    fun deleteQuestionnaire(id: kotlin.String): Result<Unit> {
         inMemoryForms.remove(id)
         fhirRepository?.let { repo ->
             CoroutineScope(Dispatchers.Default).launch {
                 repo.deleteResource("Questionnaire", id)
             }
         }
+        return Result.success(Unit)
     }
 }

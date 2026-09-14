@@ -35,4 +35,16 @@ class FileStorageJvmCoverageTest {
         assertEquals(0, bytes.size)
         storage.clearCache() // No op
     }
+
+    /**
+     * Tests deleting an existing and non-existent image on JVM.
+     */
+    @Test
+    fun testDeleteImage() {
+        val storage = createFileStorage()
+        val path = storage.saveImage("test_del.jpg", byteArrayOf(1, 2, 3))
+        assertTrue(storage.deleteImage(path).isSuccess)
+        kotlin.test.assertTrue(storage.deleteImage(path).isFailure)
+        kotlin.test.assertTrue(storage.deleteImage("non_existent_del.jpg").isFailure)
+    }
 }

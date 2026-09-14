@@ -61,14 +61,18 @@ class AndroidPermissionManager(
     /**
      * Requests the camera permission from the user asynchronously.
      *
-     * @return `true` if the permission was granted by the user or was already granted, `false` otherwise.
+     * @return A [Result] indicating success if granted, or [PermissionDeniedException] if denied.
      */
-    override suspend fun requestCameraPermission(): Boolean {
-        if (getCameraPermissionStatus() == PermissionStatus.GRANTED) return true
+    override suspend fun requestCameraPermission(): Result<Unit> {
+        if (getCameraPermissionStatus() == PermissionStatus.GRANTED) return Result.success(Unit)
 
         return suspendCancellableCoroutine { cont ->
             callback = { isGranted ->
-                cont.resume(isGranted)
+                if (isGranted) {
+                    cont.resume(Result.success(Unit))
+                } else {
+                    cont.resume(Result.failure(PermissionDeniedException(message = "Android camera permission was denied")))
+                }
             }
             requestLauncher(Manifest.permission.CAMERA)
         }

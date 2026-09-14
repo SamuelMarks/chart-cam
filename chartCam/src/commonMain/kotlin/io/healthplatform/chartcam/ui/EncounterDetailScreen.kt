@@ -666,7 +666,7 @@ fun PhotoGridItem(doc: DocumentReference) {
                 ?.url
                 ?.value ?: "",
         ) {
-            try {
+            runCatching {
                 val storage = createFileStorage()
                 storage.readImage(
                     doc.content
@@ -675,9 +675,7 @@ fun PhotoGridItem(doc: DocumentReference) {
                         ?.url
                         ?.value ?: "",
                 )
-            } catch (ignored: IllegalArgumentException) {
-                ByteArray(0)
-            }
+            }.getOrDefault(ByteArray(0))
         }
 
     ElevatedCard(

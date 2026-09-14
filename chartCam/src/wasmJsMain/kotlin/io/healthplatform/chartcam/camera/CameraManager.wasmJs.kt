@@ -195,9 +195,9 @@ class JsPermissionManager : PermissionManager {
     /**
      * Requests camera permission from the user. For the web, this is usually implicit when accessing the media stream.
      *
-     * @return True, assuming permission is implicitly granted or handled by the browser flow.
+     * @return A [Result] indicating success of the permission grant.
      */
-    override suspend fun requestCameraPermission() = true
+    override suspend fun requestCameraPermission(): Result<Unit> = Result.success(Unit)
 
     /**
      * Opens application settings. This is a no-op on the web platform.

@@ -116,7 +116,7 @@ class AppLockoutAndSessionSecurityTest {
             val results = refreshJobs.awaitAll()
 
             // All concurrent requests should succeed without race conditions or exceptions
-            assertTrue(results.all { it }, "All simultaneous token refresh calls must succeed")
+            assertTrue(results.all { it.isSuccess }, "All simultaneous token refresh calls must succeed")
 
             // Verified that a valid refreshed access token exists in storage
             val refreshedToken = storage.getString("access_token")

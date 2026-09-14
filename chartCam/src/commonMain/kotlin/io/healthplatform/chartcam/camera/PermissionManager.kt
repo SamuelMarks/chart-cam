@@ -45,9 +45,9 @@ interface PermissionManager {
      * Requests the camera permission from the operating system.
      * Suspends execution until the user responds to the system prompt.
      *
-     * @return True if the permission is granted after the prompt, false otherwise.
+     * @return A [Result] indicating success if granted, or [PermissionDeniedException] if denied.
      */
-    suspend fun requestCameraPermission(): Boolean
+    suspend fun requestCameraPermission(): Result<Unit>
 
     /**
      * Dispatches an Intent or URL to open the system settings app
@@ -55,6 +55,17 @@ interface PermissionManager {
      */
     fun openSettings()
 }
+
+/**
+ * Exception indicating that the requested camera permission was denied by the user or system.
+ *
+ * @param isPermanentlyDenied True if the user selected "Don't ask again" or if denied by device policy.
+ * @param message Detail message regarding the permission rejection.
+ */
+class PermissionDeniedException(
+    val isPermanentlyDenied: Boolean = false,
+    override val message: String = "Camera permission was denied",
+) : Exception(message)
 
 /**
  * Composable helper to create and remember a [PermissionManager] instance scoped to the composition.

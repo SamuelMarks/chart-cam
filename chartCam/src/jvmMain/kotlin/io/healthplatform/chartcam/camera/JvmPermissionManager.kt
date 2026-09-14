@@ -20,11 +20,11 @@ class JvmPermissionManager : PermissionManager {
     override fun getCameraPermissionStatus(): PermissionStatus = PermissionStatus.GRANTED
 
     /**
-     * Requests camera permission from the user. Always returns true immediately on JVM.
+     * Requests camera permission from the user. Always returns success immediately on JVM.
      *
-     * @return A boolean indicating whether the permission was granted (always true).
+     * @return A [Result] indicating success of the permission grant.
      */
-    override suspend fun requestCameraPermission(): Boolean = true
+    override suspend fun requestCameraPermission(): Result<Unit> = Result.success(Unit)
 
     /**
      * Opens the system settings screen for permissions. This is a no-op on JVM.

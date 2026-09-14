@@ -40,14 +40,16 @@ class QuestionnaireRepositoryJvmTest {
          * @param resourceId The resource id.
          * @param resource The resource itself.
          * @param isLocalChange If it's a local change.
+         * @return Result enclosing success.
          */
         override suspend fun saveResource(
             resourceType: String,
             resourceId: String,
             resource: com.google.fhir.model.r4.Resource,
             isLocalChange: Boolean,
-        ) {
+        ): Result<Unit> {
             savedResources[resourceId] = resource
+            return Result.success(Unit)
         }
 
         /**
@@ -55,13 +57,15 @@ class QuestionnaireRepositoryJvmTest {
          * @param resourceType The resource type.
          * @param resourceId The resource id.
          * @param isLocalChange If it's a local change.
+         * @return Result enclosing success.
          */
         override suspend fun deleteResource(
             resourceType: String,
             resourceId: String,
             isLocalChange: Boolean,
-        ) {
+        ): Result<Unit> {
             deletedResources.add(resourceId)
+            return Result.success(Unit)
         }
     }
 

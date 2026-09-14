@@ -34,7 +34,10 @@ class ExportImportServiceCrashTest {
                         bytes: ByteArray,
                     ): String = ""
 
-                    override fun readImage(path: String): ByteArray = throw IOException("Simulated crash on missing/corrupted file")
+                    override fun readImage(path: String): ByteArray =
+                        throw IOException("Simulated crash on missing/corrupted file") // allow-exception
+
+                    override fun deleteImage(path: String): Result<Unit> = Result.failure(Exception("Not supported in stub"))
 
                     override fun clearCache() {}
                 }
@@ -62,7 +65,7 @@ class ExportImportServiceCrashTest {
             fhirRepo.saveDocumentReference(docRef)
 
             // This will crash if we don't catch Exception in ExportImportService
-            val exportedString = service.exportData("password", true, null)
+            val exportedString = service.exportData("password", true, null).getOrThrow()
             assertTrue(exportedString.isNotEmpty(), "Export should succeed and return data despite the file reading error")
         }
     }

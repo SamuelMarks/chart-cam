@@ -79,6 +79,13 @@ class PatientListViewModelTest {
                  */
                 override fun readImage(path: String): ByteArray = ByteArray(0)
 
+                /**
+                 * Override deleteImage.
+                 * @param path Path.
+                 * @return Result indicating success or failure.
+                 */
+                override fun deleteImage(path: String): Result<Unit> = Result.failure(Exception("Not supported in stub"))
+
                 /** Override clearCache */
                 override fun clearCache() {}
             }
@@ -398,26 +405,32 @@ class MockFhirRepository(
     /**
      * Override savePatient.
      * @param patient The patient.
+     * @return Result enclosing success or failure.
      */
-    override suspend fun savePatient(patient: Patient) {
-        if (shouldThrowOnSave) throw IllegalStateException("Save Error")
+    override suspend fun savePatient(patient: Patient): Result<Unit> {
+        if (shouldThrowOnSave) return Result.failure(IllegalStateException("Save Error"))
         savedPatient = patient
+        return Result.success(Unit)
     }
 
     /**
      * Override deletePatient.
      * @param id The ID.
+     * @return Result enclosing success.
      */
-    override suspend fun deletePatient(id: String) {
+    override suspend fun deletePatient(id: String): Result<Unit> {
         deletedPatientId = id
+        return Result.success(Unit)
     }
 
     /**
      * Override deletePractitioner.
      * @param id The ID.
+     * @return Result enclosing success.
      */
-    override suspend fun deletePractitioner(id: String) {
+    override suspend fun deletePractitioner(id: String): Result<Unit> {
         deletedPractitionerId = id
+        return Result.success(Unit)
     }
 }
 
@@ -436,28 +449,30 @@ class MockExportImportService(
      * @param password Password.
      * @param exportAll Export all flag.
      * @param practitionerId Practitioner ID.
-     * @return Export string.
+     * @return Result enclosing export string or failure.
      */
     override suspend fun exportData(
         password: String,
         exportAll: Boolean,
         practitionerId: String?,
-    ): String {
-        if (shouldThrow) throw IllegalStateException("Export error")
-        return "exported-data"
+    ): Result<String> {
+        if (shouldThrow) return Result.failure(IllegalStateException("Export error"))
+        return Result.success("exported-data")
     }
 
     /**
      * Override importData.
      * @param encryptedData Encrypted data.
      * @param password Password.
+     * @return Result indicating success or failure.
      */
     override suspend fun importData(
         encryptedData: String,
         password: String,
-    ) {
-        if (shouldThrow) throw IllegalStateException("Import error")
+    ): Result<Unit> {
+        if (shouldThrow) return Result.failure(IllegalStateException("Import error"))
         lastImportData = encryptedData
+        return Result.success(Unit)
     }
 }
 
@@ -489,9 +504,13 @@ class MockAuthRepository(
 
     /**
      * Override checkSession.
-     * @return Boolean.
+     * @return Result enclosing practitioner.
      */
-    override suspend fun checkSession(): Boolean = true
+    override suspend fun checkSession(): Result<Practitioner> =
+        Result.success(
+            io.healthplatform.chartcam.models
+                .createFhirPractitioner("1", "S", "J", true),
+        )
 
     /** Override logout */
     override fun logout() {}

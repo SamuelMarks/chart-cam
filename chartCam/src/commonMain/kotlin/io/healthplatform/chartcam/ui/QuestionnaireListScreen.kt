@@ -377,19 +377,19 @@ fun QuestionnaireListScreen(
                         onClick = {
                             coroutineScope
                                 .launch {
-                                    try {
-                                        val text = clipboard.getPlainText() ?: ""
-                                        if (text.isNotBlank()) {
-                                            previewQuestionnaire =
-                                                questionnaireSharingService.deserializeQuestionnaire(text)
-                                            importError = null
-                                        } else {
-                                            importError = emptyClipboardStr
-                                        }
-                                    } catch (e: IllegalArgumentException) {
-                                        println(e.message)
-
-                                        importError = invalidFormatStr
+                                    val text = clipboard.getPlainText() ?: ""
+                                    if (text.isNotBlank()) {
+                                        questionnaireSharingService
+                                            .deserializeQuestionnaire(text)
+                                            .onSuccess {
+                                                previewQuestionnaire = it
+                                                importError = null
+                                            }.onFailure {
+                                                println(it.message)
+                                                importError = invalidFormatStr
+                                            }
+                                    } else {
+                                        importError = emptyClipboardStr
                                     }
                                     importBottomSheetState.hide()
                                 }.invokeOnCompletion {
@@ -473,15 +473,14 @@ fun QuestionnaireListScreen(
                         onClick = {
                             coroutineScope
                                 .launch {
-                                    try {
-                                        val json = questionnaireSharingService.serializeQuestionnaire(q)
-                                        clipboard.setPlainText(json)
-                                        snackbarHostState.showSnackbar(copiedConfirmationText)
-                                    } catch (e: IllegalArgumentException) {
-                                        println(e.message)
-
-                                        // Handle error
-                                    }
+                                    questionnaireSharingService
+                                        .serializeQuestionnaire(q)
+                                        .onSuccess { json ->
+                                            clipboard.setPlainText(json)
+                                            snackbarHostState.showSnackbar(copiedConfirmationText)
+                                        }.onFailure {
+                                            println(it.message)
+                                        }
                                     bottomSheetState.hide()
                                 }.invokeOnCompletion {
                                     if (!bottomSheetState.isVisible) {
@@ -496,14 +495,13 @@ fun QuestionnaireListScreen(
 
                     Button(
                         onClick = {
-                            try {
-                                val json = questionnaireSharingService.serializeQuestionnaire(q)
-                                shareService.shareText(json)
-                            } catch (e: IllegalArgumentException) {
-                                println(e.message)
-
-                                // Handle error
-                            }
+                            questionnaireSharingService
+                                .serializeQuestionnaire(q)
+                                .onSuccess { json ->
+                                    shareService.shareText(json)
+                                }.onFailure {
+                                    println(it.message)
+                                }
                             coroutineScope.launch { bottomSheetState.hide() }.invokeOnCompletion {
                                 if (!bottomSheetState.isVisible) {
                                     selectedQuestionnaireForShare = null

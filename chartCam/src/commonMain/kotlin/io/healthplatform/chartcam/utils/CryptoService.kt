@@ -71,3 +71,34 @@ expect class CryptoService() {
         password: String,
     ): String
 }
+
+/**
+ * Safely encrypts [data] with [password] returning a [Result].
+ *
+ * @param data The plaintext data to encrypt.
+ * @param password The password to use as a key.
+ * @return A [Result] enclosing the base64 encrypted string or an error.
+ */
+suspend fun CryptoService.encryptCatching(
+    data: String,
+    password: String,
+): Result<String> = runSuspendCatching { encrypt(data, password) }
+
+/**
+ * Safely decrypts [base64Data] with [password] returning a [Result].
+ *
+ * @param base64Data The encrypted data payload.
+ * @param password The password to use for decryption.
+ * @return A [Result] enclosing the decrypted string or an error.
+ */
+suspend fun CryptoService.decryptCatching(
+    base64Data: String,
+    password: String,
+): Result<String> =
+    runSuspendCatching {
+        val decrypted = decrypt(base64Data, password)
+        if (decrypted.isEmpty() && base64Data.isNotEmpty()) {
+            error("Decryption failed: payload could not be authenticated")
+        }
+        decrypted
+    }

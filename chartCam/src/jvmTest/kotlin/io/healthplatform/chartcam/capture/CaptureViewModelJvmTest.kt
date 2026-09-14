@@ -416,6 +416,19 @@ class MockFileStorage : FileStorage {
     override fun readImage(path: String): ByteArray = savedFiles[path.substringAfterLast("/")] ?: ByteArray(0)
 
     /**
+     * Deletes a mock-saved image payload.
+     *
+     * @param path The mock path of the file to delete.
+     * @return Result indicating success or failure.
+     */
+    override fun deleteImage(path: String): Result<Unit> =
+        if (savedFiles.remove(path.substringAfterLast("/")) != null) {
+            Result.success(Unit)
+        } else {
+            Result.failure(Exception("File not found: $path"))
+        }
+
+    /**
      * Purges all mock data from the in-memory cache.
      */
     override fun clearCache() {
