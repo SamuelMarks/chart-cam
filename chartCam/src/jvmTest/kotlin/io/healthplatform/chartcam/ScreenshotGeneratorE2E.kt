@@ -75,7 +75,7 @@ class ScreenshotGeneratorE2E {
     }
 
     /**
-     * Test function that generates screenshots for the questionnaire sharing and capture screens.
+     * Test function that generates screenshots for patient list dropdown, dataset export, and questionnaire sharing.
      */
     @Test
     fun generateQuestionnaireScreenshots() {
@@ -121,12 +121,30 @@ class ScreenshotGeneratorE2E {
             onNodeWithText("First Name").performTextInput("Jane")
             onNodeWithText("Last Name").performTextInput("Smith")
             onNodeWithText("MRN").performTextInput("MRN-9876")
-            onNodeWithText("DOB (YYYY-MM-DD)").performTextInput("1985-05-15")
+            onNodeWithText("DOB (MM/DD/YYYY)").performTextInput("05/15/1985")
             waitForIdle()
             takeScreenshot(this, "../fastlane/screenshots/en-US/iphone-01-create-patient.png")
         }
 
-        // Screenshot 08: Export dataset
+        // Screenshot 03: Burger dropdown menu from patient list screen
+        runDesktopComposeUiTest(width = 1080, height = 1920) {
+            setContent {
+                AppTheme(darkTheme = false) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        io.healthplatform.chartcam.ui.PatientListScreen(
+                            dependencies = deps,
+                            actions = acts,
+                        )
+                    }
+                }
+            }
+            waitForIdle()
+            onAllNodesWithContentDescription("More options", substring = true, ignoreCase = true).onFirst().performClick()
+            waitForIdle()
+            takeScreenshot(this, "../fastlane/screenshots/en-US/iphone-03-burger-dropdown.png")
+        }
+
+        // Screenshot 09: Export dataset
         runDesktopComposeUiTest(width = 1080, height = 1920) {
             setContent {
                 AppTheme(darkTheme = false) {
@@ -145,7 +163,7 @@ class ScreenshotGeneratorE2E {
             waitForIdle()
             onAllNodes(hasSetTextAction()).onLast().performTextInput("secure123")
             waitForIdle()
-            takeScreenshot(this, "../fastlane/screenshots/en-US/iphone-08-export-dataset.png")
+            takeScreenshot(this, "../fastlane/screenshots/en-US/iphone-09-export-dataset.png")
         }
 
         // Create the questionnaire for sharing and capturing
@@ -153,7 +171,7 @@ class ScreenshotGeneratorE2E {
             qRepo.createQuestionnaire("Burn Assessment", 2, "Left Arm, Right Arm")
         }
 
-        // Screenshot 07: Share Questionnaire
+        // Screenshot 08: Share Questionnaire
         runDesktopComposeUiTest(width = 1080, height = 1920) {
             setContent {
                 AppTheme(darkTheme = false) {
@@ -166,7 +184,7 @@ class ScreenshotGeneratorE2E {
             // Click the share button on Burn Assessment
             onAllNodesWithContentDescription("Share Questionnaire", substring = true, ignoreCase = true).onFirst().performClick()
             waitForIdle()
-            takeScreenshot(this, "../fastlane/screenshots/en-US/iphone-07-export-questionnaire-view.png")
+            takeScreenshot(this, "../fastlane/screenshots/en-US/iphone-08-export-questionnaire-view.png")
         }
     }
 }

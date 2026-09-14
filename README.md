@@ -23,6 +23,7 @@ By speaking natively in the Fast Healthcare Interoperability Resources (HL7 FHIR
 
 * **Open-Source Transparency:** Free, extensible, and fully open-source. No vendor lock-in; just community-driven healthcare innovation you can trust and audit.
 * **Custom Studies on the Go:** Create and share dynamic, FHIR-based questionnaires to execute bespoke clinical trials, studies, and patient intake workflows.
+* **Visual Form Controls for Studies:** Domain-specific clinical instruments including Wong-Baker FACES® & Pain VAS, Fitzpatrick skin phototype palettes, anatomical body-map pin drop, and high-contrast segmented choice tiles for zero-friction intake.
 * **Research-Grade Pedigree:** Engineered for high-friction clinical environments in collaboration with top-tier medical researchers at Mass Eye and Ear.
 * **Decentralized & Encrypted:** True data sovereignty. Robust on-device encryption protects sensitive patient data at rest, enforcing strict compliance with global health privacy standards.
 * **Rapid "Snap-First" Workflow:** Hardware-accelerated native camera capabilities allow for frictionless, zero-delay clinical photography so you can focus on the patient, not the device.
@@ -35,17 +36,17 @@ ChartCam: The secure, open-source engine for clinical innovation.
 ## Screenshots
 
 <div align="center">
-  <img src="fastlane/screenshots/en-US/iphone-00-login.png" width="200" alt="Login"/>
-  <img src="fastlane/screenshots/en-US/iphone-01-create-patient.png" width="200" alt="Create Patient"/>
-  <img src="fastlane/screenshots/en-US/iphone-02-list-patients.png" width="200" alt="Patient Directory"/>
-  <img src="fastlane/screenshots/en-US/iphone-03-create-questionnaire.png" width="200" alt="Create Questionnaire"/>
-  <img src="fastlane/screenshots/en-US/iphone-04-fill-questionnaire.png" width="200" alt="Fill Questionnaire"/>
+  <img src="fastlane/screenshots/en-US/iphone-00-login.png" width="160" alt="Login"/>
+  <img src="fastlane/screenshots/en-US/iphone-01-create-patient.png" width="160" alt="Create Patient"/>
+  <img src="fastlane/screenshots/en-US/iphone-02-list-patients.png" width="160" alt="Patient Directory"/>
+  <img src="fastlane/screenshots/en-US/iphone-03-burger-dropdown.png" width="160" alt="Burger Dropdown"/>
+  <img src="fastlane/screenshots/en-US/iphone-04-create-questionnaire.png" width="160" alt="Create Questionnaire"/>
   <br/>
-  <img src="fastlane/screenshots/en-US/iphone-05-view-patient-questionnaires.png" width="200" alt="View Patient Questionnaires"/>
-  <img src="fastlane/screenshots/en-US/iphone-06-view-specific-questionnaire.png" width="200" alt="View Specific Questionnaire"/>
-  <img src="fastlane/screenshots/en-US/iphone-07-export-questionnaire-view.png" width="200" alt="Export Questionnaire"/>
-  <img src="fastlane/screenshots/en-US/iphone-08-export-dataset.png" width="200" alt="Export Dataset"/>
-  <img src="fastlane/screenshots/en-US/iphone-09-logout.png" width="200" alt="Logout"/>
+  <img src="fastlane/screenshots/en-US/iphone-05-fill-questionnaire.png" width="160" alt="Fill Questionnaire"/>
+  <img src="fastlane/screenshots/en-US/iphone-06-view-patient-questionnaires.png" width="160" alt="View Patient Questionnaires"/>
+  <img src="fastlane/screenshots/en-US/iphone-07-view-specific-questionnaire.png" width="160" alt="View Specific Questionnaire"/>
+  <img src="fastlane/screenshots/en-US/iphone-08-export-questionnaire-view.png" width="160" alt="Export Questionnaire"/>
+  <img src="fastlane/screenshots/en-US/iphone-09-export-dataset.png" width="160" alt="Export Dataset"/>
 </div>
 
 ---

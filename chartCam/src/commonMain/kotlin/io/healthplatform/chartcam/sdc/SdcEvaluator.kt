@@ -629,6 +629,342 @@ object SdcEvaluator {
     }
 
     /**
+     * Evaluates whether a Questionnaire item is enabled based on its enableWhen conditions and current answers.
+     *
+     * @param item The Questionnaire item to evaluate conditions for.
+     * @param answers The map of currently supplied answers.
+     * @return True if the item is enabled (visible), false otherwise.
+     */
+    fun isItemEnabled(
+        item: Questionnaire.Item,
+        answers: Map<String, Any>,
+    ): Boolean {
+        if (item.enableWhen.isEmpty()) return true
+        val behavior = item.enableBehavior?.value ?: Questionnaire.EnableWhenBehavior.Any
+        val conditions = item.enableWhen.map { ew -> evaluateCondition(ew, answers) }
+        return if (behavior == Questionnaire.EnableWhenBehavior.All) {
+            conditions.all { it }
+        } else {
+            conditions.any { it }
+        }
+    }
+
+    /**
+     * Evaluates an individual enableWhen condition against current answers.
+     *
+     * @param ew The enableWhen condition rule.
+     * @param answers The answers context map.
+     * @return True if the condition evaluates to true.
+     */
+    fun evaluateCondition(
+        ew: Questionnaire.Item.EnableWhen,
+        answers: Map<String, Any>,
+    ): Boolean {
+        val targetQuestion = ew.question.value
+        val operator = ew.operator.value
+        if (targetQuestion == null || operator == null) {
+            return false
+        }
+        val targetAnswer = answers[targetQuestion]
+        val ewAnswer = ew.answer
+
+        return when (operator) {
+            Questionnaire.QuestionnaireItemOperator.EqualTo -> evaluateEqualTo(ewAnswer, targetAnswer)
+            Questionnaire.QuestionnaireItemOperator.NotEqualTo -> evaluateNotEqualTo(ewAnswer, targetAnswer)
+            Questionnaire.QuestionnaireItemOperator.Exists -> evaluateExists(ewAnswer, targetAnswer)
+            Questionnaire.QuestionnaireItemOperator.GreaterThan,
+            Questionnaire.QuestionnaireItemOperator.LessThan,
+            Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo,
+            Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo,
+            ->
+                evaluateComparison(operator, ewAnswer, targetAnswer)
+        }
+    }
+
+    /**
+     * Evaluates the Exists operator.
+     *
+     * @param ewAnswer The expected condition answer (boolean true/false).
+     * @param targetAnswer The actual answer recorded for the target question.
+     * @return True if existence matches the expectation.
+     */
+    fun evaluateExists(
+        ewAnswer: Questionnaire.Item.EnableWhen.Answer,
+        targetAnswer: Any?,
+    ): Boolean {
+        val expectedExists = ewAnswer.asBoolean()?.value?.value ?: true
+        val actualExists =
+            when (targetAnswer) {
+                null -> false
+                is String -> targetAnswer.isNotBlank()
+                is Collection<*> -> targetAnswer.isNotEmpty()
+                else -> true
+            }
+        return actualExists == expectedExists
+    }
+
+    /**
+     * Evaluates equality for an expected condition answer against the target answer.
+     *
+     * @param ewAnswer The expected answer from the enableWhen condition.
+     * @param targetAnswer The actual answer recorded for the target question.
+     * @return True if targetAnswer matches ewAnswer.
+     */
+    fun evaluateEqualTo(
+        ewAnswer: Questionnaire.Item.EnableWhen.Answer,
+        targetAnswer: Any?,
+    ): Boolean =
+        when (targetAnswer) {
+            null -> false
+            is Collection<*> -> targetAnswer.any { matchesSingleValue(ewAnswer, it) }
+            else -> matchesSingleValue(ewAnswer, targetAnswer)
+        }
+
+    /**
+     * Evaluates inequality for an expected condition answer against the target answer.
+     *
+     * @param ewAnswer The expected answer from the enableWhen condition.
+     * @param targetAnswer The actual answer recorded for the target question.
+     * @return True if targetAnswer does not match ewAnswer.
+     */
+    fun evaluateNotEqualTo(
+        ewAnswer: Questionnaire.Item.EnableWhen.Answer,
+        targetAnswer: Any?,
+    ): Boolean = !evaluateEqualTo(ewAnswer, targetAnswer)
+
+    /**
+     * Checks if a target value matches an expected boolean condition answer.
+     *
+     * @param ewAnswer The expected answer.
+     * @param targetValue The actual scalar value.
+     * @return True if matches, or null if condition answer is not a boolean.
+     */
+    private fun checkBooleanMatch(
+        ewAnswer: Questionnaire.Item.EnableWhen.Answer,
+        targetValue: Any,
+    ): Boolean? {
+        val boolExpected = ewAnswer.asBoolean()?.value?.value ?: return null
+        val boolTarget = (targetValue as? Boolean) ?: (targetValue as? String)?.toBooleanStrictOrNull()
+        return boolTarget == boolExpected
+    }
+
+    /**
+     * Checks if a target value matches an expected numeric condition answer.
+     *
+     * @param ewAnswer The expected answer.
+     * @param targetValue The actual scalar value.
+     * @return True if matches, or null if condition answer is not numeric.
+     */
+    private fun checkNumericMatch(
+        ewAnswer: Questionnaire.Item.EnableWhen.Answer,
+        targetValue: Any,
+    ): Boolean? {
+        val numExpected =
+            ewAnswer
+                .asInteger()
+                ?.value
+                ?.value
+                ?.toDouble()
+                ?: ewAnswer
+                    .asDecimal()
+                    ?.value
+                    ?.value
+                    ?.toString()
+                    ?.toDoubleOrNull()
+                ?: ewAnswer
+                    .asQuantity()
+                    ?.value
+                    ?.value
+                    ?.value
+                    ?.toString()
+                    ?.toDoubleOrNull()
+                ?: return null
+        val numTarget = extractNumericValue(targetValue)
+        return numTarget == numExpected
+    }
+
+    /**
+     * Checks if a target value matches an expected chronological, coding, or string condition answer.
+     *
+     * @param ewAnswer The expected answer.
+     * @param targetValue The actual scalar value.
+     * @return True if matches, false otherwise.
+     */
+    private fun checkTextOrCodingMatch(
+        ewAnswer: Questionnaire.Item.EnableWhen.Answer,
+        targetValue: Any,
+    ): Boolean {
+        val dateExpected =
+            ewAnswer
+                .asDate()
+                ?.value
+                ?.value
+                ?.toString()
+                ?: ewAnswer
+                    .asDateTime()
+                    ?.value
+                    ?.value
+                    ?.toString()
+                ?: ewAnswer
+                    .asTime()
+                    ?.value
+                    ?.value
+                    ?.toString()
+        val codingExpected = ewAnswer.asCoding()?.value
+        val strExpected = ewAnswer.asString()?.value?.value
+
+        return when {
+            dateExpected != null -> targetValue.toString() == dateExpected
+            codingExpected != null -> {
+                val code = codingExpected.code?.value ?: ""
+                val display = codingExpected.display?.value ?: ""
+                val strTarget = targetValue.toString()
+                strTarget == code || strTarget == display
+            }
+            strExpected != null -> targetValue.toString() == strExpected
+            else -> false
+        }
+    }
+
+    /**
+     * Matches a single scalar target answer value against the expected condition answer.
+     *
+     * @param ewAnswer The expected answer from the enableWhen condition.
+     * @param targetValue A single scalar value from the target question's answer.
+     * @return True if the single value matches the expected condition answer.
+     */
+    fun matchesSingleValue(
+        ewAnswer: Questionnaire.Item.EnableWhen.Answer,
+        targetValue: Any?,
+    ): Boolean {
+        if (targetValue == null) return false
+        val boolMatch = checkBooleanMatch(ewAnswer, targetValue)
+        val numMatch = checkNumericMatch(ewAnswer, targetValue)
+        return boolMatch ?: numMatch ?: checkTextOrCodingMatch(ewAnswer, targetValue)
+    }
+
+    /**
+     * Evaluates relational operators on two comparable Double values.
+     *
+     * @param operator The relational operator.
+     * @param targetNum The actual number.
+     * @param expectedNum The expected number.
+     * @return True if relation holds.
+     */
+    private fun compareNumbers(
+        operator: Questionnaire.QuestionnaireItemOperator,
+        targetNum: Double,
+        expectedNum: Double,
+    ): Boolean {
+        val cmp = targetNum.compareTo(expectedNum)
+        return when (operator) {
+            Questionnaire.QuestionnaireItemOperator.GreaterThan -> cmp > 0
+            Questionnaire.QuestionnaireItemOperator.LessThan -> cmp < 0
+            Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo -> cmp >= 0
+            Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo -> cmp <= 0
+            else -> false
+        }
+    }
+
+    /**
+     * Evaluates relational operators on two comparable String or Date values.
+     *
+     * @param operator The relational operator.
+     * @param targetStr The actual string.
+     * @param expectedStr The expected string.
+     * @return True if relation holds.
+     */
+    private fun compareStrings(
+        operator: Questionnaire.QuestionnaireItemOperator,
+        targetStr: String,
+        expectedStr: String,
+    ): Boolean {
+        val cmp = targetStr.compareTo(expectedStr)
+        return when (operator) {
+            Questionnaire.QuestionnaireItemOperator.GreaterThan -> cmp > 0
+            Questionnaire.QuestionnaireItemOperator.LessThan -> cmp < 0
+            Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo -> cmp >= 0
+            Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo -> cmp <= 0
+            else -> false
+        }
+    }
+
+    /**
+     * Evaluates relational inequality operators (>, <, >=, <=) between target answer and condition answer.
+     *
+     * @param operator The relational operator.
+     * @param ewAnswer The expected condition answer.
+     * @param targetAnswer The actual answer recorded for the target question.
+     * @return True if the relational condition holds.
+     */
+    fun evaluateComparison(
+        operator: Questionnaire.QuestionnaireItemOperator,
+        ewAnswer: Questionnaire.Item.EnableWhen.Answer,
+        targetAnswer: Any?,
+    ): Boolean {
+        if (targetAnswer == null) return false
+
+        val expectedNum =
+            ewAnswer
+                .asInteger()
+                ?.value
+                ?.value
+                ?.toDouble()
+                ?: ewAnswer
+                    .asDecimal()
+                    ?.value
+                    ?.value
+                    ?.toString()
+                    ?.toDoubleOrNull()
+                ?: ewAnswer
+                    .asQuantity()
+                    ?.value
+                    ?.value
+                    ?.value
+                    ?.toString()
+                    ?.toDoubleOrNull()
+        val targetNum = extractNumericValue(targetAnswer)
+
+        val expectedDate =
+            ewAnswer
+                .asDate()
+                ?.value
+                ?.value
+                ?.toString()
+                ?: ewAnswer
+                    .asDateTime()
+                    ?.value
+                    ?.value
+                    ?.toString()
+                ?: ewAnswer
+                    .asTime()
+                    ?.value
+                    ?.value
+                    ?.toString()
+                ?: ewAnswer.asString()?.value?.value
+
+        return when {
+            expectedNum != null && targetNum != null -> compareNumbers(operator, targetNum, expectedNum)
+            expectedDate != null -> compareStrings(operator, targetAnswer.toString(), expectedDate)
+            else -> false
+        }
+    }
+
+    /**
+     * Extracts a numeric Double from various representations (Number, BigDecimal, String).
+     *
+     * @param value The value to extract numeric representation from.
+     * @return The Double representation, or null if not numeric.
+     */
+    fun extractNumericValue(value: Any?): Double? =
+        when (value) {
+            is Number -> value.toDouble()
+            is com.ionspin.kotlin.bignum.decimal.BigDecimal -> value.toString().toDoubleOrNull()
+            is String -> value.toDoubleOrNull()
+            else -> null
+        }
+
+    /**
      * Evaluates date offset arithmetic.
      *
      * @param dateStr An ISO-8601 date string (e.g., "2026-01-01").

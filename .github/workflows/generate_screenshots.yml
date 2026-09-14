@@ -27,7 +27,7 @@ jobs:
           api-level: 33
           target: default
           arch: x86_64
-          profile: pixel_6
+          profile: Nexus 5
           script: |
             ./gradlew :androidApp:connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=io.healthplatform.chartcam.AndroidScreenshotGeneratorTest
             mkdir -p fastlane/screenshots/en-US

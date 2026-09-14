@@ -1,3 +1,4 @@
+__pycache__
 .gradle_home
 site_dist/
 *.db

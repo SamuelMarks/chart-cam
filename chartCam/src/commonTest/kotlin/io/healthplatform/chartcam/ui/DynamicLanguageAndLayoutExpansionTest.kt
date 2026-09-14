@@ -6,6 +6,7 @@ package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.unit.LayoutDirection
 import io.healthplatform.chartcam.ui.components.splitTextIntoVerticalColumns
+import io.healthplatform.chartcam.ui.theme.resolvePainScoreColor
 import io.healthplatform.chartcam.utils.DatePattern
 import io.healthplatform.chartcam.utils.formatLocalizedDecimal
 import io.healthplatform.chartcam.utils.parseLocalizedDecimal
@@ -13,6 +14,7 @@ import io.healthplatform.chartcam.utils.resolveDatePattern
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -201,6 +203,48 @@ class DynamicLanguageAndLayoutExpansionTest {
         // Whole number where fraction part is empty
         val wholeNumber = formatLocalizedDecimal(50.0, localeTag = "en", decimalPlaces = 2)
         assertEquals("50", wholeNumber)
+
+        // Negative decimal between -1.0 and 0.0 retaining minus sign
+        val negativeFraction = formatLocalizedDecimal(-0.5, localeTag = "en", decimalPlaces = 2)
+        assertEquals("-0.5", negativeFraction)
+
+        val negativeFractionEs = formatLocalizedDecimal(-0.25, localeTag = "es", decimalPlaces = 2)
+        assertEquals("-0,25", negativeFractionEs)
+
+        val negativeFractionAr = formatLocalizedDecimal(-0.5, localeTag = "ar", decimalPlaces = 1)
+        assertEquals("-٠٫٥", negativeFractionAr)
+
+        // Thousands grouping
+        val enGrouped = formatLocalizedDecimal(1234567.89, localeTag = "en", decimalPlaces = 2, useGrouping = true)
+        assertEquals("1,234,567.89", enGrouped)
+
+        val esGrouped = formatLocalizedDecimal(1234567.89, localeTag = "es", decimalPlaces = 2, useGrouping = true)
+        assertEquals("1.234.567,89", esGrouped)
+
+        val frGrouped = formatLocalizedDecimal(1234567.89, localeTag = "fr", decimalPlaces = 2, useGrouping = true)
+        assertEquals("1 234 567,89", frGrouped)
+
+        val arGrouped = formatLocalizedDecimal(1234567.89, localeTag = "ar", decimalPlaces = 2, useGrouping = true)
+        assertEquals("١٬٢٣٤٬٥٦٧٫٨٩", arGrouped)
+
+        // Parsing grouped numbers
+        assertEquals(1234567.89, parseLocalizedDecimal("1,234,567.89"))
+        assertEquals(1234567.89, parseLocalizedDecimal("1.234.567,89"))
+        assertEquals(1234567.89, parseLocalizedDecimal("1 234 567,89"))
+        assertEquals(1234567.89, parseLocalizedDecimal("١٬٢٣٤٬٥٦٧٫٨٩"))
+        assertEquals(1000000.0, parseLocalizedDecimal("1,000,000"))
+        assertEquals(1000000.0, parseLocalizedDecimal("1.000.000"))
+        assertEquals(1000.0, parseLocalizedDecimal("1,000"))
+        assertEquals(1000.0, parseLocalizedDecimal("1.000,00"))
+        assertEquals(1234.56, parseLocalizedDecimal("1234,56"))
+        assertEquals(1234.56, parseLocalizedDecimal("1234.56"))
+        assertNull(parseLocalizedDecimal(""))
+
+        // Semantic pain score colors
+        for (score in 0..10) {
+            assertNotNull(resolvePainScoreColor(score, isDarkTheme = false))
+            assertNotNull(resolvePainScoreColor(score, isDarkTheme = true))
+        }
     }
 
     /**
@@ -227,6 +271,9 @@ class DynamicLanguageAndLayoutExpansionTest {
         assertTrue(isTraditionalChinese("zh-TW"), "Taiwan Traditional Chinese 'zh-TW' should match")
         assertTrue(isTraditionalChinese("zh-Hant"), "Script tag 'zh-Hant' should match")
         assertTrue(isTraditionalChinese("zh-HK"), "Hong Kong Traditional Chinese 'zh-HK' should match")
+        assertFalse(isTraditionalChinese("zh-CN"), "Simplified Chinese 'zh-CN' must not match Traditional")
+        assertFalse(isTraditionalChinese("zh-Hans"), "Simplified script 'zh-Hans' must not match Traditional")
+        assertFalse(isTraditionalChinese("zh-SG"), "Singapore Simplified Chinese 'zh-SG' must not match Traditional")
         assertFalse(isTraditionalChinese("en"), "English is not Chinese")
         assertFalse(isTraditionalChinese("ja"), "Japanese is not Chinese")
         assertFalse(isTraditionalChinese("he"), "Hebrew is not Chinese")
@@ -314,16 +361,17 @@ class DynamicLanguageAndLayoutExpansionTest {
      */
     @Test
     fun testDatePatternResolution() {
-        assertEquals(DatePattern.ISO_STANDARD, resolveDatePattern())
+        assertEquals(DatePattern.MONTH_FIRST, resolveDatePattern())
         assertEquals(DatePattern.YEAR_FIRST, resolveDatePattern("zh"))
         assertEquals(DatePattern.YEAR_FIRST, resolveDatePattern("ja"))
         assertEquals(DatePattern.DAY_FIRST, resolveDatePattern("es"))
         assertEquals(DatePattern.DAY_FIRST, resolveDatePattern("he"))
         assertEquals(DatePattern.DAY_FIRST, resolveDatePattern("en-GB"))
-        assertEquals(DatePattern.ISO_STANDARD, resolveDatePattern("en-US"))
+        assertEquals(DatePattern.MONTH_FIRST, resolveDatePattern("en-US"))
         assertEquals(DatePattern.ISO_STANDARD, resolveDatePattern("unknown"))
 
         assertEquals("DD/MM/YYYY", DatePattern.DAY_FIRST.pattern)
+        assertEquals("MM/DD/YYYY", DatePattern.MONTH_FIRST.pattern)
         assertEquals("YYYY/MM/DD", DatePattern.YEAR_FIRST.pattern)
         assertEquals("YYYY-MM-DD", DatePattern.ISO_STANDARD.pattern)
     }

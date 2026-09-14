@@ -9,12 +9,11 @@ package io.healthplatform.chartcam.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -26,14 +25,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -53,13 +53,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
@@ -95,6 +94,7 @@ import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.sensors.SensorManager
 import io.healthplatform.chartcam.sensors.rememberSensorManager
 import io.healthplatform.chartcam.ui.components.LevelerOverlay
+import io.healthplatform.chartcam.ui.theme.AppSpacing
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import org.jetbrains.compose.resources.stringResource
@@ -145,10 +145,10 @@ private fun PermissionDeniedScreen(
             shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.padding(AppSpacing.lg),
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier.padding(AppSpacing.lg),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
@@ -156,7 +156,7 @@ private fun PermissionDeniedScreen(
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier =
                         Modifier
-                            .padding(bottom = 16.dp)
+                            .padding(bottom = AppSpacing.md)
                             .semantics { heading() },
                 )
                 Button(onClick = onOpenSettings) {
@@ -169,7 +169,7 @@ private fun PermissionDeniedScreen(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         ),
-                    modifier = Modifier.padding(top = 8.dp),
+                    modifier = Modifier.padding(top = AppSpacing.sm),
                 ) {
                     Text(stringResource(Res.string.cancel))
                 }
@@ -370,17 +370,6 @@ private fun CaptureBox(
             cameraManager = cameraManager,
         )
 
-        if (state.reviewImageBytes == null && !state.isCapturing) {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .pointerInput(Unit) {
-                            detectTapGestures(onTap = { actions.onCapture() })
-                        }.clearAndSetSemantics {},
-            )
-        }
-
         LevelerOverlay(sensorManager)
 
         val localizedErrorText =
@@ -401,14 +390,14 @@ private fun CaptureBox(
                     Modifier
                         .fillMaxWidth()
                         .align(Alignment.TopCenter)
-                        .padding(16.dp)
+                        .padding(AppSpacing.md)
                         .semantics {
                             liveRegion = LiveRegionMode.Polite
                         },
                 shape = MaterialTheme.shapes.small,
             ) {
                 Row(
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier.padding(AppSpacing.md),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -474,7 +463,7 @@ fun ControlsLayer(
             Modifier
                 .fillMaxSize()
                 .safeDrawingPadding()
-                .padding(16.dp),
+                .padding(AppSpacing.md),
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -517,7 +506,7 @@ private fun ControlsTopBar(
                 .background(
                     MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
                     MaterialTheme.shapes.large,
-                ).padding(horizontal = 16.dp, vertical = 12.dp),
+                ).padding(horizontal = AppSpacing.md, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -528,7 +517,7 @@ private fun ControlsTopBar(
             modifier =
                 Modifier
                     .weight(1f, fill = false)
-                    .padding(end = 8.dp)
+                    .padding(end = AppSpacing.sm)
                     .semantics { heading() },
         )
         Text(
@@ -557,40 +546,50 @@ private fun ControlsBottomBar(
     onToggleLens: () -> Unit,
 ) {
     val capturingPhotoText = stringResource(Res.string.capturing_photo)
+    val takePhotoText = stringResource(Res.string.take_photo)
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Button(
-            onClick = onCapture,
+        Box(
             modifier =
                 Modifier
-                    .defaultMinSize(minHeight = 48.dp)
+                    .size(72.dp)
                     .minimumInteractiveComponentSize()
-                    .padding(bottom = 16.dp)
-                    .semantics {
-                        if (isCapturing) {
-                            contentDescription = capturingPhotoText
-                            liveRegion = LiveRegionMode.Polite
-                        }
-                    },
-            enabled = !isCapturing,
-            colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
+                    .padding(bottom = AppSpacing.sm),
+            contentAlignment = Alignment.Center,
         ) {
             if (isCapturing) {
                 CircularProgressIndicator(
                     modifier =
                         Modifier
-                            .size(24.dp)
-                            .semantics { contentDescription = capturingPhotoText },
-                    color = MaterialTheme.colorScheme.onPrimary,
+                            .size(56.dp)
+                            .semantics {
+                                contentDescription = capturingPhotoText
+                                liveRegion = LiveRegionMode.Polite
+                            },
+                    color = MaterialTheme.colorScheme.primary,
                 )
             } else {
-                Text(stringResource(Res.string.take_photo))
+                FloatingActionButton(
+                    onClick = onCapture,
+                    shape = CircleShape,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier =
+                        Modifier
+                            .size(64.dp)
+                            .border(3.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                            .semantics {
+                                contentDescription = takePhotoText
+                            },
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PhotoCamera,
+                        contentDescription = null,
+                        modifier = Modifier.size(AppSpacing.xl),
+                    )
+                }
             }
         }
         Row(
@@ -663,27 +662,19 @@ fun ReviewLayer(
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(32.dp),
+                    .padding(AppSpacing.xl),
             horizontalArrangement = Arrangement.SpaceAround,
         ) {
-            OutlinedButton(
+            FilledTonalButton(
                 onClick = onRetake,
-                colors =
-                    ButtonDefaults.outlinedButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
+                modifier = Modifier.minimumInteractiveComponentSize(),
             ) {
                 Text(stringResource(Res.string.retake))
             }
 
             Button(
                 onClick = onConfirm,
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
+                modifier = Modifier.minimumInteractiveComponentSize(),
             ) {
                 Text(stringResource(Res.string.confirm))
             }

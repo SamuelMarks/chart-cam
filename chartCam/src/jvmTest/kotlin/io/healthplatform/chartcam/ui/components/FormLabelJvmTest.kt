@@ -53,4 +53,58 @@ class FormLabelJvmTest {
             onNodeWithContentDescription("First Name, required").assertIsDisplayed()
         }
     }
+
+    /**
+     * Verifies required form label formatting in Japanese (East Asian locale with full-width punctuation).
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testRequiredFormLabelJapanese() {
+        setAppLanguage("ja")
+        runComposeUiTest {
+            setContent {
+                FormLabel(text = "氏名", isRequired = true)
+            }
+            waitForIdle()
+
+            onNodeWithText("氏名 *").assertIsDisplayed()
+            onNodeWithContentDescription("氏名、必須").assertIsDisplayed()
+        }
+    }
+
+    /**
+     * Verifies required form label formatting in Hebrew (RTL locale).
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testRequiredFormLabelHebrew() {
+        setAppLanguage("he")
+        runComposeUiTest {
+            setContent {
+                FormLabel(text = "שם פרטי", isRequired = true)
+            }
+            waitForIdle()
+
+            onNodeWithText("שם פרטי *").assertIsDisplayed()
+            onNodeWithContentDescription("שם פרטי, שדה חובה").assertIsDisplayed()
+        }
+    }
+
+    /**
+     * Verifies required form label formatting in Spanish (Romance LTR locale).
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testRequiredFormLabelSpanish() {
+        setAppLanguage("es")
+        runComposeUiTest {
+            setContent {
+                FormLabel(text = "Nombre", isRequired = true)
+            }
+            waitForIdle()
+
+            onNodeWithText("Nombre *").assertIsDisplayed()
+            onNodeWithContentDescription("Nombre, obligatorio").assertIsDisplayed()
+        }
+    }
 }

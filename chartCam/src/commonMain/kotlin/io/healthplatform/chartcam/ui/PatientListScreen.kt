@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DockedSearchBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,7 +53,8 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -76,6 +78,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -126,6 +129,7 @@ import chartcam.chartcam.generated.resources.show_my_patients_only
 import chartcam.chartcam.generated.resources.state_selected
 import chartcam.chartcam.generated.resources.state_unselected
 import chartcam.chartcam.generated.resources.version_text
+import io.healthplatform.chartcam.config.BuildMetadata
 import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.models.customBirthDate
 import io.healthplatform.chartcam.models.getFullName
@@ -137,6 +141,7 @@ import io.healthplatform.chartcam.ui.components.CreatePatientDialog
 import io.healthplatform.chartcam.ui.components.DemoModeBanner
 import io.healthplatform.chartcam.ui.components.LanguageMenu
 import io.healthplatform.chartcam.ui.components.tabFocusNext
+import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.utils.createShareService
 import io.healthplatform.chartcam.viewmodel.PatientListViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -191,10 +196,12 @@ fun PatientListScreen(
     val focusManager = LocalFocusManager.current
     val currentLang by currentLanguageState.collectAsState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     key(currentLang) {
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 TopAppBar(
                     scrollBehavior = scrollBehavior,
@@ -357,7 +364,8 @@ fun PatientListScreen(
                         },
                     )
                 }
-                SearchBar(
+                val searchPlaceholder = stringResource(Res.string.search_placeholder)
+                DockedSearchBar(
                     inputField = {
                         androidx.compose.material3.SearchBarDefaults.InputField(
                             query = state.searchQuery,
@@ -365,7 +373,8 @@ fun PatientListScreen(
                             onSearch = { },
                             expanded = false,
                             onExpandedChange = { },
-                            placeholder = { Text(stringResource(Res.string.search_placeholder)) },
+                            placeholder = { Text(searchPlaceholder) },
+                            modifier = Modifier.semantics { contentDescription = searchPlaceholder },
                             leadingIcon = {
                                 Icon(
                                     Icons.Default.Search,
@@ -395,7 +404,7 @@ fun PatientListScreen(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(horizontal = AppSpacing.md, vertical = AppSpacing.sm),
                 ) {}
 
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -412,7 +421,7 @@ fun PatientListScreen(
                                 modifier =
                                     Modifier
                                         .fillMaxWidth()
-                                        .padding(32.dp)
+                                        .padding(AppSpacing.xl)
                                         .semantics { liveRegion = LiveRegionMode.Polite },
                                 contentAlignment = Alignment.Center,
                             ) {
@@ -517,7 +526,7 @@ fun PatientListScreen(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 16.dp)
+                                    .padding(top = AppSpacing.md)
                                     .minimumInteractiveComponentSize()
                                     .semantics {
                                         stateDescription = if (exportAllVisits) selectedText else unselectedText
@@ -534,7 +543,7 @@ fun PatientListScreen(
                             )
                             Text(
                                 stringResource(Res.string.export_all_patients),
-                                modifier = Modifier.padding(start = 8.dp),
+                                modifier = Modifier.padding(start = AppSpacing.sm),
                             )
                         }
                     }
@@ -571,7 +580,7 @@ fun PatientListScreen(
                         Text(stringResource(Res.string.data_exported_message))
                         TextButton(onClick = {
                             state.exportPassword?.let { shareService.shareText(it) }
-                        }, modifier = Modifier.padding(top = 16.dp)) {
+                        }, modifier = Modifier.padding(top = AppSpacing.md)) {
                             Text(stringResource(Res.string.share_password))
                         }
                     }
@@ -599,8 +608,9 @@ fun PatientListScreen(
                 title = { Text(stringResource(Res.string.about_title), modifier = Modifier.semantics { heading() }) },
                 text = {
                     Column {
-                        val fullText = stringResource(Res.string.version_text, "1.0.3 — https://healthplatform.io")
-                        val url = "https://healthplatform.io"
+                        val url = BuildMetadata.WEBSITE_URL
+                        val versionSummary = BuildMetadata.formattedVersionInfo()
+                        val fullText = stringResource(Res.string.version_text, versionSummary)
                         val startIndex = fullText.indexOf(url)
 
                         if (startIndex >= 0) {
@@ -632,7 +642,7 @@ fun PatientListScreen(
                         } else {
                             Text(fullText)
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(AppSpacing.md))
                         Text(
                             text = stringResource(Res.string.legal_disclaimer),
                             style = MaterialTheme.typography.labelSmall,
@@ -732,7 +742,7 @@ fun PatientListScreen(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 8.dp)
+                                    .padding(top = AppSpacing.sm)
                                     .tabFocusNext(focusManager)
                                     .onKeyEvent {
                                         if (it.key == Key.Enter &&
@@ -768,7 +778,7 @@ fun PatientListScreen(
                                 color = MaterialTheme.colorScheme.error,
                                 modifier =
                                     Modifier
-                                        .padding(top = 8.dp)
+                                        .padding(top = AppSpacing.sm)
                                         .semantics { liveRegion = LiveRegionMode.Polite },
                             )
                         }
@@ -818,6 +828,7 @@ fun PatientListItem(
             Text(
                 patient.getFullName(currentLang),
                 style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
             )
         },
         supportingContent = {

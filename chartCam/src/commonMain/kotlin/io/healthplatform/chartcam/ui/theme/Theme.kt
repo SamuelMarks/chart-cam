@@ -8,6 +8,7 @@ package io.healthplatform.chartcam.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
@@ -71,7 +72,52 @@ private object ThemeColors {
     const val DARK_INVERSE_SURFACE = 0xFFE5E2E1
     const val DARK_INVERSE_ON_SURFACE = 0xFF313030
     const val DARK_INVERSE_PRIMARY = 0xFFA51D24
+
+    const val PAIN_LEVEL_0_LIGHT = 0xFF1B5E20
+    const val PAIN_LEVEL_1_LIGHT = 0xFF33691E
+    const val PAIN_LEVEL_2_LIGHT = 0xFF8D4000
+    const val PAIN_LEVEL_3_LIGHT = 0xFFBF360C
+    const val PAIN_LEVEL_4_LIGHT = 0xFFB71C1C
+    const val PAIN_LEVEL_5_LIGHT = 0xFF880E4F
+
+    const val PAIN_LEVEL_0_DARK = 0xFF81C784
+    const val PAIN_LEVEL_1_DARK = 0xFFAED581
+    const val PAIN_LEVEL_2_DARK = 0xFFFFD54F
+    const val PAIN_LEVEL_3_DARK = 0xFFFFB74D
+    const val PAIN_LEVEL_4_DARK = 0xFFFF8A65
+    const val PAIN_LEVEL_5_DARK = 0xFFE57373
 }
+
+/**
+ * Resolves a semantic pain score color token from the theme color definitions.
+ *
+ * @param score The pain score from 0 to 10.
+ * @param isDarkTheme Whether the dark theme palette is active.
+ * @return The harmonized WCAG-compliant [Color] token.
+ */
+fun resolvePainScoreColor(
+    score: Int,
+    isDarkTheme: Boolean = false,
+): Color =
+    if (isDarkTheme) {
+        when {
+            score <= 1 -> Color(ThemeColors.PAIN_LEVEL_0_DARK)
+            score <= 3 -> Color(ThemeColors.PAIN_LEVEL_1_DARK)
+            score <= 5 -> Color(ThemeColors.PAIN_LEVEL_2_DARK)
+            score <= 7 -> Color(ThemeColors.PAIN_LEVEL_3_DARK)
+            score <= 9 -> Color(ThemeColors.PAIN_LEVEL_4_DARK)
+            else -> Color(ThemeColors.PAIN_LEVEL_5_DARK)
+        }
+    } else {
+        when {
+            score <= 1 -> Color(ThemeColors.PAIN_LEVEL_0_LIGHT)
+            score <= 3 -> Color(ThemeColors.PAIN_LEVEL_1_LIGHT)
+            score <= 5 -> Color(ThemeColors.PAIN_LEVEL_2_LIGHT)
+            score <= 7 -> Color(ThemeColors.PAIN_LEVEL_3_LIGHT)
+            score <= 9 -> Color(ThemeColors.PAIN_LEVEL_4_LIGHT)
+            else -> Color(ThemeColors.PAIN_LEVEL_5_LIGHT)
+        }
+    }
 
 /** Harvard Crimson brand color used as primary color. */
 internal val HarvardCrimson = Color(ThemeColors.CRIMSON)
@@ -255,6 +301,19 @@ fun getTypography(language: String = currentLanguageState.value): Typography {
 }
 
 /**
+ * Resolves the platform color scheme, optionally applying dynamic colors on supported platforms (e.g. Android 12+).
+ *
+ * @param darkTheme Whether dark theme is enabled.
+ * @param dynamicColor Whether dynamic color is requested.
+ * @return The resolved Material 3 [ColorScheme].
+ */
+@Composable
+expect fun resolvePlatformColorScheme(
+    darkTheme: Boolean,
+    dynamicColor: Boolean = false,
+): ColorScheme
+
+/**
  * Main application theme defining the colors, typography, and shapes.
  * This ensures consistency with Material Design 3 guidelines.
  *
@@ -262,14 +321,16 @@ fun getTypography(language: String = currentLanguageState.value): Typography {
  * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
  * @param darkTheme Whether to use the dark theme. Defaults to the system setting.
+ * @param dynamicColor Whether to use dynamic system colors on supported platforms (e.g. Android 12+).
  * @param content The composable content to apply the theme to.
  */
 @Composable
 fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = if (darkTheme) DarkColors else LightColors
+    val colorScheme = resolvePlatformColorScheme(darkTheme = darkTheme, dynamicColor = dynamicColor)
     val currentLang = currentLanguageState.collectAsState().value
 
     MaterialTheme(

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.automirrored.filled.ShortText
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.Checklist
@@ -35,26 +36,33 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LinearScale
+import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Numbers
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Preview
 import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.ToggleOn
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipAnchorPosition
@@ -108,7 +116,9 @@ import chartcam.chartcam.generated.resources.cd_delete_item_format
 import chartcam.chartcam.generated.resources.cd_delete_option
 import chartcam.chartcam.generated.resources.cd_more_widgets
 import chartcam.chartcam.generated.resources.cd_move_item_down
+import chartcam.chartcam.generated.resources.cd_move_item_down_generic
 import chartcam.chartcam.generated.resources.cd_move_item_up
+import chartcam.chartcam.generated.resources.cd_move_item_up_generic
 import chartcam.chartcam.generated.resources.cd_preview
 import chartcam.chartcam.generated.resources.cd_save
 import chartcam.chartcam.generated.resources.confirm_delete_item_message
@@ -119,6 +129,12 @@ import chartcam.chartcam.generated.resources.delete
 import chartcam.chartcam.generated.resources.error_duplicate_id
 import chartcam.chartcam.generated.resources.error_item_validation
 import chartcam.chartcam.generated.resources.error_required_field
+import chartcam.chartcam.generated.resources.fitzpatrick_type_1
+import chartcam.chartcam.generated.resources.fitzpatrick_type_2
+import chartcam.chartcam.generated.resources.fitzpatrick_type_3
+import chartcam.chartcam.generated.resources.fitzpatrick_type_4
+import chartcam.chartcam.generated.resources.fitzpatrick_type_5
+import chartcam.chartcam.generated.resources.fitzpatrick_type_6
 import chartcam.chartcam.generated.resources.item_moved_down_format
 import chartcam.chartcam.generated.resources.item_moved_up_format
 import chartcam.chartcam.generated.resources.label
@@ -127,21 +143,29 @@ import chartcam.chartcam.generated.resources.new_widget_item
 import chartcam.chartcam.generated.resources.preview_mode
 import chartcam.chartcam.generated.resources.questionnaire_save_failed
 import chartcam.chartcam.generated.resources.questionnaire_title
+import chartcam.chartcam.generated.resources.severity_mild
+import chartcam.chartcam.generated.resources.severity_moderate
+import chartcam.chartcam.generated.resources.severity_severe
 import chartcam.chartcam.generated.resources.type_format
+import chartcam.chartcam.generated.resources.widget_body_map
 import chartcam.chartcam.generated.resources.widget_checkbox
 import chartcam.chartcam.generated.resources.widget_date
 import chartcam.chartcam.generated.resources.widget_datetime
+import chartcam.chartcam.generated.resources.widget_fitzpatrick
 import chartcam.chartcam.generated.resources.widget_multi_line_text
 import chartcam.chartcam.generated.resources.widget_multi_select
 import chartcam.chartcam.generated.resources.widget_numeric
+import chartcam.chartcam.generated.resources.widget_pain_scale
 import chartcam.chartcam.generated.resources.widget_photo_camera
 import chartcam.chartcam.generated.resources.widget_range
+import chartcam.chartcam.generated.resources.widget_segmented_tiles
 import chartcam.chartcam.generated.resources.widget_single_line_text
 import chartcam.chartcam.generated.resources.widget_single_select
 import chartcam.chartcam.generated.resources.widget_switch
 import chartcam.chartcam.generated.resources.widget_video_camera
 import io.healthplatform.chartcam.sdc.SdcQuestionnaireForm
 import io.healthplatform.chartcam.ui.components.tabFocusNext
+import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.viewmodel.BuilderItem
 import io.healthplatform.chartcam.viewmodel.QuestionnaireBuilderState
 import io.healthplatform.chartcam.viewmodel.QuestionnaireBuilderViewModel
@@ -169,6 +193,10 @@ fun getWidgetNameResource(type: WidgetType): StringResource =
         WidgetType.DATETIME -> Res.string.widget_datetime
         WidgetType.NUMERIC -> Res.string.widget_numeric
         WidgetType.RANGE -> Res.string.widget_range
+        WidgetType.PAIN_SCALE -> Res.string.widget_pain_scale
+        WidgetType.FITZPATRICK_PALETTE -> Res.string.widget_fitzpatrick
+        WidgetType.BODY_MAP -> Res.string.widget_body_map
+        WidgetType.SEGMENTED_TILES -> Res.string.widget_segmented_tiles
     }
 
 /**
@@ -200,6 +228,10 @@ fun getWidgetIcon(type: WidgetType): ImageVector =
         WidgetType.DATETIME -> Icons.Default.AccessTime
         WidgetType.NUMERIC -> Icons.Default.Numbers
         WidgetType.RANGE -> Icons.Default.LinearScale
+        WidgetType.PAIN_SCALE -> Icons.Default.Mood
+        WidgetType.FITZPATRICK_PALETTE -> Icons.Default.Palette
+        WidgetType.BODY_MAP -> Icons.Default.Accessibility
+        WidgetType.SEGMENTED_TILES -> Icons.Default.ViewModule
     }
 
 /**
@@ -215,19 +247,23 @@ private fun SecondaryWidgetDropdown(
     onWidgetSelected: (WidgetType) -> Unit,
 ) {
     var showDropdown by remember { mutableStateOf(false) }
+    val moreWidgetsDesc = stringResource(Res.string.cd_more_widgets)
     Box {
         TooltipBox(
             positionProvider =
                 TooltipDefaults.rememberTooltipPositionProvider(
                     positioning = TooltipAnchorPosition.Above,
                 ),
-            tooltip = { PlainTooltip { Text(stringResource(Res.string.cd_more_widgets)) } },
+            tooltip = { PlainTooltip { Text(moreWidgetsDesc) } },
             state = rememberTooltipState(),
         ) {
-            IconButton(onClick = { showDropdown = true }) {
+            IconButton(
+                onClick = { showDropdown = true },
+                modifier = Modifier.semantics { contentDescription = moreWidgetsDesc },
+            ) {
                 Icon(
                     Icons.Default.MoreHoriz,
-                    contentDescription = stringResource(Res.string.cd_more_widgets),
+                    contentDescription = null,
                 )
             }
         }
@@ -281,27 +317,31 @@ fun WidgetSelectionRow(
         Text(
             stringResource(Res.string.add_widget),
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp).semantics { heading() },
+            modifier = Modifier.padding(bottom = AppSpacing.sm).semantics { heading() },
         )
 
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             primaryWidgets.forEach { widget ->
+                val widgetDesc = getWidgetNameString(widget)
                 TooltipBox(
                     positionProvider =
                         TooltipDefaults.rememberTooltipPositionProvider(
                             positioning = TooltipAnchorPosition.Above,
                         ),
-                    tooltip = { PlainTooltip { Text(getWidgetNameString(widget)) } },
+                    tooltip = { PlainTooltip { Text(widgetDesc) } },
                     state = rememberTooltipState(),
                 ) {
-                    IconButton(onClick = { onWidgetSelected(widget) }) {
+                    IconButton(
+                        onClick = { onWidgetSelected(widget) },
+                        modifier = Modifier.semantics { contentDescription = widgetDesc },
+                    ) {
                         Icon(
                             getWidgetIcon(widget),
-                            contentDescription = getWidgetNameString(widget),
+                            contentDescription = null,
                         )
                     }
                 }
@@ -332,9 +372,11 @@ fun QuestionnaireBuilderScreen(
     val focusRequesters = remember { mutableMapOf<String, FocusRequester>() }
     var a11yAnnouncement by remember { mutableStateOf<String?>(null) }
     val saveFailedMsg = stringResource(Res.string.questionnaire_save_failed)
+    val snackbarHostState = remember { SnackbarHostState() }
 
     key(currentLang) {
         Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 TopAppBar(
                     title = {
@@ -453,7 +495,7 @@ private fun OptionItemRow(
     onDelete: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 8.dp, top = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = AppSpacing.sm, top = AppSpacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(stringResource(Res.string.bullet_format, option), modifier = Modifier.weight(1f))
@@ -498,7 +540,7 @@ private fun AddOptionField(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp)
+                .padding(top = AppSpacing.sm)
                 .onKeyEvent {
                     if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
                         val d = if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next
@@ -537,7 +579,10 @@ fun BuilderItemOptions(
     focusManager: FocusManager,
     actions: BuilderItemRowActions,
 ) {
-    if (item.widgetType != WidgetType.SINGLE_SELECT && item.widgetType != WidgetType.MULTI_SELECT) {
+    if (item.widgetType != WidgetType.SINGLE_SELECT &&
+        item.widgetType != WidgetType.MULTI_SELECT &&
+        item.widgetType != WidgetType.SEGMENTED_TILES
+    ) {
         return
     }
 
@@ -557,7 +602,7 @@ fun BuilderItemOptions(
             },
         )
     }
-    Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(top = AppSpacing.sm)) {
         if (noOptionsError) {
             Text(
                 stringResource(Res.string.at_least_one_option_required),
@@ -565,7 +610,7 @@ fun BuilderItemOptions(
                 style = MaterialTheme.typography.bodySmall,
                 modifier =
                     Modifier
-                        .padding(bottom = 4.dp)
+                        .padding(bottom = AppSpacing.xs)
                         .semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
@@ -595,8 +640,18 @@ private fun BuilderItemActionButtons(
     onShowDeleteConfirm: () -> Unit,
 ) {
     Column {
-        val moveUpCd = stringResource(Res.string.cd_move_item_up, itemLabel)
-        val moveDownCd = stringResource(Res.string.cd_move_item_down, itemLabel)
+        val moveUpCd =
+            if (itemLabel.isNotBlank()) {
+                stringResource(Res.string.cd_move_item_up, itemLabel)
+            } else {
+                stringResource(Res.string.cd_move_item_up_generic)
+            }
+        val moveDownCd =
+            if (itemLabel.isNotBlank()) {
+                stringResource(Res.string.cd_move_item_down, itemLabel)
+            } else {
+                stringResource(Res.string.cd_move_item_down_generic)
+            }
         val deleteCd =
             if (itemLabel.isNotBlank()) {
                 stringResource(Res.string.cd_delete_item_format, itemLabel)
@@ -710,15 +765,25 @@ fun BuilderItemRow(
 
     val focusRequester = remember { FocusRequester() }
     val borderColor = if (item.isError) MaterialTheme.colorScheme.error else null
-    val moveUpLabel = stringResource(Res.string.cd_move_item_up, item.label)
-    val moveDownLabel = stringResource(Res.string.cd_move_item_down, item.label)
+    val moveUpLabel =
+        if (item.label.isNotBlank()) {
+            stringResource(Res.string.cd_move_item_up, item.label)
+        } else {
+            stringResource(Res.string.cd_move_item_up_generic)
+        }
+    val moveDownLabel =
+        if (item.label.isNotBlank()) {
+            stringResource(Res.string.cd_move_item_down, item.label)
+        } else {
+            stringResource(Res.string.cd_move_item_down_generic)
+        }
     val itemValidationError = stringResource(Res.string.error_item_validation)
 
-    Card(
+    OutlinedCard(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp)
+                .padding(vertical = AppSpacing.xs)
                 .semantics {
                     if (item.isError) {
                         error(itemValidationError)
@@ -744,10 +809,12 @@ fun BuilderItemRow(
                         customActions = actionsList
                     }
                 },
-        border = borderColor?.let { BorderStroke(1.dp, it) },
+        border =
+            borderColor?.let { BorderStroke(1.dp, it) }
+                ?: CardDefaults.outlinedCardBorder(),
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(AppSpacing.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -769,7 +836,7 @@ fun BuilderItemRow(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp)
+                            .padding(top = AppSpacing.sm)
                             .focusRequester(focusRequester)
                             .tabFocusNext(focusManager),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -879,11 +946,11 @@ private fun PreviewQuestionnaire(
         Text(
             stringResource(Res.string.preview_mode),
             style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(bottom = 16.dp).semantics { heading() },
+            modifier = Modifier.padding(bottom = AppSpacing.md).semantics { heading() },
         )
 
-        Card(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-            Column(modifier = Modifier.padding(16.dp)) {
+        ElevatedCard(modifier = Modifier.fillMaxWidth().padding(bottom = AppSpacing.md)) {
+            Column(modifier = Modifier.padding(AppSpacing.md)) {
                 SdcQuestionnaireForm(
                     questionnaire = previewQuestionnaire,
                     answers = previewAnswers,
@@ -919,7 +986,7 @@ private fun BuilderActiveView(
             color = MaterialTheme.colorScheme.error,
             modifier =
                 Modifier
-                    .padding(bottom = 8.dp)
+                    .padding(bottom = AppSpacing.sm)
                     .semantics { liveRegion = LiveRegionMode.Polite },
         )
     }
@@ -936,7 +1003,7 @@ private fun BuilderActiveView(
         },
         singleLine = true,
         maxLines = 1,
-        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).tabFocusNext(focusManager),
+        modifier = Modifier.fillMaxWidth().padding(bottom = AppSpacing.md).tabFocusNext(focusManager),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
         keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
     )
@@ -948,12 +1015,32 @@ private fun BuilderActiveView(
             val widgetName = widgetNames[widgetType] ?: widgetType.name
             stringResource(Res.string.new_widget_item, widgetName)
         }
+    val fitzpatrickOptions =
+        listOf(
+            stringResource(Res.string.fitzpatrick_type_1),
+            stringResource(Res.string.fitzpatrick_type_2),
+            stringResource(Res.string.fitzpatrick_type_3),
+            stringResource(Res.string.fitzpatrick_type_4),
+            stringResource(Res.string.fitzpatrick_type_5),
+            stringResource(Res.string.fitzpatrick_type_6),
+        )
+    val defaultSeverityOptions =
+        listOf(
+            stringResource(Res.string.severity_mild),
+            stringResource(Res.string.severity_moderate),
+            stringResource(Res.string.severity_severe),
+        )
+    val defaultOptionsByWidget =
+        mapOf(
+            WidgetType.FITZPATRICK_PALETTE to fitzpatrickOptions,
+            WidgetType.SEGMENTED_TILES to defaultSeverityOptions,
+        )
     WidgetSelectionRow(
         onWidgetSelected = { widgetType ->
             val label = newWidgetItemLabels[widgetType] ?: fallbackNewItem
-            viewModel.addItem(widgetType, label)
+            viewModel.addItem(widgetType, label, defaultOptionsByWidget[widgetType])
         },
-        modifier = Modifier.padding(bottom = 8.dp),
+        modifier = Modifier.padding(bottom = AppSpacing.sm),
     )
 
     BuilderItemList(state.items, viewModel, focusRequesters, onAnnounce)
@@ -983,7 +1070,7 @@ private fun QuestionnaireBuilderContent(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .imePadding()
-                .padding(16.dp),
+                .padding(AppSpacing.md),
     ) {
         if (state.isPreviewMode) {
             PreviewQuestionnaire(state, viewModel)

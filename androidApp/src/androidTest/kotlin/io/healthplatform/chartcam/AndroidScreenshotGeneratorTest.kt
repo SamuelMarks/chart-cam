@@ -172,15 +172,18 @@ class AndroidScreenshotGeneratorTest {
         Thread.sleep(1000)
 
         // 2. List patients (Populated)
+        capture("iphone-02-list-patients")
+
+        // 3. Burger dropdown menu from patient list screen
         safeClick("More options", isContentDescription = true)
         Thread.sleep(1000)
+        composeTestRule.waitForIdle()
+        capture("iphone-03-burger-dropdown")
         safeClick("Show All Patients")
-
-        capture("iphone-02-list-patients")
-        Thread.sleep(2000)
+        Thread.sleep(1000)
         composeTestRule.waitForIdle()
 
-        // 3. Create questionnaire with radio, select, free text, camera + label0, camera + label1
+        // 4. Create questionnaire with radio, select, free text, camera + label0, camera + label1
         safeClick("Jane", isContentDescription = false) // Go to patient
         safeClick("New Visit", isContentDescription = true)
 
@@ -245,30 +248,30 @@ class AndroidScreenshotGeneratorTest {
             ).onLast()
             .performTextInput("Right Eye")
 
-        capture("iphone-03-create-questionnaire")
+        capture("iphone-04-create-questionnaire")
         safeClick("Save", isContentDescription = true)
 
         // Back to Encounter Detail
         composeTestRule.waitForIdle()
 
-        // 4. Fill in questionnaire for a given patient
+        // 5. Fill in questionnaire for a given patient
         safeClick("Low")
         composeTestRule.onAllNodes(hasText("Symptoms", substring = true, ignoreCase = true))[0].performTextInput("Blurry vision")
 
-        capture("iphone-04-fill-questionnaire")
+        capture("iphone-05-fill-questionnaire")
         safeClick("Finalize Visit")
         safeClick("Back", isContentDescription = true)
         Thread.sleep(1000)
 
-        // 5. View questionnaires for a given patient (Encounters view in Patient Detail)
+        // 6. View questionnaires for a given patient (Encounters view in Patient Detail)
         safeClick("Jane")
         Thread.sleep(1000)
 
-        capture("iphone-05-view-patient-questionnaires")
+        capture("iphone-06-view-patient-questionnaires")
 
-        // 6. View specific questionnaire filled out for given patient
+        // 7. View specific questionnaire filled out for given patient
         safeClick("Blurry vision")
-        capture("iphone-06-view-specific-questionnaire")
+        capture("iphone-07-view-specific-questionnaire")
 
         // Back to Patient Detail
         safeClick("Back", isContentDescription = true)
@@ -282,9 +285,9 @@ class AndroidScreenshotGeneratorTest {
         Thread.sleep(1000)
         safeClick("Questionnaires")
 
-        // 7. Export questionnaire
+        // 8. Export questionnaire
         safeClick("Advanced Eye Exam")
-        capture("iphone-07-export-questionnaire-view")
+        capture("iphone-08-export-questionnaire-view")
         safeClick("Cancel", isContentDescription = true)
         safeClick("Share Questionnaire", isContentDescription = true)
         safeClick("Share Questionnaire")
@@ -292,7 +295,7 @@ class AndroidScreenshotGeneratorTest {
         safeClick("Back", isContentDescription = true)
         Thread.sleep(1000)
 
-        // 8. Export dataset (incl. with password)
+        // 9. Export dataset (incl. with password)
         safeClick("More options", isContentDescription = true)
         Thread.sleep(1000)
         safeClick("Export Data")
@@ -302,7 +305,7 @@ class AndroidScreenshotGeneratorTest {
                     .hasSetTextAction(),
             ).onLast()
             .performTextInput("secure123")
-        capture("iphone-08-export-dataset")
+        capture("iphone-09-export-dataset")
         safeClick("Export")
         Thread.sleep(10000)
         composeTestRule.waitForIdle()
@@ -311,11 +314,5 @@ class AndroidScreenshotGeneratorTest {
             safeClick("Close")
         } catch (e: Throwable) {
         }
-
-        // 9. Logout
-        safeClick("More options", isContentDescription = true)
-        Thread.sleep(1000)
-        safeClick("Logout")
-        capture("iphone-09-logout")
     }
 }

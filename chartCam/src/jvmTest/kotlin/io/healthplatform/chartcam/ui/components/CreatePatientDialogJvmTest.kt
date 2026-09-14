@@ -6,9 +6,14 @@ package io.healthplatform.chartcam.ui.components
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.v2.runComposeUiTest
 import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.cancel
+import chartcam.chartcam.generated.resources.create
 import chartcam.chartcam.generated.resources.first_name
 import chartcam.chartcam.generated.resources.gender
 import chartcam.chartcam.generated.resources.gender_unknown
@@ -42,7 +47,7 @@ class CreatePatientDialogJvmTest {
                 waitForIdle()
                 onNodeWithText(firstNameStr, useUnmergedTree = true).assertIsDisplayed()
                 onNodeWithText(lastNameStr, useUnmergedTree = true).assertIsDisplayed()
-                onNodeWithText("DOB (YYYY-MM-DD)", useUnmergedTree = true).assertIsDisplayed()
+                onNodeWithText("DOB (MM/DD/YYYY)", useUnmergedTree = true).assertIsDisplayed()
             }
         }
 
@@ -89,6 +94,35 @@ class CreatePatientDialogJvmTest {
                 waitForIdle()
                 onNodeWithText(genderStr, useUnmergedTree = true).assertIsDisplayed()
                 onNodeWithText(unknownStr, useUnmergedTree = true).assertIsDisplayed()
+            }
+        }
+
+    /**
+     * Verifies that the dialog action buttons satisfy minimum 48dp interactive touch target bounds.
+     */
+    @Test
+    fun testActionButtonsTouchTargets() =
+        runTest {
+            setAppLanguage("en")
+            val createStr = getString(Res.string.create)
+            val cancelStr = getString(Res.string.cancel)
+            runComposeUiTest {
+                setContent {
+                    CreatePatientDialog(
+                        onDismissRequest = {},
+                        onConfirm = { _, _, _, _, _ -> },
+                    )
+                }
+                waitForIdle()
+                val createNode = onNode(hasClickAction().and(hasAnyDescendant(hasText(createStr))), useUnmergedTree = true)
+                createNode.assertIsDisplayed()
+                val createBounds = createNode.fetchSemanticsNode().boundsInRoot
+                kotlin.test.assertTrue(createBounds.height >= 48f, "Create button height should be >= 48dp")
+
+                val cancelNode = onNode(hasClickAction().and(hasAnyDescendant(hasText(cancelStr))), useUnmergedTree = true)
+                cancelNode.assertIsDisplayed()
+                val cancelBounds = cancelNode.fetchSemanticsNode().boundsInRoot
+                kotlin.test.assertTrue(cancelBounds.height >= 48f, "Cancel button height should be >= 48dp")
             }
         }
 }

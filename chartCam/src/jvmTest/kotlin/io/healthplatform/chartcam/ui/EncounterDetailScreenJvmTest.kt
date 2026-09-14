@@ -4,9 +4,16 @@
  */
 package io.healthplatform.chartcam.ui
 
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.google.fhir.model.r4.Patient
+import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.navigation.PhotoSessionManager
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
@@ -35,10 +42,6 @@ class EncounterDetailScreenJvmTest {
     @Test
     fun testEncounterDetailScreenJvm() =
         runTest {
-            // We will just do a basic rendering test for now since mocking the entire viewmodel state
-            // with the tightly coupled logic requires significant setup.
-            // The objective is to satisfy the 100% test coverage requirement.
-
             val fhirRepository = mock(FhirRepository::class.java)
             val authRepository = mock(AuthRepository::class.java)
             val questionnaireRepository = mock(QuestionnaireRepository::class.java)
@@ -90,7 +93,7 @@ class EncounterDetailScreenJvmTest {
         }
 
     /**
-     * Tests PhotoGridItem rendering and interaction.
+     * Tests PhotoGridItem rendering with load error state.
      */
     @Test
     fun testPhotoGridItem() =
@@ -111,6 +114,79 @@ class EncounterDetailScreenJvmTest {
             rule.setContent {
                 PhotoGridItem(doc)
             }
+            rule.waitForIdle()
+            rule.onNodeWithContentDescription("Test Photo Description").assertExists()
+        }
+
+    /**
+     * Tests PhotoGridItem clicking to open full photo review dialog and dismiss.
+     */
+    @Test
+    fun testPhotoGridItemFullReviewDialog() =
+        runTest {
+            val storage = createFileStorage()
+            val sampleBmp =
+                byteArrayOf(
+                    0x42,
+                    0x4D,
+                    0x1E,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x1A,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x0C,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x01,
+                    0x00,
+                    0x01,
+                    0x00,
+                    0x01,
+                    0x00,
+                    0x18,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                )
+            val savedPath = storage.saveImage("test_encounter_photo.bmp", sampleBmp)
+
+            val doc =
+                io.healthplatform.chartcam.models.createFhirDocumentReference(
+                    io.healthplatform.chartcam.models.DocumentReferenceCreationParams(
+                        id = "doc-test-valid",
+                        patientId = "pat-1",
+                        encounterId = "enc-1",
+                        dateStr = "2026-07-09T10:00:00Z",
+                        desc = "Front View Photo",
+                        mime = "image/bmp",
+                        urlPath = savedPath,
+                    ),
+                )
+
+            rule.setContent {
+                PhotoGridItem(doc)
+            }
+            rule.waitForIdle()
+
+            // Click the card
+            rule.onNodeWithContentDescription("Front View Photo").performClick()
+            rule.waitForIdle()
+
+            // Verify dialog heading and dismiss button
+            rule
+                .onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading).and(hasText("Front View Photo")))
+                .assertExists()
+            rule.onNodeWithText("Close").performClick()
             rule.waitForIdle()
         }
 }

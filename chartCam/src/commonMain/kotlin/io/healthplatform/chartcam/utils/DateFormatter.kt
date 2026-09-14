@@ -4,6 +4,8 @@
  */
 package io.healthplatform.chartcam.utils
 
+import kotlinx.datetime.LocalDate
+
 /**
  * Formats a FHIR Date or DateTime string according to the user's current locale.
  *
@@ -45,6 +47,9 @@ enum class DatePattern(
     /** Day-first ordering convention (e.g. "DD/MM/YYYY"). */
     DAY_FIRST("DD/MM/YYYY"),
 
+    /** Month-first ordering convention (e.g. "MM/DD/YYYY"). */
+    MONTH_FIRST("MM/DD/YYYY"),
+
     /** Year-first ordering convention (e.g. "YYYY/MM/DD"). */
     YEAR_FIRST("YYYY/MM/DD"),
 
@@ -64,8 +69,10 @@ fun resolveDatePattern(language: String = io.healthplatform.chartcam.ui.currentL
     val lang = parts.first()
     val region = if (parts.size > 1) parts[1] else ""
     val isCommonwealthEnglish = lang == "en" && region in setOf("gb", "uk", "au", "nz", "ie", "za", "in", "sg")
+    val isUsEnglish = lang == "en" && (region == "us" || region.isEmpty())
     return when {
         lang in setOf("zh", "ja") -> DatePattern.YEAR_FIRST
+        isUsEnglish -> DatePattern.MONTH_FIRST
         lang in setOf("es", "he", "iw", "fr", "de", "it", "pt", "ru") || isCommonwealthEnglish -> DatePattern.DAY_FIRST
         else -> DatePattern.ISO_STANDARD
     }
@@ -79,6 +86,30 @@ fun resolveDatePattern(language: String = io.healthplatform.chartcam.ui.currentL
  */
 fun getLocalizedDatePattern(language: String = io.healthplatform.chartcam.ui.currentLanguageState.value): String =
     resolveDatePattern(language).pattern
+
+/**
+ * Formats a [LocalDate] into a string matching the given [DatePattern].
+ *
+ * @param date The date to format.
+ * @param pattern The [DatePattern] convention to format against.
+ * @return The formatted date string.
+ */
+fun formatDateForPattern(
+    date: LocalDate,
+    pattern: DatePattern,
+): String {
+    val iso = date.toString()
+    val parts = iso.split("-")
+    val y = parts[0]
+    val m = parts[1]
+    val d = parts[2]
+    return when (pattern) {
+        DatePattern.DAY_FIRST -> "$d/$m/$y"
+        DatePattern.MONTH_FIRST -> "$m/$d/$y"
+        DatePattern.YEAR_FIRST -> "$y/$m/$d"
+        DatePattern.ISO_STANDARD -> iso
+    }
+}
 
 /**
  * Returns the localized date-time input pattern string for the given language.

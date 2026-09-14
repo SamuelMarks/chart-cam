@@ -39,6 +39,10 @@ To ensure forms render correctly within the ChartCam `SdcQuestionnaireForm` engi
 1.  **Item Control Codes:** Use the `http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl` extension to specify widget types:
     *   `text-box` for multiline text areas.
     *   `slider` for range sliders.
+    *   `pain-vas` / `wong-baker` for visual pain assessment sliders with affective face icons (or standard `slider` combined with LOINC `72514-3` / `38208-5`).
+    *   `palette` / `fitzpatrick` for dermatological phototyping swatches.
+    *   `body-map` for anatomical region pin drop and coordinate tracking.
+    *   `segmented-control` for high-contrast visual choice tiles.
 2.  **Calculated Expressions:** Apply the `http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression` extension on an item. The inner `expression` must have the language `text/fhirpath` (or be a simple arithmetic string in our prototype evaluator) containing variables mapped to sibling `linkId`s (e.g., `%weight / (%height * %height)`).
 3.  **Conditional Rendering:** Use `enableWhen` arrays on items. The `question` must point to a valid `linkId` in the same form, and `operator` and `answer` must be populated.
 4.  **Range Constraints:** Use `http://hl7.org/fhir/StructureDefinition/minValue` and `maxValue` extensions on integer/decimal types to enforce validation and dictate slider boundaries.

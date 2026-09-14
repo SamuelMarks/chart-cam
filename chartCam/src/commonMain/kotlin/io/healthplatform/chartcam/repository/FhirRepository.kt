@@ -517,6 +517,13 @@ open class FhirRepository(
         }
 
     /**
+     * Retrieves a single DocumentReference (photo) by ID.
+     * @param id The unique identifier of the DocumentReference.
+     * @return The DocumentReference resource, or null if not found.
+     */
+    open suspend fun getDocumentReference(id: String): DocumentReference? = getResource("DocumentReference", id) as? DocumentReference
+
+    /**
      * Saves a QuestionnaireResponse.
      * @param qr The QuestionnaireResponse resource to persist.
      */

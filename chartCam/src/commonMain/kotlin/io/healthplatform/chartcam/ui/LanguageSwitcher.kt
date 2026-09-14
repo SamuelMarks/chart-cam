@@ -57,15 +57,20 @@ fun getLayoutDirectionForLanguage(language: String): androidx.compose.ui.unit.La
     }
 
 /**
- * Determines whether a given language code corresponds to Traditional Chinese or a Chinese dialect.
+ * Determines whether a given language code corresponds to Traditional Chinese.
  *
  * @param language The ISO 639 language code or BCP 47 language tag (e.g. "zh", "zh-TW", "zh-Hant").
- * @return True if Traditional Chinese or Chinese language, false otherwise.
+ * @return True if Traditional Chinese, false if Simplified Chinese or another language.
  */
 fun isTraditionalChinese(language: String): Boolean {
     val lower = language.lowercase()
-    val base = lower.split("-", "_").first()
-    return base == "zh" || lower.contains("hant") || lower.contains("tw") || lower.contains("hk")
+    val parts = lower.split("-", "_")
+    val base = parts.first()
+    if (base != "zh") return false
+    if (lower.contains("hans") || lower.contains("cn") || lower.contains("sg")) {
+        return false
+    }
+    return lower.contains("hant") || lower.contains("tw") || lower.contains("hk") || lower.contains("mo") || lower == "zh"
 }
 
 /**

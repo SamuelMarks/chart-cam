@@ -6,13 +6,17 @@
  */
 package io.healthplatform.chartcam.ui
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.v2.runComposeUiTest
+import androidx.compose.ui.unit.Density
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.storage.SecureStorage
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
@@ -146,6 +150,36 @@ class LoginScreenDemoJvmTest {
             setAppLanguage("en")
             waitForIdle()
 
+            onNodeWithText("Explore Demo").assertIsDisplayed()
+        }
+    }
+
+    /**
+     * Verifies that LoginScreen buttons render properly and remain interactive under accessibility font scaling.
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testLoginButtonsWithEnlargedFontScale() {
+        setAppLanguage("en")
+        runComposeUiTest {
+            val storage = MockStorage()
+            val authRepository = AuthRepository(storage)
+            val viewModel = LoginViewModel(authRepository)
+
+            setContent {
+                CompositionLocalProvider(
+                    LocalDensity provides Density(density = 1f, fontScale = 2.0f),
+                ) {
+                    LoginScreen(
+                        viewModel = viewModel,
+                        onLoginSuccess = {},
+                    )
+                }
+            }
+            waitForIdle()
+
+            val demoButton = onNodeWithTag(TAG_DEMO_BUTTON)
+            demoButton.performScrollTo().assertIsDisplayed().assertHasClickAction()
             onNodeWithText("Explore Demo").assertIsDisplayed()
         }
     }

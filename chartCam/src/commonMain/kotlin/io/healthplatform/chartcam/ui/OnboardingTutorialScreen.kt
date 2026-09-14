@@ -58,7 +58,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
@@ -83,6 +82,7 @@ import chartcam.chartcam.generated.resources.tutorial_title_2
 import chartcam.chartcam.generated.resources.tutorial_title_3
 import chartcam.chartcam.generated.resources.tutorial_title_4
 import io.healthplatform.chartcam.ui.components.LanguageMenu
+import io.healthplatform.chartcam.ui.theme.AppSpacing
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -203,7 +203,7 @@ fun OnboardingTutorialScreen(
                         .fillMaxSize()
                         .statusBarsPadding()
                         .navigationBarsPadding()
-                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                        .padding(horizontal = AppSpacing.lg, vertical = AppSpacing.md),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
@@ -220,7 +220,7 @@ fun OnboardingTutorialScreen(
                         onClick = onDismiss,
                         modifier =
                             Modifier
-                                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                .defaultMinSize(minWidth = AppSpacing.minTouchTarget, minHeight = AppSpacing.minTouchTarget)
                                 .testTag(OnboardingTutorialDefaults.TAG_TUTORIAL_SKIP)
                                 .semantics {
                                     contentDescription = cdSkip
@@ -234,7 +234,7 @@ fun OnboardingTutorialScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(AppSpacing.md))
 
                 // Carousel Pager
                 HorizontalPager(
@@ -249,7 +249,7 @@ fun OnboardingTutorialScreen(
                     TutorialSlideContent(slide = slide)
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(AppSpacing.lg))
 
                 // Page Indicator Dots
                 Row(
@@ -259,7 +259,7 @@ fun OnboardingTutorialScreen(
                             .semantics {
                                 liveRegion = LiveRegionMode.Polite
                                 contentDescription = pageIndicatorSemantics
-                            }.padding(vertical = 12.dp),
+                            }.padding(vertical = AppSpacing.moderate),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -271,7 +271,7 @@ fun OnboardingTutorialScreen(
                             } else {
                                 MaterialTheme.colorScheme.outlineVariant
                             }
-                        val size = if (isSelected) 10.dp else 8.dp
+                        val size = if (isSelected) 10.dp else AppSpacing.sm
                         val goToPageLabel = stringResource(Res.string.cd_go_to_page, index + 1)
                         val stateDesc =
                             stringResource(
@@ -306,11 +306,11 @@ fun OnboardingTutorialScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(AppSpacing.md))
 
                 // Bottom Navigation Actions
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = AppSpacing.md),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -325,7 +325,7 @@ fun OnboardingTutorialScreen(
                             },
                             modifier =
                                 Modifier
-                                    .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                    .defaultMinSize(minWidth = AppSpacing.minTouchTarget, minHeight = AppSpacing.minTouchTarget)
                                     .testTag(OnboardingTutorialDefaults.TAG_TUTORIAL_PREV)
                                     .semantics {
                                         contentDescription = cdPrev
@@ -336,11 +336,11 @@ fun OnboardingTutorialScreen(
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
                             )
-                            Spacer(modifier = Modifier.size(4.dp))
+                            Spacer(modifier = Modifier.size(AppSpacing.xs))
                             Text(text = stringResource(Res.string.tutorial_previous))
                         }
                     } else {
-                        Spacer(modifier = Modifier.size(48.dp))
+                        Spacer(modifier = Modifier.size(AppSpacing.minTouchTarget))
                     }
 
                     // Next / Get Started Button
@@ -350,7 +350,7 @@ fun OnboardingTutorialScreen(
                             onClick = onComplete,
                             modifier =
                                 Modifier
-                                    .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                    .defaultMinSize(minWidth = AppSpacing.minTouchTarget, minHeight = AppSpacing.minTouchTarget)
                                     .testTag(OnboardingTutorialDefaults.TAG_TUTORIAL_GET_STARTED)
                                     .semantics {
                                         contentDescription = cdGetStarted
@@ -358,7 +358,7 @@ fun OnboardingTutorialScreen(
                         ) {
                             Text(
                                 text = stringResource(Res.string.tutorial_get_started),
-                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelLarge,
                             )
                         }
                     } else {
@@ -371,14 +371,14 @@ fun OnboardingTutorialScreen(
                             },
                             modifier =
                                 Modifier
-                                    .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                    .defaultMinSize(minWidth = AppSpacing.minTouchTarget, minHeight = AppSpacing.minTouchTarget)
                                     .testTag(OnboardingTutorialDefaults.TAG_TUTORIAL_NEXT)
                                     .semantics {
                                         contentDescription = cdNext
                                     },
                         ) {
                             Text(text = stringResource(Res.string.tutorial_next))
-                            Spacer(modifier = Modifier.size(4.dp))
+                            Spacer(modifier = Modifier.size(AppSpacing.xs))
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                 contentDescription = null,
@@ -408,7 +408,7 @@ fun TutorialSlideContent(
             modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 24.dp),
+                .padding(horizontal = AppSpacing.md, vertical = AppSpacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -428,12 +428,11 @@ fun TutorialSlideContent(
             )
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(AppSpacing.xl))
 
         Text(
             text = stringResource(slide.titleRes),
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
             modifier =
@@ -442,7 +441,7 @@ fun TutorialSlideContent(
                     .semantics { heading() },
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(AppSpacing.md))
 
         Text(
             text = stringResource(slide.descriptionRes),

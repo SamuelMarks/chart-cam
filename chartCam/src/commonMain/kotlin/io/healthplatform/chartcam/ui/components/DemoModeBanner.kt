@@ -35,7 +35,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cd_demo_mode_exit
@@ -44,6 +43,7 @@ import chartcam.chartcam.generated.resources.demo_mode_banner_desc
 import chartcam.chartcam.generated.resources.demo_mode_banner_title
 import chartcam.chartcam.generated.resources.demo_mode_exit
 import io.healthplatform.chartcam.ui.currentLanguageState
+import io.healthplatform.chartcam.ui.theme.AppSpacing
 import org.jetbrains.compose.resources.stringResource
 
 /** Test tag for the root demo mode banner container. */
@@ -86,13 +86,13 @@ fun DemoModeBanner(
                     },
             color = MaterialTheme.colorScheme.errorContainer,
             contentColor = MaterialTheme.colorScheme.onErrorContainer,
-            tonalElevation = 4.dp,
+            tonalElevation = AppSpacing.xs,
         ) {
             Row(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .padding(horizontal = AppSpacing.md, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -104,14 +104,13 @@ fun DemoModeBanner(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(AppSpacing.lg),
                     )
-                    Spacer(modifier = Modifier.size(12.dp))
+                    Spacer(modifier = Modifier.size(AppSpacing.moderate))
                     Column {
                         Text(
                             text = titleText,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.semantics { heading() },
                         )
@@ -123,13 +122,13 @@ fun DemoModeBanner(
                     }
                 }
 
-                Spacer(modifier = Modifier.size(8.dp))
+                Spacer(modifier = Modifier.size(AppSpacing.sm))
 
                 OutlinedButton(
                     onClick = onExitDemo,
                     modifier =
                         Modifier
-                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                            .defaultMinSize(minWidth = AppSpacing.minTouchTarget, minHeight = AppSpacing.minTouchTarget)
                             .testTag(TAG_EXIT_DEMO_BUTTON)
                             .semantics {
                                 contentDescription = cdExit
@@ -146,7 +145,7 @@ fun DemoModeBanner(
                 ) {
                     Text(
                         text = stringResource(Res.string.demo_mode_exit),
-                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.labelLarge,
                     )
                 }
             }

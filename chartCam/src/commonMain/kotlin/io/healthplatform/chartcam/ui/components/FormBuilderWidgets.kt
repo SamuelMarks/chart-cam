@@ -35,6 +35,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -76,6 +77,7 @@ import chartcam.chartcam.generated.resources.label_value_format
 import chartcam.chartcam.generated.resources.not_answered
 import chartcam.chartcam.generated.resources.ok
 import chartcam.chartcam.generated.resources.select_time
+import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.utils.formatLocalizedDecimal
 import io.healthplatform.chartcam.utils.getLocalizedDatePattern
 import io.healthplatform.chartcam.utils.getLocalizedDateTimePattern
@@ -139,7 +141,7 @@ fun FormBuilderTextInput(
                     onClick = { onValueChange("") },
                     modifier =
                         Modifier
-                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                            .defaultMinSize(minWidth = AppSpacing.minTouchTarget, minHeight = AppSpacing.minTouchTarget)
                             .minimumInteractiveComponentSize(),
                 ) {
                     Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
@@ -206,7 +208,7 @@ fun FormBuilderTextArea(
                     onClick = { onValueChange("") },
                     modifier =
                         Modifier
-                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                            .defaultMinSize(minWidth = AppSpacing.minTouchTarget, minHeight = AppSpacing.minTouchTarget)
                             .minimumInteractiveComponentSize(),
                 ) {
                     Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
@@ -264,7 +266,7 @@ fun FormBuilderSwitch(
                     value = checked,
                     onValueChange = onCheckedChange,
                     role = Role.Switch,
-                ).padding(vertical = 8.dp)
+                ).padding(vertical = AppSpacing.sm)
                 .minimumInteractiveComponentSize()
                 .testTag("Switch $label"),
     ) {
@@ -273,7 +275,7 @@ fun FormBuilderSwitch(
             onCheckedChange = null,
             modifier = Modifier.testTag("Toggle $label"),
         )
-        Text(text = label, modifier = Modifier.padding(start = 16.dp))
+        Text(text = label, modifier = Modifier.padding(start = AppSpacing.md))
     }
 }
 
@@ -315,7 +317,7 @@ fun FormBuilderCheckbox(
                     value = checked,
                     onValueChange = onCheckedChange,
                     role = Role.Checkbox,
-                ).padding(vertical = 8.dp)
+                ).padding(vertical = AppSpacing.sm)
                 .minimumInteractiveComponentSize()
                 .testTag("CheckboxRow $label"),
     ) {
@@ -324,7 +326,7 @@ fun FormBuilderCheckbox(
             onCheckedChange = null,
             modifier = Modifier.testTag("Checkbox $label"),
         )
-        Text(text = label, modifier = Modifier.padding(start = 16.dp))
+        Text(text = label, modifier = Modifier.padding(start = AppSpacing.md))
     }
 }
 
@@ -385,7 +387,7 @@ fun FormBuilderNumericInput(
                     onClick = { onValueChange("") },
                     modifier =
                         Modifier
-                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                            .defaultMinSize(minWidth = AppSpacing.minTouchTarget, minHeight = AppSpacing.minTouchTarget)
                             .minimumInteractiveComponentSize(),
                 ) {
                     Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
@@ -443,7 +445,7 @@ fun FormBuilderRangeSlider(
     Column(
         modifier =
             modifier
-                .padding(vertical = 8.dp)
+                .padding(vertical = AppSpacing.sm)
                 .minimumInteractiveComponentSize()
                 .semantics {
                     if (isError && errorMessage != null) {
@@ -486,7 +488,7 @@ fun FormBuilderRangeSlider(
                 style = MaterialTheme.typography.bodySmall,
                 modifier =
                     Modifier
-                        .padding(top = 4.dp)
+                        .padding(top = AppSpacing.xs)
                         .semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
@@ -529,7 +531,7 @@ fun FormBuilderDropdown(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp)
+                .padding(vertical = AppSpacing.sm)
                 .minimumInteractiveComponentSize()
                 .testTag("Dropdown $label"),
     ) {
@@ -548,7 +550,7 @@ fun FormBuilderDropdown(
                 }
             },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            colors = OutlinedTextFieldDefaults.colors(),
             modifier =
                 Modifier
                     .menuAnchor(androidx.compose.material3.ExposedDropdownMenuAnchorType.PrimaryNotEditable)
@@ -604,7 +606,7 @@ fun FormBuilderMultiSelectDropdown(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp)
+                .padding(vertical = AppSpacing.sm)
                 .minimumInteractiveComponentSize()
                 .semantics {
                     if (isError && errorMessage != null) {
@@ -612,7 +614,7 @@ fun FormBuilderMultiSelectDropdown(
                     }
                 }.testTag("MultiSelectDropdown $label"),
     ) {
-        FormLabel(label, isRequired, modifier = Modifier.padding(bottom = 4.dp))
+        FormLabel(label, isRequired, modifier = Modifier.padding(bottom = AppSpacing.xs))
         if (isError && errorMessage != null) {
             Text(
                 errorMessage,
@@ -620,7 +622,7 @@ fun FormBuilderMultiSelectDropdown(
                 style = MaterialTheme.typography.bodySmall,
                 modifier =
                     Modifier
-                        .padding(bottom = 4.dp)
+                        .padding(bottom = AppSpacing.xs)
                         .semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
@@ -628,10 +630,10 @@ fun FormBuilderMultiSelectDropdown(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement =
                 androidx.compose.foundation.layout.Arrangement
-                    .spacedBy(8.dp),
+                    .spacedBy(AppSpacing.sm),
             verticalArrangement =
                 androidx.compose.foundation.layout.Arrangement
-                    .spacedBy(4.dp),
+                    .spacedBy(AppSpacing.xs),
         ) {
             options.forEach { option ->
                 val isSelected = selectedOptions.contains(option)
@@ -731,6 +733,7 @@ fun FormBuilderDatePicker(
             modifier =
                 Modifier
                     .weight(1f)
+                    .minimumInteractiveComponentSize()
                     .clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = selectDateLabel) {
                         showDialog = true
                     }.semantics {
@@ -745,6 +748,13 @@ fun FormBuilderDatePicker(
                 onValueChange = { },
                 readOnly = true,
                 enabled = false,
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledSupportingTextColor = MaterialTheme.colorScheme.error,
+                    ),
                 label = {
                     val pattern = getLocalizedDatePattern(currentLang)
                     val patternLabel = stringResource(Res.string.date_format_label, label, pattern)
@@ -761,21 +771,12 @@ fun FormBuilderDatePicker(
                 },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                colors =
-                    androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                        disabledBorderColor = MaterialTheme.colorScheme.outline,
-                        disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
             )
         }
         if (value.isNotEmpty()) {
             IconButton(
                 onClick = { onValueChange("") },
-                modifier = Modifier.padding(start = 4.dp).minimumInteractiveComponentSize(),
+                modifier = Modifier.padding(start = AppSpacing.xs).minimumInteractiveComponentSize(),
             ) {
                 Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
             }
@@ -902,6 +903,7 @@ fun FormBuilderDateTimePicker(
             modifier =
                 Modifier
                     .weight(1f)
+                    .minimumInteractiveComponentSize()
                     .clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = selectDateTimeLabel) {
                         showDateDialog = true
                     }.semantics {
@@ -916,6 +918,13 @@ fun FormBuilderDateTimePicker(
                 onValueChange = { },
                 readOnly = true,
                 enabled = false,
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledSupportingTextColor = MaterialTheme.colorScheme.error,
+                    ),
                 label = {
                     val pattern = getLocalizedDateTimePattern(currentLang)
                     val patternLabel = stringResource(Res.string.datetime_format_label, label, pattern)
@@ -932,21 +941,12 @@ fun FormBuilderDateTimePicker(
                 },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                colors =
-                    androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                        disabledBorderColor = MaterialTheme.colorScheme.outline,
-                        disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
             )
         }
         if (value.isNotEmpty()) {
             IconButton(
                 onClick = { onValueChange("") },
-                modifier = Modifier.padding(start = 4.dp).minimumInteractiveComponentSize(),
+                modifier = Modifier.padding(start = AppSpacing.xs).minimumInteractiveComponentSize(),
             ) {
                 Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.clear))
             }
@@ -975,7 +975,7 @@ fun FormBuilderPhotoCamera(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp)
+                .padding(vertical = AppSpacing.sm)
                 .minimumInteractiveComponentSize()
                 .testTag("PhotoCamera $label"),
     ) {
@@ -984,7 +984,7 @@ fun FormBuilderPhotoCamera(
             contentDescription = null,
             modifier = Modifier.size(24.dp),
         )
-        Text(text = label, modifier = Modifier.padding(start = 8.dp))
+        Text(text = label, modifier = Modifier.padding(start = AppSpacing.sm))
     }
 }
 
@@ -1009,7 +1009,7 @@ fun FormBuilderVideoCamera(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp)
+                .padding(vertical = AppSpacing.sm)
                 .minimumInteractiveComponentSize()
                 .testTag("VideoCamera $label"),
     ) {
@@ -1018,6 +1018,6 @@ fun FormBuilderVideoCamera(
             contentDescription = null,
             modifier = Modifier.size(24.dp),
         )
-        Text(text = label, modifier = Modifier.padding(start = 8.dp))
+        Text(text = label, modifier = Modifier.padding(start = AppSpacing.sm))
     }
 }

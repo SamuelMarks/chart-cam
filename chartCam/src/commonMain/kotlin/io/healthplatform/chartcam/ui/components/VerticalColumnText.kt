@@ -20,25 +20,28 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ViewColumn
 import androidx.compose.material.icons.filled.ViewStream
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -46,6 +49,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cd_toggle_vertical_text
+import chartcam.chartcam.generated.resources.state_horizontal
+import chartcam.chartcam.generated.resources.state_vertical
+import io.healthplatform.chartcam.ui.theme.AppSpacing
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -120,8 +126,15 @@ fun VerticalColumnText(
     spacingBetweenChars: Dp = 4.dp,
 ) {
     val columns = splitTextIntoVerticalColumns(text, maxCharsPerColumn)
-    val displayColumns = if (columnsRightToLeft) columns else columns.reversed()
+    val displayColumns = columns
     val scrollState = rememberScrollState()
+    val isRtl = columnsRightToLeft || LocalLayoutDirection.current == LayoutDirection.Rtl
+
+    LaunchedEffect(isRtl, scrollState.maxValue) {
+        if (isRtl && scrollState.maxValue > 0) {
+            scrollState.scrollTo(scrollState.maxValue)
+        }
+    }
 
     CompositionLocalProvider(
         LocalLayoutDirection provides if (columnsRightToLeft) LayoutDirection.Rtl else LayoutDirection.Ltr,
@@ -172,10 +185,10 @@ fun TraditionalChineseVerticalBanner(
     onToggleMode: (() -> Unit)? = null,
     isVerticalMode: Boolean = true,
 ) {
-    Card(
-        modifier = modifier.padding(8.dp),
+    OutlinedCard(
+        modifier = modifier.padding(AppSpacing.sm),
         colors =
-            CardDefaults.cardColors(
+            CardDefaults.outlinedCardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
             ),
         shape = MaterialTheme.shapes.medium,
@@ -185,7 +198,7 @@ fun TraditionalChineseVerticalBanner(
                 Modifier
                     .fillMaxWidth()
                     .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), MaterialTheme.shapes.medium)
-                    .padding(16.dp),
+                    .padding(AppSpacing.md),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (onToggleMode != null) {
@@ -194,9 +207,19 @@ fun TraditionalChineseVerticalBanner(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    val modeStateDesc =
+                        stringResource(
+                            if (isVerticalMode) Res.string.state_vertical else Res.string.state_horizontal,
+                        )
                     IconButton(
                         onClick = onToggleMode,
-                        modifier = Modifier.minimumInteractiveComponentSize(),
+                        modifier =
+                            Modifier
+                                .minimumInteractiveComponentSize()
+                                .semantics {
+                                    role = Role.Switch
+                                    stateDescription = modeStateDesc
+                                },
                     ) {
                         Icon(
                             imageVector = if (isVerticalMode) Icons.Default.ViewStream else Icons.Default.ViewColumn,
@@ -212,20 +235,20 @@ fun TraditionalChineseVerticalBanner(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                            .padding(horizontal = AppSpacing.sm, vertical = AppSpacing.xs),
                     contentAlignment = Alignment.Center,
                 ) {
                     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(AppSpacing.md),
                             verticalAlignment = Alignment.Top,
                         ) {
                             VerticalColumnText(
                                 text = title,
+                                modifier = Modifier.semantics { heading() },
                                 maxCharsPerColumn = 8,
                                 textStyle =
                                     MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary,
                                         letterSpacing = 2.sp,
                                     ),
@@ -248,13 +271,13 @@ fun TraditionalChineseVerticalBanner(
                 }
             } else {
                 Column(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(horizontal = AppSpacing.sm, vertical = AppSpacing.xs),
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.xs),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.primary,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.semantics { heading() },

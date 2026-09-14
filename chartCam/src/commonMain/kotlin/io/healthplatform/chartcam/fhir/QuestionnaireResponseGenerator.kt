@@ -95,7 +95,13 @@ object QuestionnaireResponseGenerator {
     ) {
         when (item.type.value) {
             Questionnaire.QuestionnaireItemType.String, Questionnaire.QuestionnaireItemType.Text -> {
-                addStringAnswer(builder, answerValue as? kotlin.String ?: "")
+                val strVal =
+                    when (answerValue) {
+                        is io.healthplatform.chartcam.models.BodyMapLocation -> answerValue.toSerializedString()
+                        is kotlin.String -> answerValue
+                        else -> answerValue.toString()
+                    }
+                addStringAnswer(builder, strVal)
             }
             Questionnaire.QuestionnaireItemType.Boolean -> {
                 addBooleanAnswer(builder, answerValue as? kotlin.Boolean ?: false)
@@ -113,7 +119,11 @@ object QuestionnaireResponseGenerator {
                 addDateTimeAnswer(builder, answerValue as? kotlin.String ?: "")
             }
             Questionnaire.QuestionnaireItemType.Choice -> {
-                addChoiceAnswer(builder, answerValue)
+                if (answerValue is io.healthplatform.chartcam.models.FitzpatrickSkinType) {
+                    addStringAnswer(builder, "Type ${answerValue.romanNumeral}")
+                } else {
+                    addChoiceAnswer(builder, answerValue)
+                }
             }
             else -> {}
         }
@@ -166,7 +176,7 @@ object QuestionnaireResponseGenerator {
         builder: QuestionnaireResponse.Item.Builder,
         answerValue: Any,
     ) {
-        val fl = (answerValue as? Float) ?: (answerValue as? kotlin.String)?.toFloatOrNull()
+        val fl = (answerValue as? Number)?.toFloat() ?: (answerValue as? kotlin.String)?.toFloatOrNull()
         if (fl != null) {
             val decimalValue = BigDecimal.parseString(fl.toString())
             builder.answer.add(
@@ -189,7 +199,7 @@ object QuestionnaireResponseGenerator {
         builder: QuestionnaireResponse.Item.Builder,
         answerValue: Any,
     ) {
-        val intVal = (answerValue as? Float)?.toInt() ?: (answerValue as? kotlin.String)?.toIntOrNull()
+        val intVal = (answerValue as? Number)?.toInt() ?: (answerValue as? kotlin.String)?.toIntOrNull()
         if (intVal != null) {
             builder.answer.add(
                 QuestionnaireResponse.Item.Answer.Builder().apply {

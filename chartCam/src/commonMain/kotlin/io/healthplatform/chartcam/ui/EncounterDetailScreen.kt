@@ -70,6 +70,7 @@ import chartcam.chartcam.generated.resources.cd_back
 import chartcam.chartcam.generated.resources.cd_more_options
 import chartcam.chartcam.generated.resources.cd_patient_photo
 import chartcam.chartcam.generated.resources.cd_questionnaire_selector
+import chartcam.chartcam.generated.resources.close
 import chartcam.chartcam.generated.resources.create_new
 import chartcam.chartcam.generated.resources.delete_visit
 import chartcam.chartcam.generated.resources.delete_visit_message
@@ -81,7 +82,6 @@ import chartcam.chartcam.generated.resources.loading
 import chartcam.chartcam.generated.resources.mrn_date_format
 import chartcam.chartcam.generated.resources.no
 import chartcam.chartcam.generated.resources.no_notes
-import chartcam.chartcam.generated.resources.ok
 import chartcam.chartcam.generated.resources.provider_format
 import chartcam.chartcam.generated.resources.questionnaire
 import chartcam.chartcam.generated.resources.questionnaire_format
@@ -94,15 +94,17 @@ import chartcam.chartcam.generated.resources.visit_detail
 import chartcam.chartcam.generated.resources.yes
 import com.google.fhir.model.r4.DocumentReference
 import com.google.fhir.model.r4.Questionnaire
+import io.healthplatform.chartcam.fhir.getLocalizedTitle
 import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.models.encounterDate
-import io.healthplatform.chartcam.models.fullName
+import io.healthplatform.chartcam.models.getFullName
 import io.healthplatform.chartcam.models.mrn
 import io.healthplatform.chartcam.navigation.PhotoSessionManager
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.ui.components.DemoModeBanner
+import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.viewmodel.EncounterDetailViewModel
 import io.healthplatform.chartcam.viewmodel.EncounterUiState
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -421,10 +423,10 @@ private fun EncounterDetailContent(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(vertical = 16.dp),
+                    .padding(horizontal = AppSpacing.md),
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
+            contentPadding = PaddingValues(vertical = AppSpacing.md),
         ) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 EncounterDetailHeader(state, actions, viewModel)
@@ -441,7 +443,7 @@ private fun EncounterDetailContent(
                     val noNotesStr = stringResource(Res.string.no_notes)
                     Button(
                         onClick = { viewModel.finalizeEncounter(yesStr, noStr, noNotesStr) },
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.md),
                     ) {
                         Text(stringResource(Res.string.finalize_visit))
                     }
@@ -477,9 +479,10 @@ private fun EncounterDetailHeader(
  */
 @Composable
 private fun PatientAndPractitionerInfo(state: EncounterUiState) {
+    val currentLang by currentLanguageState.collectAsState()
     state.patient?.let { patient ->
         Text(
-            text = patient.fullName,
+            text = patient.getFullName(currentLang),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.semantics { heading() },
         )
@@ -487,7 +490,7 @@ private fun PatientAndPractitionerInfo(state: EncounterUiState) {
         val encDate =
             if (rawDate.isNotEmpty()) {
                 io.healthplatform.chartcam.utils
-                    .formatLocalizedDate(rawDate)
+                    .formatLocalizedDate(rawDate, currentLang)
             } else {
                 ""
             }
@@ -500,7 +503,7 @@ private fun PatientAndPractitionerInfo(state: EncounterUiState) {
 
     state.practitioner?.let { prac ->
         Text(
-            text = stringResource(Res.string.provider_format, prac.fullName),
+            text = stringResource(Res.string.provider_format, prac.getFullName(currentLang)),
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.padding(vertical = 8.dp),
         )
@@ -520,18 +523,25 @@ private fun QuestionnaireSelector(
     actions: EncounterDetailActions,
     viewModel: EncounterDetailViewModel,
 ) {
+    val currentLang by currentLanguageState.collectAsState()
     var expanded by remember { mutableStateOf(false) }
     val selectorCd = stringResource(Res.string.cd_questionnaire_selector)
     val status = state.encounter?.status?.value
     val isFinished = status == com.google.fhir.model.r4.Encounter.EncounterStatus.Finished
     val isLocked = state.answers.isNotEmpty() || isFinished || state.isFinalized
+    val qTitle =
+        state.selectedQuestionnaire?.let { q ->
+            q.getLocalizedTitle(currentLang).ifEmpty {
+                q.title?.value
+            }
+        } ?: ""
 
     if (isLocked) {
         Text(
             text =
                 stringResource(
                     Res.string.questionnaire_format,
-                    state.selectedQuestionnaire?.title?.value ?: "",
+                    qTitle,
                 ),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(vertical = 8.dp).semantics { heading() },
@@ -547,9 +557,7 @@ private fun QuestionnaireSelector(
                     .semantics { contentDescription = selectorCd },
         ) {
             OutlinedTextField(
-                value =
-                    state.selectedQuestionnaire?.title?.value
-                        ?: stringResource(Res.string.select_questionnaire),
+                value = qTitle.ifEmpty { stringResource(Res.string.select_questionnaire) },
                 onValueChange = {},
                 readOnly = true,
                 label = { Text(stringResource(Res.string.questionnaire)) },
@@ -676,15 +684,15 @@ fun PhotoGridItem(doc: DocumentReference) {
         modifier =
             Modifier
                 .minimumInteractiveComponentSize()
-                .clickable(
+                .semantics(mergeDescendants = true) {
+                    contentDescription = photoDescription
+                }.clickable(
                     role = Role.Button,
                     onClickLabel = viewPhotoLabel,
                 ) {
                     if (bytes.isNotEmpty()) {
                         showFullPhoto = true
                     }
-                }.semantics(mergeDescendants = true) {
-                    contentDescription = photoDescription
                 },
     ) {
         Column {
@@ -722,33 +730,32 @@ fun PhotoGridItem(doc: DocumentReference) {
     }
 
     if (showFullPhoto && bytes.isNotEmpty()) {
-        androidx.compose.ui.window.Dialog(
+        AlertDialog(
             onDismissRequest = { showFullPhoto = false },
-        ) {
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+            title = {
+                Text(
+                    text = photoDescription,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.semantics { heading() },
+                )
+            },
+            text = {
+                Image(
+                    bitmap = bytes.decodeToImageBitmap(),
+                    contentDescription = photoDescription,
+                    modifier = Modifier.fillMaxWidth().height(300.dp),
+                    contentScale = ContentScale.Fit,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showFullPhoto = false },
+                    modifier = Modifier.minimumInteractiveComponentSize(),
                 ) {
-                    Image(
-                        bitmap = bytes.decodeToImageBitmap(),
-                        contentDescription = photoDescription,
-                        modifier = Modifier.fillMaxWidth().height(300.dp),
-                        contentScale = ContentScale.Fit,
-                    )
-                    Text(
-                        text = photoDescription,
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(vertical = 8.dp),
-                    )
-                    TextButton(onClick = { showFullPhoto = false }) {
-                        Text(stringResource(Res.string.ok))
-                    }
+                    Text(stringResource(Res.string.close))
                 }
-            }
-        }
+            },
+        )
     }
 }
 
@@ -780,13 +787,18 @@ private fun androidx.compose.material3.ExposedDropdownMenuBoxScope.Questionnaire
     viewModel: EncounterDetailViewModel,
     onDismiss: () -> Unit,
 ) {
+    val currentLang by currentLanguageState.collectAsState()
     ExposedDropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
     ) {
         state.availableQuestionnaires.forEach { q ->
+            val titleStr =
+                q.getLocalizedTitle(currentLang).ifEmpty {
+                    q.title?.value ?: stringResource(Res.string.unknown)
+                }
             DropdownMenuItem(
-                text = { Text(q.title?.value ?: stringResource(Res.string.unknown)) },
+                text = { Text(titleStr) },
                 onClick = {
                     viewModel.selectQuestionnaire(q)
                     onDismiss()

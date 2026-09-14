@@ -11,6 +11,7 @@ import com.google.fhir.model.r4.Enumeration
 import com.google.fhir.model.r4.Extension
 import com.google.fhir.model.r4.Integer
 import com.google.fhir.model.r4.Questionnaire
+import com.google.fhir.model.r4.terminologies.PublicationStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -171,5 +172,48 @@ class SdcExtensionsTest {
                 }.build()
 
         assertEquals("Default Text", itemNoExt.getLocalizedText("ja"))
+    }
+
+    /**
+     * Test Questionnaire.getLocalizedTitle extension with translation extensions and fallbacks.
+     */
+    @Test
+    fun testQuestionnaireGetLocalizedTitle() {
+        val langExtEs =
+            Extension.Builder(url = "lang").apply {
+                value = Extension.Value.String(str("es").build())
+            }
+        val contentExtEs =
+            Extension.Builder(url = "content").apply {
+                value = Extension.Value.String(str("Formulario de Dermatología").build())
+            }
+        val transExt =
+            Extension.Builder(url = SdcExtensions.TRANSLATION).apply {
+                extension.add(langExtEs)
+                extension.add(contentExtEs)
+            }
+
+        val qWithTrans =
+            Questionnaire
+                .Builder(
+                    status = Enumeration(value = PublicationStatus.Active),
+                ).apply {
+                    title = str("Dermatology Form")
+                    extension.add(transExt)
+                }.build()
+
+        assertEquals("Formulario de Dermatología", qWithTrans.getLocalizedTitle("es"))
+        assertEquals("Dermatology Form", qWithTrans.getLocalizedTitle("en"))
+
+        val qWithoutTrans =
+            Questionnaire
+                .Builder(
+                    status = Enumeration(value = PublicationStatus.Active),
+                ).apply {
+                    title = str("Triage Form")
+                }.build()
+
+        assertEquals("Triage Form", qWithoutTrans.getLocalizedTitle("es"))
+        assertEquals("Triage Form", qWithoutTrans.getLocalizedTitle("ja"))
     }
 }

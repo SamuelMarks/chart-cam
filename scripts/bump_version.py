@@ -291,6 +291,44 @@ def update_about_version(
     return True
 
 
+def update_build_metadata(
+    file_path: str, new_version: str, dry_run: bool = False
+) -> bool:
+    """
+    Update the version string in BuildMetadata.kt.
+
+    :param file_path: Path to BuildMetadata.kt.
+    :type file_path: str
+    :param new_version: The new semantic version string.
+    :type new_version: str
+    :param dry_run: If True, do not write changes to disk.
+    :type dry_run: bool
+    :return: True if the file was modified or would be modified.
+    :rtype: bool
+    """
+    if not os.path.exists(file_path):
+        return False
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    pattern = r'const val VERSION_NAME:\s*String\s*=\s*"[^"]*"'
+    new_content, count = re.subn(
+        pattern,
+        f'const val VERSION_NAME: String = "{new_version}"',
+        content,
+    )
+
+    if count == 0:
+        return False
+
+    if not dry_run and new_content != content:
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(new_content)
+
+    return True
+
+
 def bump_all_components(
     project_root: str,
     new_version: Optional[str] = None,
@@ -339,12 +377,31 @@ def bump_all_components(
         "ui",
         "PatientListScreen.kt",
     )
+    build_metadata = os.path.join(
+        project_root,
+        "chartCam",
+        "src",
+        "commonMain",
+        "kotlin",
+        "io",
+        "healthplatform",
+        "chartcam",
+        "config",
+        "BuildMetadata.kt",
+    )
 
     update_android_build(android_build, target_version, target_code, dry_run=dry_run)
     update_ios_xcconfig(ios_xcconfig, target_version, target_code, dry_run=dry_run)
     update_ios_pbxproj(ios_pbxproj, target_version, target_code, dry_run=dry_run)
     update_jvm_package_version(jvm_build, target_version, dry_run=dry_run)
-    update_about_version(about_screen, target_version, dry_run=dry_run)
+    if os.path.exists(build_metadata):
+        update_build_metadata(build_metadata, target_version, dry_run=dry_run)
+    if os.path.exists(about_screen):
+        try:
+            update_about_version(about_screen, target_version, dry_run=dry_run)
+        except RuntimeError:
+            if not os.path.exists(build_metadata):
+                raise
 
     return {
         "previous_version": curr_version,

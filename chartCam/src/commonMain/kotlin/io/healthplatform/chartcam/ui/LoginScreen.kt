@@ -8,7 +8,6 @@
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,8 +16,8 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -30,18 +29,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -76,14 +80,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.all_fields_required
 import chartcam.chartcam.generated.resources.app_name_title
 import chartcam.chartcam.generated.resources.app_slogan
-import chartcam.chartcam.generated.resources.cd_demo_app_tour_button
 import chartcam.chartcam.generated.resources.cd_demo_mode_button
+import chartcam.chartcam.generated.resources.cd_hide_password
+import chartcam.chartcam.generated.resources.cd_show_password
 import chartcam.chartcam.generated.resources.demo_app_tour_button
 import chartcam.chartcam.generated.resources.demo_mode_button
 import chartcam.chartcam.generated.resources.feature_capture
@@ -98,6 +104,7 @@ import chartcam.chartcam.generated.resources.state_unselected
 import chartcam.chartcam.generated.resources.username
 import io.healthplatform.chartcam.ui.components.LanguageMenu
 import io.healthplatform.chartcam.ui.components.TraditionalChineseVerticalBanner
+import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -139,40 +146,46 @@ fun LoginScreen(
                 onComplete = { viewModel.showTutorial(false) },
             )
         } else {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .statusBarsPadding()
-                        .navigationBarsPadding()
-                        .imePadding()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 24.dp, vertical = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                topBar = {
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .statusBarsPadding()
+                                .padding(horizontal = AppSpacing.lg, vertical = AppSpacing.xs),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        LanguageMenu()
+                    }
+                },
+            ) { innerPadding ->
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                            .imePadding()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = AppSpacing.lg, vertical = AppSpacing.sm),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    LanguageMenu()
+                    LoginHeader()
+
+                    val stateErrorMessageStr = state.errorMessage?.let { stringResource(it) }
+                    LoginCard(
+                        isLoading = state.isLoading,
+                        isDemoLoading = state.isDemoLoading,
+                        stateErrorMessage = stateErrorMessageStr,
+                        onLogin = { username, password -> viewModel.login(username, password) },
+                        onDemoLogin = { viewModel.onDemoLoginClicked() },
+                        onOpenTour = { viewModel.showTutorial(true) },
+                    )
+
+                    Spacer(modifier = Modifier.height(AppSpacing.minTouchTarget))
+                    FeaturesRow()
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                LoginHeader()
-
-                val stateErrorMessageStr = state.errorMessage?.let { stringResource(it) }
-                LoginCard(
-                    isLoading = state.isLoading,
-                    isDemoLoading = state.isDemoLoading,
-                    stateErrorMessage = stateErrorMessageStr,
-                    onLogin = { username, password -> viewModel.login(username, password) },
-                    onDemoLogin = { viewModel.onDemoLoginClicked() },
-                    onOpenTour = { viewModel.showTutorial(true) },
-                )
-
-                Spacer(modifier = Modifier.height(48.dp))
-                FeaturesRow()
             }
         }
     }
@@ -189,7 +202,7 @@ private fun LoginHeader() {
     Image(
         painter = painterResource(Res.drawable.logo),
         contentDescription = null, // Decorative logo; app title is read out directly below
-        modifier = Modifier.size(120.dp).padding(bottom = 16.dp),
+        modifier = Modifier.size(120.dp).padding(bottom = AppSpacing.md),
     )
 
     if (isTraditionalChinese(currentLang)) {
@@ -198,21 +211,21 @@ private fun LoginHeader() {
             subtitle = stringResource(Res.string.app_slogan),
             onToggleMode = { isVerticalMode = !isVerticalMode },
             isVerticalMode = isVerticalMode,
-            modifier = Modifier.padding(bottom = 16.dp).semantics { heading() },
+            modifier = Modifier.padding(bottom = AppSpacing.md).semantics { heading() },
         )
     } else {
         Text(
             text = stringResource(Res.string.app_name_title),
-            style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.displaySmall,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 8.dp).semantics { heading() },
+            modifier = Modifier.padding(bottom = AppSpacing.sm).semantics { heading() },
         )
 
         Text(
             text = stringResource(Res.string.app_slogan),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 32.dp),
+            modifier = Modifier.padding(bottom = AppSpacing.xl),
         )
     }
 }
@@ -251,14 +264,14 @@ private fun LoginCard(
         }
     }
 
-    Card(
+    ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.padding(AppSpacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             UsernameField(
@@ -292,7 +305,7 @@ private fun LoginCard(
             }
 
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.padding(top = 8.dp))
+                CircularProgressIndicator(modifier = Modifier.padding(top = AppSpacing.sm))
             } else {
                 LoginButton(onClick = attemptLogin)
             }
@@ -303,10 +316,10 @@ private fun LoginCard(
                 onClick = onDemoLogin,
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(AppSpacing.sm))
             AppTourButton(onClick = onOpenTour)
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(AppSpacing.md))
             LegalDisclaimer()
         }
     }
@@ -330,7 +343,7 @@ private fun DemoLoginButton(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+                .heightIn(min = 56.dp)
                 .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
                 .testTag(TAG_DEMO_BUTTON)
                 .semantics {
@@ -343,12 +356,11 @@ private fun DemoLoginButton(
                 modifier = Modifier.size(20.dp),
                 strokeWidth = 2.dp,
             )
-            Spacer(modifier = Modifier.size(8.dp))
+            Spacer(modifier = Modifier.size(AppSpacing.sm))
         }
         Text(
             text = stringResource(Res.string.demo_mode_button),
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
         )
     }
 }
@@ -360,20 +372,12 @@ private fun DemoLoginButton(
  */
 @Composable
 private fun AppTourButton(onClick: () -> Unit) {
-    val cdTour = stringResource(Res.string.cd_demo_app_tour_button)
     TextButton(
         onClick = onClick,
         modifier =
             Modifier
                 .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
-                .testTag(TAG_TOUR_BUTTON)
-                .semantics {
-                    contentDescription = cdTour
-                    onClick(label = cdTour) {
-                        onClick()
-                        true
-                    }
-                },
+                .testTag(TAG_TOUR_BUTTON),
     ) {
         Text(
             text = stringResource(Res.string.demo_app_tour_button),
@@ -425,7 +429,7 @@ private fun UsernameField(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp)
+                .padding(bottom = AppSpacing.md)
                 .semantics {
                     if (isError && errorMessage != null) {
                         error(errorMessage)
@@ -469,10 +473,24 @@ private fun PasswordField(
     errorMessage: String? = null,
 ) {
     val focusManager = LocalFocusManager.current
+    var passwordVisible by remember { mutableStateOf(false) }
     OutlinedTextField(
         value = password,
         onValueChange = onPasswordChange,
         label = { Text(stringResource(Res.string.password)) },
+        trailingIcon = {
+            val icon = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
+            val iconCd = if (passwordVisible) Res.string.cd_hide_password else Res.string.cd_show_password
+            IconButton(
+                onClick = { passwordVisible = !passwordVisible },
+                modifier = Modifier.minimumInteractiveComponentSize(),
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = stringResource(iconCd),
+                )
+            }
+        },
         supportingText = {
             if (isError && errorMessage != null) {
                 Text(errorMessage)
@@ -481,7 +499,7 @@ private fun PasswordField(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(bottom = 24.dp)
+                .padding(bottom = AppSpacing.lg)
                 .semantics {
                     if (isError && errorMessage != null) {
                         error(errorMessage)
@@ -499,7 +517,8 @@ private fun PasswordField(
                     }
                 },
         singleLine = true,
-        visualTransformation = PasswordVisualTransformation(),
+        visualTransformation =
+            if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         isError = isError,
         keyboardOptions =
             KeyboardOptions(
@@ -523,7 +542,7 @@ private fun OfflineModeSwitch() {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp)
+                .padding(bottom = AppSpacing.md)
                 .semantics(mergeDescendants = true) {
                     contentDescription = offlineModeLabel
                     role = Role.Switch
@@ -558,7 +577,7 @@ private fun ErrorMessage(text: String) {
         textAlign = TextAlign.Center,
         modifier =
             Modifier
-                .padding(bottom = 16.dp)
+                .padding(bottom = AppSpacing.md)
                 .fillMaxWidth()
                 .semantics {
                     liveRegion = LiveRegionMode.Polite
@@ -579,7 +598,11 @@ private fun LoginButton(onClick: () -> Unit) {
     ) {
         Button(
             onClick = onClick,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp)
+                    .defaultMinSize(minHeight = 48.dp),
             shape = MaterialTheme.shapes.medium,
             colors =
                 ButtonDefaults.buttonColors(
@@ -590,7 +613,7 @@ private fun LoginButton(onClick: () -> Unit) {
             Text(
                 text = stringResource(Res.string.login_signup),
                 color = MaterialTheme.colorScheme.onPrimary,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Normal),
+                style = MaterialTheme.typography.titleMedium,
             )
         }
     }
@@ -633,7 +656,7 @@ fun FeatureIcon(
             imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(32.dp).padding(bottom = 4.dp),
+            modifier = Modifier.size(AppSpacing.xl).padding(bottom = AppSpacing.xs),
         )
         Text(
             text = label,

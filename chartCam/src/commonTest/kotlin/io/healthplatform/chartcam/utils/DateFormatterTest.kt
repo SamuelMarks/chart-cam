@@ -4,6 +4,7 @@
  */
 package io.healthplatform.chartcam.utils
 
+import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -43,8 +44,8 @@ class DateFormatterTest {
         assertEquals("DD/MM/YYYY", getLocalizedDatePattern("en-GB"))
         assertEquals("DD/MM/YYYY", getLocalizedDatePattern("en-AU"))
         assertEquals("DD/MM/YYYY", getLocalizedDatePattern("fr"))
-        assertEquals("YYYY-MM-DD", getLocalizedDatePattern("en"))
-        assertEquals("YYYY-MM-DD", getLocalizedDatePattern("en-US"))
+        assertEquals("MM/DD/YYYY", getLocalizedDatePattern("en"))
+        assertEquals("MM/DD/YYYY", getLocalizedDatePattern("en-US"))
         assertEquals("YYYY-MM-DD", getLocalizedDatePattern("other"))
         assertTrue(getLocalizedDatePattern().isNotEmpty())
     }
@@ -58,7 +59,7 @@ class DateFormatterTest {
         assertEquals("YYYY/MM/DD HH:MM", getLocalizedDateTimePattern("zh"))
         assertEquals("DD/MM/YYYY HH:MM", getLocalizedDateTimePattern("es"))
         assertEquals("DD/MM/YYYY HH:MM", getLocalizedDateTimePattern("he"))
-        assertEquals("YYYY-MM-DD HH:MM", getLocalizedDateTimePattern("en"))
+        assertEquals("MM/DD/YYYY HH:MM", getLocalizedDateTimePattern("en"))
         assertTrue(getLocalizedDateTimePattern().isNotEmpty())
     }
 
@@ -83,5 +84,17 @@ class DateFormatterTest {
 
         val jaFormatted = formatLocalizedDateTime(fhirDateTime, "ja")
         assertTrue(jaFormatted.isNotEmpty())
+    }
+
+    /**
+     * Verifies formatDateForPattern for all DatePattern variants.
+     */
+    @Test
+    fun testFormatDateForPattern() {
+        val date = LocalDate(2026, 9, 12)
+        assertEquals("12/09/2026", formatDateForPattern(date, DatePattern.DAY_FIRST))
+        assertEquals("09/12/2026", formatDateForPattern(date, DatePattern.MONTH_FIRST))
+        assertEquals("2026/09/12", formatDateForPattern(date, DatePattern.YEAR_FIRST))
+        assertEquals("2026-09-12", formatDateForPattern(date, DatePattern.ISO_STANDARD))
     }
 }

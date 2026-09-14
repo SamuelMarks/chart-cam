@@ -4,7 +4,11 @@
  */
 package io.healthplatform.chartcam.ui
 
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.v2.runComposeUiTest
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
@@ -58,6 +62,7 @@ class CaptureScreenJvmTest {
                 )
             }
             onRoot().assertExists()
+            onNodeWithText("Test Step").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
         }
 
     /**

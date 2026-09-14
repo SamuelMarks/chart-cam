@@ -57,7 +57,6 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cancel
 import chartcam.chartcam.generated.resources.cd_action_view_questionnaire
@@ -87,8 +86,10 @@ import chartcam.chartcam.generated.resources.share_text_json
 import chartcam.chartcam.generated.resources.title_format
 import chartcam.chartcam.generated.resources.unknown
 import com.google.fhir.model.r4.Questionnaire
+import io.healthplatform.chartcam.fhir.getLocalizedTitle
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.repository.QuestionnaireSharingService
+import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.utils.createShareService
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.pluralStringResource
@@ -181,14 +182,17 @@ fun QuestionnaireListScreen(
                         color = MaterialTheme.colorScheme.error,
                         modifier =
                             Modifier
-                                .padding(16.dp)
+                                .padding(AppSpacing.md)
                                 .semantics { liveRegion = LiveRegionMode.Polite },
                     )
                 }
 
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(questionnaires) { q ->
-                        val titleText = q.title?.value ?: q.id ?: stringResource(Res.string.unknown)
+                        val titleText =
+                            q.getLocalizedTitle(currentLang).ifEmpty {
+                                q.title?.value ?: q.id ?: stringResource(Res.string.unknown)
+                            }
                         val shareLabel = stringResource(Res.string.share_questionnaire)
                         val viewQuestionnaireLabel = stringResource(Res.string.cd_action_view_questionnaire)
                         ListItem(
@@ -210,7 +214,13 @@ fun QuestionnaireListScreen(
                                     ) {
                                         selectedQuestionnaireForView = q
                                     },
-                            headlineContent = { Text(titleText, style = MaterialTheme.typography.titleMedium) },
+                            headlineContent = {
+                                Text(
+                                    titleText,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.semantics { heading() },
+                                )
+                            },
                             supportingContent = {
                                 Text(
                                     stringResource(Res.string.id_format, q.id ?: stringResource(Res.string.unknown)),
@@ -284,7 +294,9 @@ fun QuestionnaireListScreen(
                         TopAppBar(
                             title = {
                                 Text(
-                                    q.title?.value ?: q.id ?: stringResource(Res.string.unknown),
+                                    q.getLocalizedTitle(currentLang).ifEmpty {
+                                        q.title?.value ?: q.id ?: stringResource(Res.string.unknown)
+                                    },
                                     modifier = Modifier.semantics { heading() },
                                 )
                             },
@@ -327,7 +339,7 @@ fun QuestionnaireListScreen(
                                 .fillMaxSize()
                                 .padding(innerPadding)
                                 .verticalScroll(rememberScrollState())
-                                .padding(16.dp),
+                                .padding(AppSpacing.md),
                     ) {
                         io.healthplatform.chartcam.sdc.SdcQuestionnaireForm(
                             questionnaire = q,
@@ -351,12 +363,12 @@ fun QuestionnaireListScreen(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(AppSpacing.md),
                 ) {
                     Text(
                         text = stringResource(Res.string.import_questionnaire),
                         style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(bottom = 16.dp).semantics { heading() },
+                        modifier = Modifier.padding(bottom = AppSpacing.md).semantics { heading() },
                     )
 
                     val invalidFormatStr = stringResource(Res.string.invalid_fhir_format)
@@ -386,7 +398,7 @@ fun QuestionnaireListScreen(
                                     }
                                 }
                         },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = AppSpacing.sm),
                     ) {
                         Text(stringResource(Res.string.paste_from_clipboard))
                     }
@@ -396,7 +408,7 @@ fun QuestionnaireListScreen(
                         text = stringResource(Res.string.file_import_coming_soon),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
+                        modifier = Modifier.padding(top = AppSpacing.sm, bottom = AppSpacing.md),
                     )
                 }
             }
@@ -414,7 +426,7 @@ fun QuestionnaireListScreen(
                 text = {
                     Column {
                         val unknownStr = stringResource(Res.string.unknown)
-                        val qTitle = q.title?.value ?: q.id ?: unknownStr
+                        val qTitle = q.getLocalizedTitle(currentLang).ifEmpty { q.title?.value ?: q.id ?: unknownStr }
                         Text(stringResource(Res.string.title_format, qTitle))
                         val size = q.item.size
                         Text(pluralStringResource(Res.plurals.number_of_items, size, size))
@@ -449,12 +461,12 @@ fun QuestionnaireListScreen(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(AppSpacing.md),
                 ) {
                     Text(
                         text = stringResource(Res.string.share_questionnaire),
                         style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(bottom = 16.dp).semantics { heading() },
+                        modifier = Modifier.padding(bottom = AppSpacing.md).semantics { heading() },
                     )
 
                     Button(
@@ -477,7 +489,7 @@ fun QuestionnaireListScreen(
                                     }
                                 }
                         },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = AppSpacing.sm),
                     ) {
                         Text(stringResource(Res.string.copy_to_clipboard))
                     }
@@ -498,7 +510,7 @@ fun QuestionnaireListScreen(
                                 }
                             }
                         },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = AppSpacing.sm),
                     ) {
                         Text(stringResource(Res.string.share_text_json))
                     }
@@ -508,7 +520,7 @@ fun QuestionnaireListScreen(
                         text = stringResource(Res.string.qr_code_coming_soon),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
+                        modifier = Modifier.padding(top = AppSpacing.sm, bottom = AppSpacing.md),
                     )
                 }
             }

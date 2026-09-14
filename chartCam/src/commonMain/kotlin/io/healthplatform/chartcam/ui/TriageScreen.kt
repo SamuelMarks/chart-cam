@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.DockedSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -30,7 +31,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -43,10 +43,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cd_action_select_patient
 import chartcam.chartcam.generated.resources.cd_back
@@ -64,6 +64,7 @@ import io.healthplatform.chartcam.models.getFullName
 import io.healthplatform.chartcam.models.mrn
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.ui.components.CreatePatientDialog
+import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.viewmodel.TriageViewModel
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -146,6 +147,7 @@ fun TriageScreen(
                                 Text(
                                     patient.getFullName(currentLang),
                                     style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.semantics { heading() },
                                 )
                             },
                             supportingContent = {
@@ -177,7 +179,7 @@ fun TriageScreen(
                                 modifier =
                                     Modifier
                                         .fillMaxWidth()
-                                        .padding(32.dp)
+                                        .padding(AppSpacing.xl)
                                         .semantics { liveRegion = LiveRegionMode.Polite },
                                 contentAlignment = Alignment.Center,
                             ) {
@@ -211,7 +213,7 @@ fun TriageScreen(
  * @param onProceed Callback when proceed is clicked.
  */
 @Composable
-private fun TriagePatientSelectionHeader(
+internal fun TriagePatientSelectionHeader(
     patient: com.google.fhir.model.r4.Patient,
     photoCount: Int,
     onProceed: () -> Unit,
@@ -223,6 +225,7 @@ private fun TriagePatientSelectionHeader(
             Text(
                 patient.getFullName(currentLang),
                 style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
             )
         },
         supportingContent = {
@@ -243,11 +246,11 @@ private fun TriagePatientSelectionHeader(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(role = Role.Button, onClickLabel = proceedLabel) {
-                    onProceed()
-                }.padding(8.dp)
-                .semantics {
+                .minimumInteractiveComponentSize()
+                .semantics(mergeDescendants = true) {
                     liveRegion = LiveRegionMode.Polite
+                }.clickable(role = Role.Button, onClickLabel = proceedLabel) {
+                    onProceed()
                 },
     )
 }
@@ -267,10 +270,11 @@ private fun TriageSearchBar(
     onCreatePatientClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.md, vertical = AppSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        SearchBar(
+        val searchLabel = stringResource(Res.string.search_placeholder)
+        DockedSearchBar(
             inputField = {
                 androidx.compose.material3.SearchBarDefaults.InputField(
                     query = query,
@@ -279,6 +283,7 @@ private fun TriageSearchBar(
                     expanded = false,
                     onExpandedChange = { },
                     placeholder = { Text(stringResource(Res.string.search_placeholder)) },
+                    modifier = Modifier.semantics { contentDescription = searchLabel },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Search,
@@ -308,7 +313,10 @@ private fun TriageSearchBar(
             modifier = Modifier.weight(1f),
         ) {}
 
-        IconButton(onClick = onCreatePatientClick) {
+        IconButton(
+            onClick = onCreatePatientClick,
+            modifier = Modifier.minimumInteractiveComponentSize(),
+        ) {
             Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.cd_create_patient))
         }
     }

@@ -91,12 +91,16 @@ fun LevelerOverlay(
     var lastAnnouncedLevel by remember { mutableStateOf<Boolean?>(null) }
     var currentAnnouncement by remember { mutableStateOf(cdStatus) }
     val surfaceColor = MaterialTheme.colorScheme.surface
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
 
     LaunchedEffect(isLevel) {
         delay(LevelerConstants.DEBOUNCE_DELAY_MS)
         if (lastAnnouncedLevel != isLevel) {
             lastAnnouncedLevel = isLevel
             currentAnnouncement = cdStatus
+            if (isLevel) {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+            }
         }
     }
 

@@ -6,10 +6,13 @@ package io.healthplatform.chartcam.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.google.fhir.model.r4.Boolean
+import com.google.fhir.model.r4.Decimal
 import com.google.fhir.model.r4.Enumeration
+import com.google.fhir.model.r4.Integer
 import com.google.fhir.model.r4.Questionnaire
 import com.google.fhir.model.r4.String
 import com.google.fhir.model.r4.terminologies.PublicationStatus
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import io.healthplatform.chartcam.fhir.getItemControl
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +36,25 @@ data class QuestionnaireBuilderState(
 )
 
 /**
+ * Represents an enableWhen condition configured on an item in the questionnaire builder.
+ *
+ * @param question The linkId of the target question that this condition depends on.
+ * @param operator The operator to compare with.
+ * @param answerString The string representation of expected answer, or null.
+ * @param answerBoolean The boolean expected answer, or null.
+ * @param answerDecimal The decimal expected answer, or null.
+ * @param answerInteger The integer expected answer, or null.
+ */
+data class BuilderEnableWhen(
+    val question: kotlin.String,
+    val operator: Questionnaire.QuestionnaireItemOperator = Questionnaire.QuestionnaireItemOperator.EqualTo,
+    val answerString: kotlin.String? = null,
+    val answerBoolean: kotlin.Boolean? = null,
+    val answerDecimal: Double? = null,
+    val answerInteger: Int? = null,
+)
+
+/**
  * Represents an item being built in the builder before converting to FHIR.
  *
  * @param linkId The unique ID for the item.
@@ -40,6 +62,8 @@ data class QuestionnaireBuilderState(
  * @param widgetType The type of Material 3 widget to render.
  * @param options Options for dropdowns, if applicable.
  * @param isError Whether the item has a validation error (e.g., empty label, missing options).
+ * @param enableWhen The list of enableWhen condition rules configured for this item.
+ * @param enableBehavior The behavior for combining multiple conditions (All or Any).
  */
 data class BuilderItem(
     val linkId: kotlin.String,
@@ -47,6 +71,8 @@ data class BuilderItem(
     val widgetType: WidgetType,
     val options: List<kotlin.String> = emptyList(),
     val isError: kotlin.Boolean = false,
+    val enableWhen: List<BuilderEnableWhen> = emptyList(),
+    val enableBehavior: Questionnaire.EnableWhenBehavior? = null,
 )
 
 /**
@@ -88,6 +114,18 @@ enum class WidgetType {
 
     /** RANGE */
     RANGE,
+
+    /** PAIN_SCALE */
+    PAIN_SCALE,
+
+    /** FITZPATRICK_PALETTE */
+    FITZPATRICK_PALETTE,
+
+    /** BODY_MAP */
+    BODY_MAP,
+
+    /** SEGMENTED_TILES */
+    SEGMENTED_TILES,
 }
 
 private const val UUID_SLUG_PREFIX_LENGTH = 8
@@ -103,6 +141,7 @@ private const val UUID_SLUG_PREFIX_LENGTH = 8
  * @param defaultItemLabelResolver Function to provide fallback item label when missing.
  * @param widgetItemLabelResolver Function to generate default label for a newly added widget.
  * @param unknownTitleResolver Function to provide fallback title for unknown questionnaire.
+ * @param defaultOptionsResolver Function to provide localized default options for specialized widgets.
  */
 class QuestionnaireBuilderViewModel(
     private val repository: QuestionnaireRepository,
@@ -111,6 +150,15 @@ class QuestionnaireBuilderViewModel(
     private val defaultItemLabelResolver: () -> kotlin.String = { "New Item" },
     private val widgetItemLabelResolver: (WidgetType) -> kotlin.String = { "New ${it.name} Item" },
     private val unknownTitleResolver: () -> kotlin.String = { "Unknown" },
+    private val defaultOptionsResolver: (WidgetType) -> List<kotlin.String> = { type ->
+        when (type) {
+            WidgetType.FITZPATRICK_PALETTE ->
+                listOf("Type I", "Type II", "Type III", "Type IV", "Type V", "Type VI")
+            WidgetType.SEGMENTED_TILES ->
+                listOf("Mild", "Moderate", "Severe")
+            else -> emptyList()
+        }
+    },
 ) : ViewModel() {
     private val _state = MutableStateFlow(QuestionnaireBuilderState())
     private var nextItemId = 1
@@ -133,6 +181,10 @@ class QuestionnaireBuilderViewModel(
                                         "video" -> WidgetType.VIDEO_CAMERA
                                         "switch" -> WidgetType.SWITCH
                                         "slider" -> WidgetType.RANGE
+                                        "pain-vas", "wong-baker" -> WidgetType.PAIN_SCALE
+                                        "palette", "color-palette", "fitzpatrick" -> WidgetType.FITZPATRICK_PALETTE
+                                        "body-map" -> WidgetType.BODY_MAP
+                                        "segmented-control", "choice-cards" -> WidgetType.SEGMENTED_TILES
                                         "check-box" ->
                                             if (fhirItem.repeats?.value ==
                                                 true
@@ -178,12 +230,35 @@ class QuestionnaireBuilderViewModel(
                                         codingValue?.value?.display?.value
                                     }
 
+                                val builderEnableWhen =
+                                    fhirItem.enableWhen.mapNotNull { ew ->
+                                        val q = ew.question.value ?: return@mapNotNull null
+                                        val op = ew.operator.value ?: Questionnaire.QuestionnaireItemOperator.EqualTo
+                                        val ans = ew.answer
+                                        BuilderEnableWhen(
+                                            question = q,
+                                            operator = op,
+                                            answerString = ans.asString()?.value?.value,
+                                            answerBoolean = ans.asBoolean()?.value?.value,
+                                            answerInteger = ans.asInteger()?.value?.value,
+                                            answerDecimal =
+                                                ans
+                                                    .asDecimal()
+                                                    ?.value
+                                                    ?.value
+                                                    ?.toString()
+                                                    ?.toDoubleOrNull(),
+                                        )
+                                    }
+
                                 BuilderItem(
                                     linkId = fhirItem.linkId.value ?: "item_${nextItemId++}",
                                     label = fhirItem.text?.value ?: defaultItemLabelResolver(),
                                     widgetType = widgetType,
                                     options = options,
                                     isError = false,
+                                    enableWhen = builderEnableWhen,
+                                    enableBehavior = fhirItem.enableBehavior?.value,
                                 )
                             },
                     )
@@ -212,13 +287,17 @@ class QuestionnaireBuilderViewModel(
      *
      * @param widgetType The type of widget to add.
      * @param label Optional custom label for the item. Defaults to localized widget item name.
+     * @param options Optional custom options for the item. Defaults to resolved widget options.
      */
     fun addItem(
         widgetType: WidgetType,
         label: kotlin.String? = null,
+        options: List<kotlin.String>? = null,
     ) {
         val currentItems = _state.value.items
         val newId = "item_${nextItemId++}"
+
+        val defaultOptions = options ?: defaultOptionsResolver(widgetType)
 
         /** SINGLE_SELECT */
         val isError = (widgetType == WidgetType.SINGLE_SELECT || widgetType == WidgetType.MULTI_SELECT)
@@ -227,7 +306,7 @@ class QuestionnaireBuilderViewModel(
                 linkId = newId,
                 label = label ?: widgetItemLabelResolver(widgetType),
                 widgetType = widgetType,
-                options = emptyList(),
+                options = defaultOptions,
                 isError = isError,
             )
         _state.update { it.copy(items = currentItems + newItem) }
@@ -257,11 +336,38 @@ class QuestionnaireBuilderViewModel(
                                             /** SINGLE_SELECT */
                                             item.widgetType == WidgetType.SINGLE_SELECT ||
                                                 /** MULTI_SELECT */
-                                                item.widgetType == WidgetType.MULTI_SELECT
+                                                item.widgetType == WidgetType.MULTI_SELECT ||
+                                                item.widgetType == WidgetType.SEGMENTED_TILES
                                         ) &&
                                             newOptions.isEmpty()
                                     )
                             item.copy(label = newLabel, options = newOptions, isError = isError)
+                        } else {
+                            item
+                        }
+                    },
+            )
+        }
+    }
+
+    /**
+     * Updates the enableWhen conditions and enableBehavior for an item.
+     *
+     * @param linkId The ID of the item to update.
+     * @param enableWhen The list of enableWhen condition rules.
+     * @param enableBehavior The behavior for combining conditions (All or Any).
+     */
+    fun updateItemEnableWhen(
+        linkId: kotlin.String,
+        enableWhen: List<BuilderEnableWhen>,
+        enableBehavior: Questionnaire.EnableWhenBehavior? = null,
+    ) {
+        _state.update { currentState ->
+            currentState.copy(
+                items =
+                    currentState.items.map { item ->
+                        if (item.linkId == linkId) {
+                            item.copy(enableWhen = enableWhen, enableBehavior = enableBehavior)
                         } else {
                             item
                         }
@@ -384,7 +490,67 @@ class QuestionnaireBuilderViewModel(
                 }
         applyChoiceOptions(itemBuilder, builderItem, fhirType)
         applyItemControl(itemBuilder, builderItem)
+        applyEnableWhen(itemBuilder, builderItem)
         return itemBuilder
+    }
+
+    /**
+     * Creates an appropriate FHIR EnableWhen.Answer from a BuilderEnableWhen configuration.
+     *
+     * @param ew The builder enableWhen condition.
+     * @return The populated FHIR EnableWhen.Answer variant.
+     */
+    private fun createEnableWhenAnswer(ew: BuilderEnableWhen): Questionnaire.Item.EnableWhen.Answer =
+        when {
+            ew.answerBoolean != null ->
+                Questionnaire.Item.EnableWhen.Answer.Boolean(
+                    Boolean.Builder().apply { value = ew.answerBoolean }.build(),
+                )
+            ew.answerInteger != null ->
+                Questionnaire.Item.EnableWhen.Answer.Integer(
+                    Integer.Builder().apply { value = ew.answerInteger }.build(),
+                )
+            ew.answerDecimal != null ->
+                Questionnaire.Item.EnableWhen.Answer.Decimal(
+                    Decimal
+                        .Builder()
+                        .apply {
+                            value = BigDecimal.parseString(ew.answerDecimal.toString())
+                        }.build(),
+                )
+            ew.answerString != null ->
+                Questionnaire.Item.EnableWhen.Answer.String(
+                    String.Builder().apply { value = ew.answerString }.build(),
+                )
+            else ->
+                Questionnaire.Item.EnableWhen.Answer.Boolean(
+                    Boolean.Builder().apply { value = true }.build(),
+                )
+        }
+
+    /**
+     * Applies enableWhen conditions to the item builder.
+     * @param itemBuilder The target Questionnaire.Item.Builder.
+     * @param builderItem The source BuilderItem containing configuration.
+     */
+    private fun applyEnableWhen(
+        itemBuilder: Questionnaire.Item.Builder,
+        builderItem: BuilderItem,
+    ) {
+        if (builderItem.enableWhen.isNotEmpty()) {
+            if (builderItem.enableBehavior != null) {
+                itemBuilder.enableBehavior = Enumeration(value = builderItem.enableBehavior)
+            }
+            builderItem.enableWhen.forEach { ew ->
+                itemBuilder.enableWhen.add(
+                    Questionnaire.Item.EnableWhen.Builder(
+                        answer = createEnableWhenAnswer(ew),
+                        operator = Enumeration(value = ew.operator),
+                        question = String.Builder().apply { value = ew.question },
+                    ),
+                )
+            }
+        }
     }
 
     /**
@@ -403,7 +569,13 @@ class QuestionnaireBuilderViewModel(
             if (builderItem.widgetType == WidgetType.MULTI_SELECT) {
                 itemBuilder.repeats = Boolean.Builder().apply { value = true }
             }
-            builderItem.options.forEachIndexed { index, optionValue ->
+            val effectiveOptions =
+                if (builderItem.options.isEmpty() && builderItem.widgetType == WidgetType.FITZPATRICK_PALETTE) {
+                    listOf("Type I", "Type II", "Type III", "Type IV", "Type V", "Type VI")
+                } else {
+                    builderItem.options
+                }
+            effectiveOptions.forEachIndexed { index, optionValue ->
                 itemBuilder.answerOption.add(
                     Questionnaire.Item.AnswerOption.Builder(
                         Questionnaire.Item.AnswerOption.Value.Coding(
@@ -442,6 +614,10 @@ class QuestionnaireBuilderViewModel(
                 WidgetType.PHOTO_CAMERA -> "photo"
                 WidgetType.SWITCH -> "switch"
                 WidgetType.RANGE -> "slider"
+                WidgetType.PAIN_SCALE -> "pain-vas"
+                WidgetType.FITZPATRICK_PALETTE -> "palette"
+                WidgetType.BODY_MAP -> "body-map"
+                WidgetType.SEGMENTED_TILES -> "segmented-control"
                 /** SINGLE_SELECT */
                 WidgetType.SINGLE_SELECT, WidgetType.MULTI_SELECT -> "check-box"
                 else -> null
@@ -470,6 +646,26 @@ class QuestionnaireBuilderViewModel(
                     },
             )
         }
+        if (builderItem.widgetType == WidgetType.PAIN_SCALE) {
+            itemBuilder.code.add(
+                com.google.fhir.model.r4.Coding
+                    .Builder()
+                    .apply {
+                        system =
+                            com.google.fhir.model.r4.Uri
+                                .Builder()
+                                .apply { value = "http://loinc.org" }
+                        code =
+                            com.google.fhir.model.r4.Code
+                                .Builder()
+                                .apply { value = "72514-3" }
+                        display =
+                            String
+                                .Builder()
+                                .apply { value = "Pain severity - 0-10 verbal numeric rating" }
+                    },
+            )
+        }
     }
 
     /**
@@ -484,13 +680,21 @@ class QuestionnaireBuilderViewModel(
             /** SWITCH */
             WidgetType.SWITCH, WidgetType.CHECKBOX -> Questionnaire.QuestionnaireItemType.Boolean
             /** SINGLE_SELECT */
-            WidgetType.SINGLE_SELECT, WidgetType.MULTI_SELECT -> Questionnaire.QuestionnaireItemType.Choice
-            WidgetType.SINGLE_LINE_TEXT -> Questionnaire.QuestionnaireItemType.String
+            WidgetType.SINGLE_SELECT,
+            WidgetType.MULTI_SELECT,
+            WidgetType.FITZPATRICK_PALETTE,
+            WidgetType.SEGMENTED_TILES,
+            -> Questionnaire.QuestionnaireItemType.Choice
+            WidgetType.SINGLE_LINE_TEXT,
+            WidgetType.BODY_MAP,
+            -> Questionnaire.QuestionnaireItemType.String
             WidgetType.MULTI_LINE_TEXT -> Questionnaire.QuestionnaireItemType.Text
             WidgetType.DATE -> Questionnaire.QuestionnaireItemType.Date
             WidgetType.DATETIME -> Questionnaire.QuestionnaireItemType.DateTime
             WidgetType.NUMERIC -> Questionnaire.QuestionnaireItemType.Decimal
-            WidgetType.RANGE -> Questionnaire.QuestionnaireItemType.Integer
+            WidgetType.RANGE,
+            WidgetType.PAIN_SCALE,
+            -> Questionnaire.QuestionnaireItemType.Integer
         }
 
     /**

@@ -8,6 +8,7 @@ package io.healthplatform.chartcam.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
@@ -32,6 +33,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -75,7 +77,9 @@ import chartcam.chartcam.generated.resources.mrn
 import chartcam.chartcam.generated.resources.new_patient
 import chartcam.chartcam.generated.resources.ok
 import io.healthplatform.chartcam.ui.currentLanguageState
+import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.utils.DatePattern
+import io.healthplatform.chartcam.utils.formatDateForPattern
 import io.healthplatform.chartcam.utils.getLocalizedDatePattern
 import io.healthplatform.chartcam.utils.resolveDatePattern
 import kotlinx.datetime.LocalDate
@@ -344,7 +348,7 @@ fun CreatePatientDialog(
                         Modifier
                             .imePadding()
                             .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
                 ) {
                     if (isEastAsianLocale) {
                         PatientLastNameField(
@@ -480,15 +484,8 @@ fun CreatePatientDialog(
                                     datePickerState.selectedDateMillis?.let { millis ->
                                         val instant = kotlin.time.Instant.fromEpochMilliseconds(millis)
                                         val date = instant.toLocalDateTime(TimeZone.UTC).date
-                                        val iso = date.toString()
-                                        val parts = iso.split("-")
                                         val pattern = resolveDatePattern(currentLang)
-                                        dobString =
-                                            when (pattern) {
-                                                DatePattern.DAY_FIRST -> "${parts[2]}/${parts[1]}/${parts[0]}"
-                                                DatePattern.YEAR_FIRST -> "${parts[0]}/${parts[1]}/${parts[2]}"
-                                                DatePattern.ISO_STANDARD -> iso
-                                            }
+                                        dobString = formatDateForPattern(date, pattern)
                                     }
                                 }) {
                                     Text(stringResource(Res.string.ok))
@@ -574,12 +571,22 @@ fun CreatePatientDialog(
                     onClick = {
                         submitForm()
                     },
+                    modifier =
+                        Modifier
+                            .minimumInteractiveComponentSize()
+                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp),
                 ) {
                     Text(stringResource(Res.string.create))
                 }
             },
             dismissButton = {
-                TextButton(onClick = onDismissRequest) {
+                TextButton(
+                    onClick = onDismissRequest,
+                    modifier =
+                        Modifier
+                            .minimumInteractiveComponentSize()
+                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp),
+                ) {
                     Text(stringResource(Res.string.cancel))
                 }
             },

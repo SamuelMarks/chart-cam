@@ -75,7 +75,11 @@ import io.healthplatform.chartcam.fhir.getItemControl
 import io.healthplatform.chartcam.fhir.getLocalizedText
 import io.healthplatform.chartcam.fhir.getMaxValue
 import io.healthplatform.chartcam.fhir.getMinValue
+import io.healthplatform.chartcam.fhir.isBodyMap
+import io.healthplatform.chartcam.fhir.isFitzpatrickPalette
 import io.healthplatform.chartcam.fhir.isHidden
+import io.healthplatform.chartcam.fhir.isSegmentedControl
+import io.healthplatform.chartcam.fhir.isVisualPainControl
 import io.healthplatform.chartcam.ui.components.FormBuilderDatePicker
 import io.healthplatform.chartcam.ui.components.FormBuilderDateTimePicker
 import io.healthplatform.chartcam.ui.components.FormBuilderMultiSelectDropdown
@@ -83,6 +87,7 @@ import io.healthplatform.chartcam.ui.components.FormBuilderNumericInput
 import io.healthplatform.chartcam.ui.components.FormBuilderRangeSlider
 import io.healthplatform.chartcam.ui.components.FormBuilderTextArea
 import io.healthplatform.chartcam.ui.components.tabFocusNext
+import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.utils.formatLocalizedDate
 import io.healthplatform.chartcam.utils.formatLocalizedDateTime
 import io.healthplatform.chartcam.utils.formatLocalizedDecimal
@@ -342,17 +347,17 @@ private fun RenderGroupItem(ctx: RenderContext) {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp)
+                .padding(vertical = AppSpacing.sm)
                 .semantics {
                     contentDescription = ctx.displayLabel
                     heading()
                 },
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(AppSpacing.md)) {
             Text(
                 text = ctx.displayLabel,
                 style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp).semantics { heading() },
+                modifier = Modifier.padding(bottom = AppSpacing.sm).semantics { heading() },
             )
             ctx.item.item.forEach { nestedItem ->
                 RenderQuestionnaireItem(
@@ -377,14 +382,22 @@ private fun RenderInputItem(
     ctx: RenderContext,
     effectiveReadOnly: Boolean,
 ) {
-    if (effectiveReadOnly) {
+    if (ctx.item.isVisualPainControl()) {
+        RenderVisualPainField(ctx, effectiveReadOnly)
+    } else if (ctx.item.isFitzpatrickPalette()) {
+        RenderFitzpatrickField(ctx, effectiveReadOnly)
+    } else if (ctx.item.isBodyMap()) {
+        RenderBodyMapField(ctx, effectiveReadOnly)
+    } else if (ctx.item.isSegmentedControl()) {
+        RenderSegmentedChoiceField(ctx, effectiveReadOnly)
+    } else if (effectiveReadOnly) {
         RenderReadOnlyField(ctx)
     } else {
         RenderEditableField(ctx)
     }
 
     if (ctx.item.item.isNotEmpty()) {
-        Column(modifier = Modifier.padding(start = 16.dp)) {
+        Column(modifier = Modifier.padding(start = AppSpacing.md)) {
             ctx.item.item.forEach { nestedItem ->
                 RenderQuestionnaireItem(
                     item = nestedItem,
@@ -396,6 +409,164 @@ private fun RenderInputItem(
             }
         }
     }
+}
+
+/**
+ * Renders an interactive or read-only visual pain scale control.
+ *
+ * @param ctx The rendering context.
+ * @param readOnly Whether the control is rendered in read-only mode.
+ */
+@Composable
+private fun RenderVisualPainField(
+    ctx: RenderContext,
+    readOnly: Boolean,
+) {
+    val currentScore =
+        (ctx.state.answers[ctx.linkId] as? Number)?.toInt()
+            ?: (ctx.state.answers[ctx.linkId] as? String)?.toIntOrNull()
+    io.healthplatform.chartcam.ui.sdc.controls.VisualPainScaleControl(
+        value = currentScore,
+        onValueChange = { ctx.onAnswerChanged(ctx.linkId, it) },
+        label = ctx.displayLabel,
+        isRequired = ctx.isRequired,
+        isError = ctx.isError,
+        errorMessage = ctx.errorMessage,
+        readOnly = readOnly,
+    )
+}
+
+/**
+ * Renders an interactive or read-only Fitzpatrick skin phototyping swatch control.
+ *
+ * @param ctx The rendering context.
+ * @param readOnly Whether the control is rendered in read-only mode.
+ */
+@Composable
+private fun RenderFitzpatrickField(
+    ctx: RenderContext,
+    readOnly: Boolean,
+) {
+    val currentAnswer = ctx.state.answers[ctx.linkId]
+    val selectedType =
+        when (currentAnswer) {
+            is io.healthplatform.chartcam.models.FitzpatrickSkinType -> currentAnswer
+            is String -> {
+                io.healthplatform.chartcam.models.FitzpatrickScaleDefaults.ALL_TYPES.firstOrNull {
+                    it.romanNumeral.equals(currentAnswer.removePrefix("Type ").trim(), ignoreCase = true) ||
+                        it.type.toString() == currentAnswer
+                }
+            }
+            is Number -> {
+                io.healthplatform.chartcam.models.FitzpatrickScaleDefaults.ALL_TYPES.firstOrNull {
+                    it.type == currentAnswer.toInt()
+                }
+            }
+            else -> null
+        }
+    io.healthplatform.chartcam.ui.sdc.controls.FitzpatrickPaletteControl(
+        selectedType = selectedType,
+        onTypeSelected = { ctx.onAnswerChanged(ctx.linkId, "Type ${it.romanNumeral}") },
+        label = ctx.displayLabel,
+        isRequired = ctx.isRequired,
+        isError = ctx.isError,
+        errorMessage = ctx.errorMessage,
+        readOnly = readOnly,
+    )
+}
+
+/**
+ * Renders an interactive or read-only anatomical body map pin-drop control.
+ *
+ * @param ctx The rendering context.
+ * @param readOnly Whether the control is rendered in read-only mode.
+ */
+@Composable
+private fun RenderBodyMapField(
+    ctx: RenderContext,
+    readOnly: Boolean,
+) {
+    val currentAnswer = ctx.state.answers[ctx.linkId]
+    val location =
+        when (currentAnswer) {
+            is io.healthplatform.chartcam.models.BodyMapLocation -> currentAnswer
+            is String -> {
+                if (currentAnswer.isNotBlank()) {
+                    io.healthplatform.chartcam.models.BodyMapLocation(
+                        regionId = "custom",
+                        displayName = currentAnswer,
+                        xPercent = 50f,
+                        yPercent = 30f,
+                    )
+                } else {
+                    null
+                }
+            }
+            else -> null
+        }
+    io.healthplatform.chartcam.ui.sdc.controls.BodyMapPinDropControl(
+        location = location,
+        onLocationChanged = { ctx.onAnswerChanged(ctx.linkId, it?.toSerializedString()) },
+        label = ctx.displayLabel,
+        isRequired = ctx.isRequired,
+        isError = ctx.isError,
+        errorMessage = ctx.errorMessage,
+        readOnly = readOnly,
+    )
+}
+
+/**
+ * Renders an interactive or read-only segmented choice tiles control.
+ *
+ * @param ctx The rendering context.
+ * @param readOnly Whether the control is rendered in read-only mode.
+ */
+@Composable
+private fun RenderSegmentedChoiceField(
+    ctx: RenderContext,
+    readOnly: Boolean,
+) {
+    val options =
+        ctx.item.answerOption.mapNotNull { opt ->
+            val coding = opt.value as? Questionnaire.Item.AnswerOption.Value.Coding
+            coding?.value?.display?.value
+                ?: opt.value
+                    .asString()
+                    ?.value
+                    ?.value
+        }
+    val isMultiSelect = ctx.item.repeats?.value == true
+    val currentAnswer = ctx.state.answers[ctx.linkId]
+    val selectedOptions: List<String> =
+        when (currentAnswer) {
+            is List<*> -> currentAnswer.filterIsInstance<String>()
+            is String -> if (currentAnswer.isNotBlank()) listOf(currentAnswer) else emptyList()
+            else -> emptyList()
+        }
+
+    io.healthplatform.chartcam.ui.sdc.controls.SegmentedVisualTilesControl(
+        selectedOptions = selectedOptions,
+        options = options,
+        onOptionToggled = { option ->
+            if (isMultiSelect) {
+                val updated =
+                    if (selectedOptions.contains(option)) {
+                        selectedOptions - option
+                    } else {
+                        selectedOptions + option
+                    }
+                ctx.onAnswerChanged(ctx.linkId, updated)
+            } else {
+                ctx.onAnswerChanged(ctx.linkId, option)
+            }
+        },
+        label = ctx.displayLabel,
+        isMultiSelect = isMultiSelect,
+        isRequired = ctx.isRequired,
+        isError = ctx.isError,
+        errorMessage = ctx.errorMessage,
+        readOnly = readOnly,
+    )
 }
 
 /**
@@ -416,7 +587,7 @@ private fun RenderReadOnlyField(ctx: RenderContext) {
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+                    .padding(vertical = AppSpacing.xs)
                     .semantics(mergeDescendants = true) {
                         contentDescription = readOnlyContentDescription
                     },
@@ -431,20 +602,20 @@ private fun RenderReadOnlyField(ctx: RenderContext) {
                     androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant
                         .copy(alpha = SURFACE_ALPHA_VARIANT),
                 shape = androidx.compose.material3.MaterialTheme.shapes.small,
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = AppSpacing.xs),
             ) {
                 if (answerDisplay.isNotBlank()) {
                     Text(
                         text = answerDisplay,
                         style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(8.dp),
+                        modifier = Modifier.padding(AppSpacing.sm),
                     )
                 } else {
                     Text(
                         text = notAnsweredString,
                         style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
                         color = androidx.compose.material3.MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(8.dp),
+                        modifier = Modifier.padding(AppSpacing.sm),
                     )
                 }
             }
@@ -595,13 +766,13 @@ private fun RenderAttachmentGrid(relatedAttachments: List<com.google.fhir.model.
         columns =
             androidx.compose.foundation.lazy.grid.GridCells
                 .Fixed(2),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
         modifier =
             Modifier
                 .fillMaxWidth()
                 .height((PHOTO_GRID_ITEM_HEIGHT * ((relatedAttachments.size + 1) / 2)).dp)
-                .padding(vertical = 8.dp),
+                .padding(vertical = AppSpacing.sm),
     ) {
         items(relatedAttachments) { photo ->
             io.healthplatform.chartcam.ui
@@ -635,7 +806,7 @@ private fun RenderReadOnlyAttachment(ctx: RenderContext) {
         val cdWithAttachments = stringResource(Res.string.label_value_format, ctx.displayLabel, attachmentsCountText)
         Column(
             modifier =
-                Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics(mergeDescendants = true) {
+                Modifier.fillMaxWidth().padding(vertical = AppSpacing.sm).semantics(mergeDescendants = true) {
                     contentDescription = cdWithAttachments
                 },
         ) {
@@ -653,7 +824,7 @@ private fun RenderReadOnlyAttachment(ctx: RenderContext) {
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = AppSpacing.sm)
                     .semantics(mergeDescendants = true) {
                         contentDescription = cdNoAttachments
                     },
@@ -711,7 +882,7 @@ private fun RenderStringField(ctx: RenderContext) {
         keyboardActions = KeyboardActions(onNext = { ctx.focusManager.moveFocus(FocusDirection.Next) }),
         modifier =
             Modifier
-                .padding(vertical = 8.dp)
+                .padding(vertical = AppSpacing.sm)
                 .semantics {
                     if (ctx.isError && ctx.errorMessage != null) {
                         error(ctx.errorMessage)
@@ -738,7 +909,7 @@ private fun RenderBooleanField(ctx: RenderContext) {
                     value = checked,
                     onValueChange = { ctx.onAnswerChanged(ctx.linkId, it) },
                     role = Role.Checkbox,
-                ).padding(vertical = 8.dp)
+                ).padding(vertical = AppSpacing.sm)
                 .semantics(mergeDescendants = true) {
                     contentDescription = ctx.displayLabel
                     if (ctx.isError && ctx.errorMessage != null) {
@@ -753,7 +924,7 @@ private fun RenderBooleanField(ctx: RenderContext) {
         io.healthplatform.chartcam.ui.components.FormLabel(
             text = ctx.displayLabel,
             isRequired = ctx.isRequired,
-            modifier = Modifier.padding(start = 8.dp),
+            modifier = Modifier.padding(start = AppSpacing.sm),
         )
     }
 }
@@ -844,7 +1015,7 @@ private fun RenderRadioOrCheckboxGroup(
     Column(
         modifier =
             Modifier
-                .padding(vertical = 8.dp)
+                .padding(vertical = AppSpacing.sm)
                 .semantics {
                     if (ctx.isError && ctx.errorMessage != null) {
                         error(ctx.errorMessage)
@@ -854,7 +1025,7 @@ private fun RenderRadioOrCheckboxGroup(
         io.healthplatform.chartcam.ui.components.FormLabel(
             ctx.displayLabel,
             ctx.isRequired,
-            modifier = Modifier.padding(bottom = 4.dp),
+            modifier = Modifier.padding(bottom = AppSpacing.xs),
         )
         if (ctx.isError && ctx.errorMessage != null) {
             Text(
@@ -863,7 +1034,7 @@ private fun RenderRadioOrCheckboxGroup(
                 style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
                 modifier =
                     Modifier
-                        .padding(bottom = 4.dp)
+                        .padding(bottom = AppSpacing.xs)
                         .semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
@@ -926,14 +1097,14 @@ private fun RenderRadioOrCheckboxOption(
                             role = if (isCheckboxes) Role.Checkbox else Role.RadioButton,
                         )
                     },
-                ).padding(vertical = 4.dp),
+                ).padding(vertical = AppSpacing.xs),
     ) {
         if (isCheckboxes) {
             androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = null)
         } else {
             androidx.compose.material3.RadioButton(selected = isSelected, onClick = null)
         }
-        Text(text = option, modifier = Modifier.padding(start = 8.dp))
+        Text(text = option, modifier = Modifier.padding(start = AppSpacing.sm))
     }
 }
 
@@ -959,7 +1130,7 @@ private fun RenderDropdownField(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(vertical = AppSpacing.sm),
     ) {
         OutlinedTextField(
             value = selectedOption.ifEmpty { stringResource(Res.string.select_an_option) },
@@ -1021,7 +1192,7 @@ private fun RenderAttachmentField(ctx: RenderContext) {
                 ?.value == ctx.linkId
         }
 
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.sm)) {
         io.healthplatform.chartcam.ui.components.FormLabel(
             text = ctx.displayLabel,
             isRequired = ctx.isRequired,
@@ -1037,7 +1208,7 @@ private fun RenderAttachmentField(ctx: RenderContext) {
             onClick = { ctx.onTakePhotoRequested(ctx.linkId) },
             modifier =
                 Modifier
-                    .padding(top = 8.dp)
+                    .padding(top = AppSpacing.sm)
                     .minimumInteractiveComponentSize()
                     .testTag("AttachmentCaptureButton ${ctx.linkId}")
                     .semantics {
@@ -1047,7 +1218,7 @@ private fun RenderAttachmentField(ctx: RenderContext) {
             Icon(
                 Icons.Default.CameraAlt,
                 contentDescription = null,
-                modifier = Modifier.padding(end = 8.dp),
+                modifier = Modifier.padding(end = AppSpacing.sm),
             )
             Text(stringResource(Res.string.take_photo))
         }
@@ -1205,78 +1376,4 @@ private fun RenderIntegerField(ctx: RenderContext) {
 fun isItemEnabled(
     item: Questionnaire.Item,
     answers: Map<String, Any>,
-): Boolean {
-    var enabled = true
-    if (item.enableWhen.isNotEmpty()) {
-        val behavior = item.enableBehavior?.value ?: Questionnaire.EnableWhenBehavior.Any
-        val conditions = item.enableWhen.map { ew -> evaluateCondition(ew, answers) }
-        enabled =
-            if (behavior == Questionnaire.EnableWhenBehavior.All) {
-                conditions.all { it }
-            } else {
-                conditions.any { it }
-            }
-    }
-    return enabled
-}
-
-/**
- * Internal helper function.
- * @param ew The ew.
- * @param answers The answers.
- * @return The result.
- */
-private fun evaluateCondition(
-    ew: Questionnaire.Item.EnableWhen,
-    answers: Map<String, Any>,
-): Boolean {
-    val targetQuestion = ew.question.value
-    val operator = ew.operator.value
-
-    if (targetQuestion == null || operator == null) return false
-
-    val targetAnswer = answers[targetQuestion]
-    val ewAnswer = ew.answer
-
-    return when (operator) {
-        Questionnaire.QuestionnaireItemOperator.EqualTo -> evaluateEqualTo(ewAnswer, targetAnswer)
-        Questionnaire.QuestionnaireItemOperator.NotEqualTo -> evaluateNotEqualTo(ewAnswer, targetAnswer)
-        Questionnaire.QuestionnaireItemOperator.Exists -> {
-            val exists = ewAnswer.asBoolean()?.value?.value ?: true
-            if (exists) targetAnswer != null else targetAnswer == null
-        }
-        else -> false
-    }
-}
-
-/**
- * Internal helper function.
- * @param ewAnswer The ewAnswer.
- * @param targetAnswer The targetAnswer.
- * @return The result.
- */
-private fun evaluateEqualTo(
-    ewAnswer: Questionnaire.Item.EnableWhen.Answer,
-    targetAnswer: Any?,
-): Boolean =
-    when {
-        ewAnswer.asString() != null -> targetAnswer == ewAnswer.asString()?.value?.value
-        ewAnswer.asBoolean() != null -> targetAnswer == ewAnswer.asBoolean()?.value?.value
-        else -> false
-    }
-
-/**
- * Internal helper function.
- * @param ewAnswer The ewAnswer.
- * @param targetAnswer The targetAnswer.
- * @return The result.
- */
-private fun evaluateNotEqualTo(
-    ewAnswer: Questionnaire.Item.EnableWhen.Answer,
-    targetAnswer: Any?,
-): Boolean =
-    when {
-        ewAnswer.asString() != null -> targetAnswer != ewAnswer.asString()?.value?.value
-        ewAnswer.asBoolean() != null -> targetAnswer != ewAnswer.asBoolean()?.value?.value
-        else -> false
-    }
+): Boolean = SdcEvaluator.isItemEnabled(item, answers)

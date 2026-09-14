@@ -172,5 +172,78 @@ class QuestionnaireRepositoryTest {
                 .text
                 ?.value,
         )
+
+        // Verify answerOption localization
+        val choiceItem =
+            Questionnaire.Item
+                .Builder(
+                    linkId = String.Builder().apply { value = "followup_type" },
+                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                ).apply {
+                    text = String.Builder().apply { value = "Follow-up Type" }
+                    answerOption.add(
+                        Questionnaire.Item.AnswerOption.Builder(
+                            Questionnaire.Item.AnswerOption.Value.Coding(
+                                com.google.fhir.model.r4.Coding
+                                    .Builder()
+                                    .apply {
+                                        code =
+                                            com.google.fhir.model.r4.Code
+                                                .Builder()
+                                                .apply { value = "routine" }
+                                        display = String.Builder().apply { value = "Routine" }
+                                    }.build(),
+                            ),
+                        ),
+                    )
+                }.build()
+
+        val choiceQ =
+            Questionnaire
+                .Builder(Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active))
+                .apply {
+                    id = "basic-followup"
+                    title = String.Builder().apply { value = "Followup" }
+                    item.add(choiceItem.toBuilder())
+                }.build()
+
+        val esChoiceQ = repo.localizeQuestionnaire(choiceQ, "es")
+        val esOptVal =
+            esChoiceQ.item
+                .first()
+                .answerOption
+                .first()
+                .value
+                .asCoding()
+                ?.value
+                ?.display
+                ?.value
+        assertEquals("Rutina", esOptVal)
+
+        val jaChoiceQ = repo.localizeQuestionnaire(choiceQ, "ja")
+        val jaOptVal =
+            jaChoiceQ.item
+                .first()
+                .answerOption
+                .first()
+                .value
+                .asCoding()
+                ?.value
+                ?.display
+                ?.value
+        assertEquals("定期", jaOptVal)
+
+        val zhChoiceQ = repo.localizeQuestionnaire(choiceQ, "zh")
+        val zhOptVal =
+            zhChoiceQ.item
+                .first()
+                .answerOption
+                .first()
+                .value
+                .asCoding()
+                ?.value
+                ?.display
+                ?.value
+        assertEquals("常規", zhOptVal)
     }
 }

@@ -1,54 +1,52 @@
 /**
  * @file ThemeJvmTest.kt
  * Contains declarations for ThemeJvmTest.kt.
+ *
+ * JVM unit tests for theme color scheme resolution and dynamic color settings.
  */
 package io.healthplatform.chartcam.ui.theme
 
-import androidx.compose.material3.Text
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.v2.runComposeUiTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 /**
- * Test class for Theme on JVM.
+ * Tests verifying theme and platform color scheme resolution.
  */
-@OptIn(ExperimentalTestApi::class)
 class ThemeJvmTest {
     /**
-     * Tests AppTheme on JVM.
+     * Verifies that resolvePlatformColorScheme correctly resolves light and dark themes on JVM.
      */
+    @OptIn(ExperimentalTestApi::class)
     @Test
-    fun testAppTheme() =
+    fun testResolvePlatformColorSchemeJvm() {
         runComposeUiTest {
             setContent {
-                AppTheme(darkTheme = false) {
-                    Text("Test")
-                }
-            }
+                val lightScheme = resolvePlatformColorScheme(darkTheme = false, dynamicColor = false)
+                val darkScheme = resolvePlatformColorScheme(darkTheme = true, dynamicColor = false)
+                val dynamicScheme = resolvePlatformColorScheme(darkTheme = false, dynamicColor = true)
 
-            onRoot().assertExists()
+                assertEquals(LightColors, lightScheme)
+                assertEquals(DarkColors, darkScheme)
+                assertEquals(LightColors, dynamicScheme)
+            }
         }
+    }
 
     /**
-     * Tests typography font family resolution across locales.
+     * Verifies that AppTheme renders with dynamic color flags without failure.
      */
+    @OptIn(ExperimentalTestApi::class)
     @Test
-    fun testTypographyResolutionAcrossLocales() =
+    fun testAppThemeDynamicColorComposable() {
         runComposeUiTest {
             setContent {
-                val enTypo = getTypography("en")
-                val jaTypo = getTypography("ja")
-                val zhTypo = getTypography("zh")
-                val heTypo = getTypography("he")
-                val esTypo = getTypography("es")
-
-                assertNotNull(enTypo.bodyMedium)
-                assertNotNull(jaTypo.bodyMedium)
-                assertNotNull(zhTypo.bodyMedium)
-                assertNotNull(heTypo.bodyMedium)
-                assertNotNull(esTypo.bodyMedium)
+                AppTheme(darkTheme = false, dynamicColor = true) {
+                    assertNotNull(AppShapes)
+                }
             }
         }
+    }
 }

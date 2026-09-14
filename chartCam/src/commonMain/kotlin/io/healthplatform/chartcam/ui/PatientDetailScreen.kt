@@ -32,6 +32,8 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -54,7 +56,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cancel
 import chartcam.chartcam.generated.resources.cd_action_view_encounter
@@ -74,6 +75,7 @@ import io.healthplatform.chartcam.models.encounterDate
 import io.healthplatform.chartcam.models.getFullName
 import io.healthplatform.chartcam.models.mrn
 import io.healthplatform.chartcam.repository.FhirRepository
+import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.viewmodel.PatientDetailViewModel
 import org.jetbrains.compose.resources.stringResource
 
@@ -112,10 +114,12 @@ fun PatientDetailScreen(
 
     val currentLang by currentLanguageState.collectAsState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     key(currentLang) {
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 PatientDetailTopBar(
                     onBack = onBack,
@@ -157,7 +161,7 @@ private fun PatientDetailContent(
             style = MaterialTheme.typography.titleMedium,
             modifier =
                 Modifier
-                    .padding(16.dp)
+                    .padding(AppSpacing.md)
                     .semantics { heading() },
         )
 
@@ -195,7 +199,7 @@ private fun PatientDetailContent(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(32.dp)
+                                .padding(AppSpacing.xl)
                                 .semantics { liveRegion = LiveRegionMode.Polite },
                         contentAlignment = Alignment.Center,
                     ) {
@@ -244,7 +248,10 @@ private fun PatientDetailTopBar(
             var showMenu by remember { mutableStateOf(false) }
             var showDeleteConfirm by remember { mutableStateOf(false) }
 
-            IconButton(onClick = { showMenu = !showMenu }) {
+            IconButton(
+                onClick = { showMenu = !showMenu },
+                modifier = Modifier.minimumInteractiveComponentSize(),
+            ) {
                 Icon(Icons.Default.MoreVert, contentDescription = stringResource(Res.string.cd_more))
             }
             DropdownMenu(
@@ -290,7 +297,7 @@ private fun PatientDetailTopBar(
 @Composable
 private fun PatientInfo(patient: com.google.fhir.model.r4.Patient) {
     val currentLang by currentLanguageState.collectAsState()
-    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(AppSpacing.md)) {
         Text(
             text = patient.getFullName(currentLang),
             style = MaterialTheme.typography.headlineMedium,
@@ -306,7 +313,7 @@ private fun PatientInfo(patient: com.google.fhir.model.r4.Patient) {
                 ),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier.padding(top = 4.dp),
+            modifier = Modifier.padding(top = AppSpacing.xs),
         )
     }
 }
