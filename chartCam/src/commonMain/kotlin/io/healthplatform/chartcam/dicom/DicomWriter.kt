@@ -174,7 +174,11 @@ object DicomWriter {
         if (element.vr.isExtended) {
             // Extended VR (OB, OW, OF, SQ, UN, UT): 2 reserved null bytes + 32-bit length
             writeShortLe(buffer, 0x0000)
-            writeIntLe(buffer, element.value.size)
+            if (element.isUndefinedLength) {
+                writeIntLe(buffer, -1)
+            } else {
+                writeIntLe(buffer, element.value.size)
+            }
         } else {
             // Standard VR: 16-bit length
             writeShortLe(buffer, element.value.size)

@@ -49,6 +49,24 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    /**
+     * Obscures app content and tracks background timeout when activity pauses.
+     */
+    override fun onPause() {
+        super.onPause()
+        io.healthplatform.chartcam.ui.currentAppPrivacyManager
+            .onAppMovedToBackground()
+    }
+
+    /**
+     * Clears obscuring or verifies session lockout when activity resumes.
+     */
+    override fun onResume() {
+        super.onResume()
+        io.healthplatform.chartcam.ui.currentAppPrivacyManager
+            .onAppMovedToForeground()
+    }
 }
 
 /**

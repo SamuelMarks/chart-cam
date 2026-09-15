@@ -23,6 +23,7 @@ class CircularDependencyException(
  */
 object SdcEvaluator {
     private const val MAX_ITERATIONS = 5
+    private const val ISO_DATE_LEN = 10
 
     /**
      * Evaluates SDC calculatedExpression extensions across the Questionnaire and updates the answer map.
@@ -69,7 +70,7 @@ object SdcEvaluator {
      * Detects whether there are circular variable dependencies between items in the Questionnaire.
      *
      * @param questionnaire The FHIR Questionnaire to check.
-     * @return A [Result] indicating success if no circular dependency exists, or [CircularDependencyException] on failure.
+     * @return A [Result] indicating success if no cycle exists, or failure with [CircularDependencyException].
      */
     fun detectCircularDependencies(questionnaire: Questionnaire): Result<Unit> {
         val dependencyGraph = mutableMapOf<String, MutableSet<String>>()
@@ -80,7 +81,8 @@ object SdcEvaluator {
 
         for (node in dependencyGraph.keys) {
             if (checkCycle(node, dependencyGraph, visited, inStack)) {
-                return Result.failure(CircularDependencyException("Circular variable dependency detected involving node: $node"))
+                val ex = CircularDependencyException("Circular variable dependency detected involving node: $node")
+                return Result.failure(ex)
             }
         }
         return Result.success(Unit)
@@ -187,12 +189,12 @@ object SdcEvaluator {
             exprString.contains("'") ||
                 exprString.contains("\"") ||
                 exprString.startsWith("concat(") ->
-                evaluateStringExpression(exprString, answers)
+                evaluateStringExpression(exprString, answers).getOrNull()
             exprString.contains(">") ||
                 exprString.contains("<") ||
                 exprString.contains("==") ||
                 exprString.contains("!=") ->
-                evaluateLogicalExpression(exprString, answers)
+                evaluateLogicalExpression(exprString, answers).getOrNull()
             else -> evaluateExpression(exprString, answers)
         }
     }
@@ -316,238 +318,37 @@ object SdcEvaluator {
      * @param str The fully substituted mathematical expression.
      * @return The evaluated Float result.
      */
-    private fun evalSimpleMath(str: String): Float = parseSimpleMath(str)
-
-    /**
-     * Parses a string expression into a Float value.
-     *
-     * @param str Parameter str
-     * @return the parsed float
-     */
-    private fun parseSimpleMath(str: String): Float {
-        var s = str.replace(" ", "")
-        if (s.isEmpty()) return 0f
-
-        // Validate parenthesis matching
-        var parenDepth = 0
-        for (ch in s) {
-            if (ch == '(') parenDepth++
-            if (ch == ')') parenDepth--
-            require(parenDepth >= 0) { "Mismatched parentheses in expression: $str" }
-        }
-        require(parenDepth == 0) { "Mismatched parentheses in expression: $str" }
-
-        while (s.contains("(")) {
-            val endIdx = s.indexOf(')')
-            val startIdx = if (endIdx != -1) s.substring(0, endIdx).lastIndexOf('(') else -1
-            require(startIdx != -1 && endIdx != -1) { "Invalid parenthesis ordering in expression: $str" }
-            val inner = s.substring(startIdx + 1, endIdx)
-            val res = parseSimpleMath(inner)
-            s = s.substring(0, startIdx) + res + s.substring(endIdx + 1)
-        }
-
-        // Check for consecutive invalid operator sequences (e.g. ++, *+, /*, +*)
-        val sanitizedOps =
-            s
-                .replace("*-", "*")
-                .replace("/-", "/")
-                .replace("+-", "-")
-                .replace("--", "+")
-        require(!Regex("[*+-/]{2,}").containsMatchIn(sanitizedOps)) {
-            "Malformed consecutive operators in expression: $s"
-        }
-
-        s = processMultiplicationAndDivision(s)
-        s = processAdditionAndSubtraction(s)
-        return s.toFloat()
-    }
-
-    /**
-     * Helper
-     * @param str The str.
-     * @return The result.
-     */
-    private fun processMultiplicationAndDivision(str: String): String {
-        var s = str
-        val mulDivRegex = Regex("(-?\\d+\\.?\\d*)[*/](-?\\d+\\.?\\d*)")
-        while (s.contains("*") || s.contains("/")) {
-            val match = mulDivRegex.find(s) ?: break
-            val op = match.value
-            val parts = op.split("*", "/")
-            val isMul = op.contains("*")
-            val a = parts[0].toFloat()
-            val b = parts[1].toFloat()
-            val res = if (isMul) a * b else a / b
-            s = s.replaceFirst(op, res.toString())
-        }
-        return s
-    }
-
-    /**
-     * Helper
-     * @param str The str.
-     * @return The result.
-     */
-    private fun processAdditionAndSubtraction(str: String): String {
-        var s = str
-        val addSubRegex = Regex("(-?\\d+\\.?\\d*)[+-](-?\\d+\\.?\\d*)")
-        while (s.contains("+") || s.drop(1).contains("-")) {
-            var opMatch: MatchResult? = null
-            var startIndex = 0
-            var m = addSubRegex.find(s, startIndex)
-            while (m != null && startIndex < s.length && opMatch == null) {
-                if (m.range.first > 0 || (s.length > m.range.last + 1 && s[m.range.last + 1] in listOf('+', '-'))) {
-                    opMatch = m
-                } else {
-                    startIndex = m.range.last
-                    m = addSubRegex.find(s, startIndex)
-                }
-            }
-
-            val match = opMatch ?: addSubRegex.find(s) ?: break
-            val op = match.value
-            val opIdx = op.drop(1).indexOfFirst { it == '+' || it == '-' } + 1
-            val a = op.substring(0, opIdx).toFloat()
-            val b = op.substring(opIdx + 1).toFloat()
-            val res = if (op[opIdx] == '+') a + b else a - b
-            s = s.replaceFirst(op, res.toString())
-        }
-        return s
-    }
-
-    private const val CONCAT_PREFIX_LEN = 7
-    private const val ISO_DATE_LEN = 10
+    private fun evalSimpleMath(str: String): Float = SdcMathEvaluator.evalSimpleMath(str)
 
     /**
      * Evaluates string expressions (such as concatenation or interpolation).
      *
      * @param expression The expression string.
      * @param answers The current answers context map.
-     * @return The concatenated string result.
+     * @return A [Result] enclosing the concatenated string result.
      */
     fun evaluateStringExpression(
         expression: String,
         answers: Map<String, Any?> = emptyMap(),
-    ): String {
-        val expr = expression.trim()
-        if (expr.startsWith("concat(") && expr.endsWith(")")) {
-            val inner = expr.substring(CONCAT_PREFIX_LEN, expr.length - 1)
-            val parts = inner.split(",")
-            return parts.joinToString("") { part ->
-                val trimmed = part.trim()
-                if (trimmed.startsWith("%")) {
-                    val varName = trimmed.removePrefix("%")
-                    answers[varName]?.toString() ?: ""
-                } else {
-                    trimmed.trim('\'', '"')
-                }
-            }
-        }
-        val parts = expr.split("+")
-        return parts.joinToString("") { part ->
-            val trimmed = part.trim()
-            if (trimmed.startsWith("%")) {
-                val varName = trimmed.removePrefix("%")
-                answers[varName]?.toString() ?: ""
-            } else {
-                trimmed.trim('\'', '"')
-            }
-        }
-    }
+    ): Result<String> = SdcMathEvaluator.evaluateStringExpression(expression, answers)
 
     /**
-     * Evaluates logical expressions containing comparisons (==, !=, <, <=, >, >=) or boolean operators (&&, ||).
+     * Evaluates logical expressions containing comparisons (==, !=, <, <=, >, >=),
+     * boolean operators (&&, ||), and nested grouping parentheses.
      *
      * @param expression The logical expression string.
      * @param answers The current answers context map.
-     * @return Boolean result or null if malformed.
+     * @return A [Result] enclosing the boolean outcome, or failure on malformed syntax.
      */
     fun evaluateLogicalExpression(
         expression: String,
         answers: Map<String, Any?> = emptyMap(),
-    ): Boolean? {
-        val expr = expression.trim()
-        return when {
-            expr.contains("||") -> expr.split("||").any { evaluateLogicalExpression(it.trim(), answers) == true }
-            expr.contains("&&") -> expr.split("&&").all { evaluateLogicalExpression(it.trim(), answers) == true }
-            else -> evaluateComparison(expr, answers)
+    ): Result<Boolean> =
+        runCatching {
+            val trimmed = expression.trim()
+            require(trimmed.isNotEmpty()) { "Expression must not be empty" }
+            SdcLogicalParser(trimmed, answers).parse()
         }
-    }
-
-    /**
-     * Evaluates an atomic comparison expression.
-     *
-     * @param expr The comparison expression.
-     * @param answers The context answers map.
-     * @return Boolean result or null.
-     */
-    private fun evaluateComparison(
-        expr: String,
-        answers: Map<String, Any?>,
-    ): Boolean? {
-        val compOps = listOf(">=", "<=", "==", "!=", ">", "<")
-        val foundOp = compOps.firstOrNull { expr.contains(it) }
-        val parts = if (foundOp != null) expr.split(foundOp) else emptyList()
-        if (parts.size != 2 || foundOp == null) {
-            return null
-        }
-
-        val lhsNum = evaluateExpression(parts[0].trim(), answers)
-        val rhsNum = evaluateExpression(parts[1].trim(), answers)
-
-        return if (lhsNum != null && rhsNum != null) {
-            compareNumeric(foundOp, lhsNum, rhsNum)
-        } else {
-            compareStrings(foundOp, parts[0].trim(), parts[1].trim(), answers)
-        }
-    }
-
-    /**
-     * Compares two numbers.
-     *
-     * @param op The comparison operator.
-     * @param lhs Left hand number.
-     * @param rhs Right hand number.
-     * @return Comparison result.
-     */
-    private fun compareNumeric(
-        op: String,
-        lhs: Float,
-        rhs: Float,
-    ): Boolean? =
-        when (op) {
-            ">=" -> lhs >= rhs
-            "<=" -> lhs <= rhs
-            "==" -> lhs == rhs
-            "!=" -> lhs != rhs
-            ">" -> lhs > rhs
-            "<" -> lhs < rhs
-            else -> null
-        }
-
-    /**
-     * Compares two string values.
-     *
-     * @param op The comparison operator.
-     * @param lhsStr Left hand string or variable.
-     * @param rhsStr Right hand string or variable.
-     * @param answers Answers context.
-     * @return Comparison result.
-     */
-    private fun compareStrings(
-        op: String,
-        lhsStr: String,
-        rhsStr: String,
-        answers: Map<String, Any?>,
-    ): Boolean? {
-        val lhsVal = answers[lhsStr.removePrefix("%")]?.toString() ?: lhsStr.trim('\'', '"')
-        val rhsVal = answers[rhsStr.removePrefix("%")]?.toString() ?: rhsStr.trim('\'', '"')
-        return when (op) {
-            "==" -> lhsVal == rhsVal
-            "!=" -> lhsVal != rhsVal
-            else -> null
-        }
-    }
 
     /**
      * Evaluates initial expressions across Questionnaire items using patient demographic
@@ -649,7 +450,7 @@ object SdcEvaluator {
     ): Boolean {
         if (item.enableWhen.isEmpty()) return true
         val behavior = item.enableBehavior?.value ?: Questionnaire.EnableWhenBehavior.Any
-        val conditions = item.enableWhen.map { ew -> evaluateCondition(ew, answers) }
+        val conditions = item.enableWhen.map { ew -> evaluateCondition(ew, answers).getOrDefault(false) }
         return if (behavior == Questionnaire.EnableWhenBehavior.All) {
             conditions.all { it }
         } else {
@@ -662,32 +463,31 @@ object SdcEvaluator {
      *
      * @param ew The enableWhen condition rule.
      * @param answers The answers context map.
-     * @return True if the condition evaluates to true.
+     * @return A [Result] enclosing true if the condition evaluates to true.
      */
     fun evaluateCondition(
         ew: Questionnaire.Item.EnableWhen,
         answers: Map<String, Any>,
-    ): Boolean {
-        val targetQuestion = ew.question.value
-        val operator = ew.operator.value
-        if (targetQuestion == null || operator == null) {
-            return false
-        }
-        val targetAnswer = answers[targetQuestion]
-        val ewAnswer = ew.answer
+    ): Result<Boolean> =
+        runCatching {
+            val targetQuestion = ew.question.value ?: return@runCatching false
+            val operator = ew.operator.value ?: return@runCatching false
+            val targetAnswer = answers[targetQuestion]
+            val ewAnswer = ew.answer
 
-        return when (operator) {
-            Questionnaire.QuestionnaireItemOperator.EqualTo -> evaluateEqualTo(ewAnswer, targetAnswer)
-            Questionnaire.QuestionnaireItemOperator.NotEqualTo -> evaluateNotEqualTo(ewAnswer, targetAnswer)
-            Questionnaire.QuestionnaireItemOperator.Exists -> evaluateExists(ewAnswer, targetAnswer)
-            Questionnaire.QuestionnaireItemOperator.GreaterThan,
-            Questionnaire.QuestionnaireItemOperator.LessThan,
-            Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo,
-            Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo,
-            ->
-                evaluateComparison(operator, ewAnswer, targetAnswer)
+            when (operator) {
+                Questionnaire.QuestionnaireItemOperator.EqualTo -> evaluateEqualTo(ewAnswer, targetAnswer)
+                Questionnaire.QuestionnaireItemOperator.NotEqualTo ->
+                    evaluateNotEqualTo(ewAnswer, targetAnswer).getOrDefault(false)
+                Questionnaire.QuestionnaireItemOperator.Exists -> evaluateExists(ewAnswer, targetAnswer)
+                Questionnaire.QuestionnaireItemOperator.GreaterThan,
+                Questionnaire.QuestionnaireItemOperator.LessThan,
+                Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo,
+                Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo,
+                ->
+                    evaluateComparison(operator, ewAnswer, targetAnswer)
+            }
         }
-    }
 
     /**
      * Evaluates the Exists operator.
@@ -730,15 +530,23 @@ object SdcEvaluator {
 
     /**
      * Evaluates inequality for an expected condition answer against the target answer.
+     * Adheres to FHIR R4 SDC specification: if targetAnswer is null, blank, or an empty collection,
+     * the condition evaluates to false (an unanswered question cannot satisfy NotEqualTo).
      *
      * @param ewAnswer The expected answer from the enableWhen condition.
      * @param targetAnswer The actual answer recorded for the target question.
-     * @return True if targetAnswer does not match ewAnswer.
+     * @return A [Result] enclosing true if targetAnswer is present and does not match ewAnswer, or false.
      */
     fun evaluateNotEqualTo(
         ewAnswer: Questionnaire.Item.EnableWhen.Answer,
         targetAnswer: Any?,
-    ): Boolean = !evaluateEqualTo(ewAnswer, targetAnswer)
+    ): Result<Boolean> =
+        runCatching {
+            if (targetAnswer == null) return@runCatching false
+            if (targetAnswer is String && targetAnswer.isBlank()) return@runCatching false
+            if (targetAnswer is Collection<*> && targetAnswer.isEmpty()) return@runCatching false
+            !evaluateEqualTo(ewAnswer, targetAnswer)
+        }
 
     /**
      * Checks if a target value matches an expected boolean condition answer.

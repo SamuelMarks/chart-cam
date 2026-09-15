@@ -10,6 +10,7 @@ package io.healthplatform.chartcam.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.fhir.model.r4.Patient
+import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.createFhirPatient
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.utils.UUID
@@ -28,6 +29,7 @@ import kotlinx.datetime.LocalDate
  * @param searchResults The list of patients matching the current search query.
  * @param isCreatingPatient Flag indicating if the create patient dialog is visible.
  * @param selectedPatient The currently selected patient to associate with the photos.
+ * @param selectedPhotoKeys Set of photo keys currently selected for association or deletion.
  */
 data class TriageUiState(
     val capturedPhotoPaths: Map<String, String> = emptyMap(),
@@ -35,6 +37,7 @@ data class TriageUiState(
     val searchResults: List<Patient> = emptyList(),
     val isCreatingPatient: Boolean = false,
     val selectedPatient: Patient? = null,
+    val selectedPhotoKeys: Set<String> = emptySet(),
 )
 
 /**
@@ -66,6 +69,89 @@ class TriageViewModel(
     fun setPaths(map: Map<String, String>) {
         _uiState.update { it.copy(capturedPhotoPaths = map) }
     }
+
+    /**
+     * Toggles selection of a specific photo key in the triage batch.
+     *
+     * @param key The photo key to toggle.
+     */
+    fun togglePhotoSelection(key: String) {
+        _uiState.update { current ->
+            val updated = current.selectedPhotoKeys.toMutableSet()
+            if (updated.contains(key)) {
+                updated.remove(key)
+            } else {
+                updated.add(key)
+            }
+            current.copy(selectedPhotoKeys = updated)
+        }
+    }
+
+    /**
+     * Selects all photos currently in the batch.
+     */
+    fun selectAllPhotos() {
+        _uiState.update { current ->
+            current.copy(selectedPhotoKeys = current.capturedPhotoPaths.keys)
+        }
+    }
+
+    /**
+     * Clears all selected photo keys.
+     */
+    fun clearSelection() {
+        _uiState.update { current ->
+            current.copy(selectedPhotoKeys = emptySet())
+        }
+    }
+
+    /**
+     * Deletes the currently selected photos from the active batch and disk storage.
+     *
+     * @param fileStorage Optional file storage to delete the physical image files.
+     * @return A [Result] indicating success of the deletion operation.
+     */
+    fun deleteSelectedPhotos(fileStorage: FileStorage? = null): Result<Unit> =
+        runCatching {
+            val toDelete = _uiState.value.selectedPhotoKeys
+            if (toDelete.isEmpty()) return@runCatching
+
+            val updatedPaths = _uiState.value.capturedPhotoPaths.toMutableMap()
+            toDelete.forEach { key ->
+                val path = updatedPaths.remove(key)
+                if (path != null && fileStorage != null) {
+                    fileStorage.deleteImage(path)
+                }
+            }
+            _uiState.update {
+                it.copy(
+                    capturedPhotoPaths = updatedPaths,
+                    selectedPhotoKeys = emptySet(),
+                )
+            }
+        }
+
+    /**
+     * Confirms association of selected photos (or all photos if none selected) with the target patient.
+     *
+     * @param onComplete Callback invoked with the remaining unassociated photo paths.
+     * @return A [Result] enclosing the associated photos map.
+     */
+    fun confirmAssociation(onComplete: (Map<String, String>) -> Unit): Result<Map<String, String>> =
+        runCatching {
+            val selected = _uiState.value.selectedPhotoKeys
+            val all = _uiState.value.capturedPhotoPaths
+            val toAssign = if (selected.isNotEmpty()) all.filterKeys { selected.contains(it) } else all
+            val remaining = all.filterKeys { !toAssign.containsKey(it) }
+            _uiState.update {
+                it.copy(
+                    capturedPhotoPaths = remaining,
+                    selectedPhotoKeys = emptySet(),
+                )
+            }
+            onComplete(toAssign)
+            toAssign
+        }
 
     /**
      * Updates the search query and loads search results.
@@ -121,7 +207,6 @@ class TriageViewModel(
         dob: LocalDate,
         gender: String,
     ) {
-        println(gender)
         viewModelScope.launch {
             val newPatient =
                 createFhirPatient(
@@ -130,6 +215,7 @@ class TriageViewModel(
                     lastName = lastName,
                     dob = dob,
                     mrnValue = mrn,
+                    gender = gender,
                 )
             fhirRepository.savePatient(newPatient)
             selectPatient(newPatient)

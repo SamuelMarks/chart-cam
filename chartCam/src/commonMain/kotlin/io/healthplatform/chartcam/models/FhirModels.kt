@@ -29,9 +29,54 @@ import com.google.fhir.model.r4.Provenance
 import com.google.fhir.model.r4.Reference
 import com.google.fhir.model.r4.String
 import com.google.fhir.model.r4.Uri
+import com.google.fhir.model.r4.terminologies.AdministrativeGender
 import com.google.fhir.model.r4.terminologies.DocumentReferenceStatus
 import io.healthplatform.chartcam.ui.currentLanguageState
 import kotlinx.datetime.LocalDate
+
+/**
+ * Maps a string gender descriptor to a FHIR AdministrativeGender.
+ *
+ * @param gender The raw gender string.
+ * @return The resolved AdministrativeGender.
+ */
+private fun mapAdministrativeGender(gender: kotlin.String): AdministrativeGender =
+    when (gender.lowercase()) {
+        "male" -> AdministrativeGender.Male
+        "female" -> AdministrativeGender.Female
+        "other" -> AdministrativeGender.Other
+        else -> AdministrativeGender.Unknown
+    }
+
+/**
+ * Builds a FHIR HumanName.Builder.
+ *
+ * @param firstName The first name.
+ * @param lastName The last name.
+ * @return The populated HumanName.Builder.
+ */
+private fun buildHumanName(
+    firstName: kotlin.String,
+    lastName: kotlin.String,
+): HumanName.Builder {
+    val b = HumanName.Builder()
+    b.family = String.Builder().apply { value = lastName }
+    b.given.add(String.Builder().apply { value = firstName })
+    return b
+}
+
+/**
+ * Builds a standard ChartCam MRN Identifier.Builder.
+ *
+ * @param mrnValue The Medical Record Number value.
+ * @return The populated Identifier.Builder.
+ */
+private fun buildMrnIdentifier(mrnValue: kotlin.String): Identifier.Builder {
+    val b = Identifier.Builder()
+    b.system = Uri.Builder().apply { value = "urn:oid:1.2.36.146.595.217.0.1" }
+    b.value = String.Builder().apply { value = mrnValue }
+    return b
+}
 
 /**
  * Creates a FHIR Patient resource.
@@ -42,6 +87,7 @@ import kotlinx.datetime.LocalDate
  * @param dob The date of birth of the patient.
  * @param mrnValue The Medical Record Number (MRN) of the patient.
  * @param organizationId An optional managing organization or practitioner ID for data scoping.
+ * @param gender The administrative gender of the patient (e.g., male, female, other, unknown).
  * @return A populated FHIR [Patient] object.
  */
 fun createFhirPatient(
@@ -51,31 +97,22 @@ fun createFhirPatient(
     dob: LocalDate,
     mrnValue: kotlin.String,
     organizationId: kotlin.String? = null,
-): Patient =
-    Patient
-        .Builder()
-        .apply {
-            this.id = id
-            name.add(
-                HumanName.Builder().apply {
-                    family = String.Builder().apply { value = lastName }
-                    given.add(String.Builder().apply { value = firstName })
-                },
-            )
-            birthDate = Date.Builder().apply { value = FhirDate.fromString(dob.toString()) }
-            identifier.add(
-                Identifier.Builder().apply {
-                    system = Uri.Builder().apply { value = "urn:oid:1.2.36.146.595.217.0.1" }
-                    value = String.Builder().apply { value = mrnValue }
-                },
-            )
-            if (organizationId != null) {
-                managingOrganization =
-                    Reference.Builder().apply {
-                        reference = String.Builder().apply { value = organizationId }
-                    }
+    gender: kotlin.String = "unknown",
+): Patient {
+    val b = Patient.Builder()
+    b.id = id
+    b.gender = Enumeration(value = mapAdministrativeGender(gender))
+    b.name.add(buildHumanName(firstName, lastName))
+    b.birthDate = Date.Builder().apply { value = FhirDate.fromString(dob.toString()) }
+    b.identifier.add(buildMrnIdentifier(mrnValue))
+    if (organizationId != null) {
+        b.managingOrganization =
+            Reference.Builder().apply {
+                reference = String.Builder().apply { value = organizationId }
             }
-        }.build()
+    }
+    return b.build()
+}
 
 /**
  * Extension property to get the Medical Record Number (MRN) from a [Patient].
@@ -229,7 +266,7 @@ fun createFhirPractitioner(
  * @return A populated FHIR [Encounter] object.
  */
 fun createFhirEncounter(
-    id: kotlin.String,
+    id: kotlin.String? = null,
     patientId: kotlin.String,
     practitionerId: kotlin.String,
     dateStr: kotlin.String,

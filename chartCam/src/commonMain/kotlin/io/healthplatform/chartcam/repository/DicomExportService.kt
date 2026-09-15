@@ -84,14 +84,15 @@ open class DicomExportService(
                 ?.removePrefix("Practitioner/")
         val practitioner = practitionerId?.let { fhirRepo.getPractitioner(it) }
 
-        return FhirToDicomMapper.createVisibleLightImageDicom(
-            imageBytes = imageBytes,
-            imageId = documentRefId,
-            patient = patient,
-            encounter = encounter,
-            practitioner = practitioner,
-            anonymize = anonymize,
-        )
+        return FhirToDicomMapper
+            .createVisibleLightImageDicom(
+                imageBytes = imageBytes,
+                imageId = documentRefId,
+                patient = patient,
+                encounter = encounter,
+                practitioner = practitioner,
+                anonymize = anonymize,
+            ).getOrThrow()
     }
 
     /**
@@ -127,14 +128,15 @@ open class DicomExportService(
                 ?.removePrefix("Practitioner/")
         val practitioner = practitionerId?.let { fhirRepo.getPractitioner(it) }
 
-        return FhirToDicomMapper.createEncapsulatedPdfDicom(
-            pdfBytes = pdfBytes,
-            title = title,
-            patient = patient,
-            encounter = encounter,
-            practitioner = practitioner,
-            anonymize = anonymize,
-        )
+        return FhirToDicomMapper
+            .createEncapsulatedPdfDicom(
+                pdfBytes = pdfBytes,
+                title = title,
+                patient = patient,
+                encounter = encounter,
+                practitioner = practitioner,
+                anonymize = anonymize,
+            ).getOrThrow()
     }
 
     /**

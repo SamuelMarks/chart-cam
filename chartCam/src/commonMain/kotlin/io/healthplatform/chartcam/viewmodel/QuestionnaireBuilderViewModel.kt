@@ -65,6 +65,7 @@ data class BuilderEnableWhen(
  * @param isError Whether the item has a validation error (e.g., empty label, missing options).
  * @param enableWhen The list of enableWhen condition rules configured for this item.
  * @param enableBehavior The behavior for combining multiple conditions (All or Any).
+ * @param repeats Whether the item supports repeating responses in the questionnaire.
  */
 data class BuilderItem(
     val linkId: kotlin.String,
@@ -74,6 +75,7 @@ data class BuilderItem(
     val isError: kotlin.Boolean = false,
     val enableWhen: List<BuilderEnableWhen> = emptyList(),
     val enableBehavior: Questionnaire.EnableWhenBehavior? = null,
+    val repeats: kotlin.Boolean = false,
 )
 
 /**
@@ -128,8 +130,6 @@ enum class WidgetType {
     /** SEGMENTED_TILES */
     SEGMENTED_TILES,
 }
-
-private const val UUID_SLUG_PREFIX_LENGTH = 8
 
 /**
  * ViewModel for managing the state of the Questionnaire Builder.
@@ -402,15 +402,27 @@ class QuestionnaireBuilderViewModel(
     }
 
     /**
-     * Removes an item from the builder.
+     * Removes an item from the builder and purges dangling enableWhen rules referencing the removed item.
      *
      * @param linkId The ID of the item to remove.
+     * @return A [Result] indicating success or failure of the removal operation.
      */
-    fun removeItem(linkId: kotlin.String) {
-        _state.update { currentState ->
-            currentState.copy(items = currentState.items.filter { it.linkId != linkId })
+    fun removeItem(linkId: kotlin.String): Result<Unit> =
+        runCatching {
+            _state.update { currentState ->
+                val remaining = currentState.items.filter { it.linkId != linkId }
+                val sanitized =
+                    remaining.map { item ->
+                        val cleanedConditions = item.enableWhen.filter { it.question != linkId }
+                        if (cleanedConditions.size != item.enableWhen.size) {
+                            item.copy(enableWhen = cleanedConditions)
+                        } else {
+                            item
+                        }
+                    }
+                currentState.copy(items = sanitized)
+            }
         }
-    }
 
     /**
      * Moves an item up in the list.
@@ -494,6 +506,9 @@ class QuestionnaireBuilderViewModel(
                 ).apply {
                     text = String.Builder().apply { value = builderItem.label }
                     required = Boolean.Builder().apply { value = false }
+                    if (builderItem.repeats) {
+                        repeats = Boolean.Builder().apply { value = true }
+                    }
                 }
         applyChoiceOptions(itemBuilder, builderItem, fhirType)
         applyItemControl(itemBuilder, builderItem)
@@ -607,7 +622,54 @@ class QuestionnaireBuilderViewModel(
     }
 
     /**
+     * Resolves the FHIR questionnaire-itemControl extension code.
+     *
+     * @param widgetType The widget type.
+     * @return The item control code string or null.
+     */
+    private fun resolveItemControlCode(widgetType: WidgetType): kotlin.String? =
+        when (widgetType) {
+            WidgetType.VIDEO_CAMERA -> "video"
+            WidgetType.PHOTO_CAMERA -> "photo"
+            WidgetType.SWITCH -> "switch"
+            WidgetType.RANGE -> "slider"
+            WidgetType.PAIN_SCALE -> "pain-vas"
+            WidgetType.FITZPATRICK_PALETTE -> "palette"
+            WidgetType.BODY_MAP -> "body-map"
+            WidgetType.SEGMENTED_TILES -> "segmented-control"
+            WidgetType.SINGLE_SELECT, WidgetType.MULTI_SELECT -> "check-box"
+            else -> null
+        }
+
+    /**
+     * Applies standard LOINC pain scale coding to the item builder.
+     *
+     * @param itemBuilder The item builder.
+     */
+    private fun applyPainScaleCode(itemBuilder: Questionnaire.Item.Builder) {
+        itemBuilder.code.add(
+            com.google.fhir.model.r4.Coding
+                .Builder()
+                .apply {
+                    system =
+                        com.google.fhir.model.r4.Uri
+                            .Builder()
+                            .apply { value = "http://loinc.org" }
+                    code =
+                        com.google.fhir.model.r4.Code
+                            .Builder()
+                            .apply { value = "72514-3" }
+                    display =
+                        com.google.fhir.model.r4.String.Builder().apply {
+                            value = "Pain severity - 0-10 verbal numeric rating"
+                        }
+                },
+        )
+    }
+
+    /**
      * Applies item control.
+     *
      * @param itemBuilder The itemBuilder.
      * @param builderItem The builderItem.
      */
@@ -615,20 +677,7 @@ class QuestionnaireBuilderViewModel(
         itemBuilder: Questionnaire.Item.Builder,
         builderItem: BuilderItem,
     ) {
-        val itemControlCode =
-            when (builderItem.widgetType) {
-                WidgetType.VIDEO_CAMERA -> "video"
-                WidgetType.PHOTO_CAMERA -> "photo"
-                WidgetType.SWITCH -> "switch"
-                WidgetType.RANGE -> "slider"
-                WidgetType.PAIN_SCALE -> "pain-vas"
-                WidgetType.FITZPATRICK_PALETTE -> "palette"
-                WidgetType.BODY_MAP -> "body-map"
-                WidgetType.SEGMENTED_TILES -> "segmented-control"
-                /** SINGLE_SELECT */
-                WidgetType.SINGLE_SELECT, WidgetType.MULTI_SELECT -> "check-box"
-                else -> null
-            }
+        val itemControlCode = resolveItemControlCode(builderItem.widgetType)
         if (itemControlCode != null) {
             itemBuilder.extension.add(
                 com.google.fhir.model.r4.Extension
@@ -654,24 +703,7 @@ class QuestionnaireBuilderViewModel(
             )
         }
         if (builderItem.widgetType == WidgetType.PAIN_SCALE) {
-            itemBuilder.code.add(
-                com.google.fhir.model.r4.Coding
-                    .Builder()
-                    .apply {
-                        system =
-                            com.google.fhir.model.r4.Uri
-                                .Builder()
-                                .apply { value = "http://loinc.org" }
-                        code =
-                            com.google.fhir.model.r4.Code
-                                .Builder()
-                                .apply { value = "72514-3" }
-                        display =
-                            String
-                                .Builder()
-                                .apply { value = "Pain severity - 0-10 verbal numeric rating" }
-                    },
-            )
+            applyPainScaleCode(itemBuilder)
         }
     }
 

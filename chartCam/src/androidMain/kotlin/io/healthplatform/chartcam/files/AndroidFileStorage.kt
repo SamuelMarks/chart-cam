@@ -122,7 +122,8 @@ class AndroidFileStorage : FileStorage {
      * @return A [Result] indicating success or failure of the deletion.
      */
     override fun deleteImage(path: String): Result<Unit> {
-        val file = resolveImageFile(path) ?: return Result.failure(java.io.FileNotFoundException("File not found: $path"))
+        val file =
+            resolveImageFile(path) ?: return Result.failure(java.io.FileNotFoundException("File not found: $path"))
         return if (file.delete() || !file.exists()) {
             Result.success(Unit)
         } else {

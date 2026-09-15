@@ -19,6 +19,7 @@ import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.DocumentReferenceCreationParams
 import io.healthplatform.chartcam.models.createFhirDocumentReference
 import io.healthplatform.chartcam.models.createFhirEncounter
+import io.healthplatform.chartcam.models.createFhirPatient
 import io.healthplatform.chartcam.models.createFhirPractitioner
 import io.healthplatform.chartcam.storage.JvmSecureStorage
 import io.healthplatform.chartcam.viewmodel.EncounterDetailViewModel
@@ -235,5 +236,58 @@ class ClinicalMediaCascadeDeletionAndPurgeWorkflowTest {
             assertNull(fhirRepo.getEncounter("enc-child"))
             assertEquals(0, fhirRepo.getPhotosForEncounter("enc-child").size)
             assertFalse(fileStorage.files.containsKey("child_photo.jpg"))
+        }
+
+    /**
+     * Verifies that deleting a patient cascades deletion to 2 encounters and 4 photos on disk and database.
+     */
+    @Test
+    fun testPatientCascadeDeletionWithTwoEncountersAndFourPhotos() =
+        runTest(testDispatcher) {
+            val patient = createFhirPatient("p-multi", "Multi", "Encounter", kotlinx.datetime.LocalDate(1985, 5, 5), "MRN-MULTI")
+            fhirRepo.savePatient(patient)
+
+            val enc1 = createFhirEncounter("enc-1", "p-multi", "prac-1", "2024-01-01T10:00:00Z")
+            val enc2 = createFhirEncounter("enc-2", "p-multi", "prac-1", "2024-01-02T10:00:00Z")
+            fhirRepo.saveEncounter(enc1)
+            fhirRepo.saveEncounter(enc2)
+
+            fileStorage.saveImage("img1.jpg", byteArrayOf(1))
+            fileStorage.saveImage("img2.jpg", byteArrayOf(2))
+            fileStorage.saveImage("img3.jpg", byteArrayOf(3))
+            fileStorage.saveImage("img4.jpg", byteArrayOf(4))
+
+            fhirRepo.saveDocumentReference(
+                createFhirDocumentReference(
+                    DocumentReferenceCreationParams("doc1", "p-multi", "enc-1", "2024-01-01", "P1", "image/jpeg", "img1.jpg", "c1"),
+                ),
+            )
+            fhirRepo.saveDocumentReference(
+                createFhirDocumentReference(
+                    DocumentReferenceCreationParams("doc2", "p-multi", "enc-1", "2024-01-01", "P2", "image/jpeg", "img2.jpg", "c1"),
+                ),
+            )
+            fhirRepo.saveDocumentReference(
+                createFhirDocumentReference(
+                    DocumentReferenceCreationParams("doc3", "p-multi", "enc-2", "2024-01-02", "P3", "image/jpeg", "img3.jpg", "c1"),
+                ),
+            )
+            fhirRepo.saveDocumentReference(
+                createFhirDocumentReference(
+                    DocumentReferenceCreationParams("doc4", "p-multi", "enc-2", "2024-01-02", "P4", "image/jpeg", "img4.jpg", "c1"),
+                ),
+            )
+
+            assertEquals(4, fileStorage.files.size)
+
+            val result = fhirRepo.deletePatient("p-multi", fileStorage)
+            assertTrue(result.isSuccess)
+
+            assertNull(fhirRepo.getPatient("p-multi"))
+            assertNull(fhirRepo.getEncounter("enc-1"))
+            assertNull(fhirRepo.getEncounter("enc-2"))
+            assertEquals(0, fhirRepo.getPhotosForEncounter("enc-1").size)
+            assertEquals(0, fhirRepo.getPhotosForEncounter("enc-2").size)
+            assertEquals(0, fileStorage.files.size, "All 4 photos must be purged from disk")
         }
 }

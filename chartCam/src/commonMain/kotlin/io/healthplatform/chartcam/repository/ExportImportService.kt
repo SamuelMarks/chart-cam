@@ -640,52 +640,40 @@ open class ExportImportService(
         filterOptions: ImportFilterOptions = ImportFilterOptions.all(),
         selectedPatientIds: Set<String>? = null,
         resolutionMap: Map<String, ConflictResolutionStrategy> = emptyMap(),
-    ): Result<Unit> {
-        val jsonData =
-            runSuspendCatching {
-                require(isValidPassword(password)) {
-                    "Decryption password must not be empty or weak (minimum 6 characters)."
-                }
-                val decrypted = cryptoService.decrypt(encryptedData, password)
-                require(decrypted.isNotEmpty()) { "Decryption failed or data is empty." }
-                decrypted
-            }.getOrElse { return Result.failure(it) }
+    ): Result<Unit> =
+        runSuspendCatching {
+            require(isValidPassword(password)) {
+                "Decryption password must not be empty or weak (minimum 6 characters)."
+            }
+            val jsonData = cryptoService.decrypt(encryptedData, password)
+            require(jsonData.isNotEmpty()) { "Decryption failed or data is empty." }
+            val bundle = fhirJson.decodeFromString(jsonData) as Bundle
 
-        val bundle =
-            runCatching {
-                fhirJson.decodeFromString(jsonData) as Bundle
-            }.getOrElse { return Result.failure(it) }
+            val savedImageFiles = mutableListOf<String>()
+            val importBatchResult =
+                runSuspendCatching {
+                    val patientMapping =
+                        if (filterOptions.isCategoryEnabled(ImportCategory.PATIENTS)) {
+                            val patients = bundle.entry.mapNotNull { it.resource as? Patient }
+                            processPatientBatch(patients, selectedPatientIds, resolutionMap)
+                        } else {
+                            emptyMap()
+                        }
 
-        val savedImageFiles = mutableListOf<String>()
-        val importResult =
-            runSuspendCatching {
-                val patientMapping =
-                    if (filterOptions.isCategoryEnabled(ImportCategory.PATIENTS)) {
-                        val patients = bundle.entry.mapNotNull { it.resource as? Patient }
-                        processPatientBatch(patients, selectedPatientIds, resolutionMap)
-                    } else {
-                        emptyMap()
-                    }
-
-                for (entry in bundle.entry) {
-                    val res = entry.resource ?: continue
-                    if (res !is Patient) {
-                        importEntryResource(res, filterOptions, patientMapping, savedImageFiles)
+                    for (entry in bundle.entry) {
+                        val res = entry.resource ?: continue
+                        if (res !is Patient) {
+                            importEntryResource(res, filterOptions, patientMapping, savedImageFiles)
+                        }
                     }
                 }
-            }
-
-        if (importResult.isFailure) {
-            for (savedFile in savedImageFiles) {
-                runCatching {
-                    fileStorage.deleteImage(savedFile)
+            if (importBatchResult.isFailure) {
+                for (savedFile in savedImageFiles) {
+                    runCatching { fileStorage.deleteImage(savedFile) }
                 }
+                importBatchResult.getOrThrow()
             }
-            val cause = importResult.exceptionOrNull() ?: Exception("Import failed")
-            return Result.failure(cause)
         }
-        return Result.success(Unit)
-    }
 
     /**
      * Decrypts the provided JSON string and imports the contained FHIR Bundle into the local database.

@@ -305,8 +305,11 @@ fun PainFaceIcon(
         modifier =
             modifier
                 .background(if (isSelected) activeColor.copy(alpha = 0.2f) else Color.Transparent, CircleShape)
-                .border(if (isSelected) 2.dp else 1.dp, if (isSelected) activeColor else defaultBorderColor, CircleShape)
-                .semantics {
+                .border(
+                    width = if (isSelected) 2.dp else 1.dp,
+                    color = if (isSelected) activeColor else defaultBorderColor,
+                    shape = CircleShape,
+                ).semantics {
                     contentDescription = faceLabel
                 },
         contentAlignment = Alignment.Center,

@@ -318,6 +318,28 @@ class CaptureViewModelJvmTest {
             assertNull(state.reviewImageBytes) // bytes cleared to retry
             assertEquals(0, mockStorage.savedFiles.size)
         }
+
+    /**
+     * Verifies that discardPendingPhotos purges all saved session photos from storage and resets state.
+     */
+    @Test
+    fun testDiscardPendingPhotos() =
+        runTest {
+            viewModel.onCapture()
+            testDispatcher.scheduler.advanceUntilIdle()
+            viewModel.onConfirm()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(1, viewModel.getResultPaths().size)
+            assertEquals(1, mockStorage.savedFiles.size)
+
+            val discardResult = viewModel.discardPendingPhotos()
+            assertTrue(discardResult.isSuccess)
+
+            assertEquals(0, viewModel.getResultPaths().size)
+            assertEquals(0, mockStorage.savedFiles.size)
+            assertEquals(0, viewModel.uiState.value.capturedCount)
+        }
 }
 
 /**

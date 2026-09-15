@@ -173,31 +173,33 @@ import io.healthplatform.chartcam.viewmodel.WidgetType
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
+private val WIDGET_NAME_MAP: Map<WidgetType, StringResource> =
+    mapOf(
+        WidgetType.PHOTO_CAMERA to Res.string.widget_photo_camera,
+        WidgetType.VIDEO_CAMERA to Res.string.widget_video_camera,
+        WidgetType.SWITCH to Res.string.widget_switch,
+        WidgetType.CHECKBOX to Res.string.widget_checkbox,
+        WidgetType.SINGLE_SELECT to Res.string.widget_single_select,
+        WidgetType.MULTI_SELECT to Res.string.widget_multi_select,
+        WidgetType.SINGLE_LINE_TEXT to Res.string.widget_single_line_text,
+        WidgetType.MULTI_LINE_TEXT to Res.string.widget_multi_line_text,
+        WidgetType.DATE to Res.string.widget_date,
+        WidgetType.DATETIME to Res.string.widget_datetime,
+        WidgetType.NUMERIC to Res.string.widget_numeric,
+        WidgetType.RANGE to Res.string.widget_range,
+        WidgetType.PAIN_SCALE to Res.string.widget_pain_scale,
+        WidgetType.FITZPATRICK_PALETTE to Res.string.widget_fitzpatrick,
+        WidgetType.BODY_MAP to Res.string.widget_body_map,
+        WidgetType.SEGMENTED_TILES to Res.string.widget_segmented_tiles,
+    )
+
 /**
  * Translates a [WidgetType] to its localized [StringResource] reference.
  *
  * @param type The type of the widget.
  * @return The string resource corresponding to the widget name.
  */
-fun getWidgetNameResource(type: WidgetType): StringResource =
-    when (type) {
-        WidgetType.PHOTO_CAMERA -> Res.string.widget_photo_camera
-        WidgetType.VIDEO_CAMERA -> Res.string.widget_video_camera
-        WidgetType.SWITCH -> Res.string.widget_switch
-        WidgetType.CHECKBOX -> Res.string.widget_checkbox
-        WidgetType.SINGLE_SELECT -> Res.string.widget_single_select
-        WidgetType.MULTI_SELECT -> Res.string.widget_multi_select
-        WidgetType.SINGLE_LINE_TEXT -> Res.string.widget_single_line_text
-        WidgetType.MULTI_LINE_TEXT -> Res.string.widget_multi_line_text
-        WidgetType.DATE -> Res.string.widget_date
-        WidgetType.DATETIME -> Res.string.widget_datetime
-        WidgetType.NUMERIC -> Res.string.widget_numeric
-        WidgetType.RANGE -> Res.string.widget_range
-        WidgetType.PAIN_SCALE -> Res.string.widget_pain_scale
-        WidgetType.FITZPATRICK_PALETTE -> Res.string.widget_fitzpatrick
-        WidgetType.BODY_MAP -> Res.string.widget_body_map
-        WidgetType.SEGMENTED_TILES -> Res.string.widget_segmented_tiles
-    }
+fun getWidgetNameResource(type: WidgetType): StringResource = WIDGET_NAME_MAP[type] ?: Res.string.widget_single_line_text
 
 /**
  * Translates a [WidgetType] to its localized string representation for UI display.
@@ -208,31 +210,33 @@ fun getWidgetNameResource(type: WidgetType): StringResource =
 @Composable
 fun getWidgetNameString(type: WidgetType): String = stringResource(getWidgetNameResource(type))
 
+private val WIDGET_ICON_MAP: Map<WidgetType, ImageVector> =
+    mapOf(
+        WidgetType.PHOTO_CAMERA to Icons.Default.PhotoCamera,
+        WidgetType.VIDEO_CAMERA to Icons.Default.Videocam,
+        WidgetType.SWITCH to Icons.Default.ToggleOn,
+        WidgetType.CHECKBOX to Icons.Default.CheckBox,
+        WidgetType.SINGLE_SELECT to Icons.Default.RadioButtonChecked,
+        WidgetType.MULTI_SELECT to Icons.Default.Checklist,
+        WidgetType.SINGLE_LINE_TEXT to Icons.AutoMirrored.Filled.ShortText,
+        WidgetType.MULTI_LINE_TEXT to Icons.AutoMirrored.Filled.Notes,
+        WidgetType.DATE to Icons.Default.DateRange,
+        WidgetType.DATETIME to Icons.Default.AccessTime,
+        WidgetType.NUMERIC to Icons.Default.Numbers,
+        WidgetType.RANGE to Icons.Default.LinearScale,
+        WidgetType.PAIN_SCALE to Icons.Default.Mood,
+        WidgetType.FITZPATRICK_PALETTE to Icons.Default.Palette,
+        WidgetType.BODY_MAP to Icons.Default.Accessibility,
+        WidgetType.SEGMENTED_TILES to Icons.Default.ViewModule,
+    )
+
 /**
  * Maps a [WidgetType] to its corresponding [ImageVector] icon for display in the builder UI.
  *
  * @param type The type of the widget.
  * @return The material icon representing the widget type.
  */
-fun getWidgetIcon(type: WidgetType): ImageVector =
-    when (type) {
-        WidgetType.PHOTO_CAMERA -> Icons.Default.PhotoCamera
-        WidgetType.VIDEO_CAMERA -> Icons.Default.Videocam
-        WidgetType.SWITCH -> Icons.Default.ToggleOn
-        WidgetType.CHECKBOX -> Icons.Default.CheckBox
-        WidgetType.SINGLE_SELECT -> Icons.Default.RadioButtonChecked
-        WidgetType.MULTI_SELECT -> Icons.Default.Checklist
-        WidgetType.SINGLE_LINE_TEXT -> Icons.AutoMirrored.Filled.ShortText
-        WidgetType.MULTI_LINE_TEXT -> Icons.AutoMirrored.Filled.Notes
-        WidgetType.DATE -> Icons.Default.DateRange
-        WidgetType.DATETIME -> Icons.Default.AccessTime
-        WidgetType.NUMERIC -> Icons.Default.Numbers
-        WidgetType.RANGE -> Icons.Default.LinearScale
-        WidgetType.PAIN_SCALE -> Icons.Default.Mood
-        WidgetType.FITZPATRICK_PALETTE -> Icons.Default.Palette
-        WidgetType.BODY_MAP -> Icons.Default.Accessibility
-        WidgetType.SEGMENTED_TILES -> Icons.Default.ViewModule
-    }
+fun getWidgetIcon(type: WidgetType): ImageVector = WIDGET_ICON_MAP[type] ?: Icons.Default.CheckBox
 
 /**
  * Secondary widget dropdown.

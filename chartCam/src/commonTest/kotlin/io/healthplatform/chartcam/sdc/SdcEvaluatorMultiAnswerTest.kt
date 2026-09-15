@@ -17,6 +17,18 @@ import kotlin.test.assertTrue
  */
 class SdcEvaluatorMultiAnswerTest {
     /**
+     * Evaluates a condition with a default fallback of false.
+     *
+     * @param cond The condition to evaluate.
+     * @param answers The answers context map.
+     * @return Boolean result of evaluation.
+     */
+    private fun eval(
+        cond: Questionnaire.Item.EnableWhen,
+        answers: Map<kotlin.String, Any>,
+    ): kotlin.Boolean = SdcEvaluator.evaluateCondition(cond, answers).getOrDefault(false)
+
+    /**
      * Tests that EqualTo condition matches if the target question's list of selected options includes the expected answer.
      */
     @Test
@@ -34,10 +46,10 @@ class SdcEvaluatorMultiAnswerTest {
                 ).build()
 
         val selectedSymptoms = listOf("opt_fever", "opt_cough", "opt_fatigue")
-        assertTrue(SdcEvaluator.evaluateCondition(condition, mapOf("symptoms" to selectedSymptoms)))
+        assertTrue(eval(condition, mapOf("symptoms" to selectedSymptoms)))
 
         val otherSymptoms = listOf("opt_headache", "opt_nausea")
-        assertFalse(SdcEvaluator.evaluateCondition(condition, mapOf("symptoms" to otherSymptoms)))
+        assertFalse(eval(condition, mapOf("symptoms" to otherSymptoms)))
     }
 
     /**
@@ -58,10 +70,10 @@ class SdcEvaluatorMultiAnswerTest {
                 ).build()
 
         val symptomsWithoutRash = listOf("opt_fever", "opt_cough")
-        assertTrue(SdcEvaluator.evaluateCondition(condition, mapOf("symptoms" to symptomsWithoutRash)))
+        assertTrue(eval(condition, mapOf("symptoms" to symptomsWithoutRash)))
 
         val symptomsWithRash = listOf("opt_fever", "opt_rash")
-        assertFalse(SdcEvaluator.evaluateCondition(condition, mapOf("symptoms" to symptomsWithRash)))
+        assertFalse(eval(condition, mapOf("symptoms" to symptomsWithRash)))
     }
 
     /**
@@ -81,7 +93,7 @@ class SdcEvaluatorMultiAnswerTest {
                     question = String.Builder().apply { value = "symptoms" },
                 ).build()
 
-        assertTrue(SdcEvaluator.evaluateCondition(condition, mapOf("symptoms" to listOf("opt_fever"))))
-        assertFalse(SdcEvaluator.evaluateCondition(condition, mapOf("symptoms" to emptyList<kotlin.String>())))
+        assertTrue(eval(condition, mapOf("symptoms" to listOf("opt_fever"))))
+        assertFalse(eval(condition, mapOf("symptoms" to emptyList<kotlin.String>())))
     }
 }

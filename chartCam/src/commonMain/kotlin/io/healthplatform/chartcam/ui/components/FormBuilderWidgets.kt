@@ -751,7 +751,8 @@ fun FormBuilderDatePicker(
                 colors =
                     OutlinedTextFieldDefaults.colors(
                         disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                        disabledBorderColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+                        disabledBorderColor =
+                            if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
                         disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         disabledSupportingTextColor = MaterialTheme.colorScheme.error,
                     ),
@@ -921,7 +922,8 @@ fun FormBuilderDateTimePicker(
                 colors =
                     OutlinedTextFieldDefaults.colors(
                         disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                        disabledBorderColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+                        disabledBorderColor =
+                            if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
                         disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         disabledSupportingTextColor = MaterialTheme.colorScheme.error,
                     ),

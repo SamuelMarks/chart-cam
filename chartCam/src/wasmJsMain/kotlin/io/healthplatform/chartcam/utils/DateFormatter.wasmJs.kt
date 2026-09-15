@@ -6,8 +6,6 @@
 
 package io.healthplatform.chartcam.utils
 
-import kotlin.js.toJsString
-
 private const val FORMAT_DATE_JS =
     "(fhirDate, language) => { " +
         "try { " +
@@ -32,9 +30,9 @@ private const val FORMAT_DATE_JS =
  */
 @JsFun(FORMAT_DATE_JS)
 private external fun formatLocalizedDateJs(
-    fhirDate: JsAny,
-    language: JsAny,
-): JsAny
+    fhirDate: String,
+    language: String,
+): String
 
 /**
  * Formats a FHIR date or datetime string into a localized, human-readable format on the WasmJS platform.
@@ -48,8 +46,9 @@ actual fun formatLocalizedDate(
     language: String,
 ): String {
     if (fhirDate.isBlank()) return fhirDate
-    val jsResult = formatLocalizedDateJs(fhirDate.toJsString(), language.toJsString())
-    return jsResult.toString()
+    return runCatching {
+        formatLocalizedDateJs(fhirDate, language)
+    }.getOrDefault(fhirDate)
 }
 
 /**
@@ -64,6 +63,7 @@ actual fun formatLocalizedDateTime(
     language: String,
 ): String {
     if (fhirDateTime.isBlank()) return fhirDateTime
-    val jsResult = formatLocalizedDateJs(fhirDateTime.toJsString(), language.toJsString())
-    return jsResult.toString()
+    return runCatching {
+        formatLocalizedDateJs(fhirDateTime, language)
+    }.getOrDefault(fhirDateTime)
 }

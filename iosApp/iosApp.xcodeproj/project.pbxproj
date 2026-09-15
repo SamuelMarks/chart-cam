@@ -172,7 +172,7 @@
 			baseConfigurationReferenceAnchor = 6CFBD324465AC073DEBFF854 /* Configuration */;
 			baseConfigurationReferenceRelativePath = Config.xcconfig;
 			buildSettings = {
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 4;
 				MARKETING_VERSION = 1.0.4;
 				VERSIONING_SYSTEM = "apple-generic";
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -240,7 +240,7 @@
 			baseConfigurationReferenceAnchor = 6CFBD324465AC073DEBFF854 /* Configuration */;
 			baseConfigurationReferenceRelativePath = Config.xcconfig;
 			buildSettings = {
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 4;
 				MARKETING_VERSION = 1.0.4;
 				VERSIONING_SYSTEM = "apple-generic";
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -299,7 +299,7 @@
 		6FBD71B6D5237F1040FC5DCB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 4;
 				MARKETING_VERSION = 1.0.4;
 				VERSIONING_SYSTEM = "apple-generic";
 				ARCHS = arm64;
@@ -330,7 +330,7 @@
 		AF41355AFD099BB270F4CA22 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 4;
 				MARKETING_VERSION = 1.0.4;
 				VERSIONING_SYSTEM = "apple-generic";
 				ARCHS = arm64;

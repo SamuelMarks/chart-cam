@@ -137,6 +137,7 @@ fun NavGraphBuilder.patientDetailDestination(
             PatientDetailScreen(
                 patientId = patientId,
                 fhirRepository = deps.fhirRepository,
+                fileStorage = deps.fileStorage,
                 onBack = { navController.popBackStack() },
                 onNewVisit = { navController.navigate(NewVisitRoute(patientId)) },
                 onVisitSelected = { visitId ->
@@ -166,6 +167,7 @@ fun NavGraphBuilder.patientVisitsDestination(
             PatientDetailScreen(
                 patientId = patientId,
                 fhirRepository = deps.fhirRepository,
+                fileStorage = deps.fileStorage,
                 onBack = { navController.popBackStack() },
                 onNewVisit = { navController.navigate(NewVisitRoute(patientId)) },
                 onVisitSelected = { visitId ->

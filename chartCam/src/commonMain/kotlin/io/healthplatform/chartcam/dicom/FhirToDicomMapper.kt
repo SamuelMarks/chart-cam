@@ -9,6 +9,7 @@ import com.google.fhir.model.r4.HumanName
 import com.google.fhir.model.r4.Patient
 import com.google.fhir.model.r4.Practitioner
 import io.healthplatform.chartcam.files.ImageMetadataParser
+import okio.Buffer
 import kotlin.math.abs
 
 private const val DEFAULT_IMAGE_WIDTH = 1920
@@ -17,6 +18,15 @@ private const val BITS_8 = 8
 private const val HIGH_BIT_7 = 7
 private const val SAMPLES_3 = 3
 private const val ANON_ID_LEN = 8
+private const val BYTE_TAG_ITEM_0 = 0xFE
+private const val BYTE_TAG_ITEM_1 = 0xFF
+private const val BYTE_TAG_ITEM_2 = 0x00
+private const val BYTE_TAG_ITEM_3 = 0xE0
+private const val BYTE_TAG_DELIM_2 = 0xDD
+private const val BYTE_ZERO = 0x00
+private const val BYTE_MASK = 0xFF
+private const val SHIFT_16 = 16
+private const val SHIFT_24 = 24
 
 /**
  * Mapper for converting FHIR R4 clinical entities to DICOM elements.
@@ -78,13 +88,11 @@ object FhirToDicomMapper {
      */
     fun extractGender(patient: Patient): kotlin.String {
         val genderName = patient.gender?.value?.name
-        val code =
-            when (genderName) {
-                "Male" -> "M"
-                "Female" -> "F"
-                else -> "O"
-            }
-        return code
+        return when (genderName?.lowercase()) {
+            "male" -> "M"
+            "female" -> "F"
+            else -> "O"
+        }
     }
 
     /**
@@ -214,7 +222,7 @@ object FhirToDicomMapper {
      * @param encounter The FHIR Encounter resource, if available.
      * @param practitioner The attending FHIR Practitioner, if available.
      * @param anonymize Whether to de-identify patient information.
-     * @return The complete Part 10 DICOM file as a ByteArray.
+     * @return A [Result] enclosing the complete Part 10 DICOM file as a ByteArray.
      */
     fun createEncapsulatedPdfDicom(
         pdfBytes: ByteArray,
@@ -223,7 +231,7 @@ object FhirToDicomMapper {
         encounter: Encounter? = null,
         practitioner: Practitioner? = null,
         anonymize: Boolean = false,
-    ): ByteArray {
+    ): Result<ByteArray> {
         val elements = buildCommonElements(patient, encounter, practitioner, anonymize)
 
         val encId = encounter?.id ?: "ENC_DEFAULT"
@@ -258,7 +266,57 @@ object FhirToDicomMapper {
         )
         elements.add(DicomElement.createBinary(DicomTag.ENCAPSULATED_DOCUMENT, DicomVR.OB, pdfBytes))
 
-        return DicomWriter.write(elements, DicomTag.UID_SOP_CLASS_ENCAPSULATED_PDF, sopInstanceUid)
+        return runCatching {
+            DicomWriter.write(elements, DicomTag.UID_SOP_CLASS_ENCAPSULATED_PDF, sopInstanceUid)
+        }
+    }
+
+    /**
+     * Constructs a DICOM encapsulated sequence containing a basic offset table, fragment item, and sequence delimiter.
+     *
+     * @param jpegBytes The raw compressed JPEG byte stream.
+     * @return Byte array formatted as an encapsulated sequence.
+     */
+    fun buildEncapsulatedJpegSequence(jpegBytes: ByteArray): ByteArray {
+        val pad = if (jpegBytes.size % 2 != 0) 1 else 0
+        val fragLen = jpegBytes.size + pad
+        val buffer = Buffer()
+
+        // 1. Basic Offset Table: Tag (FFFE,E000), Length 0
+        buffer.writeByte(BYTE_TAG_ITEM_0)
+        buffer.writeByte(BYTE_TAG_ITEM_1)
+        buffer.writeByte(BYTE_TAG_ITEM_2)
+        buffer.writeByte(BYTE_TAG_ITEM_3)
+        buffer.writeByte(BYTE_ZERO)
+        buffer.writeByte(BYTE_ZERO)
+        buffer.writeByte(BYTE_ZERO)
+        buffer.writeByte(BYTE_ZERO)
+
+        // 2. Fragment Item: Tag (FFFE,E000), Length fragLen in Little Endian
+        buffer.writeByte(BYTE_TAG_ITEM_0)
+        buffer.writeByte(BYTE_TAG_ITEM_1)
+        buffer.writeByte(BYTE_TAG_ITEM_2)
+        buffer.writeByte(BYTE_TAG_ITEM_3)
+        buffer.writeByte(fragLen and BYTE_MASK)
+        buffer.writeByte((fragLen ushr BITS_8) and BYTE_MASK)
+        buffer.writeByte((fragLen ushr SHIFT_16) and BYTE_MASK)
+        buffer.writeByte((fragLen ushr SHIFT_24) and BYTE_MASK)
+        buffer.write(jpegBytes)
+        if (pad > 0) {
+            buffer.writeByte(BYTE_ZERO)
+        }
+
+        // 3. Sequence Delimiter: Tag (FFFE,E0DD), Length 0
+        buffer.writeByte(BYTE_TAG_ITEM_0)
+        buffer.writeByte(BYTE_TAG_ITEM_1)
+        buffer.writeByte(BYTE_TAG_DELIM_2)
+        buffer.writeByte(BYTE_TAG_ITEM_3)
+        buffer.writeByte(BYTE_ZERO)
+        buffer.writeByte(BYTE_ZERO)
+        buffer.writeByte(BYTE_ZERO)
+        buffer.writeByte(BYTE_ZERO)
+
+        return buffer.readByteArray()
     }
 
     /**
@@ -270,7 +328,7 @@ object FhirToDicomMapper {
      * @param encounter The FHIR Encounter resource, if available.
      * @param practitioner The attending FHIR Practitioner, if available.
      * @param anonymize Whether to de-identify patient information.
-     * @return The complete Part 10 DICOM file as a ByteArray.
+     * @return A [Result] enclosing the complete Part 10 DICOM file as a ByteArray.
      */
     fun createVisibleLightImageDicom(
         imageBytes: ByteArray,
@@ -279,46 +337,70 @@ object FhirToDicomMapper {
         encounter: Encounter? = null,
         practitioner: Practitioner? = null,
         anonymize: Boolean = false,
-    ): ByteArray {
-        val elements = buildCommonElements(patient, encounter, practitioner, anonymize)
+    ): Result<ByteArray> =
+        runCatching {
+            require(imageBytes.isNotEmpty()) { "Image bytes must not be empty" }
+            val elements = buildCommonElements(patient, encounter, practitioner, anonymize)
 
-        val encId = encounter?.id ?: "ENC_DEFAULT"
-        val seriesUid = "${DicomTag.UID_CHARTCAM_IMPLEMENTATION_CLASS}.2.${abs(encId.hashCode())}.77"
-        val sopInstanceUid = "${DicomTag.UID_CHARTCAM_IMPLEMENTATION_CLASS}.3.${abs(imageId.hashCode())}"
+            val encId = encounter?.id ?: "ENC_DEFAULT"
+            val seriesUid = "${DicomTag.UID_CHARTCAM_IMPLEMENTATION_CLASS}.2.${abs(encId.hashCode())}.77"
+            val sopInstanceUid = "${DicomTag.UID_CHARTCAM_IMPLEMENTATION_CLASS}.3.${abs(imageId.hashCode())}"
 
-        // Series Module
-        elements.add(DicomElement.createString(DicomTag.SERIES_INSTANCE_UID, DicomVR.UI, seriesUid))
-        elements.add(DicomElement.createString(DicomTag.MODALITY, DicomVR.CS, "XC")) // External Camera Photography
-        elements.add(DicomElement.createString(DicomTag.SERIES_DESCRIPTION, DicomVR.LO, "Clinical Photography"))
-        elements.add(DicomElement.createUS(DicomTag.SERIES_NUMBER, 1))
+            val isJpeg =
+                imageBytes.size >= 2 &&
+                    imageBytes[0] == 0xFF.toByte() &&
+                    imageBytes[1] == 0xD8.toByte()
 
-        // SOP Common Module
-        elements.add(
-            DicomElement.createString(
-                DicomTag.SOP_CLASS_UID,
-                DicomVR.UI,
-                DicomTag.UID_SOP_CLASS_VL_PHOTOGRAPHIC_IMAGE,
-            ),
-        )
-        elements.add(DicomElement.createString(DicomTag.SOP_INSTANCE_UID, DicomVR.UI, sopInstanceUid))
-        elements.add(DicomElement.createUS(DicomTag.INSTANCE_NUMBER, 1))
+            if (isJpeg) {
+                elements.add(
+                    DicomElement.createString(
+                        DicomTag.TRANSFER_SYNTAX_UID,
+                        DicomVR.UI,
+                        DicomTag.UID_JPEG_BASELINE,
+                    ),
+                )
+            }
 
-        // Image Metadata & Dimensions
-        val metadata = ImageMetadataParser.parse(imageBytes)
-        val rows = metadata.height ?: DEFAULT_IMAGE_HEIGHT
-        val cols = metadata.width ?: DEFAULT_IMAGE_WIDTH
+            // Series Module
+            elements.add(DicomElement.createString(DicomTag.SERIES_INSTANCE_UID, DicomVR.UI, seriesUid))
+            elements.add(DicomElement.createString(DicomTag.MODALITY, DicomVR.CS, "XC")) // External Camera Photography
+            elements.add(DicomElement.createString(DicomTag.SERIES_DESCRIPTION, DicomVR.LO, "Clinical Photography"))
+            elements.add(DicomElement.createUS(DicomTag.SERIES_NUMBER, 1))
 
-        // Image Pixel Module
-        elements.add(DicomElement.createUS(DicomTag.SAMPLES_PER_PIXEL, SAMPLES_3))
-        elements.add(DicomElement.createString(DicomTag.PHOTOMETRIC_INTERPRETATION, DicomVR.CS, "RGB"))
-        elements.add(DicomElement.createUS(DicomTag.ROWS, rows))
-        elements.add(DicomElement.createUS(DicomTag.COLUMNS, cols))
-        elements.add(DicomElement.createUS(DicomTag.BITS_ALLOCATED, BITS_8))
-        elements.add(DicomElement.createUS(DicomTag.BITS_STORED, BITS_8))
-        elements.add(DicomElement.createUS(DicomTag.HIGH_BIT, HIGH_BIT_7))
-        elements.add(DicomElement.createUS(DicomTag.PIXEL_REPRESENTATION, 0)) // 0 = unsigned
-        elements.add(DicomElement.createBinary(DicomTag.PIXEL_DATA, DicomVR.OB, imageBytes))
+            // SOP Common Module
+            elements.add(
+                DicomElement.createString(
+                    DicomTag.SOP_CLASS_UID,
+                    DicomVR.UI,
+                    DicomTag.UID_SOP_CLASS_VL_PHOTOGRAPHIC_IMAGE,
+                ),
+            )
+            elements.add(DicomElement.createString(DicomTag.SOP_INSTANCE_UID, DicomVR.UI, sopInstanceUid))
+            elements.add(DicomElement.createUS(DicomTag.INSTANCE_NUMBER, 1))
 
-        return DicomWriter.write(elements, DicomTag.UID_SOP_CLASS_VL_PHOTOGRAPHIC_IMAGE, sopInstanceUid)
-    }
+            // Image Metadata & Dimensions
+            val metadata = ImageMetadataParser.parse(imageBytes)
+            val rows = metadata.height ?: DEFAULT_IMAGE_HEIGHT
+            val cols = metadata.width ?: DEFAULT_IMAGE_WIDTH
+
+            // Image Pixel Module
+            elements.add(DicomElement.createUS(DicomTag.SAMPLES_PER_PIXEL, SAMPLES_3))
+            val photometric = if (isJpeg) "YBR_FULL_422" else "RGB"
+            elements.add(DicomElement.createString(DicomTag.PHOTOMETRIC_INTERPRETATION, DicomVR.CS, photometric))
+            elements.add(DicomElement.createUS(DicomTag.ROWS, rows))
+            elements.add(DicomElement.createUS(DicomTag.COLUMNS, cols))
+            elements.add(DicomElement.createUS(DicomTag.BITS_ALLOCATED, BITS_8))
+            elements.add(DicomElement.createUS(DicomTag.BITS_STORED, BITS_8))
+            elements.add(DicomElement.createUS(DicomTag.HIGH_BIT, HIGH_BIT_7))
+            elements.add(DicomElement.createUS(DicomTag.PIXEL_REPRESENTATION, 0)) // 0 = unsigned
+
+            if (isJpeg) {
+                val encapsulatedSeq = buildEncapsulatedJpegSequence(imageBytes)
+                elements.add(DicomElement.createEncapsulatedPixelData(DicomTag.PIXEL_DATA, encapsulatedSeq))
+            } else {
+                elements.add(DicomElement.createBinary(DicomTag.PIXEL_DATA, DicomVR.OB, imageBytes))
+            }
+
+            DicomWriter.write(elements, DicomTag.UID_SOP_CLASS_VL_PHOTOGRAPHIC_IMAGE, sopInstanceUid)
+        }
 }

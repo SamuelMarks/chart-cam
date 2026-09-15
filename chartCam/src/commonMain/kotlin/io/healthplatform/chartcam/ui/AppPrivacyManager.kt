@@ -84,3 +84,8 @@ class AppPrivacyManager(
         _privacyState.value = AppPrivacyState.FOREGROUND_VISIBLE
     }
 }
+
+/**
+ * Global singleton for managing visual privacy and session timeout lockout.
+ */
+val currentAppPrivacyManager: AppPrivacyManager = AppPrivacyManager()

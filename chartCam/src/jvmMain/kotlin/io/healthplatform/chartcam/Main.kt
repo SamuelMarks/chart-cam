@@ -40,6 +40,34 @@ fun main() {
             title = "ChartCam",
             icon = painterResource(Res.drawable.icon),
         ) {
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                val listener =
+                    object : java.awt.event.WindowFocusListener {
+                        /**
+                         * Un-obscures UI and validates session timeout when desktop window gains focus.
+                         *
+                         * @param e The window event.
+                         */
+                        override fun windowGainedFocus(e: java.awt.event.WindowEvent?) {
+                            io.healthplatform.chartcam.ui.currentAppPrivacyManager
+                                .onAppMovedToForeground()
+                        }
+
+                        /**
+                         * Obscures UI and tracks background duration when desktop window loses focus.
+                         *
+                         * @param e The window event.
+                         */
+                        override fun windowLostFocus(e: java.awt.event.WindowEvent?) {
+                            io.healthplatform.chartcam.ui.currentAppPrivacyManager
+                                .onAppMovedToBackground()
+                        }
+                    }
+                window.addWindowFocusListener(listener)
+                onDispose {
+                    window.removeWindowFocusListener(listener)
+                }
+            }
             App()
         }
     }

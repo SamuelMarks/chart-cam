@@ -7,31 +7,36 @@ ChartCam
 [![Coverage Verification](https://github.com/SamuelMarks/chart-cam/actions/workflows/coverage.yml/badge.svg)](https://github.com/SamuelMarks/chart-cam/actions/workflows/coverage.yml)
 [![ChartCam CI/CD](https://github.com/SamuelMarks/chart-cam/actions/workflows/deploy.yml/badge.svg)](https://github.com/SamuelMarks/chart-cam/actions/workflows/deploy.yml)
 
-> Open-source, decentralized, and FHIR-native. Built for Harvard clinicians to rapidly capture encrypted clinical media and run custom medical studies on the go.
+> Open-source, decentralized, offline-first, and FHIR/DICOM-native. Built for Harvard clinicians, global health teams, and clinical researchers to rapidly capture encrypted multimodal media, run bespoke clinical studies, and inspect medical datasets on the go.
 
-ChartCam is a fully open-source, decentralized clinical data capture and research platform engineered for the modern healthcare ecosystem. Originally developed to support Google-sponsored clinicians at Harvard Medical School’s Mass General Hospital (Mass Eye and Ear Infirmary), ChartCam brings rigorous, privacy-first data collection directly to the point of care.
+ChartCam is a fully open-source, decentralized clinical data capture, triage, and research platform engineered for modern healthcare and high-friction medical environments. Originally developed in collaboration with Google-sponsored clinical researchers at Harvard Medical School’s Mass General Hospital (Mass Eye and Ear Infirmary), ChartCam brings rigorous, privacy-first clinical documentation directly to the point of care.
 
-Far beyond a standard clinical camera, ChartCam is a powerful engine designed to democratize medical research. It empowers clinicians, academics, and researchers to effortlessly build, share, and deploy custom questionnaires to run their own clinical studies. From bespoke triage assessments to specialized patient intake protocols, your team can mobilize dynamic data collection instruments instantly.
+Far beyond a standard clinical camera, ChartCam is a complete engine designed to democratize medical studies and clinical intake. It empowers clinicians, academics, field medics, and investigators to effortlessly build, share, and deploy dynamic questionnaires to run their own observational studies or clinical triage workflows without depending on centralized servers, vulnerable cloud middleware, or active internet connectivity.
 
-**Uncompromising Security & Decentralization**
-Patient privacy is built into ChartCam’s foundation. Utilizing a heavily encrypted, decentralized architecture, the application ensures that your clinical data remains sovereign. Patient information is secured on-device using platform-native hardware encryption (e.g., Android Keystore, iOS Keychain)—guaranteeing total compliance and rigorous provenance tracking without relying on vulnerable centralized middleware.
+---
 
-**Native FHIR Interoperability**
-By speaking natively in the Fast Healthcare Interoperability Resources (HL7 FHIR R4) standard, ChartCam eliminates data silos. Every data point—whether it is a high-fidelity clinical image (`DocumentReference`/`Media`) or custom study data (`QuestionnaireResponse`)—is fully structured, standardized, and primed for immediate integration into any major Electronic Health Record (EHR) system.
+### 🎯 Who is ChartCam For?
 
-**Key Features:**
+* **Clinical Researchers & Academic Investigators:** Design, duplicate, and deploy custom clinical trial questionnaires in seconds. Collect structured, protocolized data on-device, export encrypted datasets, or export de-identified DICOM cohorts for multi-center research.
+* **Specialist Clinicians & Outpatient Practices:**
+  * **Dermatology:** Calibrated photography with real-time levelers and standardized Fitzpatrick skin phototyping swatches.
+  * **Wound Care, Orthopedics & Trauma:** Interactive anatomical body-map pin drop to precisely log lesion or injury coordinates over longitudinal visits.
+  * **Pain Management & Palliative Care:** Integrated Wong-Baker FACES® and Visual Analog Scale (VAS) pain assessment sliders.
+* **Global Health, Humanitarian & Rural Field Teams:** 100% offline functionality. Capture high-fidelity photos, record clinical videos, dictate voice memos, and manage patient encounters in remote or low-connectivity environments with zero network leak.
+* **Medical Educators & Residents:** Master standardized, orthogonal clinical photography and structured patient documentation with built-in interactive demo modes and onboarding tutorials.
 
-* **Open-Source Transparency:** Free, extensible, and fully open-source. No vendor lock-in; just community-driven healthcare innovation you can trust and audit.
-* **Custom Studies on the Go:** Create and share dynamic, FHIR-based questionnaires to execute bespoke clinical trials, studies, and patient intake workflows.
-* **Visual Form Controls for Studies:** Domain-specific clinical instruments including Wong-Baker FACES® & Pain VAS, Fitzpatrick skin phototype palettes, anatomical body-map pin drop, and high-contrast segmented choice tiles for zero-friction intake.
-* **Research-Grade Pedigree:** Engineered for high-friction clinical environments in collaboration with top-tier medical researchers at Mass Eye and Ear.
-* **Decentralized & Encrypted:** True data sovereignty. Robust on-device encryption protects sensitive patient data at rest, enforcing strict compliance with global health privacy standards.
-* **Rapid "Snap-First" Workflow:** Hardware-accelerated native camera capabilities allow for frictionless, zero-delay clinical photography so you can focus on the patient, not the device.
-* **Direct EHR Integration:** FHIR-native architecture means your unstructured media and custom study data are instantly structured for downstream EHR consumption.
+---
 
-ChartCam: The secure, open-source engine for clinical innovation.
+### 🛡️ Core Pillars
 
-**Keywords:** `open-source, fhir, clinical, research, harvard, mgh, decentralized, encrypted, questionnaire, ehr, medical`
+* **True Decentralization & Data Sovereignty:** ChartCam operates strictly **offline-first**. Patient data is isolated to the application sandbox—never polluting public galleries (e.g., Google Photos, Apple Photos)—and encrypted at rest using platform-native hardware enclaves (Android Keystore, iOS Keychain, SQLCipher, WebCrypto).
+* **Native FHIR R4 & DICOM Part 10 Interoperability:** Eliminates data silos. Captured encounters, media, and questionnaires are structured natively as HL7 FHIR resources (`Patient`, `Encounter`, `DocumentReference`, `Media`, `Questionnaire`, `QuestionnaireResponse`, `Provenance`). Encounters and media can also be exported directly as PACS-compliant DICOM (`.dcm`) Part 10 files with HIPAA-compliant anonymization toggles.
+* **Multimodal Clinical Capture:** Go beyond static images with hardware-accelerated photo capture, clinical leveler overlays, high-definition video recording (for gait, tremor, and dynamic assessments), and voice memo dictation attached directly to encounters.
+* **Advanced SDC Form Builder & Engine:** Powered by the HL7 FHIR Structured Data Capture (SDC) implementation guide. Features visual widgets, conditional logic (`enableWhen`), dynamic repeating question groups (`repeats = true`), and arithmetic/logical calculated expressions (e.g., auto-calculating BMI).
+* **Robust Hardware Privacy & Inactivity Lockout:** Incorporates platform-level visual shields (window `FLAG_SECURE` on Android, scene blur on iOS, and window focus tracking on Desktop/Web) to block sensitive data from OS task switchers, alongside automatic session timeouts.
+* **Global Localization & Accessibility:** Available in English, Spanish, Japanese, Hebrew (complete Right-to-Left RTL mirroring), and Traditional Chinese (with dedicated vertical column 直書 / 豎排 support). Screen-reader optimized with 100% doc and test coverage.
+
+**Keywords:** `open-source, fhir, dicom, pacs, clinical, research, harvard, mgh, decentralized, encrypted, offline-first, questionnaire, sdc, ehr, medical`
 
 ## Screenshots
 
@@ -53,83 +58,92 @@ ChartCam: The secure, open-source engine for clinical innovation.
 
 ## 📖 Documentation Directory
 
-To maintain focus and readability, our documentation is logically partitioned into specific domains:
+To maintain focus and clarity across technical domains, detailed guides are available in our documentation suite:
 
-* **[Usage Guide (`USAGE.md`)](USAGE.md)**: A comprehensive guide on operating the application, detailing our "Snap-First" philosophy and optimized practitioner workflows.
-* **[Release Guide (`HOW_TO_RELEASE.md`)](HOW_TO_RELEASE.md)**: Standard Operating Procedures (SOPs) for building, signing, and deploying the application to the **Google Play Store** and **Apple App Store**.
-* **[CLI Upgrade & Migration Guide (`UPGRADE_ANDROID_VIA_CLI.md`)](UPGRADE_ANDROID_VIA_CLI.md)**: Detailed instructions for upgrading Android builds via ADB and migrating patient data across conflicting installations.
-* **[Navigation Architecture (`docs/NAVIGATION.md`)](docs/NAVIGATION.md)**: Technical breakdown of the application's routing logic, state management, and decision trees.
+* **[Usage Guide (`USAGE.md`)](USAGE.md)**: Operational guide covering dual clinical workflows (Snap-First vs. Protocol-First), triage batch actions, SDC form builder usage, DICOM inspection, and encrypted dataset migration.
+* **[Release Guide (`HOW_TO_RELEASE.md`)](HOW_TO_RELEASE.md)**: Standard Operating Procedures (SOPs) for building, signing, and deploying to the **Google Play Store** and **Apple App Store**.
+* **[CLI Upgrade & Migration Guide (`UPGRADE_ANDROID_VIA_CLI.md`)](UPGRADE_ANDROID_VIA_CLI.md)**: Procedures for upgrading Android builds via ADB and migrating patient databases across conflicting installations.
+* **[App Encryption & Export Compliance (`docs/APP_ENCRYPTION.md`)](docs/APP_ENCRYPTION.md)**: Technical breakdown of AES-256-GCM and bundled Argon2id (RFC 9106) key derivation for Apple App Store export compliance.
+* **[FHIR Forms Architecture (`docs/FORMS_ARCHITECTURE.md`)](docs/FORMS_ARCHITECTURE.md)**: Technical design of the SDC Form Builder, dynamic recursive renderer, calculated expressions, and custom visual controls.
+* **[Internationalization & Typography (`docs/INTERNATIONALIZATION.md`)](docs/INTERNATIONALIZATION.md)**: Architecture for multi-language support, RTL script mirroring, and Traditional Chinese vertical column writing (直書 / 豎排).
+* **[Accessibility Standards (`docs/ACCESSIBILITY.md`)](docs/ACCESSIBILITY.md)**: Screen-reader semantic labels, live regions for camera levelers, and scalable typography.
+* **[Validation & Terminology Profiles (`docs/VALIDATION_PROFILES.md`)](docs/VALIDATION_PROFILES.md)**: Resource constraints and LOINC/SNOMED CT terminology mappings.
+* **[Navigation Architecture (`docs/NAVIGATION.md`)](docs/NAVIGATION.md)**: Type-safe Compose routing logic, state machines, and backstack behaviors.
 
 ---
 
-## 🏥 Healthcare Interoperability & FHIR Standards
+## 🏥 Healthcare Interoperability: FHIR R4 & DICOM Part 10
 
-ChartCam takes clinical data interoperability and regulatory compliance as foundational pillars. At its core, the application is designed around the **Fast Healthcare Interoperability Resources (FHIR)** standard (HL7 FHIR R4), ensuring that all captured data is structured, standardized, and primed for seamless integration into any modern Electronic Health Record (EHR) system.
+ChartCam treats regulatory compliance and open standards as primary requirements.
 
-### What is Modelled?
+### Fast Healthcare Interoperability Resources (HL7 FHIR R4)
+* **Patient & Encounter Resources:** Every clinical interaction is strictly linked using standard `Patient` and `Encounter` resources with unique local identifiers and MRNs.
+* **DocumentReference & Media:** Captured images, videos, and voice memos are encapsulated within `DocumentReference` resources containing rich metadata: authoring practitioner, capture timestamp, MIME types, and anatomical codification (SNOMED CT / LOINC).
+* **Questionnaire & QuestionnaireResponse:** Dynamic study protocols and clinical forms map directly to standard FHIR `Questionnaire` and `QuestionnaireResponse` resources.
+* **Security & Provenance:** Patient consent and data provenance are managed using `Consent` and `Provenance` resources to establish an auditable, immutable trail of clinical actions.
 
-*   **Patient & Encounter Resources:** Every clinical interaction is strictly modeled using FHIR `Patient` and `Encounter` resources. This guarantees an unambiguous, standardized linkage between the subject of care and the specific clinical event.
-*   **DocumentReference & Media:** Captured clinical photography is never treated as a loosely managed raw file. Instead, images are immediately encapsulated within FHIR `DocumentReference` or `Media` resources. This rich metadata wrapper includes the author (practitioner), capture datetime, anatomical site (codified via SNOMED CT or LOINC), and capturing device information.
-*   **Questionnaire & QuestionnaireResponse:** To democratize medical research and support dynamic triage, ChartCam heavily leverages `Questionnaire` and `QuestionnaireResponse` resources. This enables clinicians and researchers to effortlessly build, share, and deploy custom data collection instruments (e.g., bespoke clinical trials, specialized patient intake workflows) instantly without relying on centralized middleware.
-*   **Security & Provenance:** Patient consent and data provenance are rigorously managed. Clinical media is associated with `Consent` and `Provenance` resources to maintain an immutable, auditable trail of data capture and access, aligning with stringent HIPAA and security audit requirements.
-
-By natively speaking FHIR, ChartCam eliminates the traditional need for fragile, complex middleware transformations, empowering organizations to directly route high-fidelity clinical media into a patient's longitudinal health record.
+### DICOM Part 10 & PACS Compatibility
+* **DICOM Part 10 Export:** Encapsulate clinical encounters and media into standard `.dcm` files with valid Patient, Study, Series, and Equipment modules.
+* **HIPAA Anonymization:** Includes an interactive anonymization toggle to scrub patient names and identifiers when exporting files for research studies.
+* **Built-in DICOM Inspector:** A local viewer supporting pixel raster rendering, interactive pan and pinch-to-zoom (up to 5x), DICOM tag metadata inspection, and encapsulated PDF extraction/viewing.
 
 ---
 
 ## ✨ Features & Tech Stack
 
-ChartCam leverages modern Android and KMP best practices to deliver a consistent, high-performance experience across all platforms:
+ChartCam leverages modern Android and Kotlin Multiplatform (KMP) best practices:
 
-* **UI**: [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) (100% shared UI layer).
+* **UI**: [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) (100% shared UI layer across all platforms).
 * **Architecture**: Unidirectional Data Flow (UDF) and MVVM based on Clean Architecture principles.
-* **FHIR Engine**: Native integration of FHIR models for interoperable clinical data rendering and transmission.
-* **Navigation**: Type-safe Compose Navigation.
-* **Local Data**: [SQLDelight](https://cashapp.github.io/sqldelight/) for robust, type-safe local relational data storage.
-* **Security**: Platform-specific encrypted storage modules (EncryptedSharedPreferences on Android & Keychain on iOS).
-* **Hardware Interop**: Native camera and sensor integrations via `expect/actual` paradigms (CameraX for Android, AVFoundation for iOS).
-* **CI/CD**: Fastlane configured for automated testing, signing, and continuous delivery.
+* **Interoperability**: Native HL7 FHIR R4 JSON serialization and DICOM Part 10 reader/writer.
+* **Local Data**: [SQLDelight](https://cashapp.github.io/sqldelight/) with SQLCipher hardware encryption.
+* **Security**: Platform-specific encrypted storage modules (Android Keystore / EncryptedSharedPreferences, iOS Keychain, Argon2id C-interop, WebCrypto).
+* **Hardware Interop**: Native camera, sensor, video, and audio integrations via `expect/actual` paradigms.
+* **CI/CD**: Fastlane automated testing, linting, code signing, and continuous delivery.
 
 ### Feature Availability Matrix
 
-While the **Business Logic (FHIR, Auth, ViewModels)** and **UI (Compose)** are 100% shared, hardware-specific capabilities are implemented natively via `expect/actual` bindings to ensure maximum performance and reliability.
+While the **Business Logic (FHIR, Auth, ViewModels)** and **UI (Compose)** are 100% shared, hardware-specific capabilities are implemented natively via `expect/actual` bindings:
 
-| Feature               |     🤖 Android     |      🍎 iOS      |  🖥️ Desktop (JVM)  | 🌐 Web (JS/Wasm) | Source Location         |
-|:----------------------|:------------------:|:----------------:|:-------------------:|:----------------:|:------------------------|
-| **UI Rendering**      |         ✅          |        ✅         |          ✅          |        ✅         | `commonMain/ui`         |
-| **Navigation**        |         ✅          |        ✅         |          ✅          |        ✅         | `commonMain/navigation` |
-| **Local Auth**        |         ✅          |        ✅         |          ✅          |        ✅         | `commonMain/repository` |
-| **Secure Storage**    | ✅ (EncryptedPrefs) |   ✅ (Keychain)   |  ✅ (AES EncryptedPrefs) |   ✅ (AES Crypto-JS)    | `platform/.../storage`  |
-| **Database (SQL)**    | ✅ (AndroidDriver)  | ✅ (NativeDriver) |      ✅ (JDBC)       | ✅ (WebWorkerDriver)| `platform/.../database` |
-| **Camera Preview**    |    ✅ (CameraX)     | ✅ (AVFoundation) |  ✅ (Sarxos Webcam)  |  ✅ (HTMLVideo)  | `platform/.../camera`   |
-| **Photo Capture**     |         ✅          |        ✅         |  ✅ (Sarxos Webcam)   |  ✅ (HTMLCanvas) | `platform/.../camera`   |
-| **Sensors (Leveler)** | ✅ (SensorManager)  |  ✅ (CoreMotion)  |    ⚠️ (Fixed 0°)    |  ⚠️ (Fixed 0°)   | `platform/.../sensors`  |
-| **File I/O**          |         ✅          |        ✅         |          ✅          |   ✅ (Memory Cache)   | `platform/.../files`    |
+| Feature                          |      🤖 Android       |       🍎 iOS        |   🖥️ Desktop (JVM)    |   🌐 Web (JS/Wasm)    | Source Location         |
+|:---------------------------------|:---------------------:|:-------------------:|:----------------------:|:---------------------:|:------------------------|
+| **UI Rendering**                 |          ✅           |         ✅          |           ✅           |          ✅           | `commonMain/ui`         |
+| **Navigation**                   |          ✅           |         ✅          |           ✅           |          ✅           | `commonMain/navigation` |
+| **Local Auth & Argon2id**        |          ✅           |         ✅          |           ✅           |          ✅           | `commonMain/repository` |
+| **Biometric Unlock**             |  ✅ (BiometricPrompt) | ✅ (FaceID/TouchID) |    ⚠️ (PIN/Password)   |   ⚠️ (PIN/Password)   | `platform/.../storage`  |
+| **Secure Storage**               |  ✅ (EncryptedPrefs)  |    ✅ (Keychain)    | ✅ (AES EncryptedFile) |  ✅ (WebCrypto / IDB) | `platform/.../storage`  |
+| **Database (SQL & Cipher)**      |   ✅ (AndroidDriver)  |  ✅ (Native/Cipher) |   ✅ (JDBC / Cipher)   |  ✅ (WebWorkerDriver) | `platform/.../database` |
+| **Camera Preview & Leveler**     |     ✅ (CameraX)      |  ✅ (AVFoundation)  |   ✅ (Sarxos Webcam)   |   ✅ (HTML5 Video)    | `platform/.../camera`   |
+| **Photo Capture**                |          ✅           |         ✅          |   ✅ (Sarxos Webcam)   |   ✅ (HTML5 Canvas)   | `platform/.../camera`   |
+| **Video Recording**              |  ✅ (CameraX Video)   |  ✅ (AVFoundation)  |   ⚠️ (Pattern Stream)  |  ✅ (MediaRecorder)   | `platform/.../camera`   |
+| **Audio Dictation / Memos**      |    ✅ (MediaRecord)   |  ✅ (AVAudioRecord) |    ✅ (Java Sound)     |  ✅ (MediaStream/Rec) | `platform/.../media`    |
+| **DICOM Inspector & Export**     |          ✅           |         ✅          |           ✅           |          ✅           | `commonMain/dicom`      |
+| **Encrypted Dataset Backup**     |          ✅           |         ✅          |           ✅           |          ✅           | `commonMain/repository` |
+| **Selective Import & Merge**     |          ✅           |         ✅          |           ✅           |          ✅           | `commonMain/repository` |
+| **Sensors (Clinical Leveler)**   |  ✅ (SensorManager)   |   ✅ (CoreMotion)   |     ⚠️ (Fixed 0°)      | ✅ (DeviceOrientation)| `platform/.../sensors`  |
+| **Platform Privacy Shielding**   |   ✅ (FLAG_SECURE)    |  ✅ (Scene Masking) |   ✅ (Focus Listener)  |  ✅ (Visibility API)  | `commonMain/ui`         |
 
 **Legend:**
-* ✅ **Fully Supported**: Core logic and native platform implementation provided.
-* ⚠️ **Partial / Fallback**: UI renders appropriately, but hardware logic is stubbed out (no crash, simulated data).
-* ❌ **Not Supported**: Feature is out of scope for the current target release.
-
-> **Note on Web & Desktop:** Full web support for device orientation sensors requires implementing `actual` bindings using the HTML5 DeviceOrientation API. Currently, Web supports HTML5 Camera Capture, while the JVM Desktop target leverages the Sarxos Webcam library for robust external camera support.
+* ✅ **Fully Supported**: Complete native platform binding and UI integration.
+* ⚠️ **Partial / Fallback**: Safe fallback logic or simulated data provided without crashes.
 
 ---
 
 ## 🏗️ Project Structure
 
-ChartCam is designed as a Kotlin Multiplatform (KMP) project targeting Android, iOS, Desktop (JVM), and Web (JS & Wasm).
+ChartCam is structured as a Kotlin Multiplatform (KMP) project targeting Android, iOS, Desktop (JVM), and Web (JS & Wasm):
 
-* **/chartCam**: The core KMP module encompassing all shared logic and platform-specific implementations.
-    * `commonMain`: The unified source of truth containing shared business logic, 100% shared UI (Compose Multiplatform), FHIR models, repository interfaces, and ViewModels.
-    * `androidMain`: Android-specific platform bindings (CameraX for camera, SensorManager for leveling, EncryptedSharedPreferences for storage).
-    * `iosMain`: iOS-specific platform bindings (AVFoundation for camera, CoreMotion for leveling, Keychain for secure storage).
-    * `jvmMain`: Desktop environment hardware stubs and fallback integrations (e.g., Sarxos Webcam).
-    * `jsMain` / `wasmJsMain`: Browser implementations leveraging HTML5 canvas for camera, local storage for persistence, and Kotlin/Wasm for high-performance execution.
-* **/androidApp**: A thin execution wrapper providing the `MainActivity` and `AndroidManifest.xml` for the Android application context.
-* **/iosApp**: The iOS entry point (Xcode project) that integrates and consumes the shared KMP framework.
-* **/fastlane**: CI/CD automation configuration for testing, code signing, and store deployments.
-* **/.github/workflows**: GitHub Actions pipeline definitions for continuous integration.
-* **/docs**: Deeper architectural documentation (e.g., `NAVIGATION.md`).
+* **/chartCam**: Core KMP module housing shared business logic, clinical UI, and platform bindings.
+    * `commonMain`: Unified source of truth containing ViewModels, 100% shared Compose UI, FHIR/DICOM models, SDC form engine, repositories, and navigation.
+    * `androidMain`: Android-specific bindings (CameraX, BiometricManager, SensorManager, EncryptedSharedPreferences).
+    * `iosMain`: iOS-specific bindings (AVFoundation, LocalAuthentication, CoreMotion, Keychain, Argon2id C-interop).
+    * `jvmMain`: Desktop implementations (Sarxos webcam, Java Sound, POSIX-permission local storage, SQLCipher).
+    * `jsMain` / `wasmJsMain`: Browser implementations (HTML5 MediaDevices, WebCrypto AES-GCM, IndexedDB blob storage, Kotlin/Wasm).
+* **/androidApp**: Thin execution wrapper providing `MainActivity` and manifest for Android.
+* **/iosApp**: Native Xcode wrapper framework and app entry point for iOS.
+* **/docs**: Deep-dive architectural, cryptographic, and clinical documentation.
+* **/scripts**: Automated verification suites for 100% doc coverage, exception safety, i18n, and a11y.
+* **/fastlane**: CI/CD automation configuration for testing, signing, and store deployments.
 
 ---
 
@@ -137,15 +151,14 @@ ChartCam is designed as a Kotlin Multiplatform (KMP) project targeting Android, 
 
 ### Prerequisites
 
-To build and run this project locally, ensure your development environment is provisioned with:
-1. **[JDK 17+](https://adoptium.net/)**
-2. **[Android Studio (latest stable)](https://developer.android.com/studio)** (for Android and shared KMP development)
-3. **[Xcode](https://developer.apple.com/xcode/)** (for iOS compilation, macOS required)
-4. **[Ruby & Bundler](https://bundler.io/)** (required for Fastlane CI/CD automation)
+To build and test ChartCam locally, ensure your environment is provisioned with:
+1. **[JDK 21](https://adoptium.net/)** (JDK 17+ supported; Gradle daemon is configured for JDK 21)
+2. **[Android Studio (latest stable)](https://developer.android.com/studio)**
+3. **[Xcode](https://developer.apple.com/xcode/)** (macOS required for iOS compilation)
+4. **[Ruby & Bundler](https://bundler.io/)** (for Fastlane CI/CD automation)
+5. **[Python 3](https://www.python.org/)** (for automated quality checks)
 
-### 1. Install Ruby Dependencies
-
-We utilize [Fastlane](https://fastlane.tools/) to automate our test suites and store releases. Initialize the environment by running:
+### 1. Install Dependencies
 
 ```shell
 bundle install
@@ -153,89 +166,78 @@ bundle install
 
 ### 2. Fastlane Configuration
 
-The `fastlane/Fastfile` houses deployment lanes for both Android and iOS. For detailed configuration steps required to execute a production release, please refer to [HOW_TO_RELEASE.md](HOW_TO_RELEASE.md).
+Deployment lanes and automated test pipelines are defined in `fastlane/Fastfile`. Refer to [HOW_TO_RELEASE.md](HOW_TO_RELEASE.md) for full release procedures.
 
 ---
 
 ## 💻 Development & Building
 
-### Makefile Commands (Recommended)
+### Standard Makefile Commands (Recommended)
 
-For convenience, a `Makefile` (and an equivalent `make.bat` for Windows) is provided in the root directory with the following standardized commands for building, testing, and packaging across platforms. Windows users should run `make.bat <command>` instead of `make <command>`.
+A `Makefile` (and `make.bat` for Windows) provides cross-platform build and execution commands:
 
 | Command | Description |
 |:---|:---|
 | `make build` | Assembles all outputs across platforms (without running tests). |
-| `make test` | Runs the tests for all targets and creates an aggregated report. |
-| `make lint` | Runs Android Lint and other static analysis checks. |
-| `make build_release_android` | Assembles the release APK for the Android application. |
-| `make build_release_ios` | Builds the Xcode project for iOS release (requires macOS). |
-| `make build_release_jvm` | Packages the application for Desktop/JVM distribution on the current OS. |
-| `make build_release_js` | Builds the production Web distribution (JavaScript). |
-| `make build_release_wasm` | Builds the production Web distribution (WebAssembly). |
+| `make test` | Runs the full test suite across all targets and generates reports. |
+| `make lint` | Runs Detekt, Ktlint, and Android Lint static analysis checks. |
+| `make run_android` | Launches the emulator (if needed), installs, and runs debug build on Android. |
+| `make run_ios` | Boots the iOS Simulator, compiles the Xcode project, and launches ChartCam. |
+| `make run_jvm` | Launches the Compose Multiplatform desktop application on the current OS. |
+| `make build_release_android` | Assembles the release APK for Android distribution. |
+| `make build_release_ios` | Creates the Xcode archive and exports the signed `.ipa` package (macOS). |
+| `make build_release_jvm` | Packages desktop release distribution for the host OS. |
+| `make build_release_js` | Builds the production JavaScript web bundle. |
+| `make build_release_wasm` | Builds the high-performance Kotlin/Wasm web bundle. |
 
-### Build and Run Android
+### Build & Run via CLI
 
-Launch the application directly from Android Studio by selecting the `androidApp` or `chartCam` run configuration, or compile via the CLI:
-
-```shell
-./gradlew :chartCam:assembleDebug
-```
-
-### Build and Run iOS
-
-Open `./iosApp/iosApp.xcodeproj` in Xcode and execute the **Run** command (Cmd+R).
-*Note: Ensure the Kotlin Multiplatform plugin in Android Studio is fully synced to generate the required iOS framework before compiling in Xcode.*
-
-### Build and Run Desktop
-
-To validate the Compose Multiplatform UI across desktop environments:
-
-```shell
-./gradlew :chartCam:run
-```
+* **Android:** `./gradlew :chartCam:assembleDebug`
+* **Desktop:** `./gradlew :chartCam:run`
+* **iOS:** Open `./iosApp/iosApp.xcodeproj` in Xcode and press `Cmd+R`.
 
 ---
 
-## 🧪 Quality Assurance & Testing
+## 🧪 Quality Assurance & Verification Standards
 
-ChartCam mandates rigorous testing protocols. There are two primary methodologies for executing test suites: via **Fastlane** (Unified pipeline) or **Gradle** (Targeted).
+ChartCam enforces a **100% test and documentation coverage threshold** and strict exception safety:
 
-### 1. Via Fastlane (Recommended)
-
-This approach executes unit tests across all available platform targets in a single, unified command, mirroring our CI/CD pipeline environment.
+### 1. Unified Test Suites
 
 ```bash
-# Execute all unit tests (Common, Android, iOS)
+# Execute unit tests across all targets via Fastlane
 bundle exec fastlane test_all
 
-# Execute Android-specific tests
-bundle exec fastlane android test
-
-# Execute iOS-specific tests (macOS environment required)
-bundle exec fastlane ios test
+# Or run targeted tests directly via Gradle
+./gradlew test                                 # Common JVM tests
+./gradlew :chartCam:testDebugUnitTest          # Android unit tests
+./gradlew :chartCam:iosSimulatorArm64Test      # iOS Kotlin/Native tests
+./gradlew :chartCam:jvmTest                    # Desktop JVM tests
 ```
 
-### 2. Via Gradle Wrapper
+### 2. Automated Quality & Compliance Scripts
 
-For targeted debugging, execute tests against specific platforms directly via Gradle:
+The repository includes specialized verification scripts in `scripts/`:
 
-| Target           | Command                                       | Description                                          |
-|:-----------------|:----------------------------------------------|:-----------------------------------------------------|
-| **Common Logic** | `./gradlew test`                              | Validates shared business logic (runs on JVM host).  |
-| **Android**      | `./gradlew :chartCam:testDebugUnitTest`     | Executes Android-specific instrumentation and unit tests. |
-| **iOS**          | `./gradlew :chartCam:iosSimulatorArm64Test` | Executes Kotlin/Native tests on the iOS Simulator.   |
-| **Desktop**      | `./gradlew :chartCam:jvmTest`               | Executes Desktop-specific logic tests.               |
+```bash
+python3 scripts/check_coverage.py       # Verifies 100% KDoc documentation coverage
+python3 scripts/check_composable_docs.py # Enforces state/modifier KDoc on Composable functions
+python3 scripts/check_no_exceptions.py  # Ensures zero raw unhandled exceptions across boundaries
+python3 scripts/test_i18n.py            # Validates translation parity across all locales
+python3 scripts/test_a11y.py            # Validates semantics, content descriptions, and live regions
+```
 
-**Test Reports Location:**
-Upon completion, comprehensive HTML test coverage and result reports are generated at:
-* `chartCam/build/reports/tests/`
+### 3. Static Analysis
+```bash
+./gradlew detekt          # Enforces clean architectural metrics and low cyclomatic complexity
+./gradlew ktlintCheck     # Enforces idiomatic Kotlin formatting
+```
 
 ---
 
 ## License
 
-Licensed under either of
+Licensed under either of:
 
 - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <https://www.apache.org/licenses/LICENSE-2.0>)
 - MIT license ([LICENSE-MIT](LICENSE-MIT) or <https://opensource.org/licenses/MIT>)
@@ -244,7 +246,4 @@ at your option.
 
 ### Contribution
 
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
-dual licensed as above, without any additional terms or conditions.
-
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.

@@ -50,6 +50,11 @@ fun AppNavigation() {
     val exportImportService = remember { ExportImportService(fhirRepository.database, fileStorage) }
 
     val photoSessionManager = remember { PhotoSessionManager() }
+    val biometricSecurityManager =
+        remember {
+            io.healthplatform.chartcam.storage
+                .BiometricSecurityManager(storage)
+        }
 
     val dependencies =
         remember {
@@ -59,6 +64,8 @@ fun AppNavigation() {
                 questionnaireRepository = questionnaireRepository,
                 exportImportService = exportImportService,
                 photoSessionManager = photoSessionManager,
+                fileStorage = fileStorage,
+                biometricSecurityManager = biometricSecurityManager,
             )
         }
 
@@ -90,5 +97,6 @@ fun AppNavigation() {
         patientVisitsDestination(navController, dependencies, currentLang)
         questionnaireBuilderDestination(navController, dependencies, currentLang)
         questionnaireListDestination(navController, dependencies, currentLang)
+        dicomViewerDestination(navController, dependencies)
     }
 }

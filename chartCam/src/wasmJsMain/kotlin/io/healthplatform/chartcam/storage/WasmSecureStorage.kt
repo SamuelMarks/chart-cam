@@ -119,6 +119,9 @@ external fun waToString(
     enc: JsAny,
 ): String
 
+private const val SEED_LENGTH = 32
+private const val STORAGE_KEY_SEED = "chartcam_sec_seed"
+
 /**
  * Wasm-specific implementation of [SecureStorage].
  * Since browsers do not provide a synchronous encrypted local storage API by default,
@@ -127,11 +130,25 @@ external fun waToString(
  */
 @OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
 class WasmSecureStorage : SecureStorage {
+    private var inMemorySessionKey: String? = null
+
     /**
-     * A hardcoded secret key used for AES encryption and decryption.
-     * Note: In a production environment, hardcoding keys in client code is discouraged.
+     * Resolves or initializes a randomized master cryptographic seed for the origin.
+     *
+     * @return The local master key string.
      */
-    private val secretKey = "ChartCamWebXorKey123"
+    private fun getMasterKey(): String {
+        val existing = inMemorySessionKey ?: localStorage.getItem(STORAGE_KEY_SEED)
+        if (!existing.isNullOrBlank()) {
+            inMemorySessionKey = existing
+            return existing
+        }
+        val charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        val seed = (1..SEED_LENGTH).map { charset.random() }.joinToString("")
+        localStorage.setItem(STORAGE_KEY_SEED, seed)
+        inMemorySessionKey = seed
+        return seed
+    }
 
     /**
      * Encrypts the given value and saves it to [localStorage] under the specified key.
@@ -143,23 +160,23 @@ class WasmSecureStorage : SecureStorage {
         key: String,
         value: String,
     ) {
-        val cp = CryptoJS.AES.encrypt(value, secretKey)
+        val cp = CryptoJS.AES.encrypt(value, getMasterKey())
         val encrypted = cpToString(cp)
         localStorage.setItem(key, encrypted)
     }
 
     /**
      * Retrieves an encrypted string from [localStorage] and decrypts it.
-     * If decryption fails, the raw stored string is returned as a fallback.
+     * If decryption fails or data is corrupted, null is returned.
      *
      * @param key The unique key identifying the stored value.
-     * @return The decrypted string, the raw stored string if decryption fails, or null if the key does not exist.
+     * @return The decrypted string, or null if the key does not exist or decryption fails.
      */
     override fun getString(key: String): String? {
         val stored = localStorage.getItem(key) ?: return null
-        val wa = safeDecrypt(CryptoJS.AES, stored, secretKey)
+        val wa = safeDecrypt(CryptoJS.AES, stored, getMasterKey())
         val result = if (wa != null) waToString(wa, CryptoJS.enc.utf8) else ""
-        return if (result.isEmpty()) stored else result
+        return if (result.isEmpty()) null else result
     }
 
     /**

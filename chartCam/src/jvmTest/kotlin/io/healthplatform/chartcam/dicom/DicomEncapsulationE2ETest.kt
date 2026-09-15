@@ -186,8 +186,8 @@ class DicomEncapsulationE2ETest {
 
             // File Meta Information
             assertTrue(
-                dicomStr.contains(DicomTag.UID_EXPLICIT_VR_LITTLE_ENDIAN),
-                "Must contain Explicit VR Little Endian Transfer Syntax UID",
+                dicomStr.contains(DicomTag.UID_JPEG_BASELINE),
+                "Must contain JPEG Baseline Transfer Syntax UID",
             )
             assertTrue(dicomStr.contains(DicomTag.UID_SOP_CLASS_VL_PHOTOGRAPHIC_IMAGE), "Must contain VL Photographic Image SOP Class UID")
 

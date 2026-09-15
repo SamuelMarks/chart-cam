@@ -6,10 +6,12 @@
  */
 package io.healthplatform.chartcam.navigation
 
+import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
+import io.healthplatform.chartcam.storage.BiometricSecurityManager
 
 /**
  * Contains the core repository and service dependencies required for the application.
@@ -19,6 +21,8 @@ import io.healthplatform.chartcam.repository.QuestionnaireRepository
  * @property questionnaireRepository Manages questionnaire definitions and forms.
  * @property exportImportService Handles exporting and importing application data.
  * @property photoSessionManager Manages the state of captured photos during an active session.
+ * @property fileStorage FileStorage for local media persistence.
+ * @property biometricSecurityManager Optional biometric security manager for biometric authentication.
  */
 data class AppDependencies(
     val authRepository: AuthRepository,
@@ -26,4 +30,6 @@ data class AppDependencies(
     val questionnaireRepository: QuestionnaireRepository,
     val exportImportService: ExportImportService,
     val photoSessionManager: PhotoSessionManager,
+    val fileStorage: FileStorage? = null,
+    val biometricSecurityManager: BiometricSecurityManager? = null,
 )

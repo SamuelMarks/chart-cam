@@ -102,6 +102,9 @@ fun NavGraphBuilder.triageDestination(
                     navController.navigate(NewVisitRoute(patientId))
                 },
                 onBack = { navController.popBackStack() },
+                fileStorage =
+                    deps.fileStorage ?: io.healthplatform.chartcam.files
+                        .createFileStorage(),
             )
         }
     }

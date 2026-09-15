@@ -23,7 +23,7 @@ android {
             libs.versions.android.targetSdk
                 .get()
                 .toInt()
-        versionCode = 5
+        versionCode = 4
         versionName = "1.0.4"
         vectorDrawables.useSupportLibrary = true
     }
@@ -100,6 +100,9 @@ android {
 }
 
 dependencies {
+    testImplementation(kotlin("test"))
+    testImplementation(libs.junit)
+
     androidTestImplementation(libs.kotlin.test)
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.compose.ui.test.junit4)

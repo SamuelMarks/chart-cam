@@ -152,4 +152,44 @@ class FhirValidatorTest {
 
         assertTrue(FhirValidator.validate(duplicateLinkIdQuestionnaire).isFailure, "Questionnaire with duplicate linkIds should be invalid")
     }
+
+    /**
+     * Tests that a Questionnaire with an enableWhen condition pointing to a non-existent linkId fails validation.
+     */
+    @Test
+    fun testDanglingEnableWhenReference() {
+        val ewAnswer =
+            Questionnaire.Item.EnableWhen.Answer.Boolean(
+                com.google.fhir.model.r4.Boolean
+                    .Builder()
+                    .apply { value = true }
+                    .build(),
+            )
+        val qWithDangling =
+            Questionnaire
+                .Builder(status = Enumeration(value = PublicationStatus.Active))
+                .apply {
+                    title = String.Builder().apply { value = "Dangling Condition Questionnaire" }
+                    item.add(
+                        Questionnaire.Item
+                            .Builder(
+                                linkId = String.Builder().apply { value = "item-1" },
+                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                            ).apply {
+                                text = String.Builder().apply { value = "Do you have symptoms?" }
+                                enableWhen.add(
+                                    Questionnaire.Item.EnableWhen.Builder(
+                                        answer = ewAnswer,
+                                        operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.Exists),
+                                        question = String.Builder().apply { value = "non-existent-item" },
+                                    ),
+                                )
+                            },
+                    )
+                }.build()
+
+        val result = FhirValidator.validate(qWithDangling)
+        assertTrue(result.isFailure, "Questionnaire with dangling enableWhen condition must fail validation")
+        assertTrue(result.exceptionOrNull() is FhirValidationException.DanglingEnableWhenReferenceException)
+    }
 }

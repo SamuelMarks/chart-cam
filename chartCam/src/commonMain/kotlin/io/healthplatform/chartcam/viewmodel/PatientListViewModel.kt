@@ -178,6 +178,7 @@ class PatientListViewModel(
      * @param lastName The patient's last name.
      * @param mrn The patient's medical record number.
      * @param dob The patient's date of birth.
+     * @param gender The patient's gender.
      * @param onSuccess Callback triggered when the patient is successfully created, providing the new patient ID.
      */
     fun createPatient(
@@ -185,6 +186,7 @@ class PatientListViewModel(
         lastName: String,
         mrn: String,
         dob: LocalDate,
+        gender: String = "unknown",
         onSuccess: (String) -> Unit,
     ) {
         val practitionerId = authRepository.currentUser.value?.id
@@ -198,6 +200,7 @@ class PatientListViewModel(
                         dob = dob,
                         mrnValue = mrn,
                         organizationId = practitionerId,
+                        gender = gender,
                     )
                 repository.savePatient(newPatient).getOrThrow()
                 newPatient
@@ -207,6 +210,7 @@ class PatientListViewModel(
                 onSuccess(newPatient.id ?: "")
             }.onFailure { e ->
                 println(e.message)
+                _uiState.update { it.copy(error = Res.string.failed_to_load_patients) }
             }
         }
     }

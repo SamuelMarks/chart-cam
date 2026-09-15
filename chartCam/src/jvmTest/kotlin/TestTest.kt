@@ -19,6 +19,14 @@ class TestTest {
 
     @Test
     fun testFoo() {
-        test.foo()
+        val date =
+            com.google.fhir.model.r4.Date
+                .Builder()
+                .apply {
+                    value =
+                        com.google.fhir.model.r4.FhirDate
+                            .fromString("2020-01-01")
+                }.build()
+        kotlin.test.assertEquals("2020-01-01", date.value?.toString())
     }
 }

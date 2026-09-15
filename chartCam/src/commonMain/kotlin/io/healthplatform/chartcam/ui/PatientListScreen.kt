@@ -440,7 +440,7 @@ fun PatientListScreen(
             CreatePatientDialog(
                 onDismissRequest = { viewModel.setCreateDialogVisible(false) },
                 onConfirm = { f, l, mrn, dob, g ->
-                    viewModel.createPatient(f, l, mrn, dob) { newPatientId ->
+                    viewModel.createPatient(f, l, mrn, dob, g) { newPatientId ->
                         actions.onPatientSelected(newPatientId)
                     }
                 },

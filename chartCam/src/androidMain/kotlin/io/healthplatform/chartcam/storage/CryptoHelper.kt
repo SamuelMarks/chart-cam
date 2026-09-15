@@ -21,6 +21,7 @@ internal object CryptoHelper {
     private const val ALIAS = "ChartCamKeyAlias"
     private const val KEY_SIZE = 128
     private const val GCM_TAG_LENGTH = 128
+    private const val BITS_PER_BYTE = 8
 
     private var robolectricKey: SecretKey? = null
 
@@ -37,7 +38,7 @@ internal object CryptoHelper {
                 keyGenerator.init(KEY_SIZE)
                 robolectricKey = keyGenerator.generateKey()
             }
-            return robolectricKey!!
+            return robolectricKey ?: error("Failed to initialize robolectricKey")
         }
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
         keyStore.load(null)
@@ -72,6 +73,14 @@ internal object CryptoHelper {
     }
 
     /**
+     * Encrypts the provided byte array, safely returning a [Result].
+     *
+     * @param data The plaintext data to encrypt.
+     * @return A [Result] enclosing the encrypted byte array.
+     */
+    fun encryptCatching(data: ByteArray): Result<ByteArray> = runCatching { encrypt(data) }
+
+    /**
      * Decrypts the provided byte array using AES/GCM/NoPadding.
      * It extracts the IV from the beginning of the data before decrypting the rest.
      *
@@ -79,11 +88,22 @@ internal object CryptoHelper {
      * @return The decrypted plaintext byte array.
      */
     fun decrypt(data: ByteArray): ByteArray {
-        val ivSize = data[0].toInt()
+        require(data.isNotEmpty()) { "Encrypted payload is empty" }
+        val ivSize = data[0].toInt() and 0xFF
+        val minSize = 1 + ivSize + GCM_TAG_LENGTH / BITS_PER_BYTE
+        require(data.size >= minSize) { "Encrypted payload is truncated or invalid" }
         val iv = data.copyOfRange(1, 1 + ivSize)
         val encrypted = data.copyOfRange(1 + ivSize, data.size)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.DECRYPT_MODE, getSecretKey(), GCMParameterSpec(GCM_TAG_LENGTH, iv))
         return cipher.doFinal(encrypted)
     }
+
+    /**
+     * Decrypts the provided byte array, safely returning a [Result].
+     *
+     * @param data The encrypted byte array.
+     * @return A [Result] enclosing the decrypted byte array or failure.
+     */
+    fun decryptCatching(data: ByteArray): Result<ByteArray> = runCatching { decrypt(data) }
 }

@@ -104,6 +104,82 @@ data class AccessibleBodySite(
 )
 
 /**
+ * Resolves the upper torso region (chest, upper back, or arms).
+ *
+ * @param xPercent The horizontal percentage.
+ * @param isPosterior Whether the view is posterior.
+ * @return Pair of string resource and concept code.
+ */
+private fun resolveUpperTorsoRegion(
+    xPercent: Float,
+    isPosterior: Boolean,
+): Pair<StringResource, String> =
+    when {
+        xPercent < 30f ->
+            if (isPosterior) {
+                Res.string.body_site_left_arm to "368208006"
+            } else {
+                Res.string.body_site_right_arm to "368209003"
+            }
+        xPercent > 70f ->
+            if (isPosterior) {
+                Res.string.body_site_right_arm to "368209003"
+            } else {
+                Res.string.body_site_left_arm to "368208006"
+            }
+        isPosterior -> Res.string.body_site_upper_back to "181533004"
+        else -> Res.string.body_site_chest to "51185008"
+    }
+
+/**
+ * Resolves the lower torso region (abdomen, pelvis, lower back, or hands/arms).
+ *
+ * @param xPercent The horizontal percentage.
+ * @param yPercent The vertical percentage.
+ * @param isPosterior Whether the view is posterior.
+ * @return Pair of string resource and concept code.
+ */
+private fun resolveLowerTorsoRegion(
+    xPercent: Float,
+    yPercent: Float,
+    isPosterior: Boolean,
+): Pair<StringResource, String> =
+    when {
+        xPercent < 25f ->
+            if (isPosterior) {
+                Res.string.body_site_left_arm to "368208006"
+            } else {
+                Res.string.body_site_right_arm to "368209003"
+            }
+        xPercent > 75f ->
+            if (isPosterior) {
+                Res.string.body_site_right_arm to "368209003"
+            } else {
+                Res.string.body_site_left_arm to "368208006"
+            }
+        isPosterior -> Res.string.body_site_lower_back to "181534005"
+        yPercent < 50f -> Res.string.body_site_abdomen to "818987002"
+        else -> Res.string.body_site_pelvis to "12921003"
+    }
+
+/**
+ * Resolves the leg region (left/right leg based on anterior/posterior).
+ *
+ * @param xPercent The horizontal percentage.
+ * @param isPosterior Whether the view is posterior.
+ * @return Pair of string resource and concept code.
+ */
+private fun resolveLegRegion(
+    xPercent: Float,
+    isPosterior: Boolean,
+): Pair<StringResource, String> =
+    if (xPercent <= 50f) {
+        if (isPosterior) Res.string.body_site_left_leg to "368214008" else Res.string.body_site_right_leg to "368215009"
+    } else {
+        if (isPosterior) Res.string.body_site_right_leg to "368215009" else Res.string.body_site_left_leg to "368214008"
+    }
+
+/**
  * Resolves the anatomical region name and SNOMED concept based on relative coordinates and view.
  *
  * @param xPercent The horizontal percentage (0.0 to 100.0).
@@ -118,58 +194,9 @@ fun resolveAnatomicalRegion(
 ): Pair<StringResource, String> =
     when {
         yPercent < 18f -> Res.string.body_site_head to "69536005"
-        yPercent < 40f -> {
-            when {
-                xPercent < 30f ->
-                    if (isPosterior) {
-                        Res.string.body_site_left_arm to "368208006"
-                    } else {
-                        Res.string.body_site_right_arm to "368209003"
-                    }
-                xPercent > 70f ->
-                    if (isPosterior) {
-                        Res.string.body_site_right_arm to "368209003"
-                    } else {
-                        Res.string.body_site_left_arm to "368208006"
-                    }
-                isPosterior -> Res.string.body_site_upper_back to "181533004"
-                else -> Res.string.body_site_chest to "51185008"
-            }
-        }
-        yPercent < 60f -> {
-            when {
-                xPercent < 25f ->
-                    if (isPosterior) {
-                        Res.string.body_site_left_arm to "368208006"
-                    } else {
-                        Res.string.body_site_right_arm to "368209003"
-                    }
-                xPercent > 75f ->
-                    if (isPosterior) {
-                        Res.string.body_site_right_arm to "368209003"
-                    } else {
-                        Res.string.body_site_left_arm to "368208006"
-                    }
-                isPosterior -> Res.string.body_site_lower_back to "181534005"
-                yPercent < 50f -> Res.string.body_site_abdomen to "818987002"
-                else -> Res.string.body_site_pelvis to "12921003"
-            }
-        }
-        else -> {
-            if (xPercent <= 50f) {
-                if (isPosterior) {
-                    Res.string.body_site_left_leg to "368214008"
-                } else {
-                    Res.string.body_site_right_leg to "368215009"
-                }
-            } else {
-                if (isPosterior) {
-                    Res.string.body_site_right_leg to "368215009"
-                } else {
-                    Res.string.body_site_left_leg to "368214008"
-                }
-            }
-        }
+        yPercent < 40f -> resolveUpperTorsoRegion(xPercent, isPosterior)
+        yPercent < 60f -> resolveLowerTorsoRegion(xPercent, yPercent, isPosterior)
+        else -> resolveLegRegion(xPercent, isPosterior)
     }
 
 /**

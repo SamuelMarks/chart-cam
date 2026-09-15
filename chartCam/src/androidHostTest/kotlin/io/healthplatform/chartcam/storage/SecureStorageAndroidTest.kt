@@ -95,4 +95,34 @@ class SecureStorageAndroidTest {
         val storage = createSecureStorage()
         assertNull(storage.getString("bad_cipher"))
     }
+
+    /**
+     * Tests graceful recovery when stored data is an empty string or empty byte array.
+     */
+    @Test
+    fun testEmptyDataHandling() {
+        val context = AndroidAppInit.getContext()
+        val prefs = context.getSharedPreferences("secure_prefs_v2", Context.MODE_PRIVATE)
+        prefs.edit().putString("empty_key", "").apply()
+
+        val storage = createSecureStorage()
+        assertNull(storage.getString("empty_key"))
+
+        val decryptResult = CryptoHelper.decryptCatching(ByteArray(0))
+        kotlin.test.assertTrue(decryptResult.isFailure)
+    }
+
+    /**
+     * Tests decryptCatching and encryptCatching methods on CryptoHelper.
+     */
+    @Test
+    fun testCryptoHelperCatching() {
+        val sample = "Confidential Patient Data".toByteArray(Charsets.UTF_8)
+        val encryptedRes = CryptoHelper.encryptCatching(sample)
+        kotlin.test.assertTrue(encryptedRes.isSuccess)
+
+        val decryptedRes = CryptoHelper.decryptCatching(encryptedRes.getOrThrow())
+        kotlin.test.assertTrue(decryptedRes.isSuccess)
+        assertEquals("Confidential Patient Data", String(decryptedRes.getOrThrow(), Charsets.UTF_8))
+    }
 }

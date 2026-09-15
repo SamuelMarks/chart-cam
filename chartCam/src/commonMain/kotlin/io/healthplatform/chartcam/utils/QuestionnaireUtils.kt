@@ -160,12 +160,12 @@ object QuestionnaireUtils {
     ): List<QuestionnaireResponse.Item.Builder> {
         val responseItems = mutableListOf<QuestionnaireResponse.Item.Builder>()
         for (qItem in qItems) {
-            if (!io.healthplatform.chartcam.sdc.SdcEvaluator
+            val linkId = qItem.linkId.value
+            val isEnabled =
+                io.healthplatform.chartcam.sdc.SdcEvaluator
                     .isItemHierarchyEnabled(qItem, ancestors, answers)
-            ) {
-                continue
-            }
-            val linkId = qItem.linkId.value ?: continue
+            if (!isEnabled || linkId == null) continue
+
             val qType = qItem.type.value ?: Questionnaire.QuestionnaireItemType.String
             val answer = answers[linkId]
 

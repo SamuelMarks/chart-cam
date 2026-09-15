@@ -6,27 +6,43 @@ package io.healthplatform.chartcam.sensors
 
 import androidx.compose.runtime.Composable
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * JS (Web) implementation of [SensorManager].
- * Note: Sensor functionality is stubbed and returns fixed orientation data on web environments.
+ * JS (Web) implementation of [SensorManager] utilizing HTML5 DeviceOrientation API.
  */
 class JsSensorManager : SensorManager {
-    /**
-     * A flow emitting fixed orientation updates (0.0 pitch, 0.0 roll) for JS web target.
-     */
-    override val orientation: Flow<OrientationData> = flowOf(OrientationData(0.0, 0.0))
+    private val _orientation = MutableStateFlow(OrientationData(0.0, 0.0))
 
     /**
-     * Starts listening to sensor updates. No-op on web.
+     * A flow emitting orientation updates from HTML5 DeviceOrientationEvent.
      */
-    override fun startListening() { /* no-op */ }
+    override val orientation: Flow<OrientationData> = _orientation.asStateFlow()
+
+    private val listener: (dynamic) -> Unit = { event ->
+        val pitch = (event.beta as? Double) ?: 0.0
+        val roll = (event.gamma as? Double) ?: 0.0
+        _orientation.value = OrientationData(pitch, roll)
+    }
 
     /**
-     * Stops listening to sensor updates. No-op on web.
+     * Starts listening to HTML5 device orientation events.
      */
-    override fun stopListening() { /* no-op */ }
+    override fun startListening() {
+        runCatching {
+            kotlinx.browser.window.addEventListener("deviceorientation", listener)
+        }
+    }
+
+    /**
+     * Stops listening to HTML5 device orientation events.
+     */
+    override fun stopListening() {
+        runCatching {
+            kotlinx.browser.window.removeEventListener("deviceorientation", listener)
+        }
+    }
 }
 
 /**

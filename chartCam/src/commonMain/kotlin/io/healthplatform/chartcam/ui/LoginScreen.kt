@@ -177,9 +177,11 @@ fun LoginScreen(
                     LoginCard(
                         isLoading = state.isLoading,
                         isDemoLoading = state.isDemoLoading,
+                        isBiometricAvailable = state.isBiometricAvailable,
                         stateErrorMessage = stateErrorMessageStr,
                         onLogin = { username, password -> viewModel.login(username, password) },
                         onDemoLogin = { viewModel.onDemoLoginClicked() },
+                        onBiometricLogin = { viewModel.authenticateWithBiometrics(onSuccess = onLoginSuccess) },
                         onOpenTour = { viewModel.showTutorial(true) },
                     )
 
@@ -234,18 +236,22 @@ private fun LoginHeader() {
  * Internal helper.
  * @param isLoading The isLoading.
  * @param isDemoLoading The isDemoLoading.
+ * @param isBiometricAvailable Whether biometric authentication is available on device.
  * @param stateErrorMessage The stateErrorMessage.
  * @param onLogin The onLogin.
  * @param onDemoLogin Callback to trigger demo authentication.
+ * @param onBiometricLogin Callback to trigger biometric authentication.
  * @param onOpenTour Callback to open onboarding tutorial.
  */
 @Composable
 private fun LoginCard(
     isLoading: Boolean,
     isDemoLoading: Boolean = false,
+    isBiometricAvailable: Boolean = false,
     stateErrorMessage: String?,
     onLogin: (String, String) -> Unit,
     onDemoLogin: () -> Unit = {},
+    onBiometricLogin: () -> Unit = {},
     onOpenTour: () -> Unit = {},
 ) {
     var username by remember { mutableStateOf("") }
@@ -316,12 +322,55 @@ private fun LoginCard(
                 onClick = onDemoLogin,
             )
 
+            if (isBiometricAvailable) {
+                Spacer(modifier = Modifier.height(12.dp))
+                BiometricLoginButton(
+                    onClick = onBiometricLogin,
+                    enabled = !isLoading && !isDemoLoading,
+                )
+            }
+
             Spacer(modifier = Modifier.height(AppSpacing.sm))
             AppTourButton(onClick = onOpenTour)
 
             Spacer(modifier = Modifier.height(AppSpacing.md))
             LegalDisclaimer()
         }
+    }
+}
+
+/**
+ * Renders an accessible secondary button for biometric authentication.
+ *
+ * @param enabled Whether the biometric button is interactive.
+ * @param onClick Callback triggered when the biometric button is clicked.
+ */
+@Composable
+private fun BiometricLoginButton(
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp)
+                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                .testTag("TAG_BIOMETRIC_BUTTON"),
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Security,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+        )
+        Spacer(modifier = Modifier.size(AppSpacing.sm))
+        Text(
+            text = "Unlock with Biometrics",
+            style = MaterialTheme.typography.titleMedium,
+        )
     }
 }
 

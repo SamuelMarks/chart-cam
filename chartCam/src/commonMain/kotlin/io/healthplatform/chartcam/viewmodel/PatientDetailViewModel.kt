@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.fhir.model.r4.Encounter
 import com.google.fhir.model.r4.Patient
+import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.repository.FhirRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,11 +25,13 @@ import kotlinx.coroutines.launch
  * @param patient The FHIR Patient object being displayed.
  * @param encounters The list of FHIR Encounters associated with the patient.
  * @param isLoading Flag indicating whether the patient details are currently being loaded.
+ * @param error Optional error message string.
  */
 data class PatientDetailUiState(
     val patient: Patient? = null,
     val encounters: List<Encounter> = emptyList(),
     val isLoading: Boolean = false,
+    val error: String? = null,
 )
 
 /**
@@ -38,9 +41,11 @@ data class PatientDetailUiState(
  * (e.g., Patient, Encounter) without relying on intermediary DTOs.
  *
  * @param fhirRepository The repository providing FHIR data access.
+ * @param fileStorage Optional storage to delete associated image files from disk upon deletion.
  */
 class PatientDetailViewModel(
     private val fhirRepository: FhirRepository,
+    private val fileStorage: FileStorage? = null,
 ) : ViewModel() {
     /**
      * Internal mutable state flow for the patient detail UI state.
@@ -57,7 +62,6 @@ class PatientDetailViewModel(
      * Updates the UI state with the fetched data.
      *
      * @param patientId The unique identifier of the patient to load.
-     * @return Unit
      */
     fun loadPatientData(patientId: String) {
         viewModelScope.launch {
@@ -76,8 +80,12 @@ class PatientDetailViewModel(
     fun deletePatient(onSuccess: () -> Unit) {
         val patientId = _uiState.value.patient?.id ?: return
         viewModelScope.launch {
-            fhirRepository.deletePatient(patientId)
-            onSuccess()
+            val result = fhirRepository.deletePatient(patientId, fileStorage)
+            if (result.isSuccess) {
+                onSuccess()
+            } else {
+                _uiState.update { it.copy(error = result.exceptionOrNull()?.message ?: "Failed to delete patient") }
+            }
         }
     }
 }

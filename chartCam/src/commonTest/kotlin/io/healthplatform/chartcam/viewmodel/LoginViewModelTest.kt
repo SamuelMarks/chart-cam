@@ -274,4 +274,27 @@ class LoginViewModelTest {
         viewModel.showTutorial(false)
         assertFalse(viewModel.uiState.value.isTutorialVisible)
     }
+
+    /**
+     * Tests biometric authentication success unlocking the session.
+     */
+    @Test
+    fun testBiometricAuthenticationSuccess() =
+        runTest {
+            authRepository = AuthRepository(mockStorage)
+            val bioManager =
+                io.healthplatform.chartcam.storage
+                    .BiometricSecurityManager(mockStorage)
+            val viewModel = LoginViewModel(authRepository, bioManager)
+
+            assertTrue(viewModel.uiState.value.isBiometricAvailable)
+
+            var successCallback = false
+            val result = viewModel.authenticateWithBiometrics { successCallback = true }
+            assertTrue(result.isSuccess)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value.isLoggedIn)
+            assertTrue(successCallback)
+        }
 }

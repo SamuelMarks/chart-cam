@@ -107,11 +107,13 @@ private const val TIME_STR_LEN = 6
  * @property tag The 32-bit composite DICOM tag (group shl 16 or element).
  * @property vr The Value Representation specifying how the data is encoded.
  * @property value The raw binary payload of the element, aligned to an even byte boundary.
+ * @property isUndefinedLength True if the element is serialized with 0xFFFFFFFF undefined length.
  */
 data class DicomElement(
     val tag: Int,
     val vr: DicomVR,
     val value: ByteArray,
+    val isUndefinedLength: Boolean = false,
 ) {
     /**
      * Checks equality based on tag, VR, and byte array content.
@@ -268,5 +270,17 @@ data class DicomElement(
                 }
             return DicomElement(tag, vr, padded)
         }
+
+        /**
+         * Creates an encapsulated pixel data element serialized with 0xFFFFFFFF undefined length.
+         *
+         * @param tag The DICOM tag.
+         * @param sequenceBytes The serialized item sequence buffer.
+         * @return A DicomElement with isUndefinedLength set to true.
+         */
+        fun createEncapsulatedPixelData(
+            tag: Int,
+            sequenceBytes: ByteArray,
+        ): DicomElement = DicomElement(tag, DicomVR.OB, sequenceBytes, isUndefinedLength = true)
     }
 }

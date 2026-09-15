@@ -13,6 +13,9 @@ import kotlinx.browser.localStorage
 @JsNonModule
 external val CryptoJS: dynamic
 
+private const val SEED_LENGTH = 32
+private const val STORAGE_KEY_SEED = "chartcam_sec_seed"
+
 /**
  * JS-specific implementation of [SecureStorage].
  * Since browsers do not provide a synchronous encrypted local storage API by default,
@@ -20,10 +23,25 @@ external val CryptoJS: dynamic
  * to apply AES encryption.
  */
 class JsSecureStorage : SecureStorage {
+    private var inMemorySessionKey: String? = null
+
     /**
-     * The fixed secret key used for symmetric encryption.
+     * Resolves or initializes a randomized master cryptographic seed for the origin.
+     *
+     * @return The local master key string.
      */
-    private val secretKey = "ChartCamWebXorKey123" // Encryption key
+    private fun getMasterKey(): String {
+        val existing = inMemorySessionKey ?: localStorage.getItem(STORAGE_KEY_SEED)
+        if (!existing.isNullOrEmpty()) {
+            inMemorySessionKey = existing
+            return existing
+        }
+        val charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        val seed = (1..SEED_LENGTH).map { charset.random() }.joinToString("")
+        localStorage.setItem(STORAGE_KEY_SEED, seed)
+        inMemorySessionKey = seed
+        return seed
+    }
 
     /**
      * Saves an encrypted string to [localStorage].
@@ -35,7 +53,7 @@ class JsSecureStorage : SecureStorage {
         key: String,
         value: String,
     ) {
-        val encrypted = CryptoJS.AES.encrypt(value, secretKey).toString()
+        val encrypted = CryptoJS.AES.encrypt(value, getMasterKey()).toString()
         localStorage.setItem(key, encrypted)
     }
 
@@ -43,16 +61,16 @@ class JsSecureStorage : SecureStorage {
      * Retrieves and decrypts a string from [localStorage].
      *
      * @param key The key of the item to retrieve.
-     * @return The decrypted string value, or null if the key doesn't exist. Falls back to raw string on error.
+     * @return The decrypted string value, or null if the key doesn't exist or decryption fails.
      */
     override fun getString(key: String): String? {
         val stored = localStorage.getItem(key) ?: return null
         return try {
-            val decryptedWords = CryptoJS.AES.decrypt(stored, secretKey)
+            val decryptedWords = CryptoJS.AES.decrypt(stored, getMasterKey())
             val result = decryptedWords.toString(CryptoJS.enc.Utf8) as String
-            if (result.isEmpty()) stored else result // fallback if decryption yields empty due to bad key/data
+            if (result.isEmpty()) null else result
         } catch (_: Throwable) {
-            stored
+            null
         }
     }
 

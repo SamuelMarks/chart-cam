@@ -98,17 +98,14 @@ class WasmSecureStorageWasmJsTest {
     }
 
     /**
-     * Verifies that the fallback mechanism handles invalid decoding.
-     *
-     * In Wasm storage, if data cannot be properly decoded, it should fall back
-     * to returning the raw stored string.
+     * Verifies that invalid or corrupted data returns null instead of returning raw ciphertext.
      */
     @Test
     fun testInvalidDataDecryption() {
         // Put invalid base64 data directly
         localStorage.setItem(key, "InvalidDataNotBase64!!@@")
 
-        // Should return the string itself as fallback
-        assertEquals("InvalidDataNotBase64!!@@", storage.getString(key))
+        // Should return null on decryption failure
+        assertNull(storage.getString(key))
     }
 }

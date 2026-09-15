@@ -124,6 +124,8 @@
     <string name="cd_move_up">הזז למעלה</string>
     <string name="cd_move_down">הזז למטה</string>
     <string name="confirm_delete_item_title">למחוק פריט?</string>
+    <string name="discard_capture_title">האם לבטל תמונות?</string>
+    <string name="discard_capture_message">יש לך תמונות שצולמו ולא נשמרו. האם אתה בטוח שברצונך לבטל אותן?</string>
     <string name="confirm_delete_item_message">האם אתה בטוח שברצונך למחוק פריט זה? לא ניתן לבטל פעולה זו.</string>
     <string name="confirm_delete_option_title">למחוק אפשרות?</string>
     <string name="confirm_delete_option_message">האם אתה בטוח שברצונך למחוק אפשרות זו?</string>

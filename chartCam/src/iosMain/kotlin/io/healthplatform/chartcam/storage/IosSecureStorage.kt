@@ -30,6 +30,8 @@ import platform.Security.SecItemAdd
 import platform.Security.SecItemCopyMatching
 import platform.Security.SecItemDelete
 import platform.Security.SecItemUpdate
+import platform.Security.kSecAttrAccessible
+import platform.Security.kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
 import platform.Security.kSecAttrAccount
 import platform.Security.kSecAttrService
 import platform.Security.kSecClass
@@ -66,19 +68,32 @@ class IosSecureStorage : SecureStorage {
         query.setObject(kSecClassGenericPassword, forKey = kSecClass as platform.Foundation.NSCopyingProtocol)
         query.setObject(serviceName as NSString, forKey = kSecAttrService as platform.Foundation.NSCopyingProtocol)
         query.setObject(key as NSString, forKey = kSecAttrAccount as platform.Foundation.NSCopyingProtocol)
+        query.setObject(
+            kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+            forKey = kSecAttrAccessible as platform.Foundation.NSCopyingProtocol,
+        )
 
         val attributesToUpdate = NSMutableDictionary()
         attributesToUpdate.setObject(data, forKey = kSecValueData as platform.Foundation.NSCopyingProtocol)
 
+        val queryRef = CFBridgingRetain(query) as CFDictionaryRef
+        val attrRef = CFBridgingRetain(attributesToUpdate) as CFDictionaryRef
         val status =
-            SecItemUpdate(
-                CFBridgingRetain(query) as CFDictionaryRef,
-                CFBridgingRetain(attributesToUpdate) as CFDictionaryRef,
-            )
+            runCatching {
+                SecItemUpdate(queryRef, attrRef)
+            }.also {
+                CFBridgingRelease(queryRef)
+                CFBridgingRelease(attrRef)
+            }.getOrDefault(-1)
 
         if (status != 0) {
             query.setObject(data, forKey = kSecValueData as platform.Foundation.NSCopyingProtocol)
-            SecItemAdd(CFBridgingRetain(query) as CFDictionaryRef, null)
+            val addRef = CFBridgingRetain(query) as CFDictionaryRef
+            runCatching {
+                SecItemAdd(addRef, null)
+            }.also {
+                CFBridgingRelease(addRef)
+            }
         }
     }
 
@@ -97,11 +112,16 @@ class IosSecureStorage : SecureStorage {
         query.setObject(NSNumber(true), forKey = kSecReturnData as platform.Foundation.NSCopyingProtocol)
         query.setObject(kSecMatchLimitOne, forKey = kSecMatchLimit as platform.Foundation.NSCopyingProtocol)
 
+        val queryRef = CFBridgingRetain(query) as CFDictionaryRef
         val result =
             memScoped {
                 val resultPtr = alloc<CFTypeRefVar>()
-                val status = SecItemCopyMatching(CFBridgingRetain(query) as CFDictionaryRef, resultPtr.ptr)
-                if (status == 0) resultPtr.value else null
+                runCatching {
+                    val status = SecItemCopyMatching(queryRef, resultPtr.ptr)
+                    if (status == 0) resultPtr.value else null
+                }.also {
+                    CFBridgingRelease(queryRef)
+                }.getOrNull()
             }
 
         if (result == null) return null
@@ -122,7 +142,12 @@ class IosSecureStorage : SecureStorage {
         query.setObject(serviceName as NSString, forKey = kSecAttrService as platform.Foundation.NSCopyingProtocol)
         query.setObject(key as NSString, forKey = kSecAttrAccount as platform.Foundation.NSCopyingProtocol)
 
-        SecItemDelete(CFBridgingRetain(query) as CFDictionaryRef)
+        val queryRef = CFBridgingRetain(query) as CFDictionaryRef
+        runCatching {
+            SecItemDelete(queryRef)
+        }.also {
+            CFBridgingRelease(queryRef)
+        }
     }
 }
 

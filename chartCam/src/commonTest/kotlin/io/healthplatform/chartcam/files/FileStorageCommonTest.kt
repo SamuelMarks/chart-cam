@@ -87,4 +87,21 @@ class FileStorageCommonTest {
         kotlin.test.assertTrue(fs.deleteImage(path).isSuccess)
         kotlin.test.assertTrue(fs.deleteImage(path).isFailure)
     }
+
+    /**
+     * Tests saveImageCatching and readImageCatching extension functions.
+     */
+    @Test
+    fun testCatchingExtensions() {
+        val fs = MockFileStorage()
+        val payload = byteArrayOf(10, 20, 30)
+
+        val saveResult = fs.saveImageCatching("catching.jpg", payload)
+        kotlin.test.assertTrue(saveResult.isSuccess)
+        assertEquals("catching.jpg", saveResult.getOrNull())
+
+        val readResult = fs.readImageCatching("catching.jpg")
+        kotlin.test.assertTrue(readResult.isSuccess)
+        assertContentEquals(payload, readResult.getOrNull())
+    }
 }

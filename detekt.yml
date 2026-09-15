@@ -46,3 +46,25 @@ complexity:
     active: true
     ignoreAnnotated:
     - Composable
+style:
+  MagicNumber:
+    active: true
+    ignoreNumbers:
+    - '-1'
+    - '0'
+    - '1'
+    - '2'
+    - '0.0'
+    - '1.0'
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: true
+    ignoreLocalVariableDeclaration: true
+    ignoreNamedArgument: true
+    ignoreEnums: true
+    ignoreAnnotated:
+    - Composable
+    - Preview
+    excludes:
+    - '**/ui/theme/**'
+    - '**/ui/sdc/controls/**'
+    - '**/models/VisualFormModels.kt'

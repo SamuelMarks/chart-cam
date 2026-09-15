@@ -64,13 +64,15 @@ fun getLayoutDirectionForLanguage(language: String): androidx.compose.ui.unit.La
  */
 fun isTraditionalChinese(language: String): Boolean {
     val lower = language.lowercase()
-    val parts = lower.split("-", "_")
-    val base = parts.first()
-    if (base != "zh") return false
-    if (lower.contains("hans") || lower.contains("cn") || lower.contains("sg")) {
-        return false
-    }
-    return lower.contains("hant") || lower.contains("tw") || lower.contains("hk") || lower.contains("mo") || lower == "zh"
+    val isZh = lower.split("-", "_").firstOrNull() == "zh"
+    val isSimplified = lower.contains("hans") || lower.contains("cn") || lower.contains("sg")
+    val isTrad =
+        lower.contains("hant") ||
+            lower.contains("tw") ||
+            lower.contains("hk") ||
+            lower.contains("mo") ||
+            lower == "zh"
+    return isZh && !isSimplified && isTrad
 }
 
 /**

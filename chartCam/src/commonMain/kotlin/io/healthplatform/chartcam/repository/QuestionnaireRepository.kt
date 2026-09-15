@@ -212,7 +212,7 @@ class QuestionnaireRepository(
                     .apply { value = localizedText }
         }
         if (item.answerOption.isNotEmpty()) {
-            val nestedOptions = item.answerOption.map { localizeAnswerOption(it, qId, linkId, lang) }
+            val nestedOptions = item.answerOption.map { localizeAnswerOption(it, lang) }
             builder.answerOption.clear()
             builder.answerOption.addAll(nestedOptions)
         }
@@ -228,22 +228,19 @@ class QuestionnaireRepository(
      * Localizes an answer option's display text.
      *
      * @param option The original answer option.
-     * @param qId The questionnaire ID.
-     * @param linkId The question linkId.
      * @param lang The target language code.
      * @return The localized answer option builder.
      */
     private fun localizeAnswerOption(
         option: Questionnaire.Item.AnswerOption,
-        qId: String,
-        linkId: String,
         lang: String,
     ): Questionnaire.Item.AnswerOption.Builder {
         val builder = option.toBuilder()
         val codingValue = option.value.asCoding()
+        val strValue = option.value.asString()
         if (codingValue != null) {
             val raw = codingValue.value.display?.value ?: codingValue.value.code?.value ?: ""
-            val translated = getStandardOptionTranslations(qId, linkId, raw)[lang] ?: raw
+            val translated = getStandardOptionTranslations(raw)[lang] ?: raw
             val codingBuilder = codingValue.value.toBuilder()
             codingBuilder.display =
                 com.google.fhir.model.r4.String
@@ -252,12 +249,9 @@ class QuestionnaireRepository(
             builder.value =
                 Questionnaire.Item.AnswerOption.Value
                     .Coding(codingBuilder.build())
-            return builder
-        }
-        val strValue = option.value.asString()
-        if (strValue != null) {
+        } else if (strValue != null) {
             val raw = strValue.value.value ?: ""
-            val translated = getStandardOptionTranslations(qId, linkId, raw)[lang] ?: raw
+            val translated = getStandardOptionTranslations(raw)[lang] ?: raw
             builder.value =
                 Questionnaire.Item.AnswerOption.Value.String(
                     com.google.fhir.model.r4.String
@@ -265,7 +259,6 @@ class QuestionnaireRepository(
                         .apply { value = translated }
                         .build(),
                 )
-            return builder
         }
         return builder
     }
@@ -273,16 +266,10 @@ class QuestionnaireRepository(
     /**
      * Returns translations for standard answer options.
      *
-     * @param qId The questionnaire ID.
-     * @param linkId The item linkId.
      * @param optionValue The raw option value or display.
      * @return Map of language code to translated option text.
      */
-    private fun getStandardOptionTranslations(
-        qId: String,
-        linkId: String,
-        optionValue: String,
-    ): Map<String, String> =
+    private fun getStandardOptionTranslations(optionValue: String): Map<String, String> =
         when (optionValue.lowercase()) {
             "routine" ->
                 mapOf(

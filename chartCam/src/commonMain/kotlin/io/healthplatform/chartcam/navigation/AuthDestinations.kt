@@ -27,7 +27,7 @@ fun NavGraphBuilder.loginDestination(
     composable(Routes.LOGIN) {
         val viewModel =
             androidx.lifecycle.viewmodel.compose
-                .viewModel { LoginViewModel(deps.authRepository) }
+                .viewModel { LoginViewModel(deps.authRepository, deps.biometricSecurityManager) }
         androidx.compose.runtime.key(currentLang) {
             LoginScreen(viewModel = viewModel, onLoginSuccess = {
                 navController.navigate(Routes.PATIENT_LIST) {

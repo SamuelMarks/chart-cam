@@ -49,3 +49,23 @@ interface FileStorage {
  * @return A platform-specific implementation of [FileStorage].
  */
 expect fun createFileStorage(): FileStorage
+
+/**
+ * Safely saves image bytes to storage, encapsulating any platform I/O exceptions in a [Result].
+ *
+ * @param fileName The name of the file.
+ * @param bytes The data to write.
+ * @return A [Result] enclosing the saved file path or failure.
+ */
+fun FileStorage.saveImageCatching(
+    fileName: String,
+    bytes: ByteArray,
+): Result<String> = runCatching { saveImage(fileName, bytes) }
+
+/**
+ * Safely reads image bytes from storage, encapsulating any platform I/O exceptions in a [Result].
+ *
+ * @param path The absolute or virtual file path.
+ * @return A [Result] enclosing the byte array or failure.
+ */
+fun FileStorage.readImageCatching(path: String): Result<ByteArray> = runCatching { readImage(path) }

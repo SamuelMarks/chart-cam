@@ -131,6 +131,9 @@ object DicomTag {
     /** Explicit VR Little Endian Transfer Syntax UID. */
     const val UID_EXPLICIT_VR_LITTLE_ENDIAN: String = "1.2.840.10008.1.2.1"
 
+    /** JPEG Baseline (Process 1) Transfer Syntax UID for encapsulated JPEG photos. */
+    const val UID_JPEG_BASELINE: String = "1.2.840.10008.1.2.4.50"
+
     /** Implicit VR Little Endian Transfer Syntax UID. */
     const val UID_IMPLICIT_VR_LITTLE_ENDIAN: String = "1.2.840.10008.1.2"
 

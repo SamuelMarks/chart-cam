@@ -70,6 +70,7 @@ import chartcam.chartcam.generated.resources.no_notes
 import chartcam.chartcam.generated.resources.no_visits_found
 import chartcam.chartcam.generated.resources.patient_detail
 import chartcam.chartcam.generated.resources.visit_history
+import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.customBirthDate
 import io.healthplatform.chartcam.models.encounterDate
 import io.healthplatform.chartcam.models.getFullName
@@ -87,6 +88,7 @@ import org.jetbrains.compose.resources.stringResource
  *
  * @param patientId The unique identifier of the patient to display.
  * @param fhirRepository Repository used to load patient and encounter data.
+ * @param fileStorage Optional storage to delete associated image files from disk upon deletion.
  * @param onBack Callback invoked when the user requests to navigate back.
  * @param onNewVisit Callback invoked when the user requests to create a new visit (encounter) for the patient.
  * @param onVisitSelected Callback invoked when the user selects a specific past visit. Provides the visit ID.
@@ -96,6 +98,7 @@ import org.jetbrains.compose.resources.stringResource
 fun PatientDetailScreen(
     patientId: String,
     fhirRepository: FhirRepository,
+    fileStorage: FileStorage? = null,
     onBack: () -> Unit,
     onNewVisit: () -> Unit,
     onVisitSelected: (String) -> Unit,
@@ -103,7 +106,7 @@ fun PatientDetailScreen(
     /** The view model handling the business logic and data fetching for the PatientDetailScreen. */
     val viewModel =
         androidx.lifecycle.viewmodel.compose
-            .viewModel { PatientDetailViewModel(fhirRepository) }
+            .viewModel { PatientDetailViewModel(fhirRepository, fileStorage) }
 
     /** State representing the current UI data for the patient details. */
     val state by viewModel.uiState.collectAsState()

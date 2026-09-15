@@ -220,8 +220,10 @@ fun OnboardingTutorialScreen(
                         onClick = onDismiss,
                         modifier =
                             Modifier
-                                .defaultMinSize(minWidth = AppSpacing.minTouchTarget, minHeight = AppSpacing.minTouchTarget)
-                                .testTag(OnboardingTutorialDefaults.TAG_TUTORIAL_SKIP)
+                                .defaultMinSize(
+                                    minWidth = AppSpacing.minTouchTarget,
+                                    minHeight = AppSpacing.minTouchTarget,
+                                ).testTag(OnboardingTutorialDefaults.TAG_TUTORIAL_SKIP)
                                 .semantics {
                                     contentDescription = cdSkip
                                 },
@@ -325,8 +327,10 @@ fun OnboardingTutorialScreen(
                             },
                             modifier =
                                 Modifier
-                                    .defaultMinSize(minWidth = AppSpacing.minTouchTarget, minHeight = AppSpacing.minTouchTarget)
-                                    .testTag(OnboardingTutorialDefaults.TAG_TUTORIAL_PREV)
+                                    .defaultMinSize(
+                                        minWidth = AppSpacing.minTouchTarget,
+                                        minHeight = AppSpacing.minTouchTarget,
+                                    ).testTag(OnboardingTutorialDefaults.TAG_TUTORIAL_PREV)
                                     .semantics {
                                         contentDescription = cdPrev
                                     },
@@ -350,8 +354,10 @@ fun OnboardingTutorialScreen(
                             onClick = onComplete,
                             modifier =
                                 Modifier
-                                    .defaultMinSize(minWidth = AppSpacing.minTouchTarget, minHeight = AppSpacing.minTouchTarget)
-                                    .testTag(OnboardingTutorialDefaults.TAG_TUTORIAL_GET_STARTED)
+                                    .defaultMinSize(
+                                        minWidth = AppSpacing.minTouchTarget,
+                                        minHeight = AppSpacing.minTouchTarget,
+                                    ).testTag(OnboardingTutorialDefaults.TAG_TUTORIAL_GET_STARTED)
                                     .semantics {
                                         contentDescription = cdGetStarted
                                     },
@@ -371,8 +377,10 @@ fun OnboardingTutorialScreen(
                             },
                             modifier =
                                 Modifier
-                                    .defaultMinSize(minWidth = AppSpacing.minTouchTarget, minHeight = AppSpacing.minTouchTarget)
-                                    .testTag(OnboardingTutorialDefaults.TAG_TUTORIAL_NEXT)
+                                    .defaultMinSize(
+                                        minWidth = AppSpacing.minTouchTarget,
+                                        minHeight = AppSpacing.minTouchTarget,
+                                    ).testTag(OnboardingTutorialDefaults.TAG_TUTORIAL_NEXT)
                                     .semantics {
                                         contentDescription = cdNext
                                     },

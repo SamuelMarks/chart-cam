@@ -71,7 +71,8 @@ class AndroidPermissionManager(
                 if (isGranted) {
                     cont.resume(Result.success(Unit))
                 } else {
-                    cont.resume(Result.failure(PermissionDeniedException(message = "Android camera permission was denied")))
+                    val ex = PermissionDeniedException(message = "Android camera permission was denied")
+                    cont.resume(Result.failure(ex))
                 }
             }
             requestLauncher(Manifest.permission.CAMERA)

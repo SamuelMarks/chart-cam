@@ -28,7 +28,7 @@ class FhirToDicomMapperTest {
      * Helper to create a standard sample FHIR Patient.
      * @return A populated Patient resource.
      */
-    private fun createSamplePatient(): Patient =
+    private fun createSamplePatient(gender: AdministrativeGender = AdministrativeGender.Female): Patient =
         Patient
             .Builder()
             .apply {
@@ -54,7 +54,7 @@ class FhirToDicomMapperTest {
                         .apply {
                             value = FhirDate.fromString("1988-04-25")
                         }
-                gender = Enumeration(value = AdministrativeGender.Female)
+                this.gender = Enumeration(value = gender)
             }.build()
 
     /**
@@ -286,10 +286,10 @@ class FhirToDicomMapperTest {
 
         // Encapsulated PDF and Image with encounter without id
         val expectedHash = kotlin.math.abs("ENC_DEFAULT".hashCode()).toString()
-        val pdfEncNoId = FhirToDicomMapper.createEncapsulatedPdfDicom(byteArrayOf(1, 2), encounter = encNoPeriod)
+        val pdfEncNoId = FhirToDicomMapper.createEncapsulatedPdfDicom(byteArrayOf(1, 2), encounter = encNoPeriod).getOrThrow()
         assertTrue(pdfEncNoId.decodeToString().contains(expectedHash))
 
-        val imgEncNoId = FhirToDicomMapper.createVisibleLightImageDicom(byteArrayOf(1, 2), encounter = encNoPeriod)
+        val imgEncNoId = FhirToDicomMapper.createVisibleLightImageDicom(byteArrayOf(1, 2), encounter = encNoPeriod).getOrThrow()
         assertTrue(imgEncNoId.decodeToString().contains(expectedHash))
     }
 
@@ -329,14 +329,15 @@ class FhirToDicomMapperTest {
     fun testCreateEncapsulatedPdfDicom() {
         val pdfBytes = "%PDF-1.4 sample clinical content".encodeToByteArray()
         val dcmBytes =
-            FhirToDicomMapper.createEncapsulatedPdfDicom(
-                pdfBytes = pdfBytes,
-                title = "Cardiology Discharge Summary",
-                patient = createSamplePatient(),
-                encounter = createSampleEncounter(),
-                practitioner = createSamplePractitioner(),
-                anonymize = false,
-            )
+            FhirToDicomMapper
+                .createEncapsulatedPdfDicom(
+                    pdfBytes = pdfBytes,
+                    title = "Cardiology Discharge Summary",
+                    patient = createSamplePatient(),
+                    encounter = createSampleEncounter(),
+                    practitioner = createSamplePractitioner(),
+                    anonymize = false,
+                ).getOrThrow()
 
         assertTrue(dcmBytes.size > pdfBytes.size)
         val stringContent = dcmBytes.decodeToString()
@@ -381,21 +382,23 @@ class FhirToDicomMapperTest {
             )
 
         val dcmBytes =
-            FhirToDicomMapper.createVisibleLightImageDicom(
-                imageBytes = jpegWithDims,
-                imageId = "PHOTO_SKIN_LESION_01",
-                patient = createSamplePatient(),
-                encounter = createSampleEncounter(),
-                practitioner = null,
-                anonymize = false,
-            )
+            FhirToDicomMapper
+                .createVisibleLightImageDicom(
+                    imageBytes = jpegWithDims,
+                    imageId = "PHOTO_SKIN_LESION_01",
+                    patient = createSamplePatient(),
+                    encounter = createSampleEncounter(),
+                    practitioner = null,
+                    anonymize = false,
+                ).getOrThrow()
 
         assertTrue(dcmBytes.size > jpegWithDims.size)
         val stringContent = dcmBytes.decodeToString()
         assertTrue(stringContent.contains("DICM"))
         assertTrue(stringContent.contains(DicomTag.UID_SOP_CLASS_VL_PHOTOGRAPHIC_IMAGE))
         assertTrue(stringContent.contains("XC"))
-        assertTrue(stringContent.contains("RGB"))
+        assertTrue(stringContent.contains(DicomTag.UID_JPEG_BASELINE))
+        assertTrue(stringContent.contains("YBR_FULL_422"))
     }
 
     /**
@@ -404,12 +407,54 @@ class FhirToDicomMapperTest {
     @Test
     fun testDefaultArguments() {
         val pdfBytes = "%PDF-1.4 payload".encodeToByteArray()
-        val pdfDcm = FhirToDicomMapper.createEncapsulatedPdfDicom(pdfBytes)
+        val pdfDcm = FhirToDicomMapper.createEncapsulatedPdfDicom(pdfBytes).getOrThrow()
         assertTrue(pdfDcm.decodeToString().contains("Clinical Encounter Report"))
 
         val imageBytes = byteArrayOf(0x01, 0x02, 0x03, 0x04)
-        val imgDcm = FhirToDicomMapper.createVisibleLightImageDicom(imageBytes)
+        val imgDcm = FhirToDicomMapper.createVisibleLightImageDicom(imageBytes).getOrThrow()
         assertTrue(imgDcm.decodeToString().contains("XC"))
+
+        // Odd length image triggers pad byte branch
+        val oddBytes = byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05)
+        val oddDcm = FhirToDicomMapper.createVisibleLightImageDicom(oddBytes).getOrThrow()
+        assertTrue(oddDcm.isNotEmpty())
+
+        // Female patient
+        val femalePat = createSamplePatient(AdministrativeGender.Female)
+        val femaleDcm = FhirToDicomMapper.createVisibleLightImageDicom(imageBytes, patient = femalePat).getOrThrow()
+        assertTrue(femaleDcm.isNotEmpty())
+
+        // Other gender patient
+        val otherPat = createSamplePatient(AdministrativeGender.Other)
+        val otherDcm = FhirToDicomMapper.createVisibleLightImageDicom(imageBytes, patient = otherPat).getOrThrow()
+        assertTrue(otherDcm.isNotEmpty())
+
+        // Unknown gender patient
+        val unknownPat = createSamplePatient(AdministrativeGender.Unknown)
+        val unknownDcm = FhirToDicomMapper.createVisibleLightImageDicom(imageBytes, patient = unknownPat).getOrThrow()
+        assertTrue(unknownDcm.isNotEmpty())
+
+        // 1-byte image payload (covers size < 2 branch)
+        val singleByteDcm = FhirToDicomMapper.createVisibleLightImageDicom(byteArrayOf(0x42)).getOrThrow()
+        assertTrue(singleByteDcm.isNotEmpty())
+
+        // 2-byte payload starting with 0xFF but not 0xD8
+        val notSoiDcm = FhirToDicomMapper.createVisibleLightImageDicom(byteArrayOf(0xFF.toByte(), 0x00)).getOrThrow()
+        assertTrue(notSoiDcm.isNotEmpty())
+
+        // Encounter with null id
+        val noIdEncounter =
+            createFhirEncounter(
+                id = null,
+                patientId = "pat-123",
+                practitionerId = "prac-1",
+                dateStr = "2026-09-01",
+            )
+        val noIdDcm = FhirToDicomMapper.createVisibleLightImageDicom(imageBytes, encounter = noIdEncounter).getOrThrow()
+        assertTrue(noIdDcm.isNotEmpty())
+
+        // Empty image bytes failure
+        assertTrue(FhirToDicomMapper.createVisibleLightImageDicom(ByteArray(0)).isFailure)
     }
 
     /**
@@ -472,6 +517,39 @@ class FhirToDicomMapperTest {
         assertEquals("O", FhirToDicomMapper.extractGender(p2))
         val pGenderNull = Patient.Builder().apply { gender = Enumeration<AdministrativeGender>() }.build()
         assertEquals("O", FhirToDicomMapper.extractGender(pGenderNull))
+
+        val pMaleCreated =
+            io.healthplatform.chartcam.models.createFhirPatient(
+                "p-m",
+                "John",
+                "Doe",
+                kotlinx.datetime.LocalDate(1990, 1, 1),
+                "MRN-M",
+                gender = "male",
+            )
+        assertEquals("M", FhirToDicomMapper.extractGender(pMaleCreated))
+
+        val pFemaleCreated =
+            io.healthplatform.chartcam.models.createFhirPatient(
+                "p-f",
+                "Jane",
+                "Doe",
+                kotlinx.datetime.LocalDate(1992, 2, 2),
+                "MRN-F",
+                gender = "female",
+            )
+        assertEquals("F", FhirToDicomMapper.extractGender(pFemaleCreated))
+
+        val pOtherCreated =
+            io.healthplatform.chartcam.models.createFhirPatient(
+                "p-o",
+                "Alex",
+                "Doe",
+                kotlinx.datetime.LocalDate(1995, 5, 5),
+                "MRN-O",
+                gender = "other",
+            )
+        assertEquals("O", FhirToDicomMapper.extractGender(pOtherCreated))
 
         // extractPeriodStart
         assertEquals("", FhirToDicomMapper.extractPeriodStart(null))

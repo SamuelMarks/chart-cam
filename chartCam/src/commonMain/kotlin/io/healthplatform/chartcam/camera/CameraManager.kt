@@ -44,6 +44,20 @@ interface CameraManager {
      * Used to conditionally display the camera flip button in the UI.
      */
     val hasMultipleCameras: Boolean get() = true
+
+    /**
+     * Starts recording a local video clip.
+     *
+     * @return A [Result] indicating success or failure of initiating recording.
+     */
+    suspend fun startVideoRecording(): Result<Unit> = Result.success(Unit)
+
+    /**
+     * Stops video recording and returns the raw video bytes (e.g. MP4).
+     *
+     * @return A [Result] enclosing the recorded video byte array.
+     */
+    suspend fun stopVideoRecording(): Result<ByteArray> = Result.success(ByteArray(0))
 }
 
 /**

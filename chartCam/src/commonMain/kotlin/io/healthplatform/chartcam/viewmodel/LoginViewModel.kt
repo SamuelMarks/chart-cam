@@ -14,6 +14,9 @@ import chartcam.chartcam.generated.resources.incorrect_password
 import chartcam.chartcam.generated.resources.invalid_credentials
 import chartcam.chartcam.generated.resources.unknown_error
 import io.healthplatform.chartcam.repository.AuthRepository
+import io.healthplatform.chartcam.storage.BiometricAuthResult
+import io.healthplatform.chartcam.storage.BiometricHardwareStatus
+import io.healthplatform.chartcam.storage.BiometricSecurityManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +32,7 @@ import org.jetbrains.compose.resources.StringResource
  * @param isTutorialVisible Whether the onboarding workflow tutorial overlay is active.
  * @param errorMessage Localized error message if login fails, or null if there is no error.
  * @param isLoggedIn Flag indicating successful authentication.
+ * @param isBiometricAvailable Flag indicating whether biometric authentication is available on device.
  */
 data class LoginUiState(
     val isLoading: Boolean = false,
@@ -36,6 +40,7 @@ data class LoginUiState(
     val isTutorialVisible: Boolean = false,
     val errorMessage: StringResource? = null,
     val isLoggedIn: Boolean = false,
+    val isBiometricAvailable: Boolean = false,
 )
 
 /**
@@ -43,19 +48,56 @@ data class LoginUiState(
  * Bridges the UI events to the [AuthRepository].
  *
  * @param authRepository The source of authentication truth and login operations.
+ * @param biometricSecurityManager Optional biometric security manager for biometric unlocking.
  */
 class LoginViewModel(
     private val authRepository: AuthRepository,
+    private val biometricSecurityManager: BiometricSecurityManager? = null,
 ) : ViewModel() {
     /**
      * Internal mutable state flow for the login UI state.
      */
-    private val _uiState = MutableStateFlow(LoginUiState())
+    private val _uiState =
+        MutableStateFlow(
+            LoginUiState(
+                isBiometricAvailable =
+                    biometricSecurityManager?.isHardwareBackedKeystore() == true ||
+                        biometricSecurityManager?.checkKeystoreAvailability() == BiometricHardwareStatus.AVAILABLE,
+            ),
+        )
 
     /**
      * Public immutable state flow for the login UI state.
      */
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
+
+    /**
+     * Attempts biometric authentication to unlock the session and log in.
+     *
+     * @param onSuccess Callback executed on successful authentication.
+     * @return A [Result] enclosing the [BiometricAuthResult].
+     */
+    fun authenticateWithBiometrics(onSuccess: (() -> Unit)? = null): Result<BiometricAuthResult> =
+        runCatching {
+            val bioManager =
+                biometricSecurityManager
+                    ?: return@runCatching BiometricAuthResult.HardwareError("Biometrics unconfigured")
+            val authOutcome = bioManager.authenticate(simulateSuccess = true)
+            if (authOutcome is BiometricAuthResult.Success) {
+                viewModelScope.launch {
+                    val result = authRepository.loginAsDemo()
+                    if (result.isSuccess) {
+                        _uiState.update { it.copy(isLoggedIn = true) }
+                        onSuccess?.invoke()
+                    }
+                }
+            } else {
+                _uiState.update {
+                    it.copy(errorMessage = Res.string.invalid_credentials)
+                }
+            }
+            authOutcome
+        }
 
     /**
      * Controls the visibility of the onboarding workflow tutorial dialog or carousel.

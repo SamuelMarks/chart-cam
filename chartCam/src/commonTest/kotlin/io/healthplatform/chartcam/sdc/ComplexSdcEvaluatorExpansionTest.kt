@@ -195,17 +195,17 @@ class ComplexSdcEvaluatorExpansionTest {
 
         // Logical comparisons in SdcEvaluator
         val compGt = SdcEvaluator.evaluateLogicalExpression("%score > 50", mapOf("score" to 75f))
-        assertEquals(true, compGt)
+        assertEquals(true, compGt.getOrNull())
 
         val compLte = SdcEvaluator.evaluateLogicalExpression("%score <= 50", mapOf("score" to 75f))
-        assertEquals(false, compLte)
+        assertEquals(false, compLte.getOrNull())
 
         // Compound logical expressions
         val compAnd = SdcEvaluator.evaluateLogicalExpression("%a > 10 && %b < 20", mapOf("a" to 15f, "b" to 12f))
-        assertEquals(true, compAnd)
+        assertEquals(true, compAnd.getOrNull())
 
         val compOr = SdcEvaluator.evaluateLogicalExpression("%a > 50 || %b < 20", mapOf("a" to 15f, "b" to 12f))
-        assertEquals(true, compOr)
+        assertEquals(true, compOr.getOrNull())
     }
 
     /**

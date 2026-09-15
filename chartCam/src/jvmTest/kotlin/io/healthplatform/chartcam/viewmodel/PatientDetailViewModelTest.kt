@@ -156,4 +156,68 @@ class PatientDetailViewModelTest {
 
             assertEquals(false, successCalled)
         }
+
+    /**
+     * Verifies that deletePatient cascades through fileStorage to clean up physical media files.
+     */
+    @Test
+    fun testPatientDeleteWithFileStorageCascade() =
+        runTest {
+            val patientId = "pat-cascade"
+            repo.savePatient(createFhirPatient(patientId, "Cascade", "Patient", kotlinx.datetime.LocalDate(1990, 1, 1), "999"))
+            repo.saveEncounter(createFhirEncounter("enc-casc-1", patientId, "prac-1", "2024-01-01T10:00:00Z"))
+
+            val storage =
+                object : io.healthplatform.chartcam.files.FileStorage {
+                    val storedFiles = mutableMapOf<String, ByteArray>()
+
+                    override fun saveImage(
+                        fileName: String,
+                        bytes: ByteArray,
+                    ): String {
+                        storedFiles[fileName] = bytes
+                        return fileName
+                    }
+
+                    override fun readImage(path: String): ByteArray = storedFiles[path] ?: ByteArray(0)
+
+                    override fun deleteImage(path: String): Result<Unit> {
+                        storedFiles.remove(path)
+                        return Result.success(Unit)
+                    }
+
+                    override fun clearCache() {
+                        storedFiles.clear()
+                    }
+                }
+
+            storage.saveImage("photo-1.jpg", byteArrayOf(1, 2, 3))
+            repo.saveDocumentReference(
+                io.healthplatform.chartcam.models.createFhirDocumentReference(
+                    io.healthplatform.chartcam.models.DocumentReferenceCreationParams(
+                        id = "doc-casc-1",
+                        patientId = patientId,
+                        encounterId = "enc-casc-1",
+                        dateStr = "2024-01-01",
+                        desc = "Photo 1",
+                        mime = "image/jpeg",
+                        urlPath = "photo-1.jpg",
+                        answerCode = "c1",
+                    ),
+                ),
+            )
+
+            val vm = PatientDetailViewModel(repo, storage)
+            vm.loadPatientData(patientId)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            var deleted = false
+            vm.deletePatient { deleted = true }
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertTrue(deleted)
+            assertEquals(0, storage.storedFiles.size)
+            assertEquals(null, repo.getPatient(patientId))
+            assertEquals(null, repo.getEncounter("enc-casc-1"))
+        }
 }

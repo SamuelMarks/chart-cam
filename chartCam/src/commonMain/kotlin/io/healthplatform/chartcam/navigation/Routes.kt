@@ -139,3 +139,17 @@ data class QuestionnaireBuilderRoute(
      */
     val duplicateFromId: String? = null,
 )
+
+/**
+ * Represents the route to view and inspect a local DICOM file.
+ *
+ * @param filePath The local storage path to the DICOM file.
+ */
+@Serializable
+@SerialName("/dicom/viewer")
+data class DicomViewerRoute(
+    /**
+     * The local storage path to the DICOM file.
+     */
+    val filePath: String,
+)

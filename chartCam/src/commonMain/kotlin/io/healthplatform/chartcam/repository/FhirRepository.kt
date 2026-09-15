@@ -535,8 +535,18 @@ open class FhirRepository(
             val cleanId = id.removePrefix("Patient/")
             val encounters = getEncountersForPatient(cleanId)
             encounters.forEach { enc ->
-                enc.id?.let { deleteEncounter(it, fileStorage) }
+                enc.id?.let { deleteEncounter(it, fileStorage).getOrThrow() }
             }
+            val allResponses = getAllQuestionnaireResponses()
+            allResponses
+                .filter {
+                    it.subject
+                        ?.reference
+                        ?.value
+                        ?.removePrefix("Patient/") == cleanId
+                }.forEach { qr ->
+                    qr.id?.let { deleteResource("QuestionnaireResponse", it).getOrThrow() }
+                }
             deleteResource("Patient", cleanId).getOrThrow()
         }
 

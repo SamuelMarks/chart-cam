@@ -10,6 +10,66 @@ import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.round
 
+private const val THOUSANDS_GROUP_SIZE = 3
+
+/**
+ * Formats the integer portion with localized grouping separators.
+ *
+ * @param intPart The absolute integer part.
+ * @param useGrouping Whether grouping is enabled.
+ * @param isSpaceGrouping Whether space is used as separator.
+ * @param isCommaDecimal Whether period is used as thousands separator.
+ * @return The formatted integer string.
+ */
+private fun formatIntegerPart(
+    intPart: Long,
+    useGrouping: Boolean,
+    isSpaceGrouping: Boolean,
+    isCommaDecimal: Boolean,
+): String {
+    if (!useGrouping) return intPart.toString()
+    val groupSeparator =
+        when {
+            isSpaceGrouping -> " "
+            isCommaDecimal -> "."
+            else -> ","
+        }
+    val rawInt = intPart.toString()
+    val sb = StringBuilder()
+    val len = rawInt.length
+    for (i in 0 until len) {
+        sb.append(rawInt[i])
+        val distFromEnd = len - 1 - i
+        if (distFromEnd > 0 && distFromEnd % THOUSANDS_GROUP_SIZE == 0) {
+            sb.append(groupSeparator)
+        }
+    }
+    return sb.toString()
+}
+
+/**
+ * Converts Latin digits and separators to Eastern Arabic glyphs.
+ *
+ * @param raw The Latin string.
+ * @return String with Arabic numerals and separators.
+ */
+private fun toArabicDigits(raw: String): String {
+    val arabicZero = '٠'.code
+    val arabicDot = '٫'
+    val arabicComma = '٬'
+    return buildString(raw.length) {
+        for (i in 0 until raw.length) {
+            val ch = raw[i]
+            when (ch) {
+                '.' -> append(arabicDot)
+                ',' -> append(arabicComma)
+                '-' -> append('-')
+                else -> append((arabicZero + (ch - '0')).toChar())
+            }
+        }
+    }
+}
+
 /**
  * Formats a decimal number according to the target locale conventions
  * (e.g., '.' vs ',' decimal separator, thousands groupings).
@@ -39,59 +99,12 @@ fun formatLocalizedDecimal(
     val fracPart = abs(round((absRounded - intPart) * multiplier)).toLong()
     val fracStr = fracPart.toString().padStart(decimalPlaces, '0').trimEnd('0')
 
-    val intStr =
-        if (useGrouping) {
-            val groupSeparator =
-                when {
-                    isSpaceGrouping -> " "
-                    isCommaDecimal -> "."
-                    else -> ","
-                }
-            val rawInt = intPart.toString()
-            val sb = StringBuilder()
-            val len = rawInt.length
-            for (i in 0 until len) {
-                sb.append(rawInt[i])
-                val distFromEnd = len - 1 - i
-                if (distFromEnd > 0 && distFromEnd % 3 == 0) {
-                    sb.append(groupSeparator)
-                }
-            }
-            sb.toString()
-        } else {
-            intPart.toString()
-        }
-
+    val intStr = formatIntegerPart(intPart, useGrouping, isSpaceGrouping, isCommaDecimal)
     val sign = if (isNegative) "-" else ""
     val decimalSep = if (isCommaDecimal) "," else "."
-    val raw =
-        if (fracStr.isEmpty()) {
-            "$sign$intStr"
-        } else {
-            "$sign$intStr$decimalSep$fracStr"
-        }
+    val raw = if (fracStr.isEmpty()) "$sign$intStr" else "$sign$intStr$decimalSep$fracStr"
 
-    return if (isArabic) {
-        val arabicZero = '٠'.code
-        val arabicDot = '٫'
-        val arabicComma = '٬'
-        buildString(raw.length) {
-            for (i in 0 until raw.length) {
-                val ch = raw[i]
-                if (ch == '.') {
-                    append(arabicDot)
-                } else if (ch == ',') {
-                    append(arabicComma)
-                } else if (ch == '-') {
-                    append('-')
-                } else {
-                    append((arabicZero + (ch - '0')).toChar())
-                }
-            }
-        }
-    } else {
-        raw
-    }
+    return if (isArabic) toArabicDigits(raw) else raw
 }
 
 /**

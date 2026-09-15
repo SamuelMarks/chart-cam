@@ -192,6 +192,8 @@
     <string name="cd_duplicate">Duplicar</string>
     <string name="cd_leveler_status">Nivelador de cámara: %1$s</string>
     <string name="confirm_delete_item_title">¿Eliminar elemento?</string>
+    <string name="discard_capture_title">¿Descartar fotos?</string>
+    <string name="discard_capture_message">Tiene fotos capturadas sin guardar. ¿Está seguro de que desea descartarlas?</string>
     <string name="failed_to_import">Error al importar. Contraseña incorrecta o datos dañados.</string>
     <string name="decryption_failed">Error de descifrado o los datos están vacíos.</string>
     <string name="cd_select_date">Seleccionar fecha</string>

@@ -50,6 +50,18 @@ object QuestionnaireResponseGenerator {
     }
 
     /**
+     * Converts a map of generic answers to a structured FHIR QuestionnaireResponse, returning a [Result].
+     *
+     * @param questionnaire The source FHIR Questionnaire being answered.
+     * @param answers The untyped map of answers collected from the UI.
+     * @return A [Result] enclosing the standard FHIR QuestionnaireResponse resource.
+     */
+    fun generateResult(
+        questionnaire: Questionnaire,
+        answers: Map<kotlin.String, Any>,
+    ): Result<QuestionnaireResponse> = runCatching { generate(questionnaire, answers) }
+
+    /**
      * Creates a builder for a [QuestionnaireResponse.Item] from a given [Questionnaire.Item] and answers map.
      *
      * @param item The questionnaire item.
@@ -62,12 +74,12 @@ object QuestionnaireResponseGenerator {
         ancestors: List<Questionnaire.Item>,
         answers: Map<kotlin.String, Any>,
     ): QuestionnaireResponse.Item.Builder? {
-        if (!io.healthplatform.chartcam.sdc.SdcEvaluator
+        val isEnabled =
+            io.healthplatform.chartcam.sdc.SdcEvaluator
                 .isItemHierarchyEnabled(item, ancestors, answers)
-        ) {
-            return null
-        }
-        val linkId = item.linkId.value ?: return null
+        val linkId = item.linkId.value
+        if (!isEnabled || linkId == null) return null
+
         val answerValue = answers[linkId]
         val nextAncestors = ancestors + item
         val nestedItemBuilders = item.item.mapNotNull { createResponseItemBuilder(it, nextAncestors, answers) }
@@ -75,23 +87,21 @@ object QuestionnaireResponseGenerator {
         return if (answerValue == null && nestedItemBuilders.isEmpty()) {
             null
         } else {
-            QuestionnaireResponse.Item
-                .Builder(
-                    linkId = String.Builder().apply { value = linkId },
-                ).apply {
-                    text = String.Builder().apply { value = item.text?.value ?: "" }
-                    if (answerValue != null) {
-                        populateAnswers(item, answerValue, this)
-                    }
-                    if (nestedItemBuilders.isNotEmpty()) {
-                        this.item.addAll(nestedItemBuilders)
-                    }
-                }
+            val builder = QuestionnaireResponse.Item.Builder(linkId = String.Builder().apply { value = linkId })
+            builder.text = String.Builder().apply { value = item.text?.value ?: "" }
+            if (answerValue != null) {
+                populateAnswers(item, answerValue, builder)
+            }
+            if (nestedItemBuilders.isNotEmpty()) {
+                builder.item.addAll(nestedItemBuilders)
+            }
+            builder
         }
     }
 
     /**
      * Helper function for processing questionnaire answers.
+     *
      * @param item The item.
      * @param answerValue The answerValue.
      * @param builder The builder.
@@ -101,7 +111,44 @@ object QuestionnaireResponseGenerator {
         answerValue: Any,
         builder: QuestionnaireResponse.Item.Builder,
     ) {
-        when (item.type.value) {
+        val itemType = item.type.value ?: return
+        if (itemType == Questionnaire.QuestionnaireItemType.Choice) {
+            populateChoiceAnswer(answerValue, builder)
+        } else {
+            populateNonChoiceAnswer(itemType, answerValue, builder)
+        }
+    }
+
+    /**
+     * Populates choice question answer into the response builder.
+     *
+     * @param answerValue The raw answer value.
+     * @param builder The response item builder.
+     */
+    private fun populateChoiceAnswer(
+        answerValue: Any,
+        builder: QuestionnaireResponse.Item.Builder,
+    ) {
+        if (answerValue is io.healthplatform.chartcam.models.FitzpatrickSkinType) {
+            addStringAnswer(builder, "Type ${answerValue.romanNumeral}")
+        } else {
+            addChoiceAnswer(builder, answerValue)
+        }
+    }
+
+    /**
+     * Populates non-choice primitive question answers into the response builder.
+     *
+     * @param itemType The FHIR item type.
+     * @param answerValue The raw answer value.
+     * @param builder The response item builder.
+     */
+    private fun populateNonChoiceAnswer(
+        itemType: Questionnaire.QuestionnaireItemType,
+        answerValue: Any,
+        builder: QuestionnaireResponse.Item.Builder,
+    ) {
+        when (itemType) {
             Questionnaire.QuestionnaireItemType.String, Questionnaire.QuestionnaireItemType.Text -> {
                 val strVal =
                     when (answerValue) {
@@ -114,24 +161,13 @@ object QuestionnaireResponseGenerator {
             Questionnaire.QuestionnaireItemType.Boolean -> {
                 addBooleanAnswer(builder, answerValue as? kotlin.Boolean ?: false)
             }
-            Questionnaire.QuestionnaireItemType.Decimal -> {
-                addDecimalAnswer(builder, answerValue)
-            }
-            Questionnaire.QuestionnaireItemType.Integer -> {
-                addIntegerAnswer(builder, answerValue)
-            }
+            Questionnaire.QuestionnaireItemType.Decimal -> addDecimalAnswer(builder, answerValue)
+            Questionnaire.QuestionnaireItemType.Integer -> addIntegerAnswer(builder, answerValue)
             Questionnaire.QuestionnaireItemType.Date -> {
                 addDateAnswer(builder, answerValue as? kotlin.String ?: "")
             }
             Questionnaire.QuestionnaireItemType.DateTime -> {
                 addDateTimeAnswer(builder, answerValue as? kotlin.String ?: "")
-            }
-            Questionnaire.QuestionnaireItemType.Choice -> {
-                if (answerValue is io.healthplatform.chartcam.models.FitzpatrickSkinType) {
-                    addStringAnswer(builder, "Type ${answerValue.romanNumeral}")
-                } else {
-                    addChoiceAnswer(builder, answerValue)
-                }
             }
             else -> {}
         }

@@ -123,6 +123,8 @@
     <string name="cd_move_up">Move Up</string>
     <string name="cd_move_down">Move Down</string>
     <string name="confirm_delete_item_title">Delete Item?</string>
+    <string name="discard_capture_title">Discard Photos?</string>
+    <string name="discard_capture_message">You have unsaved captured photos. Are you sure you want to discard them?</string>
     <string name="confirm_delete_item_message">Are you sure you want to delete this item? This cannot be undone.</string>
     <string name="confirm_delete_option_title">Delete Option?</string>
     <string name="confirm_delete_option_message">Are you sure you want to delete this option?</string>

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,6 +37,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -71,6 +73,8 @@ import chartcam.chartcam.generated.resources.cd_review
 import chartcam.chartcam.generated.resources.cd_switch_camera
 import chartcam.chartcam.generated.resources.clear
 import chartcam.chartcam.generated.resources.confirm
+import chartcam.chartcam.generated.resources.discard_capture_message
+import chartcam.chartcam.generated.resources.discard_capture_title
 import chartcam.chartcam.generated.resources.error_camera_capture_failed
 import chartcam.chartcam.generated.resources.error_capture_empty_image
 import chartcam.chartcam.generated.resources.error_capture_save_failed
@@ -303,13 +307,39 @@ private fun CaptureScreenContent(
         return
     }
 
+    var showDiscardDialog by remember { mutableStateOf(false) }
+
     val handleCancel = {
         val currentResults = viewModel.getResultPaths()
         if (currentResults.isNotEmpty()) {
-            onFinished(currentResults.mapKeys { it.key.id })
+            showDiscardDialog = true
         } else {
             onCancel()
         }
+    }
+
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text(stringResource(Res.string.discard_capture_title)) },
+            text = { Text(stringResource(Res.string.discard_capture_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDiscardDialog = false
+                        viewModel.discardPendingPhotos()
+                        onCancel()
+                    },
+                ) {
+                    Text(stringResource(Res.string.confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text(stringResource(Res.string.cancel))
+                }
+            },
+        )
     }
 
     val actions =

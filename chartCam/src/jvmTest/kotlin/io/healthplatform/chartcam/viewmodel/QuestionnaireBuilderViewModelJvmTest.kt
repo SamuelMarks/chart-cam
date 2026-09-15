@@ -124,6 +124,52 @@ class QuestionnaireBuilderViewModelJvmTest {
     }
 
     /**
+     * Test that removeItem purges dangling enableWhen conditions referencing the removed item.
+     */
+    @Test
+    fun testRemoveItemPurgesDanglingEnableWhen() {
+        val repo = QuestionnaireRepository()
+        val viewModel = QuestionnaireBuilderViewModel(repo)
+
+        viewModel.addItem(WidgetType.SWITCH)
+        viewModel.addItem(WidgetType.SINGLE_LINE_TEXT)
+        val item1 = viewModel.state.value.items[0]
+        val item2 = viewModel.state.value.items[1]
+
+        // Add enableWhen condition to item2 referencing item1
+        val condition =
+            BuilderEnableWhen(
+                question = item1.linkId,
+                operator = Questionnaire.QuestionnaireItemOperator.Exists,
+                answerBoolean = true,
+            )
+        viewModel.updateItemEnableWhen(item2.linkId, listOf(condition))
+
+        assertEquals(
+            1,
+            viewModel.state.value.items[1]
+                .enableWhen.size,
+        )
+
+        // Remove item1
+        val removeResult = viewModel.removeItem(item1.linkId)
+        assertTrue(removeResult.isSuccess)
+
+        assertEquals(1, viewModel.state.value.items.size)
+        assertEquals(
+            item2.linkId,
+            viewModel.state.value.items[0]
+                .linkId,
+        )
+        assertEquals(
+            0,
+            viewModel.state.value.items[0]
+                .enableWhen.size,
+            "Dangling enableWhen pointing to removed item must be purged",
+        )
+    }
+
+    /**
      * Test testUpdateItem.
      */
     @Test

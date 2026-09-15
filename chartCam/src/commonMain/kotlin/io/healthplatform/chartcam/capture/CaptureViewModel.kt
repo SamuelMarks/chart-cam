@@ -226,4 +226,28 @@ class CaptureViewModel(
      * @return A map linking each completed [PhotoStep] to its local file path string.
      */
     fun getResultPaths(): Map<PhotoStep, String> = filePaths.toMap()
+
+    /**
+     * Discards all pending photos captured in the active session and removes them from local storage.
+     *
+     * @return A [Result] indicating success or failure of the discard operation.
+     */
+    fun discardPendingPhotos(): Result<Unit> =
+        runCatching {
+            filePaths.values.forEach { path ->
+                fileStorage.deleteImage(path)
+            }
+            filePaths.clear()
+            currentStepIndex = 0
+            _uiState.update {
+                it.copy(
+                    currentStep = stepsSequence.firstOrNull(),
+                    capturedCount = 0,
+                    isFinished = false,
+                    reviewImageBytes = null,
+                    errorMessage = null,
+                    errorMessageResource = null,
+                )
+            }
+        }
 }

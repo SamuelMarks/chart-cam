@@ -192,6 +192,8 @@
     <string name="cd_duplicate">複製</string>
     <string name="cd_leveler_status">カメラレベラー: %1$s</string>
     <string name="confirm_delete_item_title">項目を削除しますか？</string>
+    <string name="discard_capture_title">写真を破棄しますか？</string>
+    <string name="discard_capture_message">保存されていない撮影した写真があります。破棄してもよろしいですか？</string>
     <string name="failed_to_import">インポートに失敗しました。パスワードが違うか、データが無効です。</string>
     <string name="decryption_failed">復号に失敗したか、データが空です。</string>
     <string name="cd_select_date">日付を選択</string>
