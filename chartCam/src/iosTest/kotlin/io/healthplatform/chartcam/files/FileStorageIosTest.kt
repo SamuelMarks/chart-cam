@@ -5,17 +5,18 @@
 package io.healthplatform.chartcam.files
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * iOS-specific tests for file storage logic.
  */
 class FileStorageIosTest {
     /**
-     * Dummy execution block.
+     * Verifies creation of FileStorage on iOS.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testFileStorageIos() {
+        val storage = createFileStorage()
+        assertNotNull(storage)
     }
 }

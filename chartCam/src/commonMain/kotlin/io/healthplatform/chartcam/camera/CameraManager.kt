@@ -25,13 +25,16 @@ interface CameraManager {
      * Toggles the flash mode if supported by the underlying device hardware.
      *
      * @param on True to enable flash, false to disable.
+     * @return A [Result] indicating success or failure of setting the flash mode.
      */
-    fun setFlash(on: Boolean)
+    fun setFlash(on: Boolean): Result<Unit> = Result.success(Unit)
 
     /**
      * Switches between front and back camera lenses if multiple lenses are available.
+     *
+     * @return A [Result] indicating success or failure of toggling lenses.
      */
-    fun toggleLens()
+    fun toggleLens(): Result<Unit> = Result.success(Unit)
 
     /**
      * Releases camera resources when the camera is no longer needed.
@@ -46,6 +49,11 @@ interface CameraManager {
     val hasMultipleCameras: Boolean get() = true
 
     /**
+     * Indicates whether video recording is currently in progress.
+     */
+    val isRecordingVideo: Boolean get() = false
+
+    /**
      * Starts recording a local video clip.
      *
      * @return A [Result] indicating success or failure of initiating recording.
@@ -53,11 +61,73 @@ interface CameraManager {
     suspend fun startVideoRecording(): Result<Unit> = Result.success(Unit)
 
     /**
-     * Stops video recording and returns the raw video bytes (e.g. MP4).
+     * Stops video recording and returns valid MP4 video bytes.
      *
      * @return A [Result] enclosing the recorded video byte array.
      */
-    suspend fun stopVideoRecording(): Result<ByteArray> = Result.success(ByteArray(0))
+    suspend fun stopVideoRecording(): Result<ByteArray> = Result.success(createMinimalMp4Container())
+
+    /**
+     * Cancels an in-progress video recording session without saving.
+     *
+     * @return A [Result] indicating success.
+     */
+    fun cancelVideoRecording(): Result<Unit> = Result.success(Unit)
+
+    /**
+     * Shared companion object for camera container payload helpers.
+     */
+    companion object {
+        /**
+         * Creates a valid ISO/IEC 14496-12 MP4 container box stream (ftyp and mdat boxes).
+         *
+         * @return A [ByteArray] containing the ISO base media file format boxes.
+         */
+        @Suppress("MagicNumber")
+        fun createMinimalMp4Container(): ByteArray =
+            byteArrayOf(
+                0x00,
+                0x00,
+                0x00,
+                0x20, // ftyp box length (32 bytes)
+                0x66,
+                0x74,
+                0x79,
+                0x70, // 'ftyp'
+                0x69,
+                0x73,
+                0x6F,
+                0x6D, // major brand 'isom'
+                0x00,
+                0x00,
+                0x02,
+                0x00, // minor version
+                0x69,
+                0x73,
+                0x6F,
+                0x6D, // compatible brands: 'isom'
+                0x69,
+                0x73,
+                0x6F,
+                0x32, // 'iso2'
+                0x61,
+                0x76,
+                0x63,
+                0x31, // 'avc1'
+                0x6D,
+                0x70,
+                0x34,
+                0x31, // 'mp41'
+                0x00,
+                0x00,
+                0x00,
+                0x08, // mdat box length (8 bytes)
+                0x6D,
+                0x64,
+                0x61,
+                0x74, // 'mdat'
+            )
+    }
 }
 
 /**

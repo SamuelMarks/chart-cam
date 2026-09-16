@@ -119,6 +119,10 @@
     <string name="cd_add">Añadir</string>
     <string name="cd_more_widgets">Más widgets</string>
     <string name="widget_photo_camera">Cámara de fotos</string>
+    <string name="widget_group">Grupo de preguntas</string>
+    <string name="add_entry">Añadir entrada</string>
+    <string name="remove_entry">Eliminar entrada</string>
+    <string name="entry_format">Entrada %1$d</string>
     <string name="widget_video_camera">Cámara de video</string>
     <string name="widget_switch">Interruptor</string>
     <string name="widget_checkbox">Casilla de verificación</string>
@@ -144,6 +148,10 @@
     <string name="copy_to_clipboard">Copiar al portapapeles</string>
     <string name="share_text_json">Compartir texto/JSON</string>
     <string name="qr_code_coming_soon">Código QR próximamente</string>
+    <string name="import_from_file">Importar desde archivo</string>
+    <string name="scan_qr_code">Escanear código QR</string>
+    <string name="display_qr_code">Mostrar código QR</string>
+    <string name="export_json_file">Exportar archivo JSON</string>
     <string name="recovered_form">Formulario recuperado</string>
     <string name="yes">Sí</string>
     <string name="no">No</string>

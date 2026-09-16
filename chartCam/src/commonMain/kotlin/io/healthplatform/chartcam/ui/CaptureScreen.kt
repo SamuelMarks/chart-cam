@@ -26,6 +26,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -46,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +59,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -99,6 +103,9 @@ import io.healthplatform.chartcam.sensors.SensorManager
 import io.healthplatform.chartcam.sensors.rememberSensorManager
 import io.healthplatform.chartcam.ui.components.LevelerOverlay
 import io.healthplatform.chartcam.ui.theme.AppSpacing
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import org.jetbrains.compose.resources.stringResource
@@ -190,6 +197,9 @@ private fun PermissionDeniedScreen(
  * @property total The total number of photos needed.
  * @property isCapturing True if the camera is currently in the process of taking a picture.
  * @property hasMultipleCameras True if the device has multiple cameras.
+ * @property isVideoMode True if currently in video recording mode.
+ * @property isRecordingVideo True if video is actively recording.
+ * @property videoDurationFormatted Formatted string of current video recording duration.
  */
 data class ControlsState(
     val stepName: String,
@@ -197,6 +207,9 @@ data class ControlsState(
     val total: Int,
     val isCapturing: Boolean,
     val hasMultipleCameras: Boolean = true,
+    val isVideoMode: Boolean = false,
+    val isRecordingVideo: Boolean = false,
+    val videoDurationFormatted: String = "",
 )
 
 /**
@@ -207,6 +220,7 @@ data class ControlsState(
  * @property onConfirm Callback triggered when the user accepts the photo.
  * @property onCancel Callback triggered when the cancel button is clicked.
  * @property onDismissError Callback triggered when dismissing an error banner.
+ * @property onToggleVideoMode Callback triggered when switching between photo and video modes.
  */
 private data class CaptureActions(
     val onCapture: () -> Unit,
@@ -214,6 +228,7 @@ private data class CaptureActions(
     val onConfirm: () -> Unit,
     val onCancel: () -> Unit,
     val onDismissError: () -> Unit = {},
+    val onToggleVideoMode: () -> Unit = {},
 )
 
 /**
@@ -342,14 +357,64 @@ private fun CaptureScreenContent(
         )
     }
 
+    var isVideoMode by remember { mutableStateOf(false) }
+    var isRecordingVideo by remember { mutableStateOf(false) }
+    var videoDurationSeconds by remember { mutableStateOf(0) }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(isRecordingVideo) {
+        if (isRecordingVideo) {
+            videoDurationSeconds = 0
+            while (isActive && isRecordingVideo) {
+                delay(1000L)
+                videoDurationSeconds++
+            }
+        }
+    }
+
+    val minutes = videoDurationSeconds / 60
+    val seconds = videoDurationSeconds % 60
+    val videoDurationFormatted =
+        "${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
+
+    val handleCapture: () -> Unit = {
+        if (!isVideoMode) {
+            viewModel.onCapture()
+        } else {
+            if (!isRecordingVideo) {
+                coroutineScope.launch {
+                    val result = cameraManager.startVideoRecording()
+                    if (result.isSuccess) {
+                        isRecordingVideo = true
+                    }
+                }
+            } else {
+                coroutineScope.launch {
+                    val result = cameraManager.stopVideoRecording()
+                    isRecordingVideo = false
+                    if (result.isSuccess) {
+                        val fileName = "video_${io.healthplatform.chartcam.utils.UUID.randomUUID()}.mp4"
+                        val path = fileStorage.saveImage(fileName, result.getOrNull()!!)
+                        viewModel.onVideoRecorded(path)
+                    }
+                }
+            }
+        }
+    }
+
     val actions =
-        remember(viewModel) {
+        remember(viewModel, isVideoMode, isRecordingVideo) {
             CaptureActions(
-                onCapture = { viewModel.onCapture() },
+                onCapture = handleCapture,
                 onRetake = { viewModel.onRetake() },
                 onConfirm = { viewModel.onConfirm() },
                 onCancel = handleCancel,
                 onDismissError = { viewModel.clearError() },
+                onToggleVideoMode = {
+                    if (!isRecordingVideo) {
+                        isVideoMode = !isVideoMode
+                    }
+                },
             )
         }
 
@@ -359,6 +424,9 @@ private fun CaptureScreenContent(
         sensorManager = sensorManager,
         focusRequester = focusRequester,
         actions = actions,
+        isVideoMode = isVideoMode,
+        isRecordingVideo = isRecordingVideo,
+        videoDurationFormatted = videoDurationFormatted,
     )
 }
 
@@ -369,6 +437,9 @@ private fun CaptureScreenContent(
  * @param sensorManager The sensorManager.
  * @param focusRequester The focusRequester.
  * @param actions The actions.
+ * @param isVideoMode Whether in video recording mode.
+ * @param isRecordingVideo Whether video is actively recording.
+ * @param videoDurationFormatted Formatted video timer string.
  */
 @OptIn(ExperimentalResourceApi::class)
 @Composable
@@ -378,6 +449,9 @@ private fun CaptureBox(
     sensorManager: SensorManager,
     focusRequester: FocusRequester,
     actions: CaptureActions,
+    isVideoMode: Boolean = false,
+    isRecordingVideo: Boolean = false,
+    videoDurationFormatted: String = "",
 ) {
     val cdCameraPreview = stringResource(Res.string.cd_camera_preview)
     Box(
@@ -464,10 +538,14 @@ private fun CaptureBox(
                         total = state.totalSteps,
                         isCapturing = state.isCapturing,
                         hasMultipleCameras = cameraManager.hasMultipleCameras,
+                        isVideoMode = isVideoMode,
+                        isRecordingVideo = isRecordingVideo,
+                        videoDurationFormatted = videoDurationFormatted,
                     ),
                 onCapture = actions.onCapture,
                 onToggleLens = { cameraManager.toggleLens() },
                 onCancel = actions.onCancel,
+                onToggleVideoMode = actions.onToggleVideoMode,
             )
         }
     }
@@ -480,6 +558,7 @@ private fun CaptureBox(
  * @param onCapture Callback triggered when the capture button is clicked.
  * @param onToggleLens Callback triggered when the switch camera button is clicked.
  * @param onCancel Callback triggered when the cancel button is clicked.
+ * @param onToggleVideoMode Callback triggered when switching between photo and video modes.
  */
 @Composable
 fun ControlsLayer(
@@ -487,6 +566,7 @@ fun ControlsLayer(
     onCapture: () -> Unit,
     onToggleLens: () -> Unit,
     onCancel: () -> Unit,
+    onToggleVideoMode: () -> Unit = {},
 ) {
     Column(
         modifier =
@@ -499,11 +579,11 @@ fun ControlsLayer(
     ) {
         ControlsTopBar(state.stepName, state.count, state.total)
         ControlsBottomBar(
-            isCapturing = state.isCapturing,
-            hasMultipleCameras = state.hasMultipleCameras,
+            state = state,
             onCapture = onCapture,
             onCancel = onCancel,
             onToggleLens = onToggleLens,
+            onToggleVideoMode = onToggleVideoMode,
         )
     }
 }
@@ -560,20 +640,20 @@ private fun ControlsTopBar(
 
 /**
  * Internal helper function.
- * @param isCapturing The isCapturing.
- * @param hasMultipleCameras The hasMultipleCameras.
+ * @param state The controls state.
  * @param onCapture The onCapture.
  * @param onCancel The onCancel.
  * @param onToggleLens The onToggleLens.
+ * @param onToggleVideoMode The onToggleVideoMode.
  */
 @OptIn(ExperimentalResourceApi::class)
 @Composable
 private fun ControlsBottomBar(
-    isCapturing: Boolean,
-    hasMultipleCameras: Boolean,
+    state: ControlsState,
     onCapture: () -> Unit,
     onCancel: () -> Unit,
     onToggleLens: () -> Unit,
+    onToggleVideoMode: () -> Unit,
 ) {
     val capturingPhotoText = stringResource(Res.string.capturing_photo)
     val takePhotoText = stringResource(Res.string.take_photo)
@@ -581,6 +661,21 @@ private fun ControlsBottomBar(
         modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        if (state.isRecordingVideo) {
+            Text(
+                text = state.videoDurationFormatted,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.error,
+                modifier =
+                    Modifier
+                        .padding(bottom = AppSpacing.sm)
+                        .testTag("VideoDurationCounter")
+                        .semantics {
+                            liveRegion = LiveRegionMode.Polite
+                            contentDescription = "Video recording duration: ${state.videoDurationFormatted}"
+                        },
+            )
+        }
         Box(
             modifier =
                 Modifier
@@ -589,7 +684,7 @@ private fun ControlsBottomBar(
                     .padding(bottom = AppSpacing.sm),
             contentAlignment = Alignment.Center,
         ) {
-            if (isCapturing) {
+            if (state.isCapturing) {
                 CircularProgressIndicator(
                     modifier =
                         Modifier
@@ -601,21 +696,43 @@ private fun ControlsBottomBar(
                     color = MaterialTheme.colorScheme.primary,
                 )
             } else {
+                val buttonColor =
+                    if (state.isVideoMode) {
+                        if (state.isRecordingVideo) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.secondary
+                        }
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    }
                 FloatingActionButton(
                     onClick = onCapture,
                     shape = CircleShape,
-                    containerColor = MaterialTheme.colorScheme.primary,
+                    containerColor = buttonColor,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     modifier =
                         Modifier
                             .size(64.dp)
                             .border(3.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                            .testTag("CaptureShutterButton")
                             .semantics {
-                                contentDescription = takePhotoText
+                                contentDescription =
+                                    if (state.isVideoMode) {
+                                        if (state.isRecordingVideo) "Stop Recording" else "Start Recording"
+                                    } else {
+                                        takePhotoText
+                                    }
                             },
                 ) {
+                    val icon =
+                        if (state.isVideoMode) {
+                            if (state.isRecordingVideo) Icons.Default.Stop else Icons.Default.Videocam
+                        } else {
+                            Icons.Default.PhotoCamera
+                        }
                     Icon(
-                        imageVector = Icons.Default.PhotoCamera,
+                        imageVector = icon,
                         contentDescription = null,
                         modifier = Modifier.size(AppSpacing.xl),
                     )
@@ -633,19 +750,36 @@ private fun ControlsBottomBar(
                 Text(stringResource(Res.string.cancel))
             }
 
-            if (hasMultipleCameras) {
+            Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
                 IconButton(
-                    onClick = onToggleLens,
+                    onClick = onToggleVideoMode,
                     modifier =
                         Modifier
                             .size(56.dp)
+                            .testTag("ToggleVideoModeButton")
                             .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Cameraswitch,
-                        contentDescription = stringResource(Res.string.cd_switch_camera),
+                        imageVector = if (state.isVideoMode) Icons.Default.PhotoCamera else Icons.Default.Videocam,
+                        contentDescription = if (state.isVideoMode) "Switch to Photo Mode" else "Switch to Video Mode",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+
+                if (state.hasMultipleCameras) {
+                    IconButton(
+                        onClick = onToggleLens,
+                        modifier =
+                            Modifier
+                                .size(56.dp)
+                                .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Cameraswitch,
+                            contentDescription = stringResource(Res.string.cd_switch_camera),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }

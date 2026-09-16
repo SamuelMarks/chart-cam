@@ -131,6 +131,10 @@
     <string name="confirm_delete_option_message">האם אתה בטוח שברצונך למחוק אפשרות זו?</string>
     <string name="cd_more_widgets">רכיבים נוספים</string>
     <string name="widget_photo_camera">מצלמת תמונות</string>
+    <string name="widget_group">קבוצת שאלות</string>
+    <string name="add_entry">הוסף רשומה</string>
+    <string name="remove_entry">הסר רשומה</string>
+    <string name="entry_format">רשומה %1$d</string>
     <string name="widget_video_camera">מצלמת וידאו</string>
     <string name="widget_switch">מתג</string>
     <string name="widget_checkbox">תיבת סימון</string>
@@ -159,6 +163,10 @@
     <string name="copy_to_clipboard">העתק ללוח</string>
     <string name="share_text_json">שתף טקסט/JSON</string>
     <string name="qr_code_coming_soon">קוד QR וייצוא קבצים בקרוב</string>
+    <string name="import_from_file">ייבוא מקובץ</string>
+    <string name="scan_qr_code">סרוק קוד QR</string>
+    <string name="display_qr_code">הצג קוד QR</string>
+    <string name="export_json_file">ייצוא קובץ JSON</string>
     <string name="recovered_form">טופס משוחזר</string>
     <string name="yes">כן</string>
     <string name="no">לא</string>

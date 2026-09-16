@@ -159,6 +159,12 @@ interface SensorManager {
         get() = true
 
     /**
+     * Indicates whether physical orientation sensors exist and are supported on the device.
+     */
+    val hasOrientationHardware: Boolean
+        get() = isAvailable
+
+    /**
      * A flow emitting continuous orientation updates.
      */
     val orientation: Flow<OrientationData>
@@ -183,6 +189,11 @@ class UnavailableSensorManager : SensorManager {
      * Always returns false for unavailable hardware.
      */
     override val isAvailable: Boolean = false
+
+    /**
+     * Physical orientation sensors are absent on unavailable hardware.
+     */
+    override val hasOrientationHardware: Boolean = false
 
     /**
      * Emits a neutral level orientation state so the UI does not crash or hang.

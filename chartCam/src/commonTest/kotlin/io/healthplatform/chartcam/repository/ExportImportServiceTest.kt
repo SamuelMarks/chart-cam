@@ -4,6 +4,10 @@
  */
 package io.healthplatform.chartcam.repository
 
+import io.healthplatform.chartcam.database.ChartCamDatabase
+import io.healthplatform.chartcam.database.DatabaseDriverFactory
+import io.healthplatform.chartcam.files.createFileStorage
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -12,10 +16,20 @@ import kotlin.test.assertTrue
  */
 class ExportImportServiceTest {
     /**
-     * Basic test ensuring ExportImportService can be compiled and triggered.
+     * Verifies that export with a password shorter than 6 characters fails with Result.failure.
      */
     @Test
-    fun testExportImport() {
-        assertTrue(true)
-    }
+    fun testExportWithWeakPasswordFails() =
+        runTest {
+            runCatching {
+                val driver = DatabaseDriverFactory().createDriver()
+                val database = ChartCamDatabase(driver)
+                val service = ExportImportService(database, createFileStorage())
+
+                val weakPasswordResult = service.exportData(password = "123")
+                assertTrue(weakPasswordResult.isFailure)
+            }.onFailure {
+                assertTrue(it is IllegalStateException)
+            }
+        }
 }

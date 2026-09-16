@@ -5,17 +5,19 @@
 package io.healthplatform.chartcam.camera
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * Tests mapping to specific iOS permission APIs.
  */
 class PermissionManagerIosTest {
     /**
-     * Baseline dummy assertion test block.
+     * Verifies that IosPermissionManager status can be resolved safely.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testIosPermissionManager() {
+        val manager = IosPermissionManager()
+        val status = manager.getCameraPermissionStatus()
+        assertNotNull(status)
     }
 }

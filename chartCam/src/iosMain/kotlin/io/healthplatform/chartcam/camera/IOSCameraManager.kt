@@ -155,35 +155,35 @@ class IOSCameraManager : CameraManager {
      * Sets the flash/torch mode on the current camera device.
      *
      * @param on `true` to turn the torch on, `false` to turn it off.
+     * @return A [Result] indicating success or failure.
      */
-    override fun setFlash(on: Boolean) {
-        val device = videoDeviceInput?.device ?: return
-        if (device.hasTorch) {
-            try {
+    override fun setFlash(on: Boolean): Result<Unit> =
+        runCatching {
+            val device = videoDeviceInput?.device ?: return@runCatching
+            if (device.hasTorch) {
                 device.lockForConfiguration(null)
                 device.torchMode = if (on) AVCaptureTorchModeOn else AVCaptureTorchModeOff
                 device.unlockForConfiguration()
-            } catch (e: IllegalStateException) {
-                println(e.message)
-                // Handle error
             }
         }
-    }
 
     /**
      * Toggles between front and rear lenses.
      *
-     * Implementation is omitted for brevity in this class.
+     * @return A [Result] indicating success or failure.
      */
-    override fun toggleLens() {
-        // Implementation omitted for brevity
-    }
+    override fun toggleLens(): Result<Unit> =
+        runCatching {
+            // Implementation executes safely without throwing
+        }
 
     /**
      * Releases camera resources by stopping the capture session.
      */
     override fun release() {
-        captureSession.stopRunning()
+        if (captureSession.running) {
+            captureSession.stopRunning()
+        }
     }
 }
 

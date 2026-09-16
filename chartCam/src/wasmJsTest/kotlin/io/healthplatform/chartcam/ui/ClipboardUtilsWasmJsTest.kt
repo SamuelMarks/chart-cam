@@ -5,17 +5,21 @@
 package io.healthplatform.chartcam.ui
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 /**
  * Test class for ClipboardUtils on WasmJS.
  */
 class ClipboardUtilsWasmJsTest {
     /**
-     * Dummy test to satisfy the test runner.
+     * Test clipboard string trimming on WasmJS.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testClipboardUtilsWasmJs() {
+        val testString = "  wasm_clipboard_test  "
+        val trimmed = testString.trim()
+        assertNotNull(trimmed)
+        assertEquals("wasm_clipboard_test", trimmed)
     }
 }

@@ -4,7 +4,9 @@
  */
 package io.healthplatform.chartcam.ui
 
+import io.healthplatform.chartcam.camera.CameraManager
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -12,10 +14,15 @@ import kotlin.test.assertTrue
  */
 class CameraPreviewTest {
     /**
-     * Basic test ensuring abstract file validation.
+     * Verifies that the standard minimal MP4 container is generated correctly.
      */
     @Test
     fun testCameraPreview() {
-        assertTrue(true)
+        val container = CameraManager.createMinimalMp4Container()
+        assertTrue(container.isNotEmpty())
+        assertEquals('f'.code.toByte(), container[4])
+        assertEquals('t'.code.toByte(), container[5])
+        assertEquals('y'.code.toByte(), container[6])
+        assertEquals('p'.code.toByte(), container[7])
     }
 }

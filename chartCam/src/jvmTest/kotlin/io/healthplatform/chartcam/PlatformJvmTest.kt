@@ -12,10 +12,11 @@ import kotlin.test.assertTrue
  */
 class PlatformJvmTest {
     /**
-     * Test platform on JVM.
+     * Test platform properties on JVM.
      */
     @Test
     fun testPlatformJvm() {
-        assertTrue(true)
+        val platform = getPlatform()
+        assertTrue(platform.name.isNotBlank())
     }
 }

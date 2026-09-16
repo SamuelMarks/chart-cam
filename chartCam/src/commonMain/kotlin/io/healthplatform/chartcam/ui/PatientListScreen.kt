@@ -496,7 +496,8 @@ fun PatientListScreen(
                                     .tabFocusNext(focusManager)
                                     .onKeyEvent {
                                         if (it.key == Key.Enter &&
-                                            it.type == KeyEventType.KeyUp
+                                            it.type == KeyEventType.KeyUp &&
+                                            exportPassword.length >= 6
                                         ) {
                                             focusManager.clearFocus()
                                             viewModel.exportData(exportPassword, exportAllVisits)
@@ -512,12 +513,15 @@ fun PatientListScreen(
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                             keyboardActions =
                                 KeyboardActions(onDone = {
-                                    focusManager.clearFocus()
-                                    viewModel.exportData(exportPassword, exportAllVisits)
-                                    showExportPasswordDialog = false
-                                    exportPassword = ""
-                                    exportAllVisits = true
+                                    if (exportPassword.length >= 6) {
+                                        focusManager.clearFocus()
+                                        viewModel.exportData(exportPassword, exportAllVisits)
+                                        showExportPasswordDialog = false
+                                        exportPassword = ""
+                                        exportAllVisits = true
+                                    }
                                 }),
+                            isError = exportPassword.isNotEmpty() && exportPassword.length < 6,
                             singleLine = true,
                         )
                         val selectedText = stringResource(Res.string.state_selected)
@@ -549,12 +553,17 @@ fun PatientListScreen(
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.exportData(exportPassword, exportAllVisits)
-                        showExportPasswordDialog = false
-                        exportPassword = ""
-                        exportAllVisits = true
-                    }) {
+                    TextButton(
+                        onClick = {
+                            if (exportPassword.length >= 6) {
+                                viewModel.exportData(exportPassword, exportAllVisits)
+                                showExportPasswordDialog = false
+                                exportPassword = ""
+                                exportAllVisits = true
+                            }
+                        },
+                        enabled = exportPassword.length >= 6,
+                    ) {
                         Text(stringResource(Res.string.export))
                     }
                 },

@@ -12,10 +12,11 @@ import kotlin.test.assertTrue
  */
 class MainJvmTest {
     /**
-     * Dummy test to satisfy the test runner.
+     * Verifies JVM platform naming.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testMainJvm() {
+        val platform = getPlatform()
+        assertTrue(platform.name.contains("Java") || platform.name.contains("JVM") || platform.name.contains("Desktop"))
     }
 }

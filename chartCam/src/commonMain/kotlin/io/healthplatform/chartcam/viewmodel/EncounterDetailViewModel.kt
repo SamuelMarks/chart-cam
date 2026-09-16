@@ -44,6 +44,7 @@ import kotlinx.coroutines.launch
  * @param practitioner The currently authenticated practitioner.
  * @param encounter The FHIR Encounter resource being modified.
  * @param photos The captured clinical photos.
+ * @param audioMemos The recorded clinical voice memos.
  * @param answers A map of questionnaire linkId to dynamic answer (String, Boolean, etc.).
  * @param availableQuestionnaires The list of available questionnaires.
  * @param selectedQuestionnaire The currently selected questionnaire.
@@ -56,6 +57,7 @@ data class EncounterUiState(
     val practitioner: Practitioner? = null,
     val encounter: Encounter? = null,
     val photos: List<DocumentReference> = emptyList(),
+    val audioMemos: List<DocumentReference> = emptyList(),
     val answers: Map<String, Any> = emptyMap(),
     val availableQuestionnaires: List<Questionnaire> = emptyList(),
     val selectedQuestionnaire: Questionnaire? = null,
@@ -573,6 +575,44 @@ class EncounterDetailViewModel(
 
             _uiState.update {
                 it.copy(photos = it.photos + newDocs)
+            }
+        }
+    }
+
+    /**
+     * Adds a clinical voice memo document reference to the encounter.
+     *
+     * @param audioPath The local file path to the recorded audio file.
+     * @param label Optional descriptive label for the audio memo.
+     */
+    fun addVoiceMemo(
+        audioPath: String,
+        label: String = "Voice Memo",
+    ) {
+        val enc = _uiState.value.encounter ?: return
+        val patient = _uiState.value.patient ?: return
+
+        viewModelScope.launch {
+            val now =
+                kotlin.time.Clock.System
+                    .now()
+            val doc =
+                createFhirDocumentReference(
+                    DocumentReferenceCreationParams(
+                        id =
+                            io.healthplatform.chartcam.utils.UUID
+                                .randomUUID(),
+                        patientId = patient.id ?: "",
+                        encounterId = enc.id ?: "",
+                        dateStr = now.toString(),
+                        desc = label,
+                        mime = "audio/mp4",
+                        urlPath = audioPath,
+                    ),
+                )
+            fhirRepository.saveDocumentReference(doc)
+            _uiState.update {
+                it.copy(photos = it.photos + doc)
             }
         }
     }

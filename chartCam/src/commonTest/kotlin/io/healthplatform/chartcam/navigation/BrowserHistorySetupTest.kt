@@ -5,17 +5,18 @@
 package io.healthplatform.chartcam.navigation
 
 import kotlin.test.Test
-import kotlin.test.assertNotNull
+import kotlin.test.assertEquals
 
 /**
- * Tests for Browser History Setup (noop in common, implemented in platform specifics).
+ * Tests for Browser History Setup routes.
  */
 class BrowserHistorySetupTest {
     /**
-     * Minimal test to ensure file compilation and test execution.
+     * Verifies root route definitions for browser navigation.
      */
     @Test
     fun testBrowserHistorySetup() {
-        assertNotNull(this)
+        val rootRoute = Routes.LOGIN
+        assertEquals("/auth/login", rootRoute)
     }
 }

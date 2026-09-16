@@ -5,17 +5,18 @@
 package io.healthplatform.chartcam.database
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * Android host tests for DatabaseDriverFactory.
  */
 class DatabaseDriverFactoryAndroidTest {
     /**
-     * Dummy test to ensure test suite runs.
+     * Verifies creation of DatabaseDriverFactory instance on Android.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testDatabaseDriverFactoryAndroid() {
+        val factory = DatabaseDriverFactory()
+        assertNotNull(factory)
     }
 }

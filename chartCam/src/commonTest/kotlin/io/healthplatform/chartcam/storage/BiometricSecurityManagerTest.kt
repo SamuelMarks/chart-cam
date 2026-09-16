@@ -60,52 +60,62 @@ class BiometricSecurityManagerTest {
      * Verify handling when consecutive failed biometric attempts trigger temporary or permanent device lockout.
      */
     @Test
-    fun testBiometricLockoutAndFallback() {
-        val storage = FakeSecureStorage()
-        val manager = BiometricSecurityManager(storage, maxAttemptsBeforeTempLockout = 3, maxAttemptsBeforePermanentLockout = 5)
+    fun testBiometricLockoutAndFallback() =
+        kotlinx.coroutines.test.runTest {
+            val storage = FakeSecureStorage()
+            val availableProvider = DefaultKeystoreHardwareProvider(isHardware = true, status = BiometricHardwareStatus.AVAILABLE)
+            val manager =
+                BiometricSecurityManager(
+                    storage,
+                    hardwareProvider = availableProvider,
+                    maxAttemptsBeforeTempLockout = 3,
+                    maxAttemptsBeforePermanentLockout = 5,
+                )
 
-        // Attempt 1 fails -> 2 remaining
-        val res1 = manager.recordFailedAttempt()
-        assertTrue(res1 is BiometricAuthResult.Failed)
-        assertEquals(2, res1.attemptsRemaining)
+            // Attempt 1 fails -> 2 remaining
+            val res1 = manager.recordFailedAttempt()
+            assertTrue(res1 is BiometricAuthResult.Failed)
+            assertEquals(2, res1.attemptsRemaining)
 
-        // Attempt 2 fails -> 1 remaining
-        val res2 = manager.recordFailedAttempt()
-        assertTrue(res2 is BiometricAuthResult.Failed)
-        assertEquals(1, res2.attemptsRemaining)
+            // Attempt 2 fails -> 1 remaining
+            val res2 = manager.recordFailedAttempt()
+            assertTrue(res2 is BiometricAuthResult.Failed)
+            assertEquals(1, res2.attemptsRemaining)
 
-        // Attempt 3 fails -> Temporary Lockout
-        val res3 = manager.recordFailedAttempt()
-        assertTrue(res3 is BiometricAuthResult.TemporarilyLockedOut)
-        assertEquals(30, res3.lockoutDurationSeconds)
+            // Attempt 3 fails -> Temporary Lockout
+            val res3 = manager.recordFailedAttempt()
+            assertTrue(res3 is BiometricAuthResult.TemporarilyLockedOut)
+            assertEquals(30, res3.lockoutDurationSeconds)
 
-        // While temporarily locked out, authenticate attempts return TemporarilyLockedOut
-        val authWhileLocked = manager.authenticate(simulateSuccess = true)
-        assertTrue(authWhileLocked is BiometricAuthResult.TemporarilyLockedOut)
+            // While temporarily locked out, authenticate attempts return TemporarilyLockedOut
+            val authWhileLocked = manager.authenticate(simulateSuccess = true)
+            assertTrue(authWhileLocked is BiometricAuthResult.TemporarilyLockedOut)
+            assertTrue(manager.authenticatePrompt() is BiometricAuthResult.TemporarilyLockedOut)
 
-        // Attempt 4 and 5 fail -> Permanent Lockout
-        manager.recordFailedAttempt()
-        val res5 = manager.recordFailedAttempt()
-        assertEquals(BiometricAuthResult.PermanentlyLockedOut, res5)
+            // Attempt 4 and 5 fail -> Permanent Lockout
+            manager.recordFailedAttempt()
+            val res5 = manager.recordFailedAttempt()
+            assertEquals(BiometricAuthResult.PermanentlyLockedOut, res5)
 
-        // Consecutive failure when already permanently locked
-        val resAlreadyLocked = manager.recordFailedAttempt()
-        assertEquals(BiometricAuthResult.PermanentlyLockedOut, resAlreadyLocked)
+            // Consecutive failure when already permanently locked
+            val resAlreadyLocked = manager.recordFailedAttempt()
+            assertEquals(BiometricAuthResult.PermanentlyLockedOut, resAlreadyLocked)
 
-        // Permanent lockout forces credential fallback
-        val authWhilePermLocked = manager.authenticate(simulateSuccess = true)
-        assertEquals(BiometricAuthResult.PermanentlyLockedOut, authWhilePermLocked)
+            // Permanent lockout forces credential fallback
+            val authWhilePermLocked = manager.authenticate(simulateSuccess = true)
+            assertEquals(BiometricAuthResult.PermanentlyLockedOut, authWhilePermLocked)
+            assertEquals(BiometricAuthResult.PermanentlyLockedOut, manager.authenticatePrompt())
 
-        // Authenticate with simulateSuccess = false routes to recordFailedAttempt
-        val freshManager = BiometricSecurityManager(storage)
-        val authFailed = freshManager.authenticate(simulateSuccess = false)
-        assertTrue(authFailed is BiometricAuthResult.Failed)
+            // Authenticate with simulateSuccess = false routes to recordFailedAttempt
+            val freshManager = BiometricSecurityManager(storage, hardwareProvider = availableProvider)
+            val authFailed = freshManager.authenticate(simulateSuccess = false)
+            assertTrue(authFailed is BiometricAuthResult.Failed)
 
-        // Fallback: Primary password verification resets lockout
-        manager.resetLockout()
-        val authAfterReset = manager.authenticate(simulateSuccess = true)
-        assertEquals(BiometricAuthResult.Success, authAfterReset)
-    }
+            // Fallback: Primary password verification resets lockout
+            manager.resetLockout()
+            val authAfterReset = manager.authenticate()
+            assertEquals(BiometricAuthResult.Success, authAfterReset)
+        }
 
     /**
      * Ensure graceful degradation or actionable error reporting when hardware-backed key attestation/storage is unavailable.
@@ -122,6 +132,8 @@ class BiometricSecurityManagerTest {
         assertEquals(BiometricHardwareStatus.NO_HARDWARE, managerNoHardware.checkKeystoreAvailability())
         val authNoHardware = managerNoHardware.authenticate(simulateSuccess = true)
         assertTrue(authNoHardware is BiometricAuthResult.HardwareError)
+        val defaultAuth = managerNoHardware.authenticate()
+        assertTrue(defaultAuth is BiometricAuthResult.HardwareError)
 
         // Test with hardware unavailable (disabled by policy / StrongBox unavailable)
         val unavailProvider = DefaultKeystoreHardwareProvider(isHardware = false, status = BiometricHardwareStatus.HARDWARE_UNAVAILABLE)
@@ -201,4 +213,72 @@ class BiometricSecurityManagerTest {
         val resGeneric = manager.handlePlatformException(genericEx)
         assertTrue(resGeneric is BiometricAuthResult.HardwareError)
     }
+
+    /**
+     * Verifies genuine biometric prompt execution and error handling across all states.
+     */
+    @Test
+    fun testAuthenticatePrompt() =
+        kotlinx.coroutines.test.runTest {
+            val storage = FakeSecureStorage()
+            val availableProvider = DefaultKeystoreHardwareProvider(isHardware = true, status = BiometricHardwareStatus.AVAILABLE)
+            val manager = BiometricSecurityManager(storage, hardwareProvider = availableProvider)
+
+            val successResult = manager.authenticatePrompt("Unlock", "Clinical login")
+            assertEquals(BiometricAuthResult.Success, successResult)
+
+            // Test unavailable status
+            val notEnrolledProvider = DefaultKeystoreHardwareProvider(isHardware = false, status = BiometricHardwareStatus.NOT_ENROLLED)
+            val notEnrolledManager = BiometricSecurityManager(storage, hardwareProvider = notEnrolledProvider)
+            val notEnrolledResult = notEnrolledManager.authenticatePrompt()
+            assertTrue(notEnrolledResult is BiometricAuthResult.HardwareError)
+
+            // Test no hardware status
+            val noHardwareProvider = DefaultKeystoreHardwareProvider(isHardware = false, status = BiometricHardwareStatus.NO_HARDWARE)
+            val noHardwareManager = BiometricSecurityManager(storage, hardwareProvider = noHardwareProvider)
+            assertTrue(noHardwareManager.authenticatePrompt() is BiometricAuthResult.HardwareError)
+
+            // Test hardware unavailable status
+            val hwUnavailProvider =
+                DefaultKeystoreHardwareProvider(isHardware = false, status = BiometricHardwareStatus.HARDWARE_UNAVAILABLE)
+            val hwUnavailManager = BiometricSecurityManager(storage, hardwareProvider = hwUnavailProvider)
+            assertTrue(hwUnavailManager.authenticatePrompt() is BiometricAuthResult.HardwareError)
+
+            // Test prompt failure branch
+            val failingPromptProvider =
+                object : KeystoreHardwareProvider {
+                    override fun checkHardwareBacked(): Result<Unit> = Result.success(Unit)
+
+                    override fun getHardwareStatus(): BiometricHardwareStatus = BiometricHardwareStatus.AVAILABLE
+
+                    override suspend fun promptBiometrics(
+                        title: String,
+                        subtitle: String,
+                    ): Result<Unit> = Result.failure(IllegalStateException("User cancelled"))
+                }
+            val failingManager = BiometricSecurityManager(storage, hardwareProvider = failingPromptProvider)
+            assertTrue(failingManager.authenticatePrompt() is BiometricAuthResult.Failed)
+
+            // Test default interface promptBiometrics implementation
+            val defaultInterfaceProvider =
+                object : KeystoreHardwareProvider {
+                    override fun checkHardwareBacked(): Result<Unit> = Result.success(Unit)
+
+                    override fun getHardwareStatus(): BiometricHardwareStatus = BiometricHardwareStatus.AVAILABLE
+                }
+            assertTrue(defaultInterfaceProvider.promptBiometrics().isSuccess)
+
+            val unavailableInterfaceProvider =
+                object : KeystoreHardwareProvider {
+                    override fun checkHardwareBacked(): Result<Unit> = Result.success(Unit)
+
+                    override fun getHardwareStatus(): BiometricHardwareStatus = BiometricHardwareStatus.NO_HARDWARE
+                }
+            assertTrue(unavailableInterfaceProvider.promptBiometrics().isFailure)
+            assertTrue(notEnrolledProvider.promptBiometrics("Title", "Subtitle").isFailure)
+
+            // Test locked out states
+            manager.onBiometricCredentialsChanged()
+            assertEquals(BiometricAuthResult.KeyPermanentlyInvalidated, manager.authenticatePrompt())
+        }
 }

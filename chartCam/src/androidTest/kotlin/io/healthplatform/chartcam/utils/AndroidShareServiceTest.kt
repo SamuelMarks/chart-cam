@@ -12,6 +12,7 @@ import chartcam.chartcam.generated.resources.share_password
 import io.healthplatform.chartcam.AndroidAppInit
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.compose.resources.getString
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -48,11 +49,8 @@ class AndroidShareServiceTest {
         runBlocking {
             val service = createShareService()
             val text = getString(Res.string.share_password)
-            try {
-                service.shareText(text)
-            } catch (e: Exception) {
-                // Context.startActivity might fail in isolated test environment without FLAG_ACTIVITY_NEW_TASK or mocking, but the function executes.
-            }
+            val result = service.shareText(text)
+            assertNotNull(result)
         }
 
     /**
@@ -63,12 +61,8 @@ class AndroidShareServiceTest {
         val service = createShareService()
         val file = File(ApplicationProvider.getApplicationContext<Context>().cacheDir, "test.txt")
         file.writeText("test")
-        try {
-            service.shareFile(file.absolutePath)
-        } catch (e: Exception) {
-            // Might fail due to FileProvider not being fully set up in test AndroidManifest, but covers logic.
-        } finally {
-            file.delete()
-        }
+        val result = service.shareFile(file.absolutePath)
+        assertNotNull(result)
+        file.delete()
     }
 }

@@ -8,6 +8,7 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.failed_to_import
 import chartcam.chartcam.generated.resources.failed_to_load_patients
+import chartcam.chartcam.generated.resources.unknown_error
 import com.google.fhir.model.r4.Patient
 import com.google.fhir.model.r4.Practitioner
 import io.healthplatform.chartcam.database.ChartCamDatabase
@@ -351,6 +352,26 @@ class PatientListViewModelTest {
             testDispatcher.scheduler.advanceUntilIdle()
 
             assertEquals(null, viewModel.uiState.value.exportedData)
+            assertEquals(Res.string.unknown_error, viewModel.uiState.value.error)
+        }
+
+    /**
+     * Test exportData success and clearExportData.
+     */
+    @Test
+    fun `exportData success updates state and clearExportData resets it`() =
+        runTest(testDispatcher) {
+            mockExportImportService.shouldThrow = false
+            viewModel.exportData("password123", true)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals("exported-data", viewModel.uiState.value.exportedData)
+            assertEquals("password123", viewModel.uiState.value.exportPassword)
+            assertEquals(null, viewModel.uiState.value.error)
+
+            viewModel.clearExportData()
+            assertEquals(null, viewModel.uiState.value.exportedData)
+            assertEquals(null, viewModel.uiState.value.exportPassword)
         }
 }
 

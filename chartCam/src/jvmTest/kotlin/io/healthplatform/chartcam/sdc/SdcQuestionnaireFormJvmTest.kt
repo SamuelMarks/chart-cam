@@ -320,4 +320,62 @@ class SdcQuestionnaireFormJvmTest {
 
             io.healthplatform.chartcam.ui.currentLanguageState.value = "en"
         }
+
+    /**
+     * Tests rendering and dynamic add/remove of repeating question group items.
+     */
+    @Test
+    fun testRepeatingGroupAddAndRemove() =
+        runComposeUiTest {
+            val childItem =
+                Questionnaire.Item
+                    .Builder(
+                        String.Builder().apply { value = "lesion_desc" },
+                        Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    ).apply {
+                        text = String.Builder().apply { value = "Lesion Description" }
+                    }
+
+            val groupItem =
+                Questionnaire.Item
+                    .Builder(
+                        String.Builder().apply { value = "lesions_group" },
+                        Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    ).apply {
+                        repeats = Boolean.Builder().apply { value = true }
+                        text = String.Builder().apply { value = "Lesions" }
+                        item.add(childItem)
+                    }
+
+            val questionnaire =
+                Questionnaire
+                    .Builder(
+                        Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active),
+                    ).apply {
+                        id = "test-repeating-q"
+                        title = String.Builder().apply { value = "Repeating Test" }
+                        item.add(groupItem)
+                    }.build()
+
+            var answers: Map<kotlin.String, Any> = mapOf()
+
+            setContent {
+                SdcQuestionnaireForm(
+                    questionnaire = questionnaire,
+                    answers = answers,
+                    onFormUpdated = { updated, _ -> answers = updated },
+                )
+            }
+
+            onNodeWithTag("AddGroupEntry_lesions_group").assertIsDisplayed()
+            onNodeWithText("Entry 1").assertIsDisplayed()
+
+            onNodeWithTag("AddGroupEntry_lesions_group").performClick()
+            onNodeWithText("Entry 2").assertIsDisplayed()
+
+            onNodeWithTag("RemoveGroupEntry_lesions_group_1").assertIsDisplayed()
+            onNodeWithTag("RemoveGroupEntry_lesions_group_1").performClick()
+
+            onNodeWithText("Entry 1").assertIsDisplayed()
+        }
 }

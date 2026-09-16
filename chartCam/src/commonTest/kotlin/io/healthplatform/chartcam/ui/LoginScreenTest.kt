@@ -4,18 +4,25 @@
  */
 package io.healthplatform.chartcam.ui
 
+import io.healthplatform.chartcam.viewmodel.LoginUiState
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 /**
- * Common dummy test for [LoginScreen].
+ * Common test for [LoginScreen] and [LoginUiState].
  */
 class LoginScreenTest {
     /**
-     * Dummy placeholder for execution.
+     * Verifies default LoginUiState creation and initial flags.
      */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testLoginUiStateDefaults() {
+        val state = LoginUiState()
+        assertNotNull(state)
+        assertFalse(state.isLoggedIn)
+        assertFalse(state.isLoading)
+        assertNull(state.errorMessage)
     }
 }

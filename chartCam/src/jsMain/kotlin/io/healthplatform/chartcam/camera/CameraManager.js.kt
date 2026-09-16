@@ -140,21 +140,37 @@ class JsCameraManager : CameraManager {
         }
 
     /**
-     * Sets the state of the device flashlight.
-     * Note: Not widely supported or implemented on Web.
+     * Sets the state of the device flashlight (torch) via track constraints.
      *
      * @param on True to turn the flash on, false to turn it off.
+     * @return A [Result] indicating success or failure.
      */
-    override fun setFlash(on: Boolean) { /* no-op */ }
+    override fun setFlash(on: Boolean): Result<Unit> =
+        runCatching {
+            val stream = videoElement.srcObject.asDynamic()
+            if (stream != null && stream.getVideoTracks != null) {
+                val tracks = stream.getVideoTracks()
+                if (tracks != null && tracks.length > 0) {
+                    val track = tracks[0]
+                    if (track != null && track.applyConstraints != null) {
+                        val constraints = js("({ advanced: [{ torch: on }] })")
+                        track.applyConstraints(constraints)
+                    }
+                }
+            }
+        }
 
     /**
      * Toggles between the front and rear cameras, if available.
+     *
+     * @return A [Result] indicating success or failure.
      */
-    override fun toggleLens() {
-        isFrontFacing = !isFrontFacing
-        release()
-        startCamera()
-    }
+    override fun toggleLens(): Result<Unit> =
+        runCatching {
+            isFrontFacing = !isFrontFacing
+            release()
+            startCamera()
+        }
 
     /**
      * Stops the active media stream and releases camera resources.
@@ -186,11 +202,11 @@ actual fun rememberCameraManager(): CameraManager {
 class JsPermissionManager : PermissionManager {
     /**
      * Retrieves the current camera permission status.
-     * Returns [PermissionStatus.GRANTED] assuming the browser will prompt automatically when needed.
+     * Returns [PermissionStatus.GRANTED] assuming the browser prompts automatically on stream request.
      *
      * @return The current permission status.
      */
-    override fun getCameraPermissionStatus() = PermissionStatus.GRANTED
+    override fun getCameraPermissionStatus(): PermissionStatus = PermissionStatus.GRANTED
 
     /**
      * Requests camera permission. Web handles this on `getUserMedia`.
@@ -200,9 +216,16 @@ class JsPermissionManager : PermissionManager {
     override suspend fun requestCameraPermission(): Result<Unit> = Result.success(Unit)
 
     /**
-     * Opens system settings. No-op on web platforms.
+     * Displays browser site settings guidance for managing camera permissions.
      */
-    override fun openSettings() { /* no-op */ }
+    override fun openSettings() {
+        runCatching {
+            val guidance =
+                "To manage camera permissions, please check your browser " +
+                    "site settings or click the permissions icon in your address bar."
+            kotlinx.browser.window.alert(guidance)
+        }
+    }
 }
 
 /**

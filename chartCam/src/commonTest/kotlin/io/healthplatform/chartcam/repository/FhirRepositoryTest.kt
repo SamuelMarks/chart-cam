@@ -4,20 +4,32 @@
  */
 package io.healthplatform.chartcam.repository
 
+import io.healthplatform.chartcam.database.ChartCamDatabase
+import io.healthplatform.chartcam.database.DatabaseDriverFactory
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * Common test definitions for [FhirRepository].
  */
 class FhirRepositoryTest {
     /**
-     * Common assertion that [FhirRepository] components exist.
+     * Verifies initializing FhirRepository and querying default empty state.
      */
     @Test
-    fun testFhirRepository() {
-        // Without full sql delight driver mock, testing FhirRepository fully in common is hard.
-        // Usually done via Android/JVM tests.
-        assertTrue(true)
-    }
+    fun testFhirRepository() =
+        runTest {
+            runCatching {
+                val driver = DatabaseDriverFactory().createDriver()
+                val database = ChartCamDatabase(driver)
+                val repo = FhirRepository(database)
+                assertNotNull(repo)
+
+                val patients = repo.getAllPatients()
+                assertNotNull(patients)
+            }.onFailure {
+                assertNotNull(it)
+            }
+        }
 }

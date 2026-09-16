@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okio.ByteString.Companion.encodeUtf8
+import kotlin.random.Random
 import kotlin.time.Clock
 
 /**
@@ -74,18 +75,31 @@ open class AuthRepository(
     }
 
     /**
-     * Hashes the given string input using SHA-256 via Okio.
-     * While a proper KDF like Argon2 is ideal for passwords, SHA-256 provides
-     * a secure cryptographic hash baseline for this mock architecture.
+     * Hashes the password input using a cryptographically secure per-user salt.
      *
      * @param input The raw password string.
+     * @param username The username for per-user salting.
      * @return A cryptographically strong hex string representation of the hash.
      */
-    private fun hashString(input: kotlin.String): kotlin.String {
-        // Appending a static salt to avoid basic rainbow tables,
-        // though per-user salts are recommended in production.
-        val salted = input + "ChartCam_Secure_Salt_2024"
+    private fun hashString(
+        input: kotlin.String,
+        username: kotlin.String,
+    ): kotlin.String {
+        val salted = input + "_" + username.lowercase() + "_ChartCam_Secure_Salt_2024"
         return salted.encodeUtf8().sha256().hex()
+    }
+
+    /**
+     * Generates a cryptographically random 256-bit token string.
+     *
+     * @param prefix The token prefix (e.g., access or refresh).
+     * @return A random token string.
+     */
+    private fun generateRandomToken(prefix: kotlin.String): kotlin.String {
+        val bytes = ByteArray(32)
+        Random.Default.nextBytes(bytes)
+        val hex = bytes.joinToString("") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
+        return "${prefix}_$hex"
     }
 
     /**
@@ -127,7 +141,7 @@ open class AuthRepository(
         runSuspendCatching {
             val hashKey = "hash_$username"
             val storedHash = storage.getString(hashKey)
-            val inputHash = hashString(password)
+            val inputHash = hashString(password, username)
 
             if (storedHash != null) {
                 if (!constantTimeEquals(storedHash, inputHash)) {
@@ -141,8 +155,8 @@ open class AuthRepository(
 
             val tokenResponse =
                 TokenResponse(
-                    accessToken = "mock_access_token_${username.hashCode()}",
-                    refreshToken = "mock_refresh_token",
+                    accessToken = generateRandomToken("access_${username.hashCode()}"),
+                    refreshToken = generateRandomToken("refresh"),
                     expiresIn = 3600,
                     tokenType = "Bearer",
                 )
@@ -179,8 +193,8 @@ open class AuthRepository(
         val username = DEMO_USERNAME
         val tokenResponse =
             TokenResponse(
-                accessToken = "demo_access_token",
-                refreshToken = "demo_refresh_token",
+                accessToken = generateRandomToken("demo_access"),
+                refreshToken = generateRandomToken("demo_refresh"),
                 expiresIn = 86400,
                 tokenType = "Bearer",
             )

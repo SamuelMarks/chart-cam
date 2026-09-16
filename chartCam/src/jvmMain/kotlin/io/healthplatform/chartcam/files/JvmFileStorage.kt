@@ -7,6 +7,8 @@ package io.healthplatform.chartcam.files
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
+import java.nio.file.Files
+import java.nio.file.attribute.PosixFilePermission
 
 private const val MIN_WINDOWS_PATH_LENGTH = 2
 
@@ -28,6 +30,15 @@ class JvmFileStorage(
     init {
         if (!fileSystem.exists(baseDirectory)) {
             fileSystem.createDirectories(baseDirectory)
+            runCatching {
+                val perms =
+                    setOf(
+                        PosixFilePermission.OWNER_READ,
+                        PosixFilePermission.OWNER_WRITE,
+                        PosixFilePermission.OWNER_EXECUTE,
+                    )
+                Files.setPosixFilePermissions(baseDirectory.toNioPath(), perms)
+            }
         }
     }
 
@@ -62,6 +73,14 @@ class JvmFileStorage(
         }
         fileSystem.write(path) {
             write(bytes)
+        }
+        runCatching {
+            val perms =
+                setOf(
+                    PosixFilePermission.OWNER_READ,
+                    PosixFilePermission.OWNER_WRITE,
+                )
+            Files.setPosixFilePermissions(path.toNioPath(), perms)
         }
         return path.toString()
     }

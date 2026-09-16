@@ -8,12 +8,17 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 
 /**
- * Platform specific sensor initialization test coverage.
+ * Platform specific sensor initialization test coverage for iOS.
  */
 class IosSensorManagerTest {
-    /** Test placeholder implementation block. */
+    /**
+     * Verifies that IosSensorManager initializes and manages listeners safely.
+     */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testSensorLifecycle() {
+        val manager = IosSensorManager()
+        assertNotNull(manager.orientation, "Orientation flow must be available")
+        manager.startListening()
+        manager.stopListening()
     }
 }

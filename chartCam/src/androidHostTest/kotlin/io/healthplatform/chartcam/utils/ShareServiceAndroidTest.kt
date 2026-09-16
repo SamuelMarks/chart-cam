@@ -8,6 +8,8 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import io.healthplatform.chartcam.AndroidAppInit
 import org.junit.After
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -15,16 +17,18 @@ import org.robolectric.RobolectricTestRunner
 import java.io.File
 
 /**
- * Android host tests for ShareService.
+ * Android host tests for [AndroidShareService].
  */
 @RunWith(RobolectricTestRunner::class)
 class ShareServiceAndroidTest {
+    private lateinit var context: Context
+
     /**
      * Setup for tests.
      */
     @Before
     fun setup() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
+        context = ApplicationProvider.getApplicationContext<Context>()
         AndroidAppInit.init(context)
     }
 
@@ -39,28 +43,54 @@ class ShareServiceAndroidTest {
     }
 
     /**
-     * Tests AndroidShareService functionality.
+     * Tests AndroidShareService with non-existent files.
      */
     @Test
-    fun testShareServiceAndroid() {
+    fun testShareNonExistentFileReturnsFailure() {
+        val service = createShareService()
+        val result = service.shareFile("completely_nonexistent_file_path.enc")
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is ExportFileNotFoundException)
+    }
+
+    /**
+     * Tests sharing text on Android.
+     */
+    @Test
+    fun testShareTextAndroid() {
+        val service = createShareService()
+        val result = service.shareText("Secure Password 123")
+        assertNotNull(result)
+    }
+
+    /**
+     * Tests sharing files located in filesDir and cacheDir, including relative fallback resolution.
+     */
+    @Test
+    fun testShareFileResolutionAndFallback() {
         val service = createShareService()
 
-        // Share non-existent file
-        service.shareFile("invalid_path.txt")
+        // Create file in internal filesDir
+        val filesDirFile = File(context.filesDir, "export_test.enc")
+        filesDirFile.writeText("sample encrypted payload")
 
-        // Share text
-        service.shareText("Hello World")
+        // Create file in cacheDir
+        val cacheDirFile = File(context.cacheDir, "questionnaire_test.json")
+        cacheDirFile.writeText("{}")
 
-        // Share existent file (create a temp file)
-        val tempFile = File.createTempFile("test_share", ".txt")
-        // We might get an exception from FileProvider since provider is not defined in manifest in Robolectric tests for library,
-        // but let's wrap it in try-catch to just cover the lines if it throws.
-        try {
-            service.shareFile(tempFile.absolutePath)
-        } catch (e: Exception) {
-            // Expected if FileProvider is not in manifest for the test app
-        } finally {
-            tempFile.delete()
-        }
+        // Test absolute path resolution
+        val absResult = service.shareFile(filesDirFile.absolutePath)
+        assertNotNull(absResult)
+
+        // Test relative path resolution for filesDir file
+        val relFilesResult = service.shareFile("export_test.enc")
+        assertNotNull(relFilesResult)
+
+        // Test relative path resolution for cacheDir file
+        val relCacheResult = service.shareFile("questionnaire_test.json")
+        assertNotNull(relCacheResult)
+
+        filesDirFile.delete()
+        cacheDirFile.delete()
     }
 }

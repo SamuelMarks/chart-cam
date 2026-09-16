@@ -12,10 +12,11 @@ import kotlin.test.assertTrue
  */
 class PlatformJsTest {
     /**
-     * Dummy test to satisfy the test runner.
+     * Test platform on JS.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testPlatformJs() {
+        val platform = getPlatform()
+        assertTrue(platform.name.isNotBlank())
     }
 }

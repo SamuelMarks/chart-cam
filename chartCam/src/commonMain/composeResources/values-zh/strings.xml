@@ -130,6 +130,10 @@
     <string name="confirm_delete_option_message">您確定要刪除此選項嗎？</string>
     <string name="cd_more_widgets">更多元件</string>
     <string name="widget_photo_camera">照相機</string>
+    <string name="widget_group">問題組</string>
+    <string name="add_entry">新增項目</string>
+    <string name="remove_entry">移除項目</string>
+    <string name="entry_format">項目 %1$d</string>
     <string name="widget_video_camera">攝影機</string>
     <string name="widget_switch">開關</string>
     <string name="widget_checkbox">核取方塊</string>
@@ -158,6 +162,10 @@
     <string name="copy_to_clipboard">複製至剪貼簿</string>
     <string name="share_text_json">分享文字/JSON</string>
     <string name="qr_code_coming_soon">QR Code 與檔案匯出即將推出</string>
+    <string name="import_from_file">從檔案匯入</string>
+    <string name="scan_qr_code">掃描 QR Code</string>
+    <string name="display_qr_code">顯示 QR Code</string>
+    <string name="export_json_file">匯出 JSON 檔案</string>
     <string name="recovered_form">復原的問診表</string>
     <string name="yes">是</string>
     <string name="no">否</string>

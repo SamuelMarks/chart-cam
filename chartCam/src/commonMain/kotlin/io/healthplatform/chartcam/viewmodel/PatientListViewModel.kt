@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.failed_to_import
 import chartcam.chartcam.generated.resources.failed_to_load_patients
+import chartcam.chartcam.generated.resources.unknown_error
 import com.google.fhir.model.r4.Patient
 import io.healthplatform.chartcam.models.ConflictResolutionStrategy
 import io.healthplatform.chartcam.models.ImportCategory
@@ -230,9 +231,10 @@ class PatientListViewModel(
             exportImportService
                 .exportData(password, exportAll, practitionerId)
                 .onSuccess { data ->
-                    _uiState.update { it.copy(exportedData = data, exportPassword = password) }
+                    _uiState.update { it.copy(exportedData = data, exportPassword = password, error = null) }
                 }.onFailure { e ->
                     println(e.message)
+                    _uiState.update { it.copy(error = Res.string.unknown_error) }
                 }
         }
     }

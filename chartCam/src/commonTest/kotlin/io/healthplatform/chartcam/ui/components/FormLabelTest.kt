@@ -5,17 +5,22 @@
 package io.healthplatform.chartcam.ui.components
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 /**
- * Common dummy test for FormLabel component.
+ * Common test for FormLabel component logic.
  */
 class FormLabelTest {
     /**
-     * Dummy placeholder for test execution.
+     * Verifies required field label formatting.
      */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testFormLabelRequirement() {
+        val label = "Patient Name"
+        val isRequired = true
+        val formatted = if (isRequired) "$label *" else label
+        assertNotNull(formatted)
+        assertEquals("Patient Name *", formatted)
     }
 }

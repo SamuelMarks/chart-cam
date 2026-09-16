@@ -56,9 +56,12 @@ class FileStorageJvmTest {
         assertEquals(absPath, directSaved)
         assertEquals("Clinical photo payload", String(storage.readImage(directSaved), Charsets.UTF_8))
 
-        // Path starting with backslash
+        // Path starting with backslash (UNC/root)
         val winSaved = storage.saveImage("win_test\\photo.jpg", payload)
         assertTrue(winSaved.isNotEmpty())
+
+        val uncPath = "\\\\server\\share\\photo.jpg"
+        storage.readImage(uncPath)
 
         // Drive letter path format
         val drivePath = "C:\\test\\drive.jpg"

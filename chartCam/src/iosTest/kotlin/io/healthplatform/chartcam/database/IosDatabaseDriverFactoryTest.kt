@@ -11,9 +11,10 @@ import kotlin.test.assertNotNull
  * Alternative test target mapping for iOS SQLite driver logic.
  */
 class IosDatabaseDriverFactoryTest {
-    /** Dummy test logic block. */
+    /** Verifies driver creation on iOS. */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testDatabaseDriverFactory() {
+        val factory = DatabaseDriverFactory()
+        assertNotNull(factory)
     }
 }

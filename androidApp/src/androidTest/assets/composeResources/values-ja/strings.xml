@@ -118,6 +118,10 @@
     <string name="cd_add">追加</string>
     <string name="cd_more_widgets">その他のウィジェット</string>
     <string name="widget_photo_camera">写真カメラ</string>
+    <string name="widget_group">質問グループ</string>
+    <string name="add_entry">エントリを追加</string>
+    <string name="remove_entry">エントリを削除</string>
+    <string name="entry_format">エントリ %1$d</string>
     <string name="widget_video_camera">ビデオカメラ</string>
     <string name="widget_switch">スイッチ</string>
     <string name="widget_checkbox">チェックボックス</string>
@@ -143,6 +147,10 @@
     <string name="copy_to_clipboard">クリップボードにコピー</string>
     <string name="share_text_json">テキスト/JSONを共有</string>
     <string name="qr_code_coming_soon">QRコードは近日公開</string>
+    <string name="import_from_file">ファイルからインポート</string>
+    <string name="scan_qr_code">QRコードをスキャン</string>
+    <string name="display_qr_code">QRコードを表示</string>
+    <string name="export_json_file">JSONファイルをエクスポート</string>
     <string name="recovered_form">復元された問診票</string>
     <string name="yes">はい</string>
     <string name="no">いいえ</string>

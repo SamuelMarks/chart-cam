@@ -10,21 +10,12 @@ import com.google.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.fhir.SdcExtensions
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import com.google.fhir.model.r4.String as FhirString
 
 /**
  * Common test wrapper for the Capture Screen logic.
  */
 class CaptureScreenCommonTest {
-    /**
-     * Placeholder test.
-     */
-    @Test
-    fun dummyTest() {
-        assertNotNull(this)
-    }
-
     /**
      * Verifies that [extractSteps] correctly extracts attachment steps and localizes their titles.
      */

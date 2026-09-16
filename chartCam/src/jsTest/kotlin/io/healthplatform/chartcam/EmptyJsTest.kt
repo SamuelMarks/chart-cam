@@ -3,18 +3,20 @@
  * Contains declarations for EmptyJsTest.kt.
  */
 package io.healthplatform.chartcam
+
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 /**
- * Empty test class for JS.
+ * Basic JS sanity checks.
  */
 class EmptyJsTest {
     /**
-     * Test empty js.
+     * Test string trimming behavior in JS.
      */
     @Test
     fun testEmptyJs() {
-        assertTrue(true)
+        val str = "  js_test  "
+        assertEquals("js_test", str.trim())
     }
 }

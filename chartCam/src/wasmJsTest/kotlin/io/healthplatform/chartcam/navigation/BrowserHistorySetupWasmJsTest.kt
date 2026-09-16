@@ -5,17 +5,17 @@
 package io.healthplatform.chartcam.navigation
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 /**
  * Test class for BrowserHistorySetup on WasmJS.
  */
 class BrowserHistorySetupWasmJsTest {
     /**
-     * Dummy test to satisfy the test runner.
+     * Test browser history setup route resolution on WasmJS.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testBrowserHistorySetupWasmJs() {
+        assertEquals("/auth/login", Routes.LOGIN)
     }
 }

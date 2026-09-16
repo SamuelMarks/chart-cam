@@ -5,17 +5,17 @@
 package io.healthplatform.chartcam.navigation
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 /**
  * Android host tests for BrowserHistorySetup.
  */
 class BrowserHistorySetupAndroidTest {
     /**
-     * Dummy test to ensure test suite runs.
+     * Verifies Android route definitions.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testBrowserHistorySetupAndroid() {
+        assertEquals("/auth/login", Routes.LOGIN)
     }
 }

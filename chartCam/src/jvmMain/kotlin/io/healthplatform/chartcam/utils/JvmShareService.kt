@@ -30,20 +30,30 @@ class JvmShareService : ShareService {
      * and showing a confirmation dialog to the user.
      *
      * @param filePath The absolute path of the file to be shared.
+     * @return A [Result] indicating success or failure.
      */
-    override fun shareFile(filePath: String) {
+    override fun shareFile(filePath: String): Result<Unit> {
         val file = File(filePath)
-        if (file.exists() && Desktop.isDesktopSupported()) {
-            try {
-                // Just open the file directory or the file itself as "sharing"
-                Desktop.getDesktop().open(file.parentFile)
-                if (!isTesting()) {
-                    JOptionPane.showMessageDialog(null, "File saved to: ${file.absolutePath}")
-                }
-            } catch (e: IllegalStateException) {
-                println(e.message)
+        val failure =
+            when {
+                !file.exists() -> ExportFileNotFoundException(filePath)
+                !Desktop.isDesktopSupported() ->
+                    PlatformShareException(
+                        platform = "JVM",
+                        reason = "Desktop operations are unsupported in this environment",
+                    )
+                else -> null
             }
+        if (failure != null) {
+            return Result.failure(failure)
         }
+
+        return runCatching {
+            Desktop.getDesktop().open(file.parentFile ?: file)
+            if (!isTesting()) {
+                JOptionPane.showMessageDialog(null, "File saved to: ${file.absolutePath}")
+            }
+        }.mapCatching { }
     }
 
     /**
@@ -51,21 +61,17 @@ class JvmShareService : ShareService {
      * confirmation dialog to the user.
      *
      * @param text The text string to be copied to the clipboard.
+     * @return A [Result] indicating success or failure.
      */
-    override fun shareText(text: String) {
-        try {
+    override fun shareText(text: String): Result<Unit> =
+        runCatching {
             val selection = StringSelection(text)
             val clipboard = Toolkit.getDefaultToolkit().systemClipboard
             clipboard.setContents(selection, selection)
             if (!isTesting()) {
                 JOptionPane.showMessageDialog(null, "Text copied to clipboard")
             }
-        } catch (e: IllegalStateException) {
-            println("Headless environment detected, cannot copy to clipboard: ${e.message}")
-        } catch (e: java.awt.HeadlessException) {
-            println("Headless environment detected, cannot copy to clipboard: ${e.message}")
-        }
-    }
+        }.mapCatching { }
 }
 
 /**

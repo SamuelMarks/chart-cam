@@ -193,6 +193,41 @@ class CaptureViewModel(
     }
 
     /**
+     * Saves a recorded video file directly for the current step and advances to the next step.
+     *
+     * @param videoPath The local file path to the captured MP4 video file.
+     */
+    fun onVideoRecorded(videoPath: String) {
+        val currentStep = _uiState.value.currentStep ?: return
+        filePaths[currentStep] = videoPath
+        currentStepIndex++
+        val nextStep = if (currentStepIndex < stepsSequence.size) stepsSequence[currentStepIndex] else null
+        if (nextStep != null) {
+            _uiState.update {
+                it.copy(
+                    currentStep = nextStep,
+                    reviewImageBytes = null,
+                    capturedCount = filePaths.size,
+                    error = null,
+                    errorMessage = null,
+                    errorMessageResource = null,
+                )
+            }
+        } else {
+            _uiState.update {
+                it.copy(
+                    reviewImageBytes = null,
+                    isFinished = true,
+                    capturedCount = filePaths.size,
+                    error = null,
+                    errorMessage = null,
+                    errorMessageResource = null,
+                )
+            }
+        }
+    }
+
+    /**
      * Restores previously captured photos following an app crash or process restart.
      *
      * @param savedPaths Map of completed photo steps and their saved file paths.

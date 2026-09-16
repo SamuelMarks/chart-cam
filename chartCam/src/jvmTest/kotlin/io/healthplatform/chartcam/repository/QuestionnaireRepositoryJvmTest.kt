@@ -95,8 +95,11 @@ class QuestionnaireRepositoryJvmTest {
     fun testLoadDefaultFormsExceptions() =
         runTest {
             val nullRepo = QuestionnaireRepository(null)
-            nullRepo.loadDefaultForms() // Shouldn't crash
-            assertTrue(true)
+            val initialForms = nullRepo.getAvailableQuestionnaires()
+            nullRepo.loadDefaultForms()
+            val forms = nullRepo.getAvailableQuestionnaires()
+            assertNotNull(forms)
+            assertTrue(forms.size >= initialForms.size)
         }
 
     /**

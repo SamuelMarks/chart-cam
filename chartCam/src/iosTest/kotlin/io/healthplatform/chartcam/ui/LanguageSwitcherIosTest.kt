@@ -11,9 +11,10 @@ import kotlin.test.assertTrue
  * Validates iOS localization setup.
  */
 class LanguageSwitcherIosTest {
-    /** Dummy test block. */
+    /** Verifies current language state is initialized on iOS. */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testLanguageSwitcherIos() {
+        val lang = currentLanguageState.value
+        assertTrue(lang.isNotEmpty())
     }
 }

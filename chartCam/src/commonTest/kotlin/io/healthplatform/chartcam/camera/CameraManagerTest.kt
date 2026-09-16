@@ -28,10 +28,10 @@ class CameraManagerTest {
                  * Mock setFlash.
                  * @param on Boolean state.
                  */
-                override fun setFlash(on: Boolean) {}
+                override fun setFlash(on: Boolean): Result<Unit> = Result.success(Unit)
 
                 /** Mock toggleLens. */
-                override fun toggleLens() {}
+                override fun toggleLens(): Result<Unit> = Result.success(Unit)
 
                 /** Mock release. */
                 override fun release() {}
@@ -51,9 +51,9 @@ class CameraManagerTest {
                 object : CameraManager {
                     override suspend fun captureImage(): ByteArray? = null
 
-                    override fun setFlash(on: Boolean) {}
+                    override fun setFlash(on: Boolean): Result<Unit> = Result.success(Unit)
 
-                    override fun toggleLens() {}
+                    override fun toggleLens(): Result<Unit> = Result.success(Unit)
 
                     override fun release() {}
                 }
@@ -63,9 +63,9 @@ class CameraManagerTest {
                 object : CameraManager {
                     override suspend fun captureImage(): ByteArray? = byteArrayOf(1, 2, 3)
 
-                    override fun setFlash(on: Boolean) {}
+                    override fun setFlash(on: Boolean): Result<Unit> = Result.success(Unit)
 
-                    override fun toggleLens() {}
+                    override fun toggleLens(): Result<Unit> = Result.success(Unit)
 
                     override fun release() {}
                 }

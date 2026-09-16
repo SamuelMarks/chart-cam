@@ -5,17 +5,18 @@
 package io.healthplatform.chartcam.database
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * iOS specifics for the database driver initialization tests.
  */
 class DatabaseDriverFactoryIosTest {
     /**
-     * Dummy execution block.
+     * Verifies that DatabaseDriverFactory instantiates cleanly on iOS.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testDatabaseDriverFactoryIos() {
+        val factory = DatabaseDriverFactory()
+        assertNotNull(factory)
     }
 }

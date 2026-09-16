@@ -13,16 +13,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -54,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -96,6 +101,7 @@ import com.google.fhir.model.r4.DocumentReference
 import com.google.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.fhir.getLocalizedTitle
 import io.healthplatform.chartcam.files.createFileStorage
+import io.healthplatform.chartcam.media.createAudioRecorderManager
 import io.healthplatform.chartcam.models.encounterDate
 import io.healthplatform.chartcam.models.getFullName
 import io.healthplatform.chartcam.models.mrn
@@ -103,6 +109,7 @@ import io.healthplatform.chartcam.navigation.PhotoSessionManager
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
+import io.healthplatform.chartcam.ui.components.AudioMemoControl
 import io.healthplatform.chartcam.ui.components.DemoModeBanner
 import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.viewmodel.EncounterDetailViewModel
@@ -135,6 +142,8 @@ data class EncounterDetailDependencies(
  * @property onFinalized Callback when the encounter is finalized.
  * @property onVisitCreated Callback when a new visit is created.
  * @property onNewlyCreatedQuestionnaireHandled Callback when a new questionnaire has been handled.
+ * @property onOpenDicomViewer Optional callback to open a photo in the DICOM viewer.
+ * @property onRecordAudioMemo Optional callback to trigger clinical voice memo recording.
  */
 data class EncounterDetailActions(
     val onBack: () -> Unit,
@@ -143,6 +152,8 @@ data class EncounterDetailActions(
     val onFinalized: () -> Unit,
     val onVisitCreated: ((String) -> Unit)? = null,
     val onNewlyCreatedQuestionnaireHandled: () -> Unit = {},
+    val onOpenDicomViewer: ((String) -> Unit)? = null,
+    val onRecordAudioMemo: (() -> Unit)? = null,
 )
 
 /**
@@ -389,6 +400,37 @@ private fun EncounterDetailContent(
     actions: EncounterDetailActions,
     viewModel: EncounterDetailViewModel,
 ) {
+    var showVoiceMemoDialog by remember { mutableStateOf(false) }
+
+    val effectiveActions =
+        remember(actions) {
+            if (actions.onRecordAudioMemo != null) {
+                actions
+            } else {
+                actions.copy(onRecordAudioMemo = { showVoiceMemoDialog = true })
+            }
+        }
+
+    if (showVoiceMemoDialog) {
+        val fileStorage = remember { createFileStorage() }
+        val audioRecorder = remember { createAudioRecorderManager(fileStorage) }
+
+        AlertDialog(
+            onDismissRequest = { showVoiceMemoDialog = false },
+            confirmButton = {},
+            text = {
+                AudioMemoControl(
+                    recorder = audioRecorder,
+                    onMemoRecorded = { path ->
+                        showVoiceMemoDialog = false
+                        viewModel.addVoiceMemo(path)
+                    },
+                    onDismiss = { showVoiceMemoDialog = false },
+                )
+            },
+        )
+    }
+
     if (state.isLoading || state.isSyncing) {
         val loadingText =
             if (state.isSyncing) {
@@ -429,11 +471,11 @@ private fun EncounterDetailContent(
             contentPadding = PaddingValues(vertical = AppSpacing.md),
         ) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                EncounterDetailHeader(state, actions, viewModel)
+                EncounterDetailHeader(state, effectiveActions, viewModel)
             }
 
             items(state.photos) { photo ->
-                PhotoGridItem(photo)
+                PhotoGridItem(photo, actions.onOpenDicomViewer)
             }
 
             if (canFinalizeEncounter(state)) {
@@ -639,8 +681,22 @@ private fun QuestionnaireFormArea(
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp).semantics { heading() },
         )
-        Button(onClick = { actions.onTakePhotos(state.selectedQuestionnaire?.id, null) }) {
-            Text(stringResource(Res.string.take_photos))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = { actions.onRecordAudioMemo?.invoke() },
+                modifier = Modifier.testTag("RecordVoiceMemoButton"),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Mic,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Voice Memo")
+            }
+            Button(onClick = { actions.onTakePhotos(state.selectedQuestionnaire?.id, null) }) {
+                Text(stringResource(Res.string.take_photos))
+            }
         }
     }
 }
@@ -649,14 +705,25 @@ private fun QuestionnaireFormArea(
  * Renders a single photo thumbnail mapped from a FHIR DocumentReference.
  *
  * @param doc The DocumentReference resource representing the photo.
+ * @param onOpenDicomViewer Optional callback to open the photo in the DICOM viewer.
  */
 @OptIn(ExperimentalResourceApi::class)
 @Composable
-fun PhotoGridItem(doc: DocumentReference) {
+fun PhotoGridItem(
+    doc: DocumentReference,
+    onOpenDicomViewer: ((String) -> Unit)? = null,
+) {
     var showFullPhoto by remember { mutableStateOf(false) }
     val photoDescription = doc.description?.value ?: stringResource(Res.string.cd_patient_photo)
     val viewPhotoLabel = stringResource(Res.string.cd_action_view_photo)
     val loadErrorText = stringResource(Res.string.image_load_error)
+    val isAudio =
+        doc.content
+            .firstOrNull()
+            ?.attachment
+            ?.contentType
+            ?.value
+            ?.startsWith("audio/") == true
 
     val bytes =
         remember(
@@ -694,13 +761,51 @@ fun PhotoGridItem(doc: DocumentReference) {
                 },
     ) {
         Column {
-            if (bytes.isNotEmpty()) {
-                Image(
-                    bitmap = bytes.decodeToImageBitmap(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxWidth().height(150.dp),
-                    contentScale = ContentScale.Crop,
-                )
+            if (isAudio) {
+                Box(
+                    Modifier.fillMaxWidth().height(150.dp).padding(16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.Mic,
+                            contentDescription = null,
+                            modifier = Modifier.size(36.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = photoDescription,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            } else if (bytes.isNotEmpty()) {
+                val bitmap = runCatching { bytes.decodeToImageBitmap() }.getOrNull()
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxWidth().height(150.dp),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    Box(
+                        Modifier.fillMaxWidth().height(150.dp).padding(16.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = loadErrorText,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier =
+                                Modifier.semantics {
+                                    error(loadErrorText)
+                                },
+                        )
+                    }
+                }
             } else {
                 Box(
                     Modifier.fillMaxWidth().height(150.dp).padding(16.dp),
@@ -744,6 +849,25 @@ fun PhotoGridItem(doc: DocumentReference) {
                     modifier = Modifier.fillMaxWidth().height(300.dp),
                     contentScale = ContentScale.Fit,
                 )
+            },
+            dismissButton = {
+                val filePath =
+                    doc.content
+                        .firstOrNull()
+                        ?.attachment
+                        ?.url
+                        ?.value
+                if (onOpenDicomViewer != null && !filePath.isNullOrBlank()) {
+                    TextButton(
+                        onClick = {
+                            showFullPhoto = false
+                            onOpenDicomViewer(filePath)
+                        },
+                        modifier = Modifier.minimumInteractiveComponentSize(),
+                    ) {
+                        Text("DICOM Viewer")
+                    }
+                }
             },
             confirmButton = {
                 TextButton(

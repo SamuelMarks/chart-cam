@@ -12,10 +12,11 @@ import kotlin.test.assertTrue
  */
 class LanguageSwitcherWasmJsTest {
     /**
-     * Dummy test to satisfy the test runner.
+     * Test language state initialization on WasmJS.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testLanguageSwitcherWasmJs() {
+        val lang = currentLanguageState.value
+        assertTrue(lang.isNotBlank())
     }
 }

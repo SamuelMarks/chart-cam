@@ -5,17 +5,18 @@
 package io.healthplatform.chartcam.navigation
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 /**
  * Test class for BrowserHistorySetup on JVM.
  */
 class BrowserHistorySetupJvmTest {
     /**
-     * Test browser history setup on JVM.
+     * Test browser history setup component presence on JVM.
      */
     @Test
     fun testBrowserHistorySetupJvm() {
-        assertTrue(true)
+        val rootRoute = Routes.LOGIN
+        assertEquals("/auth/login", rootRoute)
     }
 }

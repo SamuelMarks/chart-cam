@@ -324,7 +324,8 @@ open class FhirRepository(
      * @param practitioner The Practitioner resource to persist.
      * @return A [Result] indicating success or failure.
      */
-    open suspend fun savePractitioner(practitioner: Practitioner): Result<Unit> = savePractitioner(practitioner, isLocalChange = true)
+    open suspend fun savePractitioner(practitioner: Practitioner): Result<Unit> =
+        savePractitioner(practitioner, isLocalChange = true)
 
     /**
      * Saves a Practitioner.
@@ -682,7 +683,8 @@ open class FhirRepository(
      * @param doc The DocumentReference resource to persist.
      * @return A [Result] indicating success or failure.
      */
-    open suspend fun saveDocumentReference(doc: DocumentReference): Result<Unit> = saveDocumentReference(doc, isLocalChange = true)
+    open suspend fun saveDocumentReference(doc: DocumentReference): Result<Unit> =
+        saveDocumentReference(doc, isLocalChange = true)
 
     /**
      * Saves a DocumentReference (photo).
@@ -716,7 +718,8 @@ open class FhirRepository(
      * @param id The unique identifier of the DocumentReference.
      * @return The DocumentReference resource, or null if not found.
      */
-    open suspend fun getDocumentReference(id: String): DocumentReference? = getResource("DocumentReference", id) as? DocumentReference
+    open suspend fun getDocumentReference(id: String): DocumentReference? =
+        getResource("DocumentReference", id) as? DocumentReference
 
     /**
      * Saves a QuestionnaireResponse with default local change tracking.

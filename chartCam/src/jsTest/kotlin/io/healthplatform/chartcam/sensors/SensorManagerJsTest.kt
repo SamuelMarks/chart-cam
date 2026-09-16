@@ -5,17 +5,18 @@
 package io.healthplatform.chartcam.sensors
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * Test class for SensorManager on JS.
  */
 class SensorManagerJsTest {
     /**
-     * Test sensor manager on JS.
+     * Test sensor manager initialization on JS.
      */
     @Test
     fun testSensorManagerJs() {
-        assertTrue(true)
+        val manager = JsSensorManager()
+        assertNotNull(manager.orientation)
     }
 }

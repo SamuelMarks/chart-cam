@@ -33,8 +33,8 @@ object QuestionnaireResponseGenerator {
         answers: Map<kotlin.String, Any>,
     ): QuestionnaireResponse {
         val responseItemBuilders =
-            questionnaire.item.mapNotNull { item ->
-                createResponseItemBuilder(item, emptyList(), answers)
+            questionnaire.item.flatMap { item ->
+                createResponseItemBuilders(item, emptyList(), answers)
             }
 
         return QuestionnaireResponse
@@ -62,27 +62,73 @@ object QuestionnaireResponseGenerator {
     ): Result<QuestionnaireResponse> = runCatching { generate(questionnaire, answers) }
 
     /**
-     * Creates a builder for a [QuestionnaireResponse.Item] from a given [Questionnaire.Item] and answers map.
+     * Creates builders for [QuestionnaireResponse.Item], handling both single and repeating items.
+     *
+     * @param item The questionnaire item.
+     * @param ancestors The list of ancestor items.
+     * @param answers The map of answers.
+     * @return A list of builders for the questionnaire response item.
+     */
+    private fun createResponseItemBuilders(
+        item: Questionnaire.Item,
+        ancestors: List<Questionnaire.Item>,
+        answers: Map<kotlin.String, Any>,
+    ): List<QuestionnaireResponse.Item.Builder> {
+        val linkId = item.linkId.value
+        val isEnabled =
+            linkId != null &&
+                io.healthplatform.chartcam.sdc.SdcEvaluator
+                    .isItemHierarchyEnabled(item, ancestors, answers)
+        if (!isEnabled) {
+            return emptyList()
+        }
+
+        val isRepeatingGroup =
+            item.type.value == Questionnaire.QuestionnaireItemType.Group && item.repeats?.value == true
+
+        return if (isRepeatingGroup) {
+            val repeatIndices =
+                answers.keys
+                    .filter { it.startsWith("$linkId#") }
+                    .mapNotNull { key ->
+                        val afterHash = key.substringAfter("$linkId#")
+                        afterHash.substringBefore('.').toIntOrNull()
+                    }.distinct()
+                    .sorted()
+
+            val indices = if (repeatIndices.isEmpty()) listOf(0) else repeatIndices
+            indices.mapNotNull { idx ->
+                val scopedAnswers =
+                    answers
+                        .filterKeys { it.startsWith("$linkId#$idx.") }
+                        .mapKeys { it.key.substringAfter("$linkId#$idx.") }
+                val mergedAnswers = if (idx == 0) answers + scopedAnswers else scopedAnswers
+                createSingleResponseItemBuilder(item, ancestors, mergedAnswers)
+            }
+        } else {
+            val single = createSingleResponseItemBuilder(item, ancestors, answers)
+            if (single != null) listOf(single) else emptyList()
+        }
+    }
+
+    /**
+     * Creates a single builder for a [QuestionnaireResponse.Item] from a given [Questionnaire.Item] and answers map.
      *
      * @param item The questionnaire item.
      * @param ancestors The list of ancestor items.
      * @param answers The map of answers.
      * @return A builder for the questionnaire response item, or null if it cannot be built.
      */
-    private fun createResponseItemBuilder(
+    private fun createSingleResponseItemBuilder(
         item: Questionnaire.Item,
         ancestors: List<Questionnaire.Item>,
         answers: Map<kotlin.String, Any>,
     ): QuestionnaireResponse.Item.Builder? {
-        val isEnabled =
-            io.healthplatform.chartcam.sdc.SdcEvaluator
-                .isItemHierarchyEnabled(item, ancestors, answers)
-        val linkId = item.linkId.value
-        if (!isEnabled || linkId == null) return null
+        val linkId = item.linkId.value ?: return null
 
         val answerValue = answers[linkId]
         val nextAncestors = ancestors + item
-        val nestedItemBuilders = item.item.mapNotNull { createResponseItemBuilder(it, nextAncestors, answers) }
+        val nestedItemBuilders = item.item.flatMap { createResponseItemBuilders(it, nextAncestors, answers) }
 
         return if (answerValue == null && nestedItemBuilders.isEmpty()) {
             null

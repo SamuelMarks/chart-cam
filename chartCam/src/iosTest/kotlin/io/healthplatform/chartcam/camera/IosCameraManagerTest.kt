@@ -8,23 +8,31 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 
 /**
- * Standard test class for evaluating the iOS platform's specific CameraManager instantiation.
+ * Unit tests evaluating the iOS CameraManager and PermissionManager initialization.
  */
 class IosCameraManagerTest {
-    /** Dummy abstract behavior placeholder test. */
+    /**
+     * Verifies that IOSCameraManager instantiates its internal AVCaptureSession.
+     */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testCameraManagerInstantiation() {
+        val manager = IOSCameraManager()
+        assertNotNull(manager.captureSession, "Capture session should be initialized")
+        manager.release()
     }
 }
 
 /**
- * Dummy wrapper for specific iOS PermissionManager behaviors.
+ * Test wrapper for iOS PermissionManager behaviors.
  */
 class IosPermissionManagerTest {
-    /** Dummy test wrapper. */
+    /**
+     * Verifies that IosPermissionManager instantiates and queries permission status.
+     */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testPermissionManagerStatus() {
+        val permissionManager = IosPermissionManager()
+        val status = permissionManager.getCameraPermissionStatus()
+        assertNotNull(status, "Permission status should be resolved")
     }
 }

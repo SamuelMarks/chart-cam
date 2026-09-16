@@ -5,6 +5,7 @@
 package io.healthplatform.chartcam.utils
 
 import kotlin.test.Test
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -12,10 +13,12 @@ import kotlin.test.assertTrue
  */
 class DateFormatterJsTest {
     /**
-     * Dummy test to satisfy the test runner.
+     * Test date formatting on JS.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testDateFormatterJs() {
+        val formatted = formatLocalizedDate("2026-09-16")
+        assertNotNull(formatted)
+        assertTrue(formatted.isNotBlank())
     }
 }

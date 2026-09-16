@@ -12,10 +12,11 @@ import kotlin.test.assertTrue
  */
 class PlatformIosTest {
     /**
-     * Dummy execution block.
+     * Verifies that getPlatform returns the iOS platform descriptor.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testPlatformIos() {
+        val platform = getPlatform()
+        assertTrue(platform.name.contains("iOS"))
     }
 }

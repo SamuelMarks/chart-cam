@@ -203,7 +203,7 @@ class PatientPacsArchiveExportRoundTripWorkflowTest {
             fhirRepo.saveDocumentReference(doc2)
             fhirRepo.saveDocumentReference(doc3)
 
-            val zipBytes = exportService.exportPatientDicomArchive(patientId, anonymize = false)
+            val zipBytes = exportService.exportPatientDicomArchive(patientId, anonymize = false).getOrThrow()
             assertNotNull(zipBytes)
             assertTrue(zipBytes.isNotEmpty(), "ZIP archive must not be empty")
 
@@ -276,7 +276,7 @@ class PatientPacsArchiveExportRoundTripWorkflowTest {
                 )
             fhirRepo.saveDocumentReference(doc)
 
-            val zipBytes = exportService.exportPatientDicomArchive(patientId, anonymize = true)
+            val zipBytes = exportService.exportPatientDicomArchive(patientId, anonymize = true).getOrThrow()
             val zipStream = ZipInputStream(ByteArrayInputStream(zipBytes))
             val entryNames = mutableListOf<String>()
             var entry = zipStream.nextEntry
@@ -305,7 +305,7 @@ class PatientPacsArchiveExportRoundTripWorkflowTest {
                     }.build()
             fhirRepo.savePatient(patient)
 
-            val zipBytes = exportService.exportPatientDicomArchive(patientId, anonymize = false)
+            val zipBytes = exportService.exportPatientDicomArchive(patientId, anonymize = false).getOrThrow()
             assertNotNull(zipBytes)
             assertTrue(zipBytes.isNotEmpty(), "Empty archive must produce valid zip structure")
         }

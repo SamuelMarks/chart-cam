@@ -52,11 +52,15 @@ class CaptureViewModelTest {
         /**
          * Toggle flash.
          * @param on Flash state.
+         * @return A [Result] indicating success.
          */
-        override fun setFlash(on: Boolean) {}
+        override fun setFlash(on: Boolean): Result<Unit> = Result.success(Unit)
 
-        /** Toggle lens. */
-        override fun toggleLens() {}
+        /**
+         * Toggle lens.
+         * @return A [Result] indicating success.
+         */
+        override fun toggleLens(): Result<Unit> = Result.success(Unit)
 
         /** Release resources. */
         override fun release() {}

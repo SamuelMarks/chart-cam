@@ -28,6 +28,22 @@ private const val CONSOLE_ERROR_JS = "(msg, err) => console.error(msg, err)"
 private const val STOP_MEDIA_TRACKS_JS =
     "(stream) => { if (stream && stream.getTracks) { stream.getTracks().forEach(t => t.stop()); } }"
 
+private const val SET_FLASH_JS =
+    "(video, on) => { " +
+        "if (video && video.srcObject && video.srcObject.getVideoTracks) { " +
+        "  const tracks = video.srcObject.getVideoTracks(); " +
+        "  if (tracks && tracks.length > 0 && tracks[0].applyConstraints) { " +
+        "    tracks[0].applyConstraints({ advanced: [{ torch: on }] }).catch(() => {}); " +
+        "  } " +
+        "} " +
+        "}"
+
+@JsFun(SET_FLASH_JS)
+private external fun setFlashWasmJs(
+    video: HTMLVideoElement,
+    on: Boolean,
+)
+
 private const val GET_BASE64_IMAGE_JS =
     "(video) => { const canvas = document.createElement('canvas'); " +
         "canvas.width = video.videoWidth || 640; " +
@@ -37,6 +53,12 @@ private const val GET_BASE64_IMAGE_JS =
         "const dataUrl = canvas.toDataURL('image/jpeg', 0.9); " +
         "const base64 = dataUrl.split(',')[1]; " +
         "if (!base64) throw new Error('Could not get base64 data'); return base64; }"
+
+private const val ALERT_GUIDANCE_WASM_JS =
+    "(msg) => { if (typeof window !== 'undefined' && window.alert) { window.alert(msg); } }"
+
+@JsFun(ALERT_GUIDANCE_WASM_JS)
+private external fun alertGuidanceWasmJs(msg: String)
 
 /**
  * Creates JavaScript `MediaStreamConstraints` configured for video with a specific facing mode.
@@ -139,21 +161,27 @@ class JsCameraManager : CameraManager {
         }
 
     /**
-     * Toggles the camera flash (torch) on or off.
-     * Note: Flash control is currently not implemented on the Web (WasmJs) target.
+     * Toggles the camera flash (torch) on or off via track constraints.
      *
      * @param on True to enable the flash, false to disable it.
+     * @return A [Result] indicating success or failure.
      */
-    override fun setFlash(on: Boolean) { /* no-op */ }
+    override fun setFlash(on: Boolean): Result<Unit> =
+        runCatching {
+            setFlashWasmJs(videoElement, on)
+        }
 
     /**
      * Switches the active camera between the front-facing and rear-facing lenses.
+     *
+     * @return A [Result] indicating success or failure.
      */
-    override fun toggleLens() {
-        isFrontFacing = !isFrontFacing
-        release()
-        startCamera()
-    }
+    override fun toggleLens(): Result<Unit> =
+        runCatching {
+            isFrontFacing = !isFrontFacing
+            release()
+            startCamera()
+        }
 
     /**
      * Releases resources associated with the camera, stopping all media tracks.
@@ -200,9 +228,14 @@ class JsPermissionManager : PermissionManager {
     override suspend fun requestCameraPermission(): Result<Unit> = Result.success(Unit)
 
     /**
-     * Opens application settings. This is a no-op on the web platform.
+     * Opens application settings or provides site guidance on the web platform.
      */
-    override fun openSettings() { /* no-op */ }
+    override fun openSettings() {
+        val guidance =
+            "To manage camera permissions, please check your browser " +
+                "site settings or click the permissions icon in your address bar."
+        alertGuidanceWasmJs(guidance)
+    }
 }
 
 /**

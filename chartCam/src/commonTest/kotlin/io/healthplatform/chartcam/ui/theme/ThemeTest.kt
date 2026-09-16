@@ -14,14 +14,6 @@ import kotlin.test.assertTrue
  */
 class ThemeTest {
     /**
-     * Verifies that theme test instance can be created.
-     */
-    @Test
-    fun dummyTest() {
-        assertNotNull(this)
-    }
-
-    /**
      * Verifies that dark mode primary color meets WCAG AA 4.5:1 contrast against dark background and surface.
      */
     @Test

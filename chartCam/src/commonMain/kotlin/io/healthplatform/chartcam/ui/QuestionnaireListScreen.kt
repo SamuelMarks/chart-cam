@@ -4,11 +4,14 @@
  */
 package io.healthplatform.chartcam.ui
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -31,6 +34,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -48,6 +52,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -57,6 +62,7 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cancel
 import chartcam.chartcam.generated.resources.cd_action_view_questionnaire
@@ -70,17 +76,19 @@ import chartcam.chartcam.generated.resources.copied_to_clipboard
 import chartcam.chartcam.generated.resources.copy_to_clipboard
 import chartcam.chartcam.generated.resources.create_questionnaire
 import chartcam.chartcam.generated.resources.delete
-import chartcam.chartcam.generated.resources.file_import_coming_soon
+import chartcam.chartcam.generated.resources.display_qr_code
+import chartcam.chartcam.generated.resources.export_json_file
 import chartcam.chartcam.generated.resources.id_format
 import chartcam.chartcam.generated.resources.import_action
 import chartcam.chartcam.generated.resources.import_confirmation
 import chartcam.chartcam.generated.resources.import_error_format
+import chartcam.chartcam.generated.resources.import_from_file
 import chartcam.chartcam.generated.resources.import_questionnaire
 import chartcam.chartcam.generated.resources.invalid_fhir_format
 import chartcam.chartcam.generated.resources.number_of_items
 import chartcam.chartcam.generated.resources.paste_from_clipboard
-import chartcam.chartcam.generated.resources.qr_code_coming_soon
 import chartcam.chartcam.generated.resources.questionnaires
+import chartcam.chartcam.generated.resources.scan_qr_code
 import chartcam.chartcam.generated.resources.share_questionnaire
 import chartcam.chartcam.generated.resources.share_text_json
 import chartcam.chartcam.generated.resources.title_format
@@ -90,6 +98,8 @@ import io.healthplatform.chartcam.fhir.getLocalizedTitle
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.repository.QuestionnaireSharingService
 import io.healthplatform.chartcam.ui.theme.AppSpacing
+import io.healthplatform.chartcam.utils.QrChunkReassembler
+import io.healthplatform.chartcam.utils.QrCodePayloadManager
 import io.healthplatform.chartcam.utils.createShareService
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.pluralStringResource
@@ -117,6 +127,16 @@ fun QuestionnaireListScreen(
 
     val shareService = remember { createShareService() }
     val questionnaireSharingService = remember { QuestionnaireSharingService() }
+    val fileStorage =
+        remember {
+            io.healthplatform.chartcam.files
+                .createFileStorage()
+        }
+    val filePicker =
+        remember {
+            io.healthplatform.chartcam.utils
+                .createQuestionnaireFilePicker()
+        }
     val clipboard = androidx.compose.ui.platform.LocalClipboard.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -125,6 +145,8 @@ fun QuestionnaireListScreen(
     var showImportOptions by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
     var previewQuestionnaire by remember { mutableStateOf<Questionnaire?>(null) }
+    var showQrScannerDialog by remember { mutableStateOf(false) }
+    var qrMatrix by remember { mutableStateOf<Array<BooleanArray>?>(null) }
 
     val bottomSheetState = rememberModalBottomSheetState()
     val importBottomSheetState = rememberModalBottomSheetState()
@@ -403,13 +425,49 @@ fun QuestionnaireListScreen(
                         Text(stringResource(Res.string.paste_from_clipboard))
                     }
 
-                    // Placeholder for File Import and QR Code Scanner
-                    Text(
-                        text = stringResource(Res.string.file_import_coming_soon),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = AppSpacing.sm, bottom = AppSpacing.md),
-                    )
+                    Button(
+                        onClick = {
+                            coroutineScope
+                                .launch {
+                                    filePicker
+                                        .pickQuestionnaireFile()
+                                        .onSuccess { content ->
+                                            questionnaireSharingService
+                                                .deserializeQuestionnaire(content)
+                                                .onSuccess {
+                                                    previewQuestionnaire = it
+                                                    importError = null
+                                                }.onFailure {
+                                                    importError = invalidFormatStr
+                                                }
+                                        }.onFailure { err ->
+                                            importError = err.message ?: invalidFormatStr
+                                        }
+                                    importBottomSheetState.hide()
+                                }.invokeOnCompletion {
+                                    if (!importBottomSheetState.isVisible) {
+                                        showImportOptions = false
+                                    }
+                                }
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = AppSpacing.sm),
+                    ) {
+                        Text(stringResource(Res.string.import_from_file))
+                    }
+
+                    Button(
+                        onClick = {
+                            showQrScannerDialog = true
+                            coroutineScope.launch { importBottomSheetState.hide() }.invokeOnCompletion {
+                                if (!importBottomSheetState.isVisible) {
+                                    showImportOptions = false
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = AppSpacing.sm),
+                    ) {
+                        Text(stringResource(Res.string.scan_qr_code))
+                    }
                 }
             }
         }
@@ -513,15 +571,159 @@ fun QuestionnaireListScreen(
                         Text(stringResource(Res.string.share_text_json))
                     }
 
-                    // Placeholder for QR Code and direct file export
-                    Text(
-                        text = stringResource(Res.string.qr_code_coming_soon),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = AppSpacing.sm, bottom = AppSpacing.md),
-                    )
+                    Button(
+                        onClick = {
+                            coroutineScope
+                                .launch {
+                                    questionnaireSharingService
+                                        .serializeQuestionnaire(q)
+                                        .onSuccess { json ->
+                                            val fileName = "questionnaire_${q.id ?: "export"}.json"
+                                            val path = fileStorage.saveImage(fileName, json.encodeToByteArray())
+                                            shareService.shareFile(path)
+                                        }.onFailure {
+                                            println(it.message)
+                                        }
+                                    bottomSheetState.hide()
+                                }.invokeOnCompletion {
+                                    if (!bottomSheetState.isVisible) {
+                                        selectedQuestionnaireForShare = null
+                                    }
+                                }
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = AppSpacing.sm),
+                    ) {
+                        Text(stringResource(Res.string.export_json_file))
+                    }
+
+                    Button(
+                        onClick = {
+                            questionnaireSharingService
+                                .serializeQuestionnaire(q)
+                                .onSuccess { json ->
+                                    QrCodePayloadManager.generateQrMatrix(json).onSuccess { matrix ->
+                                        qrMatrix = matrix
+                                    }
+                                }.onFailure {
+                                    println(it.message)
+                                }
+                            coroutineScope.launch { bottomSheetState.hide() }.invokeOnCompletion {
+                                if (!bottomSheetState.isVisible) {
+                                    selectedQuestionnaireForShare = null
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = AppSpacing.sm),
+                    ) {
+                        Text(stringResource(Res.string.display_qr_code))
+                    }
                 }
             }
+        }
+
+        qrMatrix?.let { matrix ->
+            AlertDialog(
+                onDismissRequest = { qrMatrix = null },
+                title = {
+                    Text(
+                        stringResource(Res.string.display_qr_code),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
+                text = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(AppSpacing.md),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Canvas(modifier = Modifier.size(200.dp)) {
+                            val cellSize = size.minDimension / matrix.size
+                            for (y in matrix.indices) {
+                                for (x in matrix[y].indices) {
+                                    if (matrix[y][x]) {
+                                        drawRect(
+                                            color = androidx.compose.ui.graphics.Color.Black,
+                                            topLeft =
+                                                androidx.compose.ui.geometry
+                                                    .Offset(x * cellSize, y * cellSize),
+                                            size =
+                                                androidx.compose.ui.geometry
+                                                    .Size(cellSize, cellSize),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { qrMatrix = null }) {
+                        Text(stringResource(Res.string.cancel))
+                    }
+                },
+            )
+        }
+
+        if (showQrScannerDialog) {
+            var scannedChunkInput by remember { mutableStateOf("") }
+            val reassembler = remember { QrChunkReassembler() }
+            AlertDialog(
+                onDismissRequest = { showQrScannerDialog = false },
+                title = { Text(stringResource(Res.string.scan_qr_code)) },
+                text = {
+                    Column {
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    val scanner =
+                                        io.healthplatform.chartcam.camera
+                                            .createQuestionnaireQrScanner()
+                                    scanner.scanQuestionnaireQrCode().onSuccess { payload ->
+                                        scannedChunkInput = payload
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = AppSpacing.sm),
+                        ) {
+                            Text(stringResource(Res.string.scan_qr_code))
+                        }
+                        OutlinedTextField(
+                            value = scannedChunkInput,
+                            onValueChange = { scannedChunkInput = it },
+                            label = { Text("QR Payload or Chunk") },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val trimmed = scannedChunkInput.trim()
+                        if (trimmed.isNotEmpty()) {
+                            if (trimmed.startsWith("{")) {
+                                questionnaireSharingService.deserializeQuestionnaire(trimmed).onSuccess {
+                                    previewQuestionnaire = it
+                                    showQrScannerDialog = false
+                                }
+                            } else {
+                                reassembler.processChunk(trimmed).onSuccess { full ->
+                                    if (full != null) {
+                                        questionnaireSharingService.deserializeQuestionnaire(full).onSuccess {
+                                            previewQuestionnaire = it
+                                            showQrScannerDialog = false
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }) {
+                        Text(stringResource(Res.string.import_action))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showQrScannerDialog = false }) {
+                        Text(stringResource(Res.string.cancel))
+                    }
+                },
+            )
         }
     }
 }

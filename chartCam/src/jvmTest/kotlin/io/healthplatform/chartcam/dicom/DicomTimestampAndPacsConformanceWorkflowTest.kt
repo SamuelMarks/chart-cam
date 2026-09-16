@@ -161,7 +161,7 @@ class DicomTimestampAndPacsConformanceWorkflowTest {
                 )
             fhirRepo.saveDocumentReference(docRef)
 
-            val dicomBytes = exportService.exportPhotoAsDicom("docref-101", anonymize = false)
+            val dicomBytes = exportService.exportPhotoAsDicom("docref-101", anonymize = false).getOrThrow()
             assertNotNull(dicomBytes, "DICOM output bytes must not be null")
             assertTrue(dicomBytes.size > 132, "DICOM file must exceed preamble length")
 

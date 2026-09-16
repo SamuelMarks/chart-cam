@@ -5,15 +5,18 @@
 package io.healthplatform.chartcam.utils
 
 import kotlin.test.Test
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
- * Verification stub for date formatting behaviors on iOS.
+ * Verification for date formatting behaviors on iOS.
  */
 class DateFormatterIosTest {
-    /** Compilation sanity test logic. */
+    /** Verifies formatLocalizedDate formatting on iOS. */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testDateFormatterIos() {
+        val formatted = formatLocalizedDate("1990-05-20")
+        assertNotNull(formatted)
+        assertTrue(formatted.isNotBlank())
     }
 }

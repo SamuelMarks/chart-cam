@@ -4,18 +4,28 @@
  */
 package io.healthplatform.chartcam.ui
 
+import io.healthplatform.chartcam.viewmodel.EncounterUiState
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
- * Common dummy test for the encounter detail screen wrapper.
+ * Common test for [EncounterDetailScreen] state.
  */
 class EncounterDetailScreenTest {
     /**
-     * Minimal execution test for verification.
+     * Verifies default EncounterUiState properties.
      */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testEncounterUiState() {
+        val state = EncounterUiState()
+        assertNotNull(state)
+        assertTrue(state.isLoading)
+        assertFalse(state.isFinalized)
+        assertNull(state.encounter)
+        assertTrue(state.photos.isEmpty())
+        assertTrue(state.audioMemos.isEmpty())
     }
 }

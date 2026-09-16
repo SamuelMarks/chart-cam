@@ -4,18 +4,26 @@
  */
 package io.healthplatform.chartcam.storage
 
-import kotlin.test.Test
-import kotlin.test.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import kotlin.test.assertContentEquals
 
 /**
  * Android host tests for CryptoHelper.
  */
+@Config(manifest = Config.NONE, sdk = [33])
+@RunWith(RobolectricTestRunner::class)
 class CryptoHelperAndroidTest {
     /**
-     * Dummy test to ensure test suite runs.
+     * Verifies symmetric encryption and decryption on Android.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testEncryptDecrypt() {
+        val original = "Clinical Android KeyStore payload".encodeToByteArray()
+        val encrypted = CryptoHelper.encrypt(original)
+        val decrypted = CryptoHelper.decrypt(encrypted)
+        assertContentEquals(original, decrypted)
     }
 }

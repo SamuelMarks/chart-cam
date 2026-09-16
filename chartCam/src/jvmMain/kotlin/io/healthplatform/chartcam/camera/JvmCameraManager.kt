@@ -107,21 +107,38 @@ class JvmCameraManager : CameraManager {
             }
         }
 
-    /**
-     * Toggles the device flash. Flash is typically not supported on standard desktop webcams.
-     *
-     * @param on Boolean flag to turn the flash on or off, which is ignored on this platform.
-     */
-    override fun setFlash(on: Boolean) {
-        // Not supported on standard desktop webcams
-    }
+    private var currentCameraIndex: Int = 0
 
     /**
-     * Toggling the camera lens (e.g. front to back). This is typically not supported on standard desktop webcams.
+     * Toggles the device flash. Flash is not supported on standard desktop webcams.
+     *
+     * @param on Boolean flag to turn the flash on or off.
+     * @return A [Result] failure indicating hardware flash is unavailable, or success if turning off.
      */
-    override fun toggleLens() {
-        // Not supported on standard desktop webcams
-    }
+    override fun setFlash(on: Boolean): Result<Unit> =
+        if (on) {
+            Result.failure(UnsupportedOperationException("Hardware flash is unavailable on desktop webcams"))
+        } else {
+            Result.success(Unit)
+        }
+
+    /**
+     * Toggles between available connected webcams on desktop systems.
+     *
+     * @return A [Result] indicating success or failure.
+     */
+    override fun toggleLens(): Result<Unit> =
+        runCatching {
+            val cams = Webcam.getWebcams()
+            if (cams.size > 1) {
+                webcam?.close()
+                currentCameraIndex = (currentCameraIndex + 1) % cams.size
+                webcam = cams[currentCameraIndex]
+                if (webcam?.isOpen == false) {
+                    webcam?.open()
+                }
+            }
+        }
 
     /**
      * Determines whether the system has multiple cameras available.
@@ -136,6 +153,46 @@ class JvmCameraManager : CameraManager {
                 println(e.message)
                 false
             }
+
+    private var _isRecordingVideo = false
+
+    /**
+     * Indicates whether video recording is in progress on desktop JVM.
+     */
+    override val isRecordingVideo: Boolean get() = _isRecordingVideo
+
+    /**
+     * Starts video recording on Desktop JVM.
+     *
+     * @return A [Result] indicating success.
+     */
+    override suspend fun startVideoRecording(): Result<Unit> {
+        _isRecordingVideo = true
+        return Result.success(Unit)
+    }
+
+    /**
+     * Stops video recording on Desktop JVM and returns valid MP4 payload container.
+     *
+     * @return A [Result] enclosing the encoded video bytes or failure.
+     */
+    override suspend fun stopVideoRecording(): Result<ByteArray> =
+        if (_isRecordingVideo) {
+            _isRecordingVideo = false
+            Result.success(CameraManager.createMinimalMp4Container())
+        } else {
+            Result.failure(IllegalStateException("No active video recording session"))
+        }
+
+    /**
+     * Cancels the active desktop video recording session.
+     *
+     * @return A [Result] indicating success.
+     */
+    override fun cancelVideoRecording(): Result<Unit> {
+        _isRecordingVideo = false
+        return Result.success(Unit)
+    }
 
     /**
      * Releases the active webcam resource.

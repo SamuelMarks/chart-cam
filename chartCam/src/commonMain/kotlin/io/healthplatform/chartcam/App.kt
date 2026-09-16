@@ -33,6 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.healthplatform.chartcam.navigation.AppNavigation
 import io.healthplatform.chartcam.ui.AppPrivacyState
+import io.healthplatform.chartcam.ui.SetupPlatformPrivacy
 import io.healthplatform.chartcam.ui.currentAppPrivacyManager
 import io.healthplatform.chartcam.ui.currentLanguageState
 import io.healthplatform.chartcam.ui.getLayoutDirectionForLanguage
@@ -52,6 +53,7 @@ import io.healthplatform.chartcam.ui.theme.AppTheme
 @Composable
 @Preview
 fun App(darkTheme: Boolean = isSystemInDarkTheme()) {
+    SetupPlatformPrivacy()
     val currentLang by currentLanguageState.collectAsState()
     val layoutDirection = getLayoutDirectionForLanguage(currentLang)
     val privacyState by currentAppPrivacyManager.privacyState.collectAsState()

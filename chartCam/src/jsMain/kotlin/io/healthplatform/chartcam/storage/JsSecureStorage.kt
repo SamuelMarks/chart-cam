@@ -27,18 +27,19 @@ class JsSecureStorage : SecureStorage {
 
     /**
      * Resolves or initializes a randomized master cryptographic seed for the origin.
+     * Uses in-memory session key backed by sessionStorage to prevent plaintext key exposure in localStorage.
      *
      * @return The local master key string.
      */
     private fun getMasterKey(): String {
-        val existing = inMemorySessionKey ?: localStorage.getItem(STORAGE_KEY_SEED)
+        val existing = inMemorySessionKey ?: kotlinx.browser.sessionStorage.getItem(STORAGE_KEY_SEED)
         if (!existing.isNullOrEmpty()) {
             inMemorySessionKey = existing
             return existing
         }
         val charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         val seed = (1..SEED_LENGTH).map { charset.random() }.joinToString("")
-        localStorage.setItem(STORAGE_KEY_SEED, seed)
+        runCatching { kotlinx.browser.sessionStorage.setItem(STORAGE_KEY_SEED, seed) }
         inMemorySessionKey = seed
         return seed
     }

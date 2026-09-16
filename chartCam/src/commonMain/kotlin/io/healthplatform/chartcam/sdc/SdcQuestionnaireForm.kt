@@ -13,9 +13,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -23,7 +26,9 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
@@ -31,8 +36,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -58,14 +66,17 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.add_entry
 import chartcam.chartcam.generated.resources.attachments_count
 import chartcam.chartcam.generated.resources.cd_take_photo_for_item
 import chartcam.chartcam.generated.resources.cd_unnamed_group
 import chartcam.chartcam.generated.resources.cd_unnamed_item
+import chartcam.chartcam.generated.resources.entry_format
 import chartcam.chartcam.generated.resources.error_required_field
 import chartcam.chartcam.generated.resources.label_value_format
 import chartcam.chartcam.generated.resources.no
 import chartcam.chartcam.generated.resources.not_answered
+import chartcam.chartcam.generated.resources.remove_entry
 import chartcam.chartcam.generated.resources.select_an_option
 import chartcam.chartcam.generated.resources.take_photo
 import chartcam.chartcam.generated.resources.yes
@@ -144,6 +155,7 @@ private data class RenderContext(
     val focusManager: FocusManager,
     val onAnswerChanged: (String, Any?) -> Unit,
     val onTakePhotoRequested: (String) -> Unit,
+    val onTakeVideoRequested: (String) -> Unit = onTakePhotoRequested,
 )
 
 /**
@@ -156,6 +168,7 @@ private data class RenderContext(
  * @param config Form rendering configuration options.
  * @param onFormUpdated Callback invoked when the user interacts with the input.
  * @param onTakePhotoRequested Callback invoked when the user taps to take a photo.
+ * @param onTakeVideoRequested Callback invoked when video capture is requested.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -165,6 +178,7 @@ fun SdcQuestionnaireForm(
     config: SdcFormConfig = SdcFormConfig(),
     onFormUpdated: (Map<String, Any>, com.google.fhir.model.r4.QuestionnaireResponse) -> Unit,
     onTakePhotoRequested: (String) -> Unit = {},
+    onTakeVideoRequested: (String) -> Unit = onTakePhotoRequested,
 ) {
     var touchedFields by androidx.compose.runtime.remember {
         androidx.compose.runtime.mutableStateOf(setOf<String>())
@@ -201,6 +215,7 @@ fun SdcQuestionnaireForm(
                 onAnswerChanged = handleAnswerChange,
                 focusManager = focusManager,
                 onTakePhotoRequested = onTakePhotoRequested,
+                onTakeVideoRequested = onTakeVideoRequested,
             )
         }
     }
@@ -216,6 +231,7 @@ fun SdcQuestionnaireForm(
  * @param onAnswerChanged Callback invoked when the user updates an answer.
  * @param focusManager Compose focus manager to handle 'Next' keyboard actions.
  * @param onTakePhotoRequested Callback for when photo capture is requested.
+ * @param onTakeVideoRequested Callback for when video capture is requested.
  */
 @Composable
 fun RenderQuestionnaireItem(
@@ -224,12 +240,20 @@ fun RenderQuestionnaireItem(
     onAnswerChanged: (String, Any?) -> Unit,
     focusManager: FocusManager,
     onTakePhotoRequested: (String) -> Unit = {},
+    onTakeVideoRequested: (String) -> Unit = onTakePhotoRequested,
 ) {
     val linkId = item.linkId.value
     val type = item.type.value
 
     if (linkId != null && type != null && !item.isHidden()) {
-        RenderQuestionnaireItemImpl(item, state, onAnswerChanged, focusManager, onTakePhotoRequested)
+        RenderQuestionnaireItemImpl(
+            item = item,
+            state = state,
+            onAnswerChanged = onAnswerChanged,
+            focusManager = focusManager,
+            onTakePhotoRequested = onTakePhotoRequested,
+            onTakeVideoRequested = onTakeVideoRequested,
+        )
     }
 }
 
@@ -240,6 +264,7 @@ fun RenderQuestionnaireItem(
  * @param onAnswerChanged The onAnswerChanged.
  * @param focusManager The focusManager.
  * @param onTakePhotoRequested The onTakePhotoRequested.
+ * @param onTakeVideoRequested The onTakeVideoRequested.
  */
 @Composable
 private fun RenderQuestionnaireItemImpl(
@@ -248,6 +273,7 @@ private fun RenderQuestionnaireItemImpl(
     onAnswerChanged: (String, Any?) -> Unit,
     focusManager: FocusManager,
     onTakePhotoRequested: (String) -> Unit,
+    onTakeVideoRequested: (String) -> Unit,
 ) {
     val linkId = item.linkId.value!!
     val type = item.type.value!!
@@ -308,6 +334,7 @@ private fun RenderQuestionnaireItemImpl(
                 focusManager = focusManager,
                 onAnswerChanged = onAnswerChanged,
                 onTakePhotoRequested = onTakePhotoRequested,
+                onTakeVideoRequested = onTakeVideoRequested,
             )
 
         val alpha = if (isEnabled) ALPHA_ENABLED else ALPHA_DISABLED
@@ -338,11 +365,65 @@ private fun isMissingRequired(
 }
 
 /**
- * Internal helper function.
- * @param ctx The ctx.
+ * Internal helper function to render a question group.
+ * @param ctx The render context.
  */
 @Composable
 private fun RenderGroupItem(ctx: RenderContext) {
+    if (ctx.item.repeats?.value == true) {
+        RenderRepeatingGroupItem(ctx)
+    } else {
+        androidx.compose.material3.ElevatedCard(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = AppSpacing.sm)
+                    .semantics {
+                        contentDescription = ctx.displayLabel
+                        heading()
+                    },
+        ) {
+            Column(modifier = Modifier.padding(AppSpacing.md)) {
+                Text(
+                    text = ctx.displayLabel,
+                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = AppSpacing.sm).semantics { heading() },
+                )
+                ctx.item.item.forEach { nestedItem ->
+                    RenderQuestionnaireItem(
+                        item = nestedItem,
+                        state = ctx.state,
+                        onAnswerChanged = ctx.onAnswerChanged,
+                        focusManager = ctx.focusManager,
+                        onTakePhotoRequested = ctx.onTakePhotoRequested,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Internal helper function for rendering repeating question groups.
+ * @param ctx The render context.
+ */
+@Composable
+private fun RenderRepeatingGroupItem(ctx: RenderContext) {
+    val isReadOnly = ctx.state.config.readOnly || ctx.item.readOnly?.value == true
+    val removeEntryLabel = stringResource(Res.string.remove_entry)
+    val addEntryLabel = stringResource(Res.string.add_entry)
+
+    var instanceCount by remember(ctx.linkId) {
+        val existingMax =
+            ctx.state.answers.keys
+                .filter { it.startsWith("${ctx.linkId}#") }
+                .mapNotNull { key ->
+                    val afterHash = key.substringAfter("${ctx.linkId}#")
+                    afterHash.substringBefore('.').toIntOrNull()
+                }.maxOrNull()
+        mutableStateOf(maxOf(1, (existingMax ?: 0) + 1))
+    }
+
     androidx.compose.material3.ElevatedCard(
         modifier =
             Modifier
@@ -359,14 +440,105 @@ private fun RenderGroupItem(ctx: RenderContext) {
                 style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = AppSpacing.sm).semantics { heading() },
             )
-            ctx.item.item.forEach { nestedItem ->
-                RenderQuestionnaireItem(
-                    item = nestedItem,
-                    state = ctx.state,
-                    onAnswerChanged = ctx.onAnswerChanged,
-                    focusManager = ctx.focusManager,
-                    onTakePhotoRequested = ctx.onTakePhotoRequested,
-                )
+
+            for (i in 0 until instanceCount) {
+                OutlinedCard(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.xs),
+                ) {
+                    Column(modifier = Modifier.padding(AppSpacing.sm)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.entry_format, i + 1),
+                                style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                            )
+                            if (instanceCount > 1 && !isReadOnly) {
+                                TextButton(
+                                    onClick = {
+                                        if (instanceCount > 1) {
+                                            instanceCount--
+                                        }
+                                    },
+                                    modifier =
+                                        Modifier
+                                            .minimumInteractiveComponentSize()
+                                            .testTag("RemoveGroupEntry_${ctx.linkId}_$i")
+                                            .semantics {
+                                                contentDescription = removeEntryLabel
+                                            },
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(removeEntryLabel)
+                                }
+                            }
+                        }
+
+                        val scopedAnswers =
+                            remember(ctx.state.answers, i) {
+                                ctx.state.answers
+                                    .mapNotNull { (k, v) ->
+                                        if (k.startsWith("${ctx.linkId}#$i.")) {
+                                            k.substringAfter("${ctx.linkId}#$i.") to v
+                                        } else if (i == 0 && !k.contains('#')) {
+                                            k to v
+                                        } else {
+                                            null
+                                        }
+                                    }.toMap()
+                            }
+                        val scopedState =
+                            remember(ctx.state, scopedAnswers) {
+                                ctx.state.copy(answers = scopedAnswers)
+                            }
+
+                        ctx.item.item.forEach { nestedItem ->
+                            RenderQuestionnaireItem(
+                                item = nestedItem,
+                                state = scopedState,
+                                onAnswerChanged = { childId, childVal ->
+                                    val indexedKey = "${ctx.linkId}#$i.$childId"
+                                    ctx.onAnswerChanged(indexedKey, childVal)
+                                    if (i == 0) {
+                                        ctx.onAnswerChanged(childId, childVal)
+                                    }
+                                },
+                                focusManager = ctx.focusManager,
+                                onTakePhotoRequested = ctx.onTakePhotoRequested,
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (!isReadOnly) {
+                OutlinedButton(
+                    onClick = { instanceCount++ },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = AppSpacing.sm)
+                            .minimumInteractiveComponentSize()
+                            .testTag("AddGroupEntry_${ctx.linkId}")
+                            .semantics {
+                                contentDescription = addEntryLabel
+                            },
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(AppSpacing.xs))
+                    Text(addEntryLabel)
+                }
             }
         }
     }
@@ -1198,25 +1370,38 @@ private fun RenderAttachmentField(ctx: RenderContext) {
                 },
         )
 
-        val buttonContentDescription =
-            stringResource(Res.string.cd_take_photo_for_item, ctx.displayLabel)
-        Button(
-            onClick = { ctx.onTakePhotoRequested(ctx.linkId) },
-            modifier =
-                Modifier
-                    .padding(top = AppSpacing.sm)
-                    .minimumInteractiveComponentSize()
-                    .testTag("AttachmentCaptureButton ${ctx.linkId}")
-                    .semantics {
-                        contentDescription = buttonContentDescription
-                    },
-        ) {
-            Icon(
-                Icons.Default.CameraAlt,
-                contentDescription = null,
-                modifier = Modifier.padding(end = AppSpacing.sm),
+        val isVideo = ctx.item.getItemControl() == "video"
+        if (isVideo) {
+            io.healthplatform.chartcam.ui.components.FormBuilderVideoCamera(
+                label = ctx.displayLabel,
+                onClick = { ctx.onTakeVideoRequested(ctx.linkId) },
+                modifier =
+                    Modifier
+                        .padding(top = AppSpacing.sm)
+                        .minimumInteractiveComponentSize()
+                        .testTag("AttachmentCaptureButton ${ctx.linkId}"),
             )
-            Text(stringResource(Res.string.take_photo))
+        } else {
+            val buttonContentDescription =
+                stringResource(Res.string.cd_take_photo_for_item, ctx.displayLabel)
+            Button(
+                onClick = { ctx.onTakePhotoRequested(ctx.linkId) },
+                modifier =
+                    Modifier
+                        .padding(top = AppSpacing.sm)
+                        .minimumInteractiveComponentSize()
+                        .testTag("AttachmentCaptureButton ${ctx.linkId}")
+                        .semantics {
+                            contentDescription = buttonContentDescription
+                        },
+            ) {
+                Icon(
+                    Icons.Default.CameraAlt,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = AppSpacing.sm),
+                )
+                Text(stringResource(Res.string.take_photo))
+            }
         }
 
         if (relatedAttachments.isNotEmpty()) {

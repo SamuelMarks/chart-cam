@@ -12,10 +12,11 @@ import kotlin.test.assertTrue
  */
 class PlatformAndroidTest {
     /**
-     * Dummy test to ensure test suite runs.
+     * Verifies platform naming on Android.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testPlatformAndroid() {
+        val platform = getPlatform()
+        assertTrue(platform.name.contains("Android"))
     }
 }

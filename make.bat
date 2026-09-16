@@ -3,11 +3,14 @@ setlocal
 
 if "%~1"=="" goto help
 
+if /i "%~1"=="clean" goto clean
 if /i "%~1"=="build" goto build
 if /i "%~1"=="test" goto test
 if /i "%~1"=="lint" goto lint
 if /i "%~1"=="build_release_android" goto build_release_android
 if /i "%~1"=="build_release_ios" goto build_release_ios
+if /i "%~1"=="build_adhoc_ios" goto build_adhoc_ios
+if /i "%~1"=="deploy_ios_to_firebase" goto deploy_ios_to_firebase
 if /i "%~1"=="build_release_jvm" goto build_release_jvm
 if /i "%~1"=="build_release_js" goto build_release_js
 if /i "%~1"=="build_release_wasm" goto build_release_wasm
@@ -19,11 +22,14 @@ if /i "%~1"=="bump_version" goto bump_patch
 
 :help
 echo Available targets:
+echo   clean
 echo   build
 echo   test
 echo   lint
 echo   build_release_android
 echo   build_release_ios
+echo   build_adhoc_ios
+echo   deploy_ios_to_firebase
 echo   build_release_jvm
 echo   build_release_js
 echo   build_release_wasm
@@ -32,6 +38,10 @@ echo   run_ios
 echo   run_jvm
 echo   bump_patch
 echo   bump_version
+goto end
+
+:clean
+call gradlew.bat clean
 goto end
 
 :build
@@ -53,6 +63,14 @@ goto end
 :build_release_ios
 echo Building iOS from Windows is not officially supported by Xcode.
 echo If you have a custom remote build setup, execute that here.
+goto end
+
+:build_adhoc_ios
+echo Building iOS from Windows is not officially supported by Xcode.
+goto end
+
+:deploy_ios_to_firebase
+echo Deploying iOS to Firebase from Windows is not supported.
 goto end
 
 :build_release_jvm

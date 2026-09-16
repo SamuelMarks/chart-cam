@@ -63,6 +63,7 @@ To maintain focus and clarity across technical domains, detailed guides are avai
 * **[Usage Guide (`USAGE.md`)](USAGE.md)**: Operational guide covering dual clinical workflows (Snap-First vs. Protocol-First), triage batch actions, SDC form builder usage, DICOM inspection, and encrypted dataset migration.
 * **[Release Guide (`HOW_TO_RELEASE.md`)](HOW_TO_RELEASE.md)**: Standard Operating Procedures (SOPs) for building, signing, and deploying to the **Google Play Store** and **Apple App Store**.
 * **[CLI Upgrade & Migration Guide (`UPGRADE_ANDROID_VIA_CLI.md`)](UPGRADE_ANDROID_VIA_CLI.md)**: Procedures for upgrading Android builds via ADB and migrating patient databases across conflicting installations.
+* **[Site Deployment & Static Portal (`DEPLOY.md`)](DEPLOY.md)**: Automated guide for building the Wasm web app, Dokka API documentation, and static markdown documentation portal.
 * **[App Encryption & Export Compliance (`docs/APP_ENCRYPTION.md`)](docs/APP_ENCRYPTION.md)**: Technical breakdown of AES-256-GCM and bundled Argon2id (RFC 9106) key derivation for Apple App Store export compliance.
 * **[FHIR Forms Architecture (`docs/FORMS_ARCHITECTURE.md`)](docs/FORMS_ARCHITECTURE.md)**: Technical design of the SDC Form Builder, dynamic recursive renderer, calculated expressions, and custom visual controls.
 * **[Internationalization & Typography (`docs/INTERNATIONALIZATION.md`)](docs/INTERNATIONALIZATION.md)**: Architecture for multi-language support, RTL script mirroring, and Traditional Chinese vertical column writing (直書 / 豎排).
@@ -116,7 +117,12 @@ While the **Business Logic (FHIR, Auth, ViewModels)** and **UI (Compose)** are 1
 | **Camera Preview & Leveler**     |     ✅ (CameraX)      |  ✅ (AVFoundation)  |   ✅ (Sarxos Webcam)   |   ✅ (HTML5 Video)    | `platform/.../camera`   |
 | **Photo Capture**                |          ✅           |         ✅          |   ✅ (Sarxos Webcam)   |   ✅ (HTML5 Canvas)   | `platform/.../camera`   |
 | **Video Recording**              |  ✅ (CameraX Video)   |  ✅ (AVFoundation)  |   ⚠️ (Pattern Stream)  |  ✅ (MediaRecorder)   | `platform/.../camera`   |
-| **Audio Dictation / Memos**      |    ✅ (MediaRecord)   |  ✅ (AVAudioRecord) |    ✅ (Java Sound)     |  ✅ (MediaStream/Rec) | `platform/.../media`    |
+| **Camera Lens Switching (Flip)** |  ✅ (CameraSelector)  |  ✅ (AVCaptureDev)  |   ✅ (Webcam Cycling)  |   ✅ (facingMode)     | `platform/.../camera`   |
+| **Audio Dictation / Memos**      |    ✅ (MediaRecorder) |  ✅ (AVAudioRecord) |    ✅ (Java Sound)     |  ✅ (MediaStream/Rec) | `platform/.../media`    |
+| **RMS Audio Amplitude Meter**   |          ✅           |         ✅          |           ✅           |          ✅           | `platform/.../media`    |
+| **Questionnaire QR Scanner**     |  ✅ (CameraX/ML Kit)  |  ✅ (AVFoundation)  |       ✅ (ZXing)       | ✅ (BarcodeDetect/Canv)| `platform/.../camera`   |
+| **ISO/IEC 18004 QR P2P Sharing** |          ✅           |         ✅          |           ✅           |          ✅           | `commonMain/utils/qr`   |
+| **Native System File Pickers**   |    ✅ (Android SAF)   | ✅ (UIDocumentPick) |  ✅ (AWT FileDialog)   |   ✅ (DOM File Input) | `platform/.../utils`    |
 | **DICOM Inspector & Export**     |          ✅           |         ✅          |           ✅           |          ✅           | `commonMain/dicom`      |
 | **Encrypted Dataset Backup**     |          ✅           |         ✅          |           ✅           |          ✅           | `commonMain/repository` |
 | **Selective Import & Merge**     |          ✅           |         ✅          |           ✅           |          ✅           | `commonMain/repository` |
@@ -134,15 +140,16 @@ While the **Business Logic (FHIR, Auth, ViewModels)** and **UI (Compose)** are 1
 ChartCam is structured as a Kotlin Multiplatform (KMP) project targeting Android, iOS, Desktop (JVM), and Web (JS & Wasm):
 
 * **/chartCam**: Core KMP module housing shared business logic, clinical UI, and platform bindings.
-    * `commonMain`: Unified source of truth containing ViewModels, 100% shared Compose UI, FHIR/DICOM models, SDC form engine, repositories, and navigation.
-    * `androidMain`: Android-specific bindings (CameraX, BiometricManager, SensorManager, EncryptedSharedPreferences).
-    * `iosMain`: iOS-specific bindings (AVFoundation, LocalAuthentication, CoreMotion, Keychain, Argon2id C-interop).
-    * `jvmMain`: Desktop implementations (Sarxos webcam, Java Sound, POSIX-permission local storage, SQLCipher).
-    * `jsMain` / `wasmJsMain`: Browser implementations (HTML5 MediaDevices, WebCrypto AES-GCM, IndexedDB blob storage, Kotlin/Wasm).
+    * `commonMain`: Unified source of truth containing ViewModels, 100% shared Compose UI, FHIR/DICOM models, SDC form engine, pure Kotlin ISO/IEC 18004 QR generation with Reed-Solomon GF($2^8$) error correction, repositories, and navigation.
+    * `androidMain`: Android-specific bindings (CameraX photo/video/lens switching, offline ML Kit QR scanning, BiometricManager, SensorManager, EncryptedSharedPreferences, Storage Access Framework).
+    * `iosMain`: iOS-specific bindings (AVFoundation photo/video/audio/barcode scanning, LocalAuthentication FaceID/TouchID, CoreMotion, UIDocumentPicker, Keychain, Argon2id C-interop).
+    * `jvmMain`: Desktop implementations (Sarxos webcam, ZXing QR frame decoding, Java Sound PCM recording with RMS metering, AWT/Swing native file dialogs, POSIX-permission local storage, SQLCipher).
+    * `jsMain` / `wasmJsMain`: Browser implementations (HTML5 MediaDevices & MediaRecorder, Web Audio API amplitude metering, BarcodeDetector API, WebCrypto AES-GCM, IndexedDB blob storage, DOM file picker, Kotlin/Wasm).
 * **/androidApp**: Thin execution wrapper providing `MainActivity` and manifest for Android.
 * **/iosApp**: Native Xcode wrapper framework and app entry point for iOS.
+* **/site**: Static website generator, HTML styling, and Dokka documentation portal.
 * **/docs**: Deep-dive architectural, cryptographic, and clinical documentation.
-* **/scripts**: Automated verification suites for 100% doc coverage, exception safety, i18n, and a11y.
+* **/scripts**: Automated verification suites for 100% doc coverage, exception safety, parameter/return docs, environment leaks, i18n, and a11y.
 * **/fastlane**: CI/CD automation configuration for testing, signing, and store deployments.
 
 ---
@@ -157,6 +164,7 @@ To build and test ChartCam locally, ensure your environment is provisioned with:
 3. **[Xcode](https://developer.apple.com/xcode/)** (macOS required for iOS compilation)
 4. **[Ruby & Bundler](https://bundler.io/)** (for Fastlane CI/CD automation)
 5. **[Python 3](https://www.python.org/)** (for automated quality checks)
+6. **[Node.js & npm](https://nodejs.org/)** (for Web JS/Wasm distribution and Firebase App Distribution CLI)
 
 ### 1. Install Dependencies
 
@@ -178,17 +186,22 @@ A `Makefile` (and `make.bat` for Windows) provides cross-platform build and exec
 
 | Command | Description |
 |:---|:---|
+| `make clean` | Cleans Gradle build caches, temporary directories, and generated artifacts (`./gradlew clean`). |
 | `make build` | Assembles all outputs across platforms (without running tests). |
-| `make test` | Runs the full test suite across all targets and generates reports. |
+| `make test` | Runs the full test suite across all targets (`./gradlew allTests`). |
 | `make lint` | Runs Detekt, Ktlint, and Android Lint static analysis checks. |
 | `make run_android` | Launches the emulator (if needed), installs, and runs debug build on Android. |
 | `make run_ios` | Boots the iOS Simulator, compiles the Xcode project, and launches ChartCam. |
 | `make run_jvm` | Launches the Compose Multiplatform desktop application on the current OS. |
 | `make build_release_android` | Assembles the release APK for Android distribution. |
-| `make build_release_ios` | Creates the Xcode archive and exports the signed `.ipa` package (macOS). |
+| `make build_release_ios` | Creates the Xcode archive and exports the signed `.ipa` package for App Store Connect (macOS). |
+| `make build_adhoc_ios` | Creates the Xcode archive and exports the signed `.ipa` package for Ad-Hoc distribution (macOS). |
+| `make deploy_ios_to_firebase` | Builds the Ad-Hoc iOS package and uploads it to Firebase App Distribution via `firebase-tools`. |
 | `make build_release_jvm` | Packages desktop release distribution for the host OS. |
 | `make build_release_js` | Builds the production JavaScript web bundle. |
 | `make build_release_wasm` | Builds the high-performance Kotlin/Wasm web bundle. |
+| `make bump_patch` | Increments the patch version across Android, iOS, JVM desktop, and UI (`python3 scripts/bump_version.py --patch`). |
+| `make bump_version` | Alias for `make bump_patch`. |
 
 ### Build & Run via CLI
 
@@ -208,7 +221,8 @@ ChartCam enforces a **100% test and documentation coverage threshold** and stric
 # Execute unit tests across all targets via Fastlane
 bundle exec fastlane test_all
 
-# Or run targeted tests directly via Gradle
+# Or run full multiplatform test suites via Gradle
+./gradlew allTests                             # Full suite across all targets (Android, JVM, JS, Wasm)
 ./gradlew test                                 # Common JVM tests
 ./gradlew :chartCam:testDebugUnitTest          # Android unit tests
 ./gradlew :chartCam:iosSimulatorArm64Test      # iOS Kotlin/Native tests
@@ -222,9 +236,13 @@ The repository includes specialized verification scripts in `scripts/`:
 ```bash
 python3 scripts/check_coverage.py       # Verifies 100% KDoc documentation coverage
 python3 scripts/check_composable_docs.py # Enforces state/modifier KDoc on Composable functions
-python3 scripts/check_no_exceptions.py  # Ensures zero raw unhandled exceptions across boundaries
+python3 scripts/check_param_return.py   # Enforces complete @param and @return KDoc tags on all functions
+python3 scripts/check_no_exceptions.py  # Ensures zero raw unhandled exceptions across boundaries (Result<T> enforcement)
+python3 scripts/check_env_leaks.py      # Verifies zero credentials or sensitive variables leaked in git
+python3 scripts/test_cov.py             # Verifies 100% test coverage across instruction, branch, line, and method metrics
 python3 scripts/test_i18n.py            # Validates translation parity across all locales
 python3 scripts/test_a11y.py            # Validates semantics, content descriptions, and live regions
+./scripts/build_site.sh                 # Builds Wasm web bundle, Dokka API documentation, and static Markdown site
 ```
 
 ### 3. Static Analysis

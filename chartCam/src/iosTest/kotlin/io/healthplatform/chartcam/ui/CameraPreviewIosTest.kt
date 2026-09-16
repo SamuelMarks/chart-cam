@@ -4,16 +4,19 @@
  */
 package io.healthplatform.chartcam.ui
 
+import io.healthplatform.chartcam.camera.IOSCameraManager
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * Verification stub for the iOS CameraPreview rendering interactions.
  */
 class CameraPreviewIosTest {
-    /** Test stub execution validation. */
+    /** Verifies IOSCameraManager initialization. */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testCameraPreviewIos() {
+        val manager = IOSCameraManager()
+        assertNotNull(manager)
+        manager.release()
     }
 }

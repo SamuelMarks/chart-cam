@@ -5,19 +5,20 @@
 package io.healthplatform.chartcam
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 /**
  * Tests for test instant functionality.
  */
 class TestInstantTest {
     /**
-     * Test the [test] instant method.
+     * Test the [test] instant method with defined epoch millis.
      */
     @Test
     fun testTestInstant() {
-        // Doesn't return anything, just ensures it executes without crash
-        test(1600000000000L)
-        assertTrue(true)
+        val millis = 1600000000000L
+        test(millis)
+        val instant = kotlin.time.Instant.fromEpochMilliseconds(millis)
+        assertEquals(1600000000000L, instant.toEpochMilliseconds())
     }
 }

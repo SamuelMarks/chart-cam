@@ -11,18 +11,20 @@ package io.healthplatform.chartcam.utils
  */
 interface ShareService {
     /**
-     * Shares a file located at [filePath].
+     * Shares a file located at [filePath] using platform-native share sheets or local file openers.
      *
-     * @param filePath The absolute path to the file to be shared.
+     * @param filePath The absolute or relative path to the file to be shared.
+     * @return A [Result] indicating success or failure containing a domain [ExportException].
      */
-    fun shareFile(filePath: String)
+    fun shareFile(filePath: String): Result<Unit>
 
     /**
-     * Shares the given [text].
+     * Shares the given [text] to external applications or the system clipboard.
      *
      * @param text The text content to be shared.
+     * @return A [Result] indicating success or failure containing a domain [ExportException].
      */
-    fun shareText(text: String)
+    fun shareText(text: String): Result<Unit>
 }
 
 /**

@@ -15,6 +15,16 @@ import kotlinx.coroutines.flow.flowOf
  */
 class JvmSensorManager : SensorManager {
     /**
+     * Desktop JVM systems generally lack physical orientation sensors.
+     */
+    override val isAvailable: Boolean = false
+
+    /**
+     * Physical orientation sensors are not present on desktop JVM.
+     */
+    override val hasOrientationHardware: Boolean = false
+
+    /**
      * A flow emitting fixed orientation updates (0.0 pitch, 0.0 roll) for desktop.
      *
      * @return A [Flow] containing a constant [OrientationData] value.

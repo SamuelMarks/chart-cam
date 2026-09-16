@@ -170,7 +170,7 @@ class DicomEncapsulationE2ETest {
             fhirRepo.saveDocumentReference(docRef)
 
             // 2. Generate DICOM Part 10 binary stream
-            val dicomBytes = exportService.exportPhotoAsDicom("doc-dicom-01", anonymize = false)
+            val dicomBytes = exportService.exportPhotoAsDicom("doc-dicom-01", anonymize = false).getOrThrow()
             assertNotNull(dicomBytes, "DICOM output stream must not be null")
             assertTrue(dicomBytes.size > 132, "DICOM Part 10 file must be larger than preamble + magic header")
 

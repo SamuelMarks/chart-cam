@@ -5,17 +5,18 @@
 package io.healthplatform.chartcam.utils
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * Test class for CryptoService on JS.
  */
 class CryptoServiceJsTest {
     /**
-     * Test crypto service on JS.
+     * Test crypto service creation on JS.
      */
     @Test
     fun testCryptoServiceJs() {
-        assertTrue(true)
+        val crypto = CryptoService()
+        assertNotNull(crypto)
     }
 }

@@ -5,17 +5,18 @@
 package io.healthplatform.chartcam.camera
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 /**
- * Test class for WasmJS camera functionality.
+ * Test class for WasmJS camera testing utilities.
  */
 class WasmJsTestWasmWasmJsTest {
     /**
-     * Tests wasm integration.
+     * Test string trimming behavior in WasmJS.
      */
     @Test
-    fun testTestWasm() {
-        assertTrue(true)
+    fun testWasm() {
+        val testString = "  wasm_test  "
+        assertEquals("wasm_test", testString.trim())
     }
 }

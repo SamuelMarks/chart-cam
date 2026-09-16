@@ -282,9 +282,14 @@ class LoginViewModelTest {
     fun testBiometricAuthenticationSuccess() =
         runTest {
             authRepository = AuthRepository(mockStorage)
+            val availableProvider =
+                io.healthplatform.chartcam.storage.DefaultKeystoreHardwareProvider(
+                    isHardware = true,
+                    status = io.healthplatform.chartcam.storage.BiometricHardwareStatus.AVAILABLE,
+                )
             val bioManager =
                 io.healthplatform.chartcam.storage
-                    .BiometricSecurityManager(mockStorage)
+                    .BiometricSecurityManager(mockStorage, hardwareProvider = availableProvider)
             val viewModel = LoginViewModel(authRepository, bioManager)
 
             assertTrue(viewModel.uiState.value.isBiometricAvailable)

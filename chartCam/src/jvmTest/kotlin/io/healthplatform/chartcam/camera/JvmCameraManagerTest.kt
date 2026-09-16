@@ -40,9 +40,12 @@ class JvmCameraManagerTest {
         runBlocking {
             val manager = JvmCameraManager()
 
-            // These are no-ops, just ensure they don't crash
-            manager.setFlash(true)
-            manager.toggleLens()
+            val flashOn = manager.setFlash(true)
+            assertTrue(flashOn.isFailure)
+            val flashOff = manager.setFlash(false)
+            assertTrue(flashOff.isSuccess)
+            val toggle = manager.toggleLens()
+            assertTrue(toggle.isSuccess)
             // Invoke to hit branch if webcam is null
             manager.release()
             manager.getPreviewImage()
@@ -64,6 +67,29 @@ class JvmCameraManagerTest {
             manager.hasMultipleCameras
         }
     }
+
+    /**
+     * Tests video recording start and stop lifecycle on JvmCameraManager.
+     */
+    @Test
+    fun testJvmCameraManagerVideoRecording() =
+        runBlocking {
+            val manager = JvmCameraManager()
+
+            // Stop before start returns failure
+            val initialStop = manager.stopVideoRecording()
+            assertTrue(initialStop.isFailure)
+
+            // Start recording succeeds
+            val start = manager.startVideoRecording()
+            assertTrue(start.isSuccess)
+
+            // Stop recording returns payload
+            val stop = manager.stopVideoRecording()
+            assertTrue(stop.isSuccess)
+            val bytes = stop.getOrNull()
+            assertTrue(bytes != null && bytes.isNotEmpty())
+        }
 
     /**
      * Tests JvmPermissionManager methods.

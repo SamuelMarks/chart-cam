@@ -22,52 +22,77 @@ class AndroidShareService(
     private val context: Context,
 ) : ShareService {
     /**
+     * Resolves the target file on disk, attempting direct resolution followed by
+     * lookups in internal persistent storage and cache directories.
+     *
+     * @param filePath The provided absolute or relative file path.
+     * @return The resolved [File] if it exists, or null.
+     */
+    private fun resolveFile(filePath: String): File? {
+        val directFile = File(filePath)
+        val cleanName = directFile.name
+        val candidates =
+            listOf(
+                directFile,
+                File(context.filesDir, cleanName),
+                File(context.cacheDir, cleanName),
+            )
+        return candidates.firstOrNull { it.exists() }
+    }
+
+    /**
      * Shares a file to other applications using Android's [Intent.ACTION_SEND].
      *
-     * @param filePath The absolute path to the file to be shared. If the file does not exist, the operation is aborted.
+     * @param filePath The absolute or relative path to the file to be shared.
+     * @return A [Result] indicating success or failure.
      */
-    override fun shareFile(filePath: String) {
-        val file = File(filePath)
-        if (!file.exists()) return
+    override fun shareFile(filePath: String): Result<Unit> {
+        val file =
+            resolveFile(filePath)
+                ?: return Result.failure(ExportFileNotFoundException(filePath))
 
-        val uri =
-            FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                file,
-            )
-        val intent =
-            Intent(Intent.ACTION_SEND).apply {
-                type = "application/octet-stream"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-        val chooser =
-            Intent.createChooser(intent, "Share Export").apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-        context.startActivity(chooser)
+        return runCatching {
+            val uri =
+                FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    file,
+                )
+            val intent =
+                Intent(Intent.ACTION_SEND).apply {
+                    type = "application/octet-stream"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            val chooser =
+                Intent.createChooser(intent, "Share Export").apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            context.startActivity(chooser)
+        }.mapCatching { }
     }
 
     /**
      * Shares plain text to other applications using Android's [Intent.ACTION_SEND].
      *
      * @param text The plain text content to be shared.
+     * @return A [Result] indicating success or failure.
      */
-    override fun shareText(text: String) {
-        val intent =
-            Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, text)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-        val chooser =
-            Intent.createChooser(intent, "Share Password").apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-        context.startActivity(chooser)
-    }
+    override fun shareText(text: String): Result<Unit> =
+        runCatching {
+            val intent =
+                Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, text)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            val chooser =
+                Intent.createChooser(intent, "Share Password").apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            context.startActivity(chooser)
+        }.mapCatching { }
 }
 
 /**

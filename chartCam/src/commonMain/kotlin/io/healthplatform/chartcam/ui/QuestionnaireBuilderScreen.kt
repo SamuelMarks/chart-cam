@@ -121,6 +121,7 @@ import chartcam.chartcam.generated.resources.cd_move_item_up
 import chartcam.chartcam.generated.resources.cd_move_item_up_generic
 import chartcam.chartcam.generated.resources.cd_preview
 import chartcam.chartcam.generated.resources.cd_save
+import chartcam.chartcam.generated.resources.cd_unnamed_group
 import chartcam.chartcam.generated.resources.confirm_delete_item_message
 import chartcam.chartcam.generated.resources.confirm_delete_item_title
 import chartcam.chartcam.generated.resources.confirm_delete_option_message
@@ -191,6 +192,7 @@ private val WIDGET_NAME_MAP: Map<WidgetType, StringResource> =
         WidgetType.FITZPATRICK_PALETTE to Res.string.widget_fitzpatrick,
         WidgetType.BODY_MAP to Res.string.widget_body_map,
         WidgetType.SEGMENTED_TILES to Res.string.widget_segmented_tiles,
+        WidgetType.GROUP to Res.string.cd_unnamed_group,
     )
 
 /**
@@ -199,7 +201,8 @@ private val WIDGET_NAME_MAP: Map<WidgetType, StringResource> =
  * @param type The type of the widget.
  * @return The string resource corresponding to the widget name.
  */
-fun getWidgetNameResource(type: WidgetType): StringResource = WIDGET_NAME_MAP[type] ?: Res.string.widget_single_line_text
+fun getWidgetNameResource(type: WidgetType): StringResource =
+    WIDGET_NAME_MAP[type] ?: Res.string.widget_single_line_text
 
 /**
  * Translates a [WidgetType] to its localized string representation for UI display.
@@ -228,6 +231,7 @@ private val WIDGET_ICON_MAP: Map<WidgetType, ImageVector> =
         WidgetType.FITZPATRICK_PALETTE to Icons.Default.Palette,
         WidgetType.BODY_MAP to Icons.Default.Accessibility,
         WidgetType.SEGMENTED_TILES to Icons.Default.ViewModule,
+        WidgetType.GROUP to Icons.Default.Checklist,
     )
 
 /**

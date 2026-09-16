@@ -5,17 +5,17 @@
 package io.healthplatform.chartcam
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 /**
  * Test class for Main on web.
  */
 class MainTest {
     /**
-     * Test main.
+     * Test web route resolution.
      */
     @Test
     fun testMain() {
-        assertTrue(true)
+        assertEquals("/auth/login", io.healthplatform.chartcam.navigation.Routes.LOGIN)
     }
 }

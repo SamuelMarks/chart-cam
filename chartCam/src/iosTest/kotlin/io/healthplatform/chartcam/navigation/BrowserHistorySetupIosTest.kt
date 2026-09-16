@@ -5,15 +5,17 @@
 package io.healthplatform.chartcam.navigation
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 /**
- * Validates no-op behavior of history setup on iOS.
+ * Validates no-op safety of history setup on iOS.
  */
 class BrowserHistorySetupIosTest {
-    /** General compilation test block. */
+    /**
+     * Verifies that the iOS navigation root route is correctly defined.
+     */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testBrowserHistoryClassIntegrity() {
+        assertEquals("/auth/login", Routes.LOGIN)
     }
 }

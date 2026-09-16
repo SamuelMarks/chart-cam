@@ -4,7 +4,10 @@
  */
 package io.healthplatform.chartcam.camera
 
-import kotlin.test.Test
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import org.junit.Rule
+import org.junit.Test
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -12,10 +15,37 @@ import kotlin.test.assertTrue
  */
 class PermissionManagerJvmTest {
     /**
-     * Test permission manager on JVM.
+     * Compose test rule for checking rememberPermissionManager.
+     */
+    @get:Rule
+    val composeTestRule = createComposeRule()
+
+    /**
+     * Test permission manager methods on JVM.
      */
     @Test
     fun testPermissionManagerJvm() {
-        assertTrue(true)
+        val manager = JvmPermissionManager()
+        val status = manager.getCameraPermissionStatus()
+        assertNotNull(status)
+
+        kotlinx.coroutines.runBlocking {
+            val result = manager.requestCameraPermission()
+            assertTrue(result.isSuccess)
+        }
+
+        // Test openSettings does not throw
+        manager.openSettings()
+    }
+
+    /**
+     * Test rememberPermissionManager on JVM.
+     */
+    @Test
+    fun testRememberPermissionManager() {
+        composeTestRule.setContent {
+            val manager = rememberPermissionManager()
+            assertNotNull(manager)
+        }
     }
 }

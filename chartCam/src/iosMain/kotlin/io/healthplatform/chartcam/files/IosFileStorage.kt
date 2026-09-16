@@ -77,11 +77,34 @@ class IosFileStorage : FileStorage {
     }
 
     /**
-     * Clears cached files or specific directory contents.
-     * Currently not implemented for iOS.
+     * Deletes temporary files ending with .tmp or starting with temp_ in the given directory.
+     *
+     * @param directory The Okio path of the directory to scan.
+     */
+    private fun deleteTemporaryFiles(directory: okio.Path) {
+        if (!fileSystem.exists(directory)) return
+        val list = fileSystem.list(directory)
+        for (file in list) {
+            val isTemp = file.name.endsWith(".tmp") || file.name.startsWith("temp_")
+            if (isTemp) {
+                runCatching { fileSystem.delete(file) }
+            }
+        }
+    }
+
+    /**
+     * Clears cached temporary files in the documents and caches directories.
      */
     override fun clearCache() {
-        // Implementation would clear logic specific files
+        deleteTemporaryFiles(documentDir)
+        val cachePaths =
+            NSSearchPathForDirectoriesInDomains(
+                platform.Foundation.NSCachesDirectory,
+                NSUserDomainMask,
+                true,
+            )
+        val cacheDirStr = cachePaths.firstOrNull() as? String ?: return
+        deleteTemporaryFiles(cacheDirStr.toPath())
     }
 }
 

@@ -20,7 +20,8 @@ class QuestionnaireSharingService {
      * @param questionnaire The [Questionnaire] resource to serialize.
      * @return A [Result] enclosing the serialized JSON string or an error.
      */
-    fun serializeQuestionnaire(questionnaire: Questionnaire): Result<String> = runCatching { fhirJson.encodeToString(questionnaire) }
+    fun serializeQuestionnaire(questionnaire: Questionnaire): Result<String> =
+        runCatching { fhirJson.encodeToString(questionnaire) }
 
     /**
      * Deserializes a FHIR JSON string back into a [Questionnaire] domain model.

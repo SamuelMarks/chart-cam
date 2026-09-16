@@ -4,18 +4,20 @@
  */
 package io.healthplatform.chartcam.ui
 
+import io.healthplatform.chartcam.camera.CameraManager
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * Test class for CameraPreview on JS.
  */
 class CameraPreviewJsTest {
     /**
-     * Dummy test to satisfy the test runner.
+     * Test camera minimal mp4 container helper on JS.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testCameraPreviewJs() {
+        val container = CameraManager.createMinimalMp4Container()
+        assertNotNull(container)
     }
 }

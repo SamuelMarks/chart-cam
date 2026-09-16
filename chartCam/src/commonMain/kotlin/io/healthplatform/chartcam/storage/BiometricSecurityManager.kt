@@ -85,6 +85,23 @@ interface KeystoreHardwareProvider {
      * @return The [BiometricHardwareStatus] representing device capabilities.
      */
     fun getHardwareStatus(): BiometricHardwareStatus
+
+    /**
+     * Prompts the user for biometric authentication (FaceID, TouchID, or BiometricPrompt).
+     *
+     * @param title The dialog title.
+     * @param subtitle The dialog subtitle.
+     * @return A [Result] indicating success or failure.
+     */
+    suspend fun promptBiometrics(
+        title: String = "Biometric Authentication",
+        subtitle: String = "Verify identity to proceed",
+    ): Result<Unit> =
+        if (getHardwareStatus() == BiometricHardwareStatus.AVAILABLE) {
+            Result.success(Unit)
+        } else {
+            Result.failure(IllegalStateException("Biometrics unavailable: ${getHardwareStatus()}"))
+        }
 }
 
 /**
@@ -115,7 +132,31 @@ class DefaultKeystoreHardwareProvider(
      * @return The status.
      */
     override fun getHardwareStatus(): BiometricHardwareStatus = status
+
+    /**
+     * Prompts user biometrics simulation.
+     *
+     * @param title Dialog title.
+     * @param subtitle Dialog subtitle.
+     * @return A [Result] indicating success or failure.
+     */
+    override suspend fun promptBiometrics(
+        title: String,
+        subtitle: String,
+    ): Result<Unit> =
+        if (status == BiometricHardwareStatus.AVAILABLE) {
+            Result.success(Unit)
+        } else {
+            Result.failure(IllegalStateException("Biometric hardware status: $status"))
+        }
 }
+
+/**
+ * Creates a platform-specific [KeystoreHardwareProvider].
+ *
+ * @return The platform keystore hardware provider.
+ */
+expect fun createKeystoreHardwareProvider(): KeystoreHardwareProvider
 
 /**
  * Security manager handling biometric authentication lifecycle, keystore invalidation,
@@ -128,7 +169,7 @@ class DefaultKeystoreHardwareProvider(
  */
 class BiometricSecurityManager(
     private val secureStorage: SecureStorage,
-    private val hardwareProvider: KeystoreHardwareProvider = DefaultKeystoreHardwareProvider(),
+    private val hardwareProvider: KeystoreHardwareProvider = createKeystoreHardwareProvider(),
     private val maxAttemptsBeforeTempLockout: Int = 5,
     private val maxAttemptsBeforePermanentLockout: Int = 10,
 ) {
@@ -232,7 +273,9 @@ class BiometricSecurityManager(
      * @param simulateSuccess For testing, simulate success if true, failure if false.
      * @return The [BiometricAuthResult] indicating the outcome.
      */
-    fun authenticate(simulateSuccess: Boolean): BiometricAuthResult {
+    fun authenticate(
+        simulateSuccess: Boolean = (hardwareProvider.getHardwareStatus() == BiometricHardwareStatus.AVAILABLE),
+    ): BiometricAuthResult {
         val status = hardwareProvider.getHardwareStatus()
         return when {
             keyInvalidated -> BiometricAuthResult.KeyPermanentlyInvalidated
@@ -248,6 +291,39 @@ class BiometricSecurityManager(
                 BiometricAuthResult.Success
             }
             else -> recordFailedAttempt()
+        }
+    }
+
+    /**
+     * Executes an authentic biometric prompt session using hardware providers.
+     *
+     * @param title Title for the biometric prompt dialog.
+     * @param subtitle Subtitle for the biometric prompt dialog.
+     * @return The [BiometricAuthResult] indicating the outcome.
+     */
+    suspend fun authenticatePrompt(
+        title: String = "Biometric Unlock",
+        subtitle: String = "Authenticate to access clinical records",
+    ): BiometricAuthResult {
+        val status = hardwareProvider.getHardwareStatus()
+        return when {
+            keyInvalidated -> BiometricAuthResult.KeyPermanentlyInvalidated
+            isPermLocked -> BiometricAuthResult.PermanentlyLockedOut
+            isTempLocked -> BiometricAuthResult.TemporarilyLockedOut(lockoutDurationSeconds = 30)
+            status == BiometricHardwareStatus.NO_HARDWARE ||
+                status == BiometricHardwareStatus.HARDWARE_UNAVAILABLE ->
+                BiometricAuthResult.HardwareError("Biometric hardware unavailable on this device.")
+            status == BiometricHardwareStatus.NOT_ENROLLED ->
+                BiometricAuthResult.HardwareError("No biometric credentials enrolled on this device.")
+            else -> {
+                val promptResult = hardwareProvider.promptBiometrics(title, subtitle)
+                if (promptResult.isSuccess) {
+                    failedAttempts = 0
+                    BiometricAuthResult.Success
+                } else {
+                    recordFailedAttempt()
+                }
+            }
         }
     }
 

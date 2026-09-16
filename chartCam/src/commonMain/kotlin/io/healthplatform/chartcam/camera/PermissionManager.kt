@@ -42,6 +42,13 @@ interface PermissionManager {
     fun getCameraPermissionStatus(): PermissionStatus
 
     /**
+     * Queries the current camera permission status safely wrapped in a [Result].
+     *
+     * @return A [Result] enclosing the resolved [PermissionStatus].
+     */
+    fun queryCameraPermissionStatus(): Result<PermissionStatus> = Result.success(getCameraPermissionStatus())
+
+    /**
      * Requests the camera permission from the operating system.
      * Suspends execution until the user responds to the system prompt.
      *

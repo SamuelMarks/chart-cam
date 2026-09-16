@@ -24,6 +24,7 @@ import org.junit.Rule
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 /**
  * Test class for EncounterDetailScreen on JVM.
@@ -188,5 +189,80 @@ class EncounterDetailScreenJvmTest {
                 .assertExists()
             rule.onNodeWithText("Close").performClick()
             rule.waitForIdle()
+        }
+
+    /**
+     * Tests PhotoGridItem opening DICOM Viewer.
+     */
+    @Test
+    fun testPhotoGridItemOpenDicomViewer() =
+        runTest {
+            val storage = createFileStorage()
+            val sampleBmp =
+                byteArrayOf(
+                    0x42,
+                    0x4D,
+                    0x1E,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x1A,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x0C,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x01,
+                    0x00,
+                    0x01,
+                    0x00,
+                    0x01,
+                    0x00,
+                    0x18,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                )
+            val savedPath = storage.saveImage("test_dicom_trigger.bmp", sampleBmp)
+
+            val doc =
+                io.healthplatform.chartcam.models.createFhirDocumentReference(
+                    io.healthplatform.chartcam.models.DocumentReferenceCreationParams(
+                        id = "doc-dicom-valid",
+                        patientId = "pat-1",
+                        encounterId = "enc-1",
+                        dateStr = "2026-07-09T10:00:00Z",
+                        desc = "DICOM Target Photo",
+                        mime = "image/bmp",
+                        urlPath = savedPath,
+                    ),
+                )
+
+            var openedPath: String? = null
+            rule.setContent {
+                PhotoGridItem(
+                    doc = doc,
+                    onOpenDicomViewer = { path -> openedPath = path },
+                )
+            }
+            rule.waitForIdle()
+
+            // Click the card
+            rule.onNodeWithContentDescription("DICOM Target Photo").performClick()
+            rule.waitForIdle()
+
+            // Click DICOM Viewer button
+            rule.onNodeWithText("DICOM Viewer").performClick()
+            rule.waitForIdle()
+
+            assertEquals(savedPath, openedPath)
         }
 }

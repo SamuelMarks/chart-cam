@@ -53,9 +53,9 @@ class MediaRecoveryExpansionTest {
 
         override suspend fun captureImage(): ByteArray? = returnBytes
 
-        override fun setFlash(on: Boolean) {}
+        override fun setFlash(on: Boolean): Result<Unit> = Result.success(Unit)
 
-        override fun toggleLens() {}
+        override fun toggleLens(): Result<Unit> = Result.success(Unit)
 
         override fun release() {}
     }

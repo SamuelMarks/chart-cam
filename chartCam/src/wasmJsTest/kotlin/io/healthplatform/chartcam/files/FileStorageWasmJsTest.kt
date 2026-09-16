@@ -5,17 +5,18 @@
 package io.healthplatform.chartcam.files
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * Test class for FileStorage on WasmJS.
  */
 class FileStorageWasmJsTest {
     /**
-     * Test file storage on WasmJS.
+     * Test file storage instantiation on WasmJS.
      */
     @Test
     fun testFileStorageWasmJs() {
-        assertTrue(true)
+        val storage = createFileStorage()
+        assertNotNull(storage)
     }
 }

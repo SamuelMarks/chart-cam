@@ -385,13 +385,16 @@ class MockCameraManager : CameraManager {
      * Stub implementation ignoring flash settings.
      *
      * @param on Boolean flag to enable or disable the flash.
+     * @return A [Result] indicating success.
      */
-    override fun setFlash(on: Boolean) {}
+    override fun setFlash(on: Boolean): Result<Unit> = Result.success(Unit)
 
     /**
      * Stub implementation ignoring lens toggle requests.
+     *
+     * @return A [Result] indicating success.
      */
-    override fun toggleLens() {}
+    override fun toggleLens(): Result<Unit> = Result.success(Unit)
 
     /**
      * Stub implementation ignoring hardware release operations.

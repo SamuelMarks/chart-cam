@@ -72,24 +72,70 @@ class LoginViewModel(
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     /**
-     * Attempts biometric authentication to unlock the session and log in.
+     * Authenticates using biometrics, unlocking stored clinician credentials or falling back to demo mode.
      *
-     * @param onSuccess Callback executed on successful authentication.
-     * @return A [Result] enclosing the [BiometricAuthResult].
+     * @param simulateSuccess Whether to simulate success. Defaults to actual hardware availability.
+     * @param onSuccess Optional callback invoked when biometric login succeeds.
+     * @return A [Result] enclosing the biometric authentication outcome.
      */
-    fun authenticateWithBiometrics(onSuccess: (() -> Unit)? = null): Result<BiometricAuthResult> =
+    fun authenticateWithBiometrics(
+        simulateSuccess: Boolean =
+            (
+                biometricSecurityManager?.checkKeystoreAvailability() ==
+                    io.healthplatform.chartcam.storage.BiometricHardwareStatus.AVAILABLE
+            ),
+        onSuccess: (() -> Unit)? = null,
+    ): Result<BiometricAuthResult> =
         runCatching {
             val bioManager =
                 biometricSecurityManager
                     ?: return@runCatching BiometricAuthResult.HardwareError("Biometrics unconfigured")
-            val authOutcome = bioManager.authenticate(simulateSuccess = true)
+            val authOutcome = bioManager.authenticate(simulateSuccess = simulateSuccess)
             if (authOutcome is BiometricAuthResult.Success) {
                 viewModelScope.launch {
-                    val result = authRepository.loginAsDemo()
+                    val sessionResult = authRepository.checkSession()
+                    val result =
+                        if (sessionResult.isSuccess) {
+                            sessionResult
+                        } else {
+                            authRepository.loginAsDemo()
+                        }
                     if (result.isSuccess) {
                         _uiState.update { it.copy(isLoggedIn = true) }
                         onSuccess?.invoke()
                     }
+                }
+            } else {
+                _uiState.update {
+                    it.copy(errorMessage = Res.string.invalid_credentials)
+                }
+            }
+            authOutcome
+        }
+
+    /**
+     * Executes authentic native biometric prompt authentication without simulation bypass.
+     *
+     * @param onSuccess Optional callback invoked when biometric login succeeds.
+     * @return A [Result] enclosing the biometric authentication outcome.
+     */
+    suspend fun authenticateWithPrompt(onSuccess: (() -> Unit)? = null): Result<BiometricAuthResult> =
+        runCatching {
+            val bioManager =
+                biometricSecurityManager
+                    ?: return@runCatching BiometricAuthResult.HardwareError("Biometrics unconfigured")
+            val authOutcome = bioManager.authenticatePrompt()
+            if (authOutcome is BiometricAuthResult.Success) {
+                val sessionResult = authRepository.checkSession()
+                val result =
+                    if (sessionResult.isSuccess) {
+                        sessionResult
+                    } else {
+                        authRepository.loginAsDemo()
+                    }
+                if (result.isSuccess) {
+                    _uiState.update { it.copy(isLoggedIn = true) }
+                    onSuccess?.invoke()
                 }
             } else {
                 _uiState.update {

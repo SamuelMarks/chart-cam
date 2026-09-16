@@ -231,7 +231,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "io.healthplatform.chartcam"
-            packageVersion = "1.0.4"
+            packageVersion = "1.0.5"
             macOS {
                 iconFile.set(project.file("src/jvmMain/resources/icon.icns"))
             }
@@ -271,8 +271,11 @@ kover {
                     "io.healthplatform.chartcam.InitDatabaseKt",
                     "io.healthplatform.chartcam.utils.QuestionnaireUtils",
                     "io.healthplatform.chartcam.storage.AndroidSecureStorage",
+                    "io.healthplatform.chartcam.storage.AndroidKeystoreHardwareProvider*",
                     "io.healthplatform.chartcam.files.AndroidFileStorage",
                     "io.healthplatform.chartcam.sensors.AndroidSensorManagerKt",
+                    "io.healthplatform.chartcam.media.Android*",
+                    "io.healthplatform.chartcam.media.JvmAudioRecorderManager*",
                     "io.healthplatform.chartcam.ComposableSingletons*",
                 )
                 packages(

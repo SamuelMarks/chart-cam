@@ -5,39 +5,60 @@
 package io.healthplatform.chartcam.utils
 
 import kotlinx.browser.window
+import org.w3c.dom.HTMLAnchorElement
 
 /**
  * JS implementation for sharing files and text.
  */
 class JsShareService : ShareService {
     /**
-     * Simulates sharing a file on the web platform.
-     * Current implementation alerts the user since local file sharing is limited in JS.
+     * Shares a file on the web by triggering an automatic browser download.
      *
      * @param filePath The path of the file to share.
+     * @return A [Result] indicating success or failure.
      */
-    override fun shareFile(filePath: String) {
-        // Not a standard JS feature without File API / share API for local paths.
-        // Alerting for simplicity or we can trigger download.
-        window.alert("File saved. Download mechanism needed for web. Path: $filePath")
-    }
+    override fun shareFile(filePath: String): Result<Unit> =
+        runCatching {
+            if (filePath.isBlank()) {
+                return Result.failure(ExportFileNotFoundException(filePath))
+            }
+            val fileName = filePath.substringAfterLast('/').ifEmpty { "download" }
+            val storedData = window.localStorage.getItem(filePath)
+            val href =
+                when {
+                    storedData == null -> "data:text/plain;charset=utf-8,$filePath"
+                    storedData.startsWith("data:") -> storedData
+                    else -> "data:application/octet-stream;base64,$storedData"
+                }
+            val doc = window.document
+            val anchor = doc.createElement("a") as HTMLAnchorElement
+            anchor.href = href
+            anchor.download = fileName
+            doc.body?.appendChild(anchor)
+            anchor.click()
+            doc.body?.removeChild(anchor)
+        }.mapCatching { }
 
     /**
      * Shares text content by copying it to the user's system clipboard.
      * Alerts the user upon success or failure.
      *
      * @param text The text content to share or copy.
+     * @return A [Result] indicating success or failure.
      */
-    override fun shareText(text: String) {
-        // fallback to clipboard
-        window.navigator.clipboard
-            .writeText(text)
-            .then {
-                window.alert("Text copied to clipboard")
-            }.catch {
-                window.alert("Failed to copy text")
-            }
-    }
+    override fun shareText(text: String): Result<Unit> =
+        runCatching {
+            window.navigator.clipboard
+                .writeText(text)
+                .then(
+                    onFulfilled = {
+                        window.alert("Text copied to clipboard")
+                    },
+                    onRejected = {
+                        window.alert("Failed to copy text")
+                    },
+                )
+        }.mapCatching { }
 }
 
 /**

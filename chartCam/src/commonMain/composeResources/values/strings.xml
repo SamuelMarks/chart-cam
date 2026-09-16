@@ -130,6 +130,10 @@
     <string name="confirm_delete_option_message">Are you sure you want to delete this option?</string>
     <string name="cd_more_widgets">More widgets</string>
     <string name="widget_photo_camera">Photo Camera</string>
+    <string name="widget_group">Question Group</string>
+    <string name="add_entry">Add Entry</string>
+    <string name="remove_entry">Remove Entry</string>
+    <string name="entry_format">Entry %1$d</string>
     <string name="widget_video_camera">Video Camera</string>
     <string name="widget_switch">Switch</string>
     <string name="widget_checkbox">Checkbox</string>
@@ -158,6 +162,10 @@
     <string name="copy_to_clipboard">Copy to Clipboard</string>
     <string name="share_text_json">Share text/JSON</string>
     <string name="qr_code_coming_soon">QR Code and File Export coming soon</string>
+    <string name="import_from_file">Import from File</string>
+    <string name="scan_qr_code">Scan QR Code</string>
+    <string name="display_qr_code">Display QR Code</string>
+    <string name="export_json_file">Export JSON File</string>
     <string name="recovered_form">Recovered Form</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>

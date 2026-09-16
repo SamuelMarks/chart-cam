@@ -4,38 +4,43 @@
  */
 package io.healthplatform.chartcam
 
+import io.healthplatform.chartcam.utils.CryptoService
 import kotlin.test.Test
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
- * Dummy test for iOS main view controller wrapping.
+ * Unit tests for iOS main view controller wrapping.
  */
 class IosMainViewControllerTest {
-    /** Dummy test wrapper. */
+    /** Verifies MainViewController instantiation. */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testViewControllerCreation() {
+        val vc = mainViewController()
+        assertNotNull(vc)
     }
 }
 
 /**
- * Dummy test for iOS platform interactions.
+ * Unit tests for iOS platform interactions.
  */
 class IosPlatformTest {
-    /** Dummy test wrapper. */
+    /** Verifies iOS platform naming. */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testIosPlatform() {
+        val platform = getPlatform()
+        assertTrue(platform.name.contains("iOS"))
     }
 }
 
 /**
- * Dummy test for iOS crypto layer bridging.
+ * Unit tests for iOS crypto layer bridging.
  */
 class IosCryptoDummyTest {
-    /** Dummy test wrapper. */
+    /** Verifies CryptoService instantiation on iOS. */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testCryptoService() {
+        val crypto = CryptoService()
+        assertNotNull(crypto)
     }
 }

@@ -5,17 +5,18 @@
 package io.healthplatform.chartcam.camera
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * Android host tests for PermissionManager.
  */
 class PermissionManagerAndroidTest {
     /**
-     * Dummy test to ensure test suite runs.
+     * Verifies PermissionDeniedException creation on Android.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testPermissionManagerAndroid() {
+        val ex = PermissionDeniedException()
+        assertNotNull(ex)
     }
 }

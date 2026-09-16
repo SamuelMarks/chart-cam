@@ -5,17 +5,19 @@
 package io.healthplatform.chartcam.camera
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * Test class for CameraManager on JVM.
  */
 class CameraManagerJvmTest {
     /**
-     * Test camera manager on JVM.
+     * Verifies JvmCameraManager construction and resource release.
      */
     @Test
     fun testCameraManagerJvm() {
-        assertTrue(true)
+        val manager = JvmCameraManager()
+        assertNotNull(manager)
+        manager.release()
     }
 }

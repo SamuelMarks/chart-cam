@@ -4,49 +4,73 @@
  */
 package io.healthplatform.chartcam.utils
 
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
- * Alternative test module target.
+ * Validates Argon2 key derivation directly on iOS.
  */
 class IosCryptoServiceTest {
-    /** Dummy abstract behavior. */
+    /**
+     * Verifies Argon2 key derivation produces the expected 32-byte key.
+     */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
-    }
+    fun testArgon2KeyDerivation() =
+        runTest {
+            val service = CryptoService()
+            val salt = ByteArray(16) { it.toByte() }
+            val key = service.deriveKeyArgon2("doctor_pass", salt)
+            assertEquals(32, key.size, "Argon2 key should be exactly 32 bytes")
+        }
 }
 
 /**
- * Stub wrapper for testing localized format mapping.
+ * Tests for iOS date formatting utilities.
  */
 class IosDateFormatterTest {
-    /** Compilation sanity. */
+    /**
+     * Verifies date formatting does not crash on iOS.
+     */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testDateFormattingOnIos() {
+        val dateStr = formatLocalizedDate("2026-09-16", "en")
+        assertTrue(dateStr.isNotEmpty(), "Formatted date string must not be empty")
+
+        val dateTimeStr = formatLocalizedDateTime("2026-09-16T14:30:00Z", "en")
+        assertTrue(dateTimeStr.isNotEmpty(), "Formatted datetime string must not be empty")
     }
 }
 
 /**
- * Stub wrapper for verifying share mechanics on iOS.
+ * Tests for iOS ShareService factory and behaviors.
  */
 class IosShareServiceTest {
-    /** Simple placeholder. */
+    /**
+     * Verifies ShareService creation.
+     */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testShareServiceCreation() {
+        val shareService = createShareService()
+        assertNotNull(shareService, "IosShareService must be successfully created")
     }
 }
 
 /**
- * Checks iOS UUID specific APIs.
+ * Checks iOS UUID generation.
  */
 class IosUUIDTest {
-    /** Ensure tests execute cleanly. */
+    /**
+     * Verifies randomUUID generates non-empty distinct UUID strings.
+     */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testUUIDGeneration() {
+        val uuid1 = UUID.randomUUID()
+        val uuid2 = UUID.randomUUID()
+        assertTrue(uuid1.isNotEmpty(), "UUID must not be empty")
+        assertTrue(uuid2.isNotEmpty(), "UUID must not be empty")
+        assertTrue(uuid1 != uuid2, "UUIDs must be distinct")
     }
 }

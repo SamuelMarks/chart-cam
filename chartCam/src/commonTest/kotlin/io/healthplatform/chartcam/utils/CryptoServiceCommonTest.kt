@@ -5,16 +5,20 @@
 package io.healthplatform.chartcam.utils
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * Common test wrapper for CryptoService.
  */
 class CryptoServiceCommonTest {
-    /** Dummy test wrapper. */
+    /** Verifies CryptoService instance creation. */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testCryptoServiceInstance() {
+        val crypto = CryptoService()
+        assertNotNull(crypto)
     }
 }
 
@@ -22,10 +26,12 @@ class CryptoServiceCommonTest {
  * Common test wrapper for DateFormatter.
  */
 class DateFormatterCommonTest {
-    /** Dummy test wrapper. */
+    /** Verifies formatLocalizedDate formatting. */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testDateFormatter() {
+        val formatted = formatLocalizedDate("2026-09-16")
+        assertNotNull(formatted)
+        assertTrue(formatted.isNotBlank())
     }
 }
 
@@ -33,10 +39,11 @@ class DateFormatterCommonTest {
  * Common test wrapper for FhirConstants.
  */
 class FhirConstantsTest {
-    /** Dummy test wrapper. */
+    /** Verifies FHIR system constants. */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testFhirConstants() {
+        assertNotNull(FhirConstants.CONTENT_TYPE_FHIR_JSON)
+        assertEquals("application/fhir+json", FhirConstants.CONTENT_TYPE_FHIR_JSON)
     }
 }
 
@@ -44,10 +51,15 @@ class FhirConstantsTest {
  * Common test wrapper for ShareService.
  */
 class ShareServiceCommonTest {
-    /** Dummy test wrapper. */
+    /** Verifies ShareService creation. */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testShareService() {
+        runCatching {
+            val service = createShareService()
+            assertNotNull(service)
+        }.onFailure {
+            assertTrue(it is IllegalStateException)
+        }
     }
 }
 
@@ -55,9 +67,12 @@ class ShareServiceCommonTest {
  * Common test wrapper for UUID utils.
  */
 class UUIDCommonTest {
-    /** Dummy test wrapper. */
+    /** Verifies UUID generation and uniqueness. */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testUUID() {
+        val id1 = UUID.randomUUID()
+        val id2 = UUID.randomUUID()
+        assertNotEquals(id1, id2)
+        assertEquals(36, id1.length)
     }
 }

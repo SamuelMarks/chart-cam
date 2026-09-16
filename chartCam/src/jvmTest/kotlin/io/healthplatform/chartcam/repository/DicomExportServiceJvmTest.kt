@@ -155,7 +155,7 @@ class DicomExportServiceJvmTest {
             fhirRepo.saveDocumentReference(docRef)
 
             // Export photo
-            val dicomBytes = service.exportPhotoAsDicom("doc-1", anonymize = false)
+            val dicomBytes = service.exportPhotoAsDicom("doc-1", anonymize = false).getOrThrow()
             assertNotNull(dicomBytes)
             val dcmStr = dicomBytes.decodeToString()
             assertTrue(dcmStr.contains("DICM"))
@@ -163,19 +163,19 @@ class DicomExportServiceJvmTest {
             assertTrue(dcmStr.contains("Adams^John"))
 
             // Export photo anonymized
-            val anonBytes = service.exportPhotoAsDicom("doc-1", anonymize = true)
+            val anonBytes = service.exportPhotoAsDicom("doc-1", anonymize = true).getOrThrow()
             assertNotNull(anonBytes)
             val anonStr = anonBytes.decodeToString()
             assertTrue(anonStr.contains("ANONYMOUS^PATIENT"))
 
             // Non-existent document reference
-            assertNull(service.exportPhotoAsDicom("doc-999"))
+            assertNull(service.exportPhotoAsDicom("doc-999").getOrThrow())
 
             // Document reference with empty photo file
             val emptyDocRef = docRef.toBuilder().apply { id = "doc-2" }.build()
             fhirRepo.saveDocumentReference(emptyDocRef)
             fileStorage.files.remove("photo1.jpg")
-            assertNull(service.exportPhotoAsDicom("doc-2"))
+            assertNull(service.exportPhotoAsDicom("doc-2").getOrThrow())
         }
 
     /**
@@ -185,7 +185,7 @@ class DicomExportServiceJvmTest {
     fun testExportEncounterReportAsDicomPdf(): Unit =
         runBlocking {
             val pdfData = "%PDF-1.4 report payload".encodeToByteArray()
-            val dcmBytes = service.exportEncounterReportAsDicomPdf("enc-100", pdfData, "Clinical Note", anonymize = false)
+            val dcmBytes = service.exportEncounterReportAsDicomPdf("enc-100", pdfData, "Clinical Note", anonymize = false).getOrThrow()
             val dcmStr = dcmBytes.decodeToString()
             assertTrue(dcmStr.contains("DICM"))
             assertTrue(dcmStr.contains(DicomTag.UID_SOP_CLASS_ENCAPSULATED_PDF))
@@ -198,7 +198,7 @@ class DicomExportServiceJvmTest {
     @Test
     fun testExportPatientDicomArchive(): Unit =
         runBlocking {
-            val zipData = service.exportPatientDicomArchive("pat-empty", anonymize = false)
+            val zipData = service.exportPatientDicomArchive("pat-empty", anonymize = false).getOrThrow()
             assertTrue(zipData.size >= 22) // Valid empty ZIP has at least 22 bytes (End of Central Directory)
         }
 

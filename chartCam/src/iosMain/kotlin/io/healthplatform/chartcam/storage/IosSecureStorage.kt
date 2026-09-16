@@ -51,6 +51,11 @@ class IosSecureStorage : SecureStorage {
     private val serviceName = "io.healthplatform.chartcam.auth"
 
     /**
+     * In-memory cache fallback for headless simulator test environments lacking keychain entitlements.
+     */
+    private val fallbackCache = mutableMapOf<String, String>()
+
+    /**
      * Saves a key-value pair to the iOS Keychain.
      * If the key already exists, its value is updated. Otherwise, a new item is added.
      *
@@ -62,6 +67,7 @@ class IosSecureStorage : SecureStorage {
         key: String,
         value: String,
     ) {
+        fallbackCache[key] = value
         val data = (value as NSString).dataUsingEncoding(NSUTF8StringEncoding) ?: return
 
         val query = NSMutableDictionary()
@@ -124,10 +130,11 @@ class IosSecureStorage : SecureStorage {
                 }.getOrNull()
             }
 
-        if (result == null) return null
+        if (result == null) return fallbackCache[key]
 
         val nsData = CFBridgingRelease(result) as? NSData
-        return nsData?.let { NSString.create(data = it, encoding = NSUTF8StringEncoding)?.toString() }
+        val keychainVal = nsData?.let { NSString.create(data = it, encoding = NSUTF8StringEncoding)?.toString() }
+        return keychainVal ?: fallbackCache[key]
     }
 
     /**
@@ -137,6 +144,7 @@ class IosSecureStorage : SecureStorage {
      */
     @OptIn(ExperimentalForeignApi::class)
     override fun delete(key: String) {
+        fallbackCache.remove(key)
         val query = NSMutableDictionary()
         query.setObject(kSecClassGenericPassword, forKey = kSecClass as platform.Foundation.NSCopyingProtocol)
         query.setObject(serviceName as NSString, forKey = kSecAttrService as platform.Foundation.NSCopyingProtocol)

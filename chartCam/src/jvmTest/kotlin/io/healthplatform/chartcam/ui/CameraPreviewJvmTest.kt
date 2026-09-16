@@ -4,18 +4,21 @@
  */
 package io.healthplatform.chartcam.ui
 
+import io.healthplatform.chartcam.camera.JvmCameraManager
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * Test class for CameraPreview on JVM.
  */
 class CameraPreviewJvmTest {
     /**
-     * Dummy test to satisfy the test runner.
+     * Verifies JvmCameraManager initialization for camera preview.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testCameraPreviewJvm() {
+        val manager = JvmCameraManager()
+        assertNotNull(manager)
+        manager.release()
     }
 }

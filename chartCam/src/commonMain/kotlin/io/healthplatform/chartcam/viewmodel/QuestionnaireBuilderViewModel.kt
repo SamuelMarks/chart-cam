@@ -129,6 +129,9 @@ enum class WidgetType {
 
     /** SEGMENTED_TILES */
     SEGMENTED_TILES,
+
+    /** GROUP */
+    GROUP,
 }
 
 /**
@@ -220,6 +223,8 @@ class QuestionnaireBuilderViewModel(
                                                     WidgetType.NUMERIC
                                                 Questionnaire.QuestionnaireItemType.Integer ->
                                                     WidgetType.RANGE
+                                                Questionnaire.QuestionnaireItemType.Group ->
+                                                    WidgetType.GROUP
                                                 else ->
                                                     WidgetType.SINGLE_LINE_TEXT
                                             }
@@ -734,6 +739,7 @@ class QuestionnaireBuilderViewModel(
             WidgetType.RANGE,
             WidgetType.PAIN_SCALE,
             -> Questionnaire.QuestionnaireItemType.Integer
+            WidgetType.GROUP -> Questionnaire.QuestionnaireItemType.Group
         }
 
     /**

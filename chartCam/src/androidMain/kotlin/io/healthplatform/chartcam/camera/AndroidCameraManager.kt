@@ -166,27 +166,31 @@ class AndroidCameraManager(
     }
 
     /**
-     * Turns the device's camera flash (torch) on or off.
+     * Toggles the camera torch/flash on or off.
      *
      * @param on `true` to enable the torch, `false` to disable it.
+     * @return A [Result] indicating success or failure.
      */
-    override fun setFlash(on: Boolean) {
-        camera?.cameraControl?.enableTorch(on)
-    }
+    override fun setFlash(on: Boolean): Result<Unit> =
+        runCatching {
+            camera?.cameraControl?.enableTorch(on)
+            Unit
+        }
 
     /**
      * Toggles between the front and back camera lenses.
      * Note: Re-binding requires [LifecycleOwner] reference if dynamic toggling is needed outside composition flow.
+     *
+     * @return A [Result] indicating success or failure.
      */
-    override fun toggleLens() {
-        if (lensFacing == CameraSelector.LENS_FACING_BACK) {
-            lensFacing = CameraSelector.LENS_FACING_FRONT
-        } else {
-            lensFacing = CameraSelector.LENS_FACING_BACK
+    override fun toggleLens(): Result<Unit> =
+        runCatching {
+            if (lensFacing == CameraSelector.LENS_FACING_BACK) {
+                lensFacing = CameraSelector.LENS_FACING_FRONT
+            } else {
+                lensFacing = CameraSelector.LENS_FACING_BACK
+            }
         }
-        // Note: Re-binding requires LifecycleOwner reference if dynamic toggling is needed outside composition flow.
-        // In simple flow, the View updates on recomposition or we store the lifecycle owner reference.
-    }
 
     /**
      * Releases camera resources by unbinding all use cases from the [ProcessCameraProvider].

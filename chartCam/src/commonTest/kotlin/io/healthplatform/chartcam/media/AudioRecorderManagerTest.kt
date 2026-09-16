@@ -1,6 +1,6 @@
 /**
  * @file AudioRecorderManagerTest.kt
- * Tests for AudioRecorderManager.
+ * Contains declarations for AudioRecorderManagerTest.kt.
  */
 package io.healthplatform.chartcam.media
 
@@ -8,84 +8,129 @@ import io.healthplatform.chartcam.files.FileStorage
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
- * Unit tests verifying audio recording lifecycle and storage persistence.
+ * Unit tests for AudioRecorderManager and DefaultAudioRecorderManager.
  */
 class AudioRecorderManagerTest {
     /**
-     * In-memory storage mock.
+     * In-memory mock [FileStorage] implementation for testing.
      */
-    private val mockStorage =
-        object : FileStorage {
-            val files = mutableMapOf<String, ByteArray>()
+    private class FakeAudioFileStorage : FileStorage {
+        val files = mutableMapOf<String, ByteArray>()
 
-            override fun saveImage(
-                fileName: String,
-                bytes: ByteArray,
-            ): String {
-                files[fileName] = bytes
-                return fileName
-            }
-
-            override fun readImage(path: String): ByteArray = files[path] ?: ByteArray(0)
-
-            override fun deleteImage(path: String): Result<Unit> {
-                files.remove(path)
-                return Result.success(Unit)
-            }
-
-            override fun clearCache() {
-                files.clear()
-            }
+        override fun saveImage(
+            fileName: String,
+            bytes: ByteArray,
+        ): String {
+            files[fileName] = bytes
+            return "/tmp/$fileName"
         }
 
+        override fun readImage(path: String): ByteArray = files[path] ?: ByteArray(0)
+
+        override fun deleteImage(path: String): Result<Unit> {
+            files.remove(path)
+            return Result.success(Unit)
+        }
+
+        override fun clearCache() {
+            files.clear()
+        }
+    }
+
     /**
-     * Tests recording start and stop saving an audio file.
+     * Verifies the full audio recording lifecycle including pause, resume, byte recording, and WAV creation.
      */
     @Test
-    fun testStartAndStopRecording() =
+    fun testAudioRecordingLifecycle() =
         runTest {
-            val recorder = DefaultAudioRecorderManager(mockStorage)
+            val storage = FakeAudioFileStorage()
+            val recorder = DefaultAudioRecorderManager(storage)
+
+            assertFalse(recorder.isRecording.value)
+            assertEquals(0f, recorder.amplitude.value)
+
+            // Feed bytes when not recording (should be ignored)
+            recorder.recordBytes(byteArrayOf(5, 6))
+            assertEquals(0f, recorder.amplitude.value)
+
+            // Start recording
             val startRes = recorder.startRecording()
             assertTrue(startRes.isSuccess)
+            assertTrue(recorder.isRecording.value)
 
-            val stopRes = recorder.stopRecording("test_memo.m4a")
+            // Feed PCM bytes
+            recorder.recordBytes(byteArrayOf(10, 20, 30, 40))
+            assertTrue(recorder.amplitude.value > 0f)
+
+            // Pause
+            val pauseRes = recorder.pauseRecording()
+            assertTrue(pauseRes.isSuccess)
+            assertEquals(0f, recorder.amplitude.value)
+
+            // Feed bytes when paused (should be ignored)
+            recorder.recordBytes(byteArrayOf(7, 8))
+            assertEquals(0f, recorder.amplitude.value)
+
+            // Resume
+            val resumeRes = recorder.resumeRecording()
+            assertTrue(resumeRes.isSuccess)
+
+            // Stop and save
+            val fileName = "test_memo_${kotlin.time.Clock.System.now().toEpochMilliseconds()}.wav"
+            val stopRes = recorder.stopRecording(fileName)
             assertTrue(stopRes.isSuccess)
-            assertEquals("test_memo.m4a", stopRes.getOrNull())
-            assertTrue(mockStorage.files.containsKey("test_memo.m4a"))
+            assertNotNull(stopRes.getOrNull())
+            assertFalse(recorder.isRecording.value)
+
+            // Verify WAV header
+            val wavBytes = recorder.createWavPayload(byteArrayOf(1, 2, 3, 4))
+            assertEquals('R'.code.toByte(), wavBytes[0])
+            assertEquals('I'.code.toByte(), wavBytes[1])
+            assertEquals('F'.code.toByte(), wavBytes[2])
+            assertEquals('F'.code.toByte(), wavBytes[3])
+            assertEquals('W'.code.toByte(), wavBytes[8])
+            assertEquals('A'.code.toByte(), wavBytes[9])
+            assertEquals('V'.code.toByte(), wavBytes[10])
+            assertEquals('E'.code.toByte(), wavBytes[11])
         }
 
     /**
-     * Tests recording with custom recorded byte stream payload.
+     * Verifies canceling an audio recording session.
      */
     @Test
-    fun testRecordingWithNonEmptyBuffer() =
+    fun testCancelRecording() =
         runTest {
-            val recorder = DefaultAudioRecorderManager(mockStorage)
-            // Call recordBytes before startRecording to cover false branch
-            recorder.recordBytes(byteArrayOf(0x99.toByte()))
+            val storage = FakeAudioFileStorage()
+            val recorder = DefaultAudioRecorderManager(storage)
 
-            val startRes = recorder.startRecording()
-            assertTrue(startRes.isSuccess)
+            recorder.startRecording()
+            assertTrue(recorder.isRecording.value)
 
-            val customAudio = byteArrayOf(0x01, 0x02, 0x03, 0x04)
-            recorder.recordBytes(customAudio)
-
-            val stopRes = recorder.stopRecording("custom_memo.m4a")
-            assertTrue(stopRes.isSuccess)
-            kotlin.test.assertContentEquals(customAudio, mockStorage.files["custom_memo.m4a"])
+            val cancelRes = recorder.cancelRecording()
+            assertTrue(cancelRes.isSuccess)
+            assertFalse(recorder.isRecording.value)
         }
 
     /**
-     * Tests stopping without starting returns failure.
+     * Verifies invalid state handling when pausing or stopping an unstarted recording.
      */
     @Test
-    fun testStopWithoutStartFails() =
+    fun testAudioRecorderErrors() =
         runTest {
-            val recorder = DefaultAudioRecorderManager(mockStorage)
-            val stopRes = recorder.stopRecording("unstarted.m4a")
-            assertTrue(stopRes.isFailure)
+            val storage = FakeAudioFileStorage()
+            val recorder = DefaultAudioRecorderManager(storage)
+
+            assertTrue(recorder.pauseRecording().isFailure)
+            assertTrue(recorder.resumeRecording().isFailure)
+            assertTrue(recorder.stopRecording("test.wav").isFailure)
+
+            recorder.startRecording()
+            recorder.recordBytes(byteArrayOf())
+            assertTrue(recorder.stopRecording("empty.wav").isSuccess)
         }
 }

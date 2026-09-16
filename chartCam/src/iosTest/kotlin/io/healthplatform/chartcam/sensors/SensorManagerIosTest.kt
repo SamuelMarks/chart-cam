@@ -5,17 +5,22 @@
 package io.healthplatform.chartcam.sensors
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
- * Test class for SensorManager on iOS.
+ * Functional tests for SensorManager on iOS.
  */
 class SensorManagerIosTest {
     /**
-     * Dummy test to satisfy the test runner.
+     * Verifies multiple start/stop cycles do not fail.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testRepeatedSensorListening() {
+        val manager = IosSensorManager()
+        manager.startListening()
+        manager.startListening()
+        manager.stopListening()
+        manager.stopListening()
+        assertNotNull(manager)
     }
 }

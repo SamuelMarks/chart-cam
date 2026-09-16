@@ -17,12 +17,12 @@ class BuildMetadataTest {
      */
     @Test
     fun testBuildMetadataValues() {
-        assertEquals("1.0.4", BuildMetadata.VERSION_NAME)
+        assertEquals("1.0.5", BuildMetadata.VERSION_NAME)
         assertEquals("https://healthplatform.io", BuildMetadata.WEBSITE_URL)
 
         val formatted = BuildMetadata.formattedVersionInfo()
         assertTrue(formatted.startsWith(BuildMetadata.VERSION_NAME))
         assertTrue(formatted.endsWith(BuildMetadata.WEBSITE_URL))
-        assertEquals("1.0.4 — https://healthplatform.io", formatted)
+        assertEquals("1.0.5 — https://healthplatform.io", formatted)
     }
 }

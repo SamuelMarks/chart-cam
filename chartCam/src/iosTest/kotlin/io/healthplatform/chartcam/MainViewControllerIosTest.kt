@@ -5,17 +5,18 @@
 package io.healthplatform.chartcam
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * Platform-specific tests for MainViewController on iOS.
  */
 class MainViewControllerIosTest {
     /**
-     * Dummy execution logic.
+     * Verifies MainViewController instantiation on iOS.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testMainViewController() {
+        val vc = mainViewController()
+        assertNotNull(vc)
     }
 }

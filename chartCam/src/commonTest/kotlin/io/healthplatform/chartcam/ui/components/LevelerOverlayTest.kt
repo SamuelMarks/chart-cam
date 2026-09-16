@@ -4,18 +4,28 @@
  */
 package io.healthplatform.chartcam.ui.components
 
+import kotlin.math.abs
 import kotlin.test.Test
-import kotlin.test.assertNotNull
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
- * Common dummy test for LevelerOverlay component.
+ * Common test for LevelerOverlay pitch and roll calculations.
  */
 class LevelerOverlayTest {
     /**
-     * Dummy execution test block.
+     * Verifies level orientation angle calculation and threshold determination.
      */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testLevelerThreshold() {
+        val pitch = 1.5
+        val roll = -2.0
+        val threshold = 3.0
+        val isLevel = abs(pitch) <= threshold && abs(roll) <= threshold
+        assertTrue(isLevel)
+
+        val unlevelPitch = 5.0
+        val isNotLevel = abs(unlevelPitch) <= threshold && abs(roll) <= threshold
+        assertFalse(isNotLevel)
     }
 }

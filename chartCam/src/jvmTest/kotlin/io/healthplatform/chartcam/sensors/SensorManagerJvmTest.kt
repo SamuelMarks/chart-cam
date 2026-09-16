@@ -4,10 +4,13 @@
  */
 package io.healthplatform.chartcam.sensors
 
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * Test class for SensorManager on JVM.
@@ -20,6 +23,8 @@ class SensorManagerJvmTest {
     fun testSensorManagerJvm() =
         runTest {
             val manager = JvmSensorManager()
+            assertFalse(manager.hasOrientationHardware)
+            assertFalse(manager.isAvailable)
             manager.startListening()
 
             val orientation = manager.orientation.first()
@@ -27,24 +32,37 @@ class SensorManagerJvmTest {
             assertEquals(0.0, orientation.roll)
 
             manager.stopListening()
+
+            val unavailable = UnavailableSensorManager()
+            assertFalse(unavailable.hasOrientationHardware)
+            assertFalse(unavailable.isAvailable)
+            unavailable.startListening()
+            unavailable.stopListening()
         }
 
     /**
-     * Tests default implementation of isAvailable via SensorManager.DefaultImpls.
+     * Tests default implementation of isAvailable and hasOrientationHardware.
      */
     @Test
     fun testSensorManagerDefaultImpls() {
-        val defaultImplsClass = Class.forName("io.healthplatform.chartcam.sensors.SensorManager\$DefaultImpls")
-        val isAvailMethod = defaultImplsClass.getMethod("isAvailable", SensorManager::class.java)
         val dummyManager =
             object : SensorManager {
-                override val orientation = kotlinx.coroutines.flow.emptyFlow<OrientationData>()
+                override val orientation = emptyFlow<OrientationData>()
 
                 override fun startListening() {}
 
                 override fun stopListening() {}
             }
-        val result = isAvailMethod.invoke(null, dummyManager) as Boolean
-        kotlin.test.assertTrue(result)
+        assertTrue(dummyManager.isAvailable)
+        assertTrue(dummyManager.hasOrientationHardware)
+
+        val defaultImplsClass = Class.forName("io.healthplatform.chartcam.sensors.SensorManager\$DefaultImpls")
+        val isAvailMethod = defaultImplsClass.getMethod("isAvailable", SensorManager::class.java)
+        val hasHwMethod = defaultImplsClass.getMethod("getHasOrientationHardware", SensorManager::class.java)
+
+        val isAvailResult = isAvailMethod.invoke(null, dummyManager) as Boolean
+        val hasHwResult = hasHwMethod.invoke(null, dummyManager) as Boolean
+        assertTrue(isAvailResult)
+        assertTrue(hasHwResult)
     }
 }

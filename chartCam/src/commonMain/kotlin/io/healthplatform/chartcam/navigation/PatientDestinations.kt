@@ -70,6 +70,9 @@ fun NavGraphBuilder.newVisitDestination(
                         onNewlyCreatedQuestionnaireHandled = {
                             entry.savedStateHandle.remove<String>("createdQuestionnaireId")
                         },
+                        onOpenDicomViewer = { path ->
+                            navController.navigate(DicomViewerRoute(filePath = path))
+                        },
                     ),
                 newlyCreatedQuestionnaireId = newlyCreatedQuestionnaireId,
             )
@@ -230,6 +233,9 @@ fun NavGraphBuilder.visitDetailDestination(
                         },
                         onNewlyCreatedQuestionnaireHandled = {
                             entry.savedStateHandle.remove<String>("createdQuestionnaireId")
+                        },
+                        onOpenDicomViewer = { path ->
+                            navController.navigate(DicomViewerRoute(filePath = path))
                         },
                     ),
                 newlyCreatedQuestionnaireId = newlyCreatedQuestionnaireId,

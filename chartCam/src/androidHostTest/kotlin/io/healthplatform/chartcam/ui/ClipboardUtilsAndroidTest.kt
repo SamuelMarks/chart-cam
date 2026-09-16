@@ -5,17 +5,21 @@
 package io.healthplatform.chartcam.ui
 
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 /**
  * Android host tests for ClipboardUtils.
  */
 class ClipboardUtilsAndroidTest {
     /**
-     * Dummy test to ensure test suite runs.
+     * Verifies text trimming logic used for clipboard operations.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testClipboardUtilsAndroid() {
+        val raw = "  clinical_token  "
+        val trimmed = raw.trim()
+        assertNotNull(trimmed)
+        assertEquals("clinical_token", trimmed)
     }
 }

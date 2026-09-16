@@ -4,18 +4,20 @@
  */
 package io.healthplatform.chartcam
 
+import io.healthplatform.chartcam.navigation.Routes
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 /**
  * Common tests for the main application entry point.
  */
 class AppTest {
     /**
-     * Test the basic app initialization.
+     * Test the basic app initialization and routing root.
      */
     @Test
     fun testApp() {
-        assertTrue(true)
+        val rootRoute = Routes.LOGIN
+        assertEquals("/auth/login", rootRoute)
     }
 }

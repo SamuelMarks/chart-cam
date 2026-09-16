@@ -6,20 +6,11 @@ package io.healthplatform.chartcam.ui.components
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 
 /**
  * Common test for FormBuilderWidgets logic and discrete integer step calculations.
  */
 class FormBuilderWidgetsTest {
-    /**
-     * Dummy execution logic block.
-     */
-    @Test
-    fun dummyTest() {
-        assertNotNull(this)
-    }
-
     /**
      * Verifies calculation of discrete steps and rounding for integer fields.
      */

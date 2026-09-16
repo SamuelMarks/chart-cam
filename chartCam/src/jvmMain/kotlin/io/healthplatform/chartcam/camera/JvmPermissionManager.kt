@@ -5,31 +5,57 @@
 package io.healthplatform.chartcam.camera
 
 import androidx.compose.runtime.Composable
+import com.github.sarxos.webcam.Webcam
 
 /**
  * A JVM-specific implementation of [PermissionManager].
- * Desktop environments typically do not enforce runtime camera permissions in the same way
- * mobile operating systems do, so this always reports permissions as granted.
+ * Checks for connected webcam hardware and provides OS settings navigation.
  */
 class JvmPermissionManager : PermissionManager {
     /**
-     * Gets the current camera permission status. Always returns [PermissionStatus.GRANTED] on JVM.
+     * Gets the current camera permission status based on webcam hardware availability.
      *
-     * @return The current [PermissionStatus].
+     * @return [PermissionStatus.GRANTED] if hardware is present, [PermissionStatus.DENIED] otherwise.
      */
-    override fun getCameraPermissionStatus(): PermissionStatus = PermissionStatus.GRANTED
+    override fun getCameraPermissionStatus(): PermissionStatus {
+        val webcams = runCatching { Webcam.getWebcams() }.getOrNull()
+        return if (webcams != null && webcams.isNotEmpty()) {
+            PermissionStatus.GRANTED
+        } else {
+            PermissionStatus.DENIED
+        }
+    }
 
     /**
-     * Requests camera permission from the user. Always returns success immediately on JVM.
+     * Requests camera permission from the user. Returns success if a webcam is available.
      *
      * @return A [Result] indicating success of the permission grant.
      */
-    override suspend fun requestCameraPermission(): Result<Unit> = Result.success(Unit)
+    override suspend fun requestCameraPermission(): Result<Unit> =
+        if (getCameraPermissionStatus() == PermissionStatus.GRANTED) {
+            Result.success(Unit)
+        } else {
+            Result.failure(
+                PermissionDeniedException(
+                    isPermanentlyDenied = true,
+                    message = "No webcam device detected on desktop host system.",
+                ),
+            )
+        }
 
     /**
-     * Opens the system settings screen for permissions. This is a no-op on JVM.
+     * Opens the desktop operating system camera privacy settings if supported.
      */
-    override fun openSettings() { /* no-op */ }
+    override fun openSettings() {
+        runCatching {
+            val os = System.getProperty("os.name")?.lowercase() ?: ""
+            if (os.contains("mac")) {
+                ProcessBuilder("open", "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera").start()
+            } else if (os.contains("win")) {
+                ProcessBuilder("cmd", "/c", "start", "ms-settings:privacy-webcam").start()
+            }
+        }
+    }
 }
 
 /**

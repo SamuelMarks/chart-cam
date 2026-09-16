@@ -6,9 +6,11 @@ package io.healthplatform.chartcam.utils
 
 import java.io.File
 import kotlin.test.Test
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
- * Test class for ShareService on JVM.
+ * Test class for [JvmShareService] on Desktop JVM.
  */
 class ShareServiceJvmTest {
     /**
@@ -17,24 +19,40 @@ class ShareServiceJvmTest {
     @Test
     fun testJvmShareServiceText() {
         val service = JvmShareService()
-        // It detects test environment and won't show dialog, but will set clipboard
-        service.shareText("test string")
+        val result = service.shareText("test string")
+        assertNotNull(result)
     }
 
     /**
-     * Tests sharing a file on JVM.
+     * Tests sharing an existing temporary file on JVM.
      */
     @Test
     fun testJvmShareServiceFile() {
         val service = JvmShareService()
-        val temp = File.createTempFile("test", ".txt")
-        try {
-            // Testing env prevents dialog, but it might still invoke Desktop API.
-            // Some headless environments don't support Desktop, we just call it and catch/ignore errors if any
-            service.shareFile(temp.absolutePath)
-        } catch (e: Exception) {
-        } finally {
-            temp.delete()
-        }
+        val temp = File.createTempFile("test_export", ".txt")
+        temp.writeText("sample export payload")
+        val result = service.shareFile(temp.absolutePath)
+        assertNotNull(result)
+        temp.delete()
+    }
+
+    /**
+     * Tests sharing a non-existent file path returns Result.failure with ExportFileNotFoundException.
+     */
+    @Test
+    fun testJvmShareServiceMissingFile() {
+        val service = JvmShareService()
+        val result = service.shareFile("missing_archive_path_123.enc")
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is ExportFileNotFoundException)
+    }
+
+    /**
+     * Tests factory creation on JVM platform.
+     */
+    @Test
+    fun testCreateShareServiceJvm() {
+        val service = createShareService()
+        assertTrue(service is JvmShareService)
     }
 }

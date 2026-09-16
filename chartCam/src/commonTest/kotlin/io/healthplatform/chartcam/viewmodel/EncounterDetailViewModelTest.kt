@@ -5,7 +5,9 @@
 package io.healthplatform.chartcam.viewmodel
 
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -13,11 +15,17 @@ import kotlin.test.assertTrue
  */
 class EncounterDetailViewModelTest {
     /**
-     * Dummy execution logic.
+     * Verifies EncounterUiState construction and default fields.
      */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
-        assertTrue(true, "Covered branch")
+    fun testEncounterUiStateDefaults() {
+        val state = EncounterUiState()
+        assertNotNull(state)
+        assertTrue(state.isLoading)
+        assertFalse(state.isFinalized)
+        assertNull(state.patient)
+        assertNull(state.encounter)
+        assertTrue(state.photos.isEmpty())
+        assertTrue(state.audioMemos.isEmpty())
     }
 }

@@ -16,6 +16,7 @@ class PlatformWasmJsTest {
      */
     @Test
     fun testPlatformWasmJs() {
-        assertTrue(true)
+        val platform = getPlatform()
+        assertTrue(platform.name.isNotBlank())
     }
 }

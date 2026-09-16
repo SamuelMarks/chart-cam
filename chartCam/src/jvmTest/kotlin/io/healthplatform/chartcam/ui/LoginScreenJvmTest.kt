@@ -4,18 +4,23 @@
  */
 package io.healthplatform.chartcam.ui
 
+import io.healthplatform.chartcam.viewmodel.LoginUiState
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
 
 /**
  * Test class for LoginScreen on JVM.
  */
 class LoginScreenJvmTest {
     /**
-     * Test login screen on JVM.
+     * Verifies default LoginUiState properties.
      */
     @Test
     fun testLoginScreenJvm() {
-        assertTrue(true)
+        val state = LoginUiState()
+        assertFalse(state.isLoggedIn)
+        assertFalse(state.isLoading)
+        assertNull(state.errorMessage)
     }
 }

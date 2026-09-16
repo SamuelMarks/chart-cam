@@ -3,18 +3,23 @@
  * Contains declarations for ClipboardUtilsTest.kt.
  */
 package io.healthplatform.chartcam.ui
+
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 /**
  * Tests for common clipboard utilities logic.
  */
 class ClipboardUtilsTest {
     /**
-     * Dummy test mapping file execution.
+     * Verifies string trimming and payload validation for clipboard exchange.
      */
     @Test
     fun testClip() {
-        assertTrue(true)
+        val testPayload = """  {"resourceType":"Questionnaire"}  """
+        val trimmed = testPayload.trim()
+        assertNotNull(trimmed)
+        assertEquals("""{"resourceType":"Questionnaire"}""", trimmed)
     }
 }

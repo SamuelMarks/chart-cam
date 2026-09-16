@@ -46,19 +46,24 @@ class CameraStateJvmTest {
         override suspend fun captureImage(): ByteArray? = if (shouldSucceedCapture) ByteArray(1024) else null
 
         /**
-         * Sets the flash state.
+         * Toggles the simulated camera flash and records the state.
          *
          * @param on True to turn the flash on, false to turn it off.
+         * @return A [Result] indicating success.
          */
-        override fun setFlash(on: Boolean) {
+        override fun setFlash(on: Boolean): Result<Unit> {
             isFlashOn = on
+            return Result.success(Unit)
         }
 
         /**
          * Toggles the active camera lens and increments [lensToggledCount].
+         *
+         * @return A [Result] indicating success.
          */
-        override fun toggleLens() {
+        override fun toggleLens(): Result<Unit> {
             lensToggledCount++
+            return Result.success(Unit)
         }
 
         /**

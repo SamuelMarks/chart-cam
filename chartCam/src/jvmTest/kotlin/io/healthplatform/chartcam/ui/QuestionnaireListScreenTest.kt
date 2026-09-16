@@ -260,6 +260,68 @@ class QuestionnaireListScreenTest {
             waitForIdle()
 
             onNodeWithContentDescription("Import Questionnaire").performClick()
-            onNodeWithText("File Import and QR Code Scanner coming soon").assertExists()
+            onNodeWithText("Import from File").assertExists()
+        }
+
+    /**
+     * Verifies that the new Import from File and Scan QR Code buttons appear in the import bottom sheet.
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun questionnaireListScreenImportOptionsButtonsExist() =
+        runComposeUiTest {
+            val repo = QuestionnaireRepository()
+
+            setContent {
+                QuestionnaireListScreen(
+                    questionnaireRepository = repo,
+                    onBack = {},
+                    onNavigateToBuilder = {},
+                )
+            }
+            waitForIdle()
+
+            onNodeWithContentDescription("Import Questionnaire").performClick()
+            onNodeWithText("Import from File").assertExists()
+            onNodeWithText("Scan QR Code").assertExists()
+            onNodeWithText("Scan QR Code").performClick()
+        }
+
+    /**
+     * Verifies that Export JSON File and Display QR Code buttons exist in the share sheet.
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun questionnaireListScreenExportOptionsButtonsExist() =
+        runComposeUiTest {
+            val repo = QuestionnaireRepository()
+            val mockQ =
+                Questionnaire
+                    .Builder(Enumeration(value = PublicationStatus.Active))
+                    .apply {
+                        id = "exportable-form"
+                        title =
+                            com.google.fhir.model.r4.String
+                                .Builder()
+                                .apply { value = "Exportable Form" }
+                    }.build()
+
+            kotlinx.coroutines.test.runTest {
+                repo.saveQuestionnaire(mockQ)
+            }
+
+            setContent {
+                QuestionnaireListScreen(
+                    questionnaireRepository = repo,
+                    onBack = {},
+                    onNavigateToBuilder = {},
+                )
+            }
+            waitForIdle()
+
+            onNodeWithContentDescription("Share Questionnaire").performClick()
+            onNodeWithText("Export JSON File").assertExists()
+            onNodeWithText("Display QR Code").assertExists()
+            onNodeWithText("Display QR Code").performClick()
         }
 }

@@ -12,10 +12,11 @@ import kotlin.test.assertTrue
  */
 class LanguageSwitcherJsTest {
     /**
-     * Dummy test to satisfy the test runner.
+     * Test language state initialization on JS.
      */
     @Test
-    fun dummyTest() {
-        assertTrue(true)
+    fun testLanguageSwitcherJs() {
+        val lang = currentLanguageState.value
+        assertTrue(lang.isNotBlank())
     }
 }

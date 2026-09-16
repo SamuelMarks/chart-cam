@@ -8,12 +8,15 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 
 /**
- * Target mapping test file for file storage interactions.
+ * Target mapping test file for file storage interactions on iOS.
  */
 class IosFileStorageTest {
-    /** Dummy test target. */
+    /** Test createFileStorage and clearCache methods. */
     @Test
-    fun dummyTest() {
-        assertNotNull(this)
+    fun testFileStorageLifecycle() {
+        val storage = createFileStorage()
+        assertNotNull(storage)
+        storage.clearCache()
+        assertNotNull(storage)
     }
 }
