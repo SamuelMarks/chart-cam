@@ -146,18 +146,14 @@ class JsCameraManager : CameraManager {
      */
     override suspend fun captureImage(): ByteArray? =
         suspendCoroutine { continuation ->
-            try {
-                val base64 = getBase64Image(videoElement)
-                val bytes = base64.decodeBase64()?.toByteArray()
-                if (bytes != null) {
-                    continuation.resume(bytes)
-                } else {
-                    continuation.resume(null)
+            val result =
+                runCatching {
+                    val base64 = getBase64Image(videoElement)
+                    base64.decodeBase64()?.toByteArray()
+                }.onFailure { e ->
+                    consoleError("Error capturing image: ", e.message?.toJsString())
                 }
-            } catch (e: IllegalStateException) {
-                consoleError("Error capturing image: ", e.message?.toJsString())
-                continuation.resume(null)
-            }
+            continuation.resume(result.getOrNull())
         }
 
     /**

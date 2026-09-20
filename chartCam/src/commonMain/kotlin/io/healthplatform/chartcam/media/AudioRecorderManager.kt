@@ -5,6 +5,7 @@
 package io.healthplatform.chartcam.media
 
 import io.healthplatform.chartcam.files.FileStorage
+import io.healthplatform.chartcam.files.saveImageCatching
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -104,24 +105,28 @@ class DefaultAudioRecorderManager(
      *
      * @return A [Result] indicating success.
      */
-    override suspend fun pauseRecording(): Result<Unit> =
-        runCatching {
-            require(_isRecording.value) { "Cannot pause when recording is not active" }
-            isPaused = true
-            _amplitude.value = 0f
+    override suspend fun pauseRecording(): Result<Unit> {
+        if (!_isRecording.value) {
+            return Result.failure(IllegalStateException("Cannot pause when recording is not active"))
         }
+        isPaused = true
+        _amplitude.value = 0f
+        return Result.success(Unit)
+    }
 
     /**
      * Resumes the paused recording session.
      *
      * @return A [Result] indicating success.
      */
-    override suspend fun resumeRecording(): Result<Unit> =
-        runCatching {
-            require(_isRecording.value) { "Cannot resume when recording is not active" }
-            isPaused = false
-            _amplitude.value = 0.5f
+    override suspend fun resumeRecording(): Result<Unit> {
+        if (!_isRecording.value) {
+            return Result.failure(IllegalStateException("Cannot resume when recording is not active"))
         }
+        isPaused = false
+        _amplitude.value = 0.5f
+        return Result.success(Unit)
+    }
 
     /**
      * Cancels the active recording session and purges buffer.
@@ -229,19 +234,20 @@ class DefaultAudioRecorderManager(
      * @param fileName The target output filename.
      * @return A [Result] enclosing the saved audio file path.
      */
-    override suspend fun stopRecording(fileName: String): Result<String> =
-        runCatching {
-            require(_isRecording.value) { "Recording not active" }
-            _isRecording.value = false
-            isPaused = false
-            _amplitude.value = 0f
-            val rawPcm =
-                if (buffer.isEmpty()) {
-                    ByteArray(1600) // 50ms of quiet audio
-                } else {
-                    buffer.toByteArray()
-                }
-            val payload = createWavPayload(rawPcm)
-            fileStorage.saveImage(fileName, payload)
+    override suspend fun stopRecording(fileName: String): Result<String> {
+        if (!_isRecording.value) {
+            return Result.failure(IllegalStateException("Recording not active"))
         }
+        _isRecording.value = false
+        isPaused = false
+        _amplitude.value = 0f
+        val rawPcm =
+            if (buffer.isEmpty()) {
+                ByteArray(1600) // 50ms of quiet audio
+            } else {
+                buffer.toByteArray()
+            }
+        val payload = createWavPayload(rawPcm)
+        return fileStorage.saveImageCatching(fileName, payload)
+    }
 }

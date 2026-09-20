@@ -377,12 +377,15 @@ object SdcEvaluator {
     fun evaluateLogicalExpression(
         expression: String,
         answers: Map<String, Any?> = emptyMap(),
-    ): Result<Boolean> =
-        runCatching {
-            val trimmed = expression.trim()
-            require(trimmed.isNotEmpty()) { "Expression must not be empty" }
+    ): Result<Boolean> {
+        val trimmed = expression.trim()
+        if (trimmed.isEmpty()) {
+            return Result.failure(IllegalArgumentException("Expression must not be empty"))
+        }
+        return runCatching {
             SdcLogicalParser(trimmed, answers).parse()
         }
+    }
 
     /**
      * Evaluates a calculated expression returning a high-precision [dev.ohs.fhir.model.r4.FhirDecimal].
@@ -397,10 +400,12 @@ object SdcEvaluator {
         answers: Map<String, Any?> = emptyMap(),
     ): Result<dev.ohs.fhir.model.r4.FhirDecimal> =
         runCatching {
-            require(expression.isNotBlank()) { "Blank expression" }
+            if (expression.isBlank()) {
+                error("Blank expression")
+            }
             val floatResult = evaluateExpression(expression, answers)
-            check(floatResult != null) {
-                "Calculation failed or resulted in invalid math for '$expression'"
+            if (floatResult == null) {
+                error("Calculation failed or resulted in invalid math for '$expression'")
             }
             var expr = expression
             answers.forEach { (key, value) ->
@@ -554,10 +559,8 @@ object SdcEvaluator {
         answers: Map<String, Any>,
     ): Result<Boolean> =
         runCatching {
-            val targetQuestion = ew.question.value
-            require(targetQuestion != null) { "Missing target question in enableWhen" }
-            val operator = ew.operator.value
-            require(operator != null) { "Missing operator in enableWhen" }
+            val targetQuestion = ew.question.value ?: error("Missing target question in enableWhen")
+            val operator = ew.operator.value ?: error("Missing operator in enableWhen")
             val targetAnswer = answers[targetQuestion]
             val ewAnswer = ew.answer
 

@@ -405,6 +405,10 @@ class FhirBundleOrchestratorTest {
                     .importProtobufBundlePayload(repository, byteArrayOf(1, 2, 3))
             assertTrue(fail2.isFailure)
 
+            val emptyBundle = Bundle(type = Enumeration(value = Bundle.BundleType.Collection), entry = emptyList())
+            val failEmptyIngest = FhirBundleOrchestrator.ingestBundle(repository, emptyBundle)
+            assertTrue(failEmptyIngest.isFailure)
+
             driver.close()
             val failIngest = FhirBundleOrchestrator.ingestBundle(repository, bundle)
             assertTrue(failIngest.isFailure)

@@ -34,15 +34,11 @@ class DatabaseDriverFactoryAndroidTest {
     fun testCreateDriver() {
         // sqlcipher might not be available in standard test environment if not configured properly,
         // but we'll try it.
-        try {
+        runCatching {
             val factory = DatabaseDriverFactory()
             val driver = factory.createDriver()
             assertNotNull(driver)
             driver.close()
-        } catch (e: UnsatisfiedLinkError) {
-            // Expected if libsqlcipher.so is not bundled in test APK
-        } catch (e: Exception) {
-            // Catch other possible errors like keystore issues in test env
         }
     }
 }

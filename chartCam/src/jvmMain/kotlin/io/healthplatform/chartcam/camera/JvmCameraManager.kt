@@ -28,10 +28,10 @@ class JvmCameraManager : CameraManager {
             if (System.getProperty("chartcam.isTest") != "true" &&
                 System.getProperty("io.healthplatform.chartcam.camera.nativedriver.initialized") != "true"
             ) {
-                try {
+                runCatching {
                     Webcam.setDriver(NativeDriver())
                     System.setProperty("io.healthplatform.chartcam.camera.nativedriver.initialized", "true")
-                } catch (t: IllegalStateException) {
+                }.onFailure { t ->
                     println(t.message)
                     // Driver might already be set or failed to initialize
                 }
@@ -56,13 +56,12 @@ class JvmCameraManager : CameraManager {
         withContext(Dispatchers.IO) {
             if (System.getProperty("chartcam.isTest") == "true") return@withContext null
             if (webcam == null) {
-                try {
-                    webcam = Webcam.getDefault()
-                } catch (t: IllegalStateException) {
-                    println(t.message)
-                    // Return null safely if webcam lookup or native driver loading fails
-                    webcam = null
-                }
+                webcam =
+                    runCatching {
+                        Webcam.getDefault()
+                    }.onFailure { t ->
+                        println(t.message)
+                    }.getOrNull()
             }
             webcam
         }
@@ -75,15 +74,14 @@ class JvmCameraManager : CameraManager {
     suspend fun getPreviewImage(): BufferedImage? =
         withContext(Dispatchers.IO) {
             val cam = getWebcam() ?: return@withContext null
-            try {
+            runCatching {
                 if (!cam.isOpen) {
                     cam.open()
                 }
                 cam.image
-            } catch (e: IllegalStateException) {
+            }.onFailure { e ->
                 println(e.message)
-                null
-            }
+            }.getOrNull()
         }
 
     /**
@@ -95,16 +93,14 @@ class JvmCameraManager : CameraManager {
     override suspend fun captureImage(): ByteArray? =
         withContext(Dispatchers.IO) {
             val image = getPreviewImage() ?: return@withContext null
-            try {
+            runCatching {
                 val baos = ByteArrayOutputStream()
                 // Sarxos image format is typically PNG or JPG; using PNG to be safe
                 ImageIO.write(image, "PNG", baos)
                 baos.toByteArray()
-            } catch (e: IllegalStateException) {
+            }.onFailure { e ->
                 println(e.message)
-                // Ignore exception to prevent crash
-                null
-            }
+            }.getOrNull()
         }
 
     private var currentCameraIndex: Int = 0
@@ -147,12 +143,11 @@ class JvmCameraManager : CameraManager {
      */
     override val hasMultipleCameras: Boolean
         get() =
-            try {
+            runCatching {
                 Webcam.getWebcams().size > 1
-            } catch (e: IllegalStateException) {
+            }.onFailure { e ->
                 println(e.message)
-                false
-            }
+            }.getOrDefault(false)
 
     private var _isRecordingVideo = false
 
@@ -198,13 +193,12 @@ class JvmCameraManager : CameraManager {
      * Releases the active webcam resource.
      */
     override fun release() {
-        try {
+        runCatching {
             if (webcam?.isOpen == true) {
                 webcam?.close()
             }
-        } catch (e: IllegalStateException) {
+        }.onFailure { e ->
             println(e.message)
-            // Ignore exception to prevent crash
         }
     }
 }

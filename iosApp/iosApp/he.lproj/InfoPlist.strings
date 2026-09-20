@@ -1,2 +1,3 @@
 /* Hebrew InfoPlist.strings */
-"NSCameraUsageDescription" = "ChartCam זקוקה לגישה למצלמה כדי לצלם תמונות קליניות.";
+"NSCameraUsageDescription" = "‏ChartCam זקוקה לגישה למצלמה כדי לצלם תמונות קליניות.";
+"NSMicrophoneUsageDescription" = "‏ChartCam זקוקה לגישה למיקרופון כדי להקליט תזכירי קול קליניים.";

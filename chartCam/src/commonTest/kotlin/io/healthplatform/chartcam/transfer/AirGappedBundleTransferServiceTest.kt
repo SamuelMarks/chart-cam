@@ -210,4 +210,27 @@ class AirGappedBundleTransferServiceTest {
                 ).isFailure,
         )
     }
+
+    /**
+     * Verifies chunkProtobufBundleForQr handles bundle serialization failure fallback.
+     */
+    @Test
+    fun testChunkProtobufBundleWithFailingResource() {
+        val failingResource =
+            object : dev.ohs.fhir.model.r4.Resource() {
+                override val id: String? = null
+                override val meta: dev.ohs.fhir.model.r4.Meta? = null
+                override val implicitRules: dev.ohs.fhir.model.r4.Uri? = null
+                override val language: dev.ohs.fhir.model.r4.Code? = null
+
+                override fun toBuilder(): dev.ohs.fhir.model.r4.Resource.Builder = error("Unsupported")
+            }
+        val bundle =
+            Bundle(
+                type = Enumeration(value = Bundle.BundleType.Collection),
+                entry = listOf(Bundle.Entry(resource = failingResource)),
+            )
+        val result = AirGappedBundleTransferService.chunkProtobufBundleForQr(bundle)
+        assertTrue(result.isSuccess)
+    }
 }

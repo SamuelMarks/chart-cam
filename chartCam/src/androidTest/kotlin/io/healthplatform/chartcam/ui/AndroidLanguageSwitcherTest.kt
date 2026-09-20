@@ -31,12 +31,11 @@ class AndroidLanguageSwitcherTest {
     @Test
     fun testChangeAppLanguage() {
         val initialLocale = Locale.getDefault()
-        try {
+        runCatching {
             changeAppLanguage("es")
             // Verify context was called without crash
-        } finally {
-            // Restore
-            changeAppLanguage(initialLocale.language)
         }
+        // Restore
+        changeAppLanguage(initialLocale.language)
     }
 }

@@ -96,11 +96,13 @@ import chartcam.chartcam.generated.resources.feature_capture
 import chartcam.chartcam.generated.resources.feature_secure
 import chartcam.chartcam.generated.resources.feature_sync
 import chartcam.chartcam.generated.resources.legal_disclaimer
+import chartcam.chartcam.generated.resources.loading
 import chartcam.chartcam.generated.resources.login_signup
 import chartcam.chartcam.generated.resources.logo
 import chartcam.chartcam.generated.resources.offline_mode
 import chartcam.chartcam.generated.resources.password
 import chartcam.chartcam.generated.resources.state_unselected
+import chartcam.chartcam.generated.resources.unlock_with_biometrics
 import chartcam.chartcam.generated.resources.username
 import io.healthplatform.chartcam.ui.components.LanguageMenu
 import io.healthplatform.chartcam.ui.components.TraditionalChineseVerticalBanner
@@ -310,20 +312,29 @@ private fun LoginCard(
                 ErrorMessage(displayError)
             }
 
+            val loadingText = stringResource(Res.string.loading)
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.padding(top = AppSpacing.sm))
+                CircularProgressIndicator(
+                    modifier =
+                        Modifier
+                            .padding(top = AppSpacing.sm)
+                            .semantics {
+                                contentDescription = loadingText
+                                liveRegion = LiveRegionMode.Polite
+                            },
+                )
             } else {
                 LoginButton(onClick = attemptLogin)
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(AppSpacing.moderate))
             DemoLoginButton(
                 isDemoLoading = isDemoLoading,
                 onClick = onDemoLogin,
             )
 
             if (isBiometricAvailable) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(AppSpacing.moderate))
                 BiometricLoginButton(
                     onClick = onBiometricLogin,
                     enabled = !isLoading && !isDemoLoading,
@@ -368,7 +379,7 @@ private fun BiometricLoginButton(
         )
         Spacer(modifier = Modifier.size(AppSpacing.sm))
         Text(
-            text = "Unlock with Biometrics",
+            text = stringResource(Res.string.unlock_with_biometrics),
             style = MaterialTheme.typography.titleMedium,
         )
     }
@@ -386,6 +397,7 @@ private fun DemoLoginButton(
     onClick: () -> Unit,
 ) {
     val cdDemo = stringResource(Res.string.cd_demo_mode_button)
+    val loadingText = stringResource(Res.string.loading)
     OutlinedButton(
         onClick = onClick,
         enabled = !isDemoLoading,
@@ -402,7 +414,13 @@ private fun DemoLoginButton(
     ) {
         if (isDemoLoading) {
             CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
+                modifier =
+                    Modifier
+                        .size(20.dp)
+                        .semantics {
+                            contentDescription = loadingText
+                            liveRegion = LiveRegionMode.Polite
+                        },
                 strokeWidth = 2.dp,
             )
             Spacer(modifier = Modifier.size(AppSpacing.sm))

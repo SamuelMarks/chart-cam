@@ -41,17 +41,22 @@ Far beyond a standard clinical camera, ChartCam is a complete engine designed to
 ## Screenshots
 
 <div align="center">
-  <img src="fastlane/screenshots/en-US/iphone-00-login.png" width="160" alt="Login"/>
-  <img src="fastlane/screenshots/en-US/iphone-01-create-patient.png" width="160" alt="Create Patient"/>
-  <img src="fastlane/screenshots/en-US/iphone-02-list-patients.png" width="160" alt="Patient Directory"/>
-  <img src="fastlane/screenshots/en-US/iphone-03-burger-dropdown.png" width="160" alt="Burger Dropdown"/>
-  <img src="fastlane/screenshots/en-US/iphone-04-create-questionnaire.png" width="160" alt="Create Questionnaire"/>
-  <br/>
-  <img src="fastlane/screenshots/en-US/iphone-05-fill-questionnaire.png" width="160" alt="Fill Questionnaire"/>
-  <img src="fastlane/screenshots/en-US/iphone-06-view-patient-questionnaires.png" width="160" alt="View Patient Questionnaires"/>
-  <img src="fastlane/screenshots/en-US/iphone-07-view-specific-questionnaire.png" width="160" alt="View Specific Questionnaire"/>
-  <img src="fastlane/screenshots/en-US/iphone-08-export-questionnaire-view.png" width="160" alt="Export Questionnaire"/>
-  <img src="fastlane/screenshots/en-US/iphone-09-export-dataset.png" width="160" alt="Export Dataset"/>
+  <img src="fastlane/screenshots/en-US/android-00-login.png" width="155" alt="Login & Gateway"/>
+  <img src="fastlane/screenshots/en-US/android-01-capture-leveler.png" width="155" alt="Camera & Clinical Leveler"/>
+  <img src="fastlane/screenshots/en-US/android-02-triage.png" width="155" alt="Media Attribution & Triage"/>
+  <img src="fastlane/screenshots/en-US/android-03-create-patient.png" width="155" alt="Patient Provisioning"/>
+  <img src="fastlane/screenshots/en-US/android-04-list-patients.png" width="155" alt="Patient Directory"/>
+  <br/><br/>
+  <img src="fastlane/screenshots/en-US/android-05-create-questionnaire.png" width="155" alt="SDC Form Builder"/>
+  <img src="fastlane/screenshots/en-US/android-06-clinical-widgets.png" width="155" alt="Specialized Clinical Controls"/>
+  <img src="fastlane/screenshots/en-US/android-07-view-patient-questionnaires.png" width="155" alt="Longitudinal Encounters"/>
+  <img src="fastlane/screenshots/en-US/android-08-view-specific-questionnaire.png" width="155" alt="Encounter Response Viewer"/>
+  <br/><br/>
+  <img src="fastlane/screenshots/en-US/android-09-qr-code-share.png" width="155" alt="Air-Gapped Protocol QR Sharing"/>
+  <img src="fastlane/screenshots/en-US/android-10-export-dataset.png" width="155" alt="Encrypted Dataset Export"/>
+  <img src="fastlane/screenshots/en-US/android-11-dicom-viewer.png" width="155" alt="DICOM Part 10 Inspector"/>
+  <img src="fastlane/screenshots/en-US/android-12-security-shield.png" width="155" alt="Hardware Security Shield"/>
+  <img src="fastlane/screenshots/en-US/android-13-i18n-rtl.png" width="155" alt="Global Localization (Hebrew RTL)"/>
 </div>
 
 ---

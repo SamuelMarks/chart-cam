@@ -43,16 +43,12 @@ class AndroidSecureStorage : SecureStorage {
      */
     override fun getString(key: String): String? {
         val base64 = sharedPreferences.getString(key, null) ?: return null
-        return try {
+        return runCatching {
             val encrypted = Base64.decode(base64, Base64.DEFAULT)
             String(CryptoHelper.decrypt(encrypted), Charsets.UTF_8)
-        } catch (e: java.security.GeneralSecurityException) {
-            println("Decryption failed: ${e.message}")
-            null
-        } catch (e: IllegalArgumentException) {
-            println("Base64 decoding failed: ${e.message}")
-            null
-        }
+        }.onFailure { e ->
+            println("Decryption or Base64 decoding failed: ${e.message}")
+        }.getOrNull()
     }
 
     /**

@@ -59,9 +59,8 @@ class JvmCameraManagerTest {
             val hasMultiple = manager.hasMultipleCameras
 
             // Trigger Exception path
-            try {
+            runCatching {
                 Webcam.setDriver(null as com.github.sarxos.webcam.WebcamDriver?)
-            } catch (e: Exception) {
             }
             manager.release()
             manager.hasMultipleCameras
@@ -98,9 +97,31 @@ class JvmCameraManagerTest {
     fun testJvmPermissionManager() {
         runBlocking {
             val manager = JvmPermissionManager()
+            val initialStatus = manager.getCameraPermissionStatus()
+            val requestResult = manager.requestCameraPermission()
+            if (initialStatus == PermissionStatus.GRANTED) {
+                assertTrue(requestResult.isSuccess)
+            } else {
+                assertTrue(requestResult.isFailure)
+            }
 
-            assertEquals(PermissionStatus.GRANTED, manager.getCameraPermissionStatus())
-            assertTrue(manager.requestCameraPermission().isSuccess)
+            val mockWebcam = org.mockito.Mockito.mock(Webcam::class.java)
+            val grantedManager = JvmPermissionManager { listOf(mockWebcam) }
+            assertEquals(PermissionStatus.GRANTED, grantedManager.getCameraPermissionStatus())
+            assertTrue(grantedManager.requestCameraPermission().isSuccess)
+
+            val deniedManager = JvmPermissionManager { emptyList() }
+            assertEquals(PermissionStatus.DENIED, deniedManager.getCameraPermissionStatus())
+            assertTrue(deniedManager.requestCameraPermission().isFailure)
+
+            val nullSupplierManager = JvmPermissionManager { null }
+            assertEquals(PermissionStatus.DENIED, nullSupplierManager.getCameraPermissionStatus())
+            assertTrue(nullSupplierManager.requestCameraPermission().isFailure)
+
+            val errorManager =
+                JvmPermissionManager { throw RuntimeException("Webcam driver failure") } // allow-exception
+            assertEquals(PermissionStatus.DENIED, errorManager.getCameraPermissionStatus())
+            assertTrue(errorManager.requestCameraPermission().isFailure)
 
             // Ensure no-op doesn't crash
             manager.openSettings()

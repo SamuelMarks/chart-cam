@@ -35,7 +35,7 @@ class QuestionnaireRepository(
      * @param path The resource path.
      * @param id The template ID.
      */
-    private suspend fun loadTemplate(path: String, id: String) {
+    internal suspend fun loadTemplate(path: String, id: String) {
         val bytes =
             chartcam.chartcam.generated.resources.Res
                 .readBytes(path)

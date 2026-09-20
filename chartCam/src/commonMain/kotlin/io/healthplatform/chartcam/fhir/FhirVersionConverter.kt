@@ -670,7 +670,7 @@ object FhirVersionConverter {
                     R5Enumeration(value = R5PubStatus.Active)
                 }
 
-            val itemsR5 = r4.item.mapNotNull { convertQuestionnaireItemR4ToR5(it).getOrNull() }
+            val itemsR5 = r4.item.map { convertQuestionnaireItemR4ToR5(it).getOrThrow() }
 
             dev.ohs.fhir.model.r5.Questionnaire(
                 id = r4.id,
@@ -702,7 +702,7 @@ object FhirVersionConverter {
                     dev.ohs.fhir.model.r5.Questionnaire.QuestionnaireItemType.String
                 }
 
-            val subItemsR5 = item.item.mapNotNull { convertQuestionnaireItemR4ToR5(it).getOrNull() }
+            val subItemsR5 = item.item.map { convertQuestionnaireItemR4ToR5(it).getOrThrow() }
             val optionsR5 = convertAnswerOptionsR4ToR5(item.answerOption)
 
             dev.ohs.fhir.model.r5.Questionnaire.Item(
@@ -779,7 +779,7 @@ object FhirVersionConverter {
                     R4Enumeration(value = R4PubStatus.Active)
                 }
 
-            val itemsR4 = r5.item.mapNotNull { convertQuestionnaireItemR5ToR4(it).getOrNull() }
+            val itemsR4 = r5.item.map { convertQuestionnaireItemR5ToR4(it).getOrThrow() }
 
             dev.ohs.fhir.model.r4.Questionnaire(
                 id = r5.id,
@@ -811,7 +811,7 @@ object FhirVersionConverter {
                     dev.ohs.fhir.model.r4.Questionnaire.QuestionnaireItemType.String
                 }
 
-            val subItemsR4 = item.item.mapNotNull { convertQuestionnaireItemR5ToR4(it).getOrNull() }
+            val subItemsR4 = item.item.map { convertQuestionnaireItemR5ToR4(it).getOrThrow() }
             val optionsR4 = convertAnswerOptionsR5ToR4(item.answerOption)
 
             dev.ohs.fhir.model.r4.Questionnaire.Item(

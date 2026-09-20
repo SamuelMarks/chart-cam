@@ -18,6 +18,7 @@ import io.healthplatform.chartcam.models.ImportFilterOptions
 import io.healthplatform.chartcam.models.ImportPreviewSummary
 import io.healthplatform.chartcam.models.PatientStagingItem
 import io.healthplatform.chartcam.models.createFhirPatient
+import io.healthplatform.chartcam.ui.setAppLanguage
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -32,6 +33,7 @@ class ImportPreviewDialogJvmTest {
      */
     @Test
     fun testImportPreviewDialogInteractions() {
+        setAppLanguage("en")
         val p1 = createFhirPatient("p-1", "Alice", "Smith", LocalDate(1985, 5, 20), "MRN-101")
         val staging =
             PatientStagingItem(
@@ -86,6 +88,7 @@ class ImportPreviewDialogJvmTest {
      */
     @Test
     fun testImportPreviewDialogDismiss() {
+        setAppLanguage("en")
         val preview =
             ImportPreviewSummary(
                 totalResources = 0,

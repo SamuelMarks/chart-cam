@@ -6,6 +6,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>ChartCam needs camera access to capture clinical photos.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ChartCam needs microphone access to record clinical audio voice memos.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<true/>
 	<key>ITSEncryptionExportComplianceCode</key>

@@ -69,9 +69,13 @@ object DicomReader {
      */
     fun read(bytes: ByteArray): Result<DicomDataset> =
         runCatching {
-            require(bytes.size >= PREAMBLE_LEN + MAGIC_LEN) { "Byte stream too short for DICOM Part 10 file" }
+            if (bytes.size < PREAMBLE_LEN + MAGIC_LEN) {
+                error("Byte stream too short for DICOM Part 10 file")
+            }
             val magic = bytes.decodeToString(PREAMBLE_LEN, PREAMBLE_LEN + MAGIC_LEN)
-            require(magic == MAGIC_DICM) { "Missing DICM prefix at byte 128: found '$magic'" }
+            if (magic != MAGIC_DICM) {
+                error("Missing DICM prefix at byte 128: found '$magic'")
+            }
 
             val offset = PREAMBLE_LEN + MAGIC_LEN
             val buffer = Buffer()

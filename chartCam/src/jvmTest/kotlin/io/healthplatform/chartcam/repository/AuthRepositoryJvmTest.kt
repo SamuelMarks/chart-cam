@@ -83,7 +83,7 @@ class AuthRepositoryJvmTest {
                     override fun save(
                         key: String,
                         value: String,
-                    ): Unit = throw IllegalArgumentException("Storage error")
+                    ): Unit = throw IllegalArgumentException("Storage error") // allow-exception
 
                     /**
                      * Mock get string method.

@@ -1,2 +1,3 @@
 /* English InfoPlist.strings */
 "NSCameraUsageDescription" = "ChartCam needs camera access to capture clinical photos.";
+"NSMicrophoneUsageDescription" = "ChartCam needs microphone access to record clinical audio voice memos.";

@@ -95,24 +95,14 @@ class CryptoServiceTest {
 
             val encrypted = cryptoService.encrypt(plaintext, password)
 
-            var failedAsExpected = false
-            try {
-                val result = cryptoService.decrypt(encrypted, "wrongPassword456")
-                if (result.isEmpty()) failedAsExpected = true
-            } catch (e: Exception) {
-                failedAsExpected = true
-            }
+            val decryptResult = runCatching { cryptoService.decrypt(encrypted, "wrongPassword456") }
+            val failedAsExpected = decryptResult.isFailure || decryptResult.getOrNull().isNullOrEmpty()
             assertTrue(failedAsExpected, "Decryption should fail with incorrect password")
 
-            var tamperedFailedAsExpected = false
-            try {
-                // Tamper by modifying the first character (which is part of the salt or IV/ciphertext)
-                val tampered = if (encrypted.first() == 'A') 'B' + encrypted.drop(1) else 'A' + encrypted.drop(1)
-                val result = cryptoService.decrypt(tampered, password)
-                if (result.isEmpty()) tamperedFailedAsExpected = true
-            } catch (e: Exception) {
-                tamperedFailedAsExpected = true
-            }
+            // Tamper by modifying the first character (which is part of the salt or IV/ciphertext)
+            val tampered = if (encrypted.first() == 'A') 'B' + encrypted.drop(1) else 'A' + encrypted.drop(1)
+            val tamperedResult = runCatching { cryptoService.decrypt(tampered, password) }
+            val tamperedFailedAsExpected = tamperedResult.isFailure || tamperedResult.getOrNull().isNullOrEmpty()
             assertTrue(tamperedFailedAsExpected, "Decryption should fail with tampered ciphertext")
         }
 
@@ -167,13 +157,8 @@ class CryptoServiceTest {
             val key = ByteArray(32) { 1 }
             val shortCiphertext = ByteArray(4) { 0 }
 
-            var threwException = false
-            try {
-                cryptoService.decryptAesGcm(shortCiphertext, key)
-            } catch (e: Throwable) {
-                threwException = true
-            }
-            assertTrue(threwException, "decryptAesGcm should throw an exception when ciphertext is shorter than IV size")
+            val result = runCatching { cryptoService.decryptAesGcm(shortCiphertext, key) }
+            assertTrue(result.isFailure, "decryptAesGcm should throw an exception when ciphertext is shorter than IV size")
         }
 
     /**

@@ -90,6 +90,9 @@ class AndroidScreenshotGeneratorTest {
             val rootNode = if (roots.fetchSemanticsNodes().size > 1) roots.onLast() else roots[0]
             val img = rootNode.captureToImage().asAndroidBitmap()
             saveScreenshot(img, name)
+            if (name.startsWith("iphone-")) {
+                saveScreenshot(img, name.replaceFirst("iphone-", "android-"))
+            }
         }
 
         /**
@@ -104,48 +107,40 @@ class AndroidScreenshotGeneratorTest {
         ) {
             var retries = 0
             while (retries < 5) {
-                try {
-                    if (isContentDescription) {
-                        val node = composeTestRule.onAllNodes(hasContentDescription(text), useUnmergedTree = true)[0]
-                        try {
-                            node.performScrollTo()
-                        } catch (e: AssertionError) {
+                val success =
+                    runCatching {
+                        if (isContentDescription) {
+                            val node = composeTestRule.onAllNodes(hasContentDescription(text), useUnmergedTree = true)[0]
+                            runCatching { node.performScrollTo() }
+                            node.performClick()
+                        } else {
+                            val node =
+                                composeTestRule.onAllNodes(
+                                    hasText(text, substring = true, ignoreCase = true),
+                                    useUnmergedTree = true,
+                                )[0]
+                            runCatching { node.performScrollTo() }
+                            node.performClick()
                         }
-                        node.performClick()
-                    } else {
-                        val node = composeTestRule.onAllNodes(hasText(text, substring = true, ignoreCase = true), useUnmergedTree = true)[0]
-                        try {
-                            node.performScrollTo()
-                        } catch (e: AssertionError) {
-                        }
-                        node.performClick()
-                    }
-                    composeTestRule.waitForIdle()
-                    return
-                } catch (e: AssertionError) {
-                    retries++
-                    Thread.sleep(1000)
-                    composeTestRule.waitForIdle()
-                } catch (e: IndexOutOfBoundsException) {
-                    retries++
-                    Thread.sleep(1000)
-                    composeTestRule.waitForIdle()
-                }
+                        composeTestRule.waitForIdle()
+                    }.isSuccess
+                if (success) return
+                retries++
+                Thread.sleep(1000)
+                composeTestRule.waitForIdle()
             }
-            // final try that will throw if it fails
+            // final attempt
             if (isContentDescription) {
                 val node = composeTestRule.onAllNodes(hasContentDescription(text), useUnmergedTree = true)[0]
-                try {
-                    node.performScrollTo()
-                } catch (e: AssertionError) {
-                }
+                runCatching { node.performScrollTo() }
                 node.performClick()
             } else {
-                val node = composeTestRule.onAllNodes(hasText(text, substring = true, ignoreCase = true), useUnmergedTree = true)[0]
-                try {
-                    node.performScrollTo()
-                } catch (e: AssertionError) {
-                }
+                val node =
+                    composeTestRule.onAllNodes(
+                        hasText(text, substring = true, ignoreCase = true),
+                        useUnmergedTree = true,
+                    )[0]
+                runCatching { node.performScrollTo() }
                 node.performClick()
             }
             composeTestRule.waitForIdle()
@@ -310,9 +305,8 @@ class AndroidScreenshotGeneratorTest {
         Thread.sleep(10000)
         composeTestRule.waitForIdle()
 
-        try {
+        runCatching {
             safeClick("Close")
-        } catch (e: Throwable) {
         }
     }
 }

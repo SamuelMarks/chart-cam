@@ -29,15 +29,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.cd_session_locked
+import chartcam.chartcam.generated.resources.security_shield_title
+import chartcam.chartcam.generated.resources.session_locked_due_to_inactivity
+import chartcam.chartcam.generated.resources.unlock
 import io.healthplatform.chartcam.navigation.AppNavigation
 import io.healthplatform.chartcam.ui.AppPrivacyState
 import io.healthplatform.chartcam.ui.SetupPlatformPrivacy
 import io.healthplatform.chartcam.ui.currentAppPrivacyManager
 import io.healthplatform.chartcam.ui.currentLanguageState
 import io.healthplatform.chartcam.ui.getLayoutDirectionForLanguage
+import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.ui.theme.AppTheme
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * The Root Composable Configurator.
@@ -70,7 +81,12 @@ fun App(darkTheme: Boolean = isSystemInDarkTheme()) {
 
                     if (privacyState == AppPrivacyState.BACKGROUND_OBSCURED || isLocked) {
                         Surface(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .semantics {
+                                        liveRegion = LiveRegionMode.Assertive
+                                    },
                             color = MaterialTheme.colorScheme.background,
                         ) {
                             Box(
@@ -83,21 +99,26 @@ fun App(darkTheme: Boolean = isSystemInDarkTheme()) {
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Security,
-                                        contentDescription = "Session Locked",
+                                        contentDescription = stringResource(Res.string.cd_session_locked),
                                         modifier = Modifier.size(64.dp),
                                         tint = MaterialTheme.colorScheme.primary,
                                     )
-                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Spacer(modifier = Modifier.height(AppSpacing.md))
                                     val shieldText =
-                                        if (isLocked) "Session Locked Due to Inactivity" else "ChartCam Security Shield"
+                                        if (isLocked) {
+                                            stringResource(Res.string.session_locked_due_to_inactivity)
+                                        } else {
+                                            stringResource(Res.string.security_shield_title)
+                                        }
                                     Text(
                                         text = shieldText,
                                         style = MaterialTheme.typography.titleLarge,
+                                        modifier = Modifier.semantics { heading() },
                                     )
                                     if (isLocked) {
-                                        Spacer(modifier = Modifier.height(16.dp))
+                                        Spacer(modifier = Modifier.height(AppSpacing.md))
                                         Button(onClick = { currentAppPrivacyManager.unlock() }) {
-                                            Text("Unlock")
+                                            Text(stringResource(Res.string.unlock))
                                         }
                                     }
                                 }

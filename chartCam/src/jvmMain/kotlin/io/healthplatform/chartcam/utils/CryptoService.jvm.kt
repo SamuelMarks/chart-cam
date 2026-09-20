@@ -144,9 +144,9 @@ actual class CryptoService actual constructor() {
         password: String,
     ): String =
         withContext(Dispatchers.Default) {
-            try {
+            runCatching {
                 val payload = Base64.decode(base64Data)
-                if (payload.size < SALT_SIZE + IV_SIZE) return@withContext ""
+                if (payload.size < SALT_SIZE + IV_SIZE) return@runCatching ""
 
                 val salt = payload.copyOfRange(0, SALT_SIZE)
                 val ivAndCiphertext = payload.copyOfRange(SALT_SIZE, payload.size)
@@ -155,10 +155,6 @@ actual class CryptoService actual constructor() {
                 val plaintext = decryptAesGcm(ivAndCiphertext, key)
 
                 plaintext.decodeToString()
-            } catch (ignored: javax.crypto.AEADBadTagException) {
-                ""
-            } catch (ignored: java.lang.IllegalArgumentException) {
-                ""
-            }
+            }.getOrDefault("")
         }
 }

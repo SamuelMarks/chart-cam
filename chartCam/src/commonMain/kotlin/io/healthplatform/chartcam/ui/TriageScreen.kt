@@ -57,9 +57,13 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.action_clear_selection
+import chartcam.chartcam.generated.resources.action_select_all
+import chartcam.chartcam.generated.resources.captured_photos_count_format
 import chartcam.chartcam.generated.resources.cd_action_select_patient
 import chartcam.chartcam.generated.resources.cd_back
 import chartcam.chartcam.generated.resources.cd_create_patient
+import chartcam.chartcam.generated.resources.cd_delete_selected_photos
 import chartcam.chartcam.generated.resources.cd_proceed
 import chartcam.chartcam.generated.resources.cd_search_icon
 import chartcam.chartcam.generated.resources.clear
@@ -390,21 +394,22 @@ private fun TriagePhotoBatchBar(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Captured Photos (${photoPaths.size})",
+                    text = stringResource(Res.string.captured_photos_count_format, photoPaths.size),
                     style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.semantics { heading() },
                 )
                 Row {
                     TextButton(onClick = onSelectAll) {
-                        Text("Select All")
+                        Text(stringResource(Res.string.action_select_all))
                     }
                     if (selectedKeys.isNotEmpty()) {
                         TextButton(onClick = onClearSelection) {
-                            Text("Clear")
+                            Text(stringResource(Res.string.action_clear_selection))
                         }
                         IconButton(onClick = onDeleteSelected) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete Selected Photos",
+                                contentDescription = stringResource(Res.string.cd_delete_selected_photos),
                                 tint = MaterialTheme.colorScheme.error,
                             )
                         }

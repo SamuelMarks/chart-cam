@@ -172,6 +172,24 @@ class FhirRepositoryExhaustiveCoverageTest {
             assertTrue(failDate.isFailure)
             val failQuantity = repository.searchByQuantityCatching<UnregisteredCustomResource>("value-quantity", SearchPrefix.EQ, "100")
             assertTrue(failQuantity.isFailure)
+            val customParam =
+                dev.ohs.fhir.model.r4.search.SearchParam<UnregisteredCustomResource, FhirString>(
+                    name = "custom-param",
+                    type = dev.ohs.fhir.model.r4.terminologies.SearchParamType.String,
+                    expression = "custom",
+                    target = emptyList(),
+                    extractor = { emptyList() },
+                )
+            val failParam = repository.searchByParam<UnregisteredCustomResource>(customParam, "Alice")
+            assertTrue(failParam.isFailure)
+            val failChained =
+                repository.searchByChainedParam<UnregisteredCustomResource>(
+                    "subject",
+                    "Patient",
+                    "family",
+                    "Smith",
+                )
+            assertTrue(failChained.isFailure)
 
             // saveResourceFromSync failure with closed driver
             val closedDriver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
@@ -180,6 +198,26 @@ class FhirRepositoryExhaustiveCoverageTest {
             closedDriver.close()
             val syncFail = closedRepo.saveResourceFromSync("Patient", "p-fail", patient)
             assertTrue(syncFail.isFailure)
+            val failCompound =
+                closedRepo.searchCompoundCatching<Patient>(
+                    listOf(SearchCriterion(PatientSearchParams.name, "Alice")),
+                )
+            assertTrue(failCompound.isFailure)
+            val failEncObs1 = closedRepo.searchEncountersWithObservationsCatching("Patient/p1")
+            assertTrue(failEncObs1.isFailure)
+
+            val closedDriver2 = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+            ChartCamDatabase.Schema.synchronous().create(closedDriver2)
+            val testRepoPartial =
+                object : FhirRepository(closedDriver2) {
+                    override suspend fun searchEncountersByParam(
+                        param: dev.ohs.fhir.model.r4.search.SearchParam<Encounter, *>,
+                        value: String,
+                    ): Result<List<Encounter>> = Result.success(emptyList())
+                }
+            closedDriver2.close()
+            val failEncObs2 = testRepoPartial.searchEncountersWithObservationsCatching("Patient/p1")
+            assertTrue(failEncObs2.isFailure)
 
             // getAllPatientsCatching default arguments
             val defaultAll = repository.getAllPatientsCatching()

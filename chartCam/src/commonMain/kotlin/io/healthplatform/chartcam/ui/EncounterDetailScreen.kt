@@ -68,6 +68,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.action_dicom_viewer
+import chartcam.chartcam.generated.resources.action_voice_memo
 import chartcam.chartcam.generated.resources.cancel
 import chartcam.chartcam.generated.resources.captured_photos_format
 import chartcam.chartcam.generated.resources.cd_action_view_photo
@@ -454,7 +456,7 @@ private fun EncounterDetailContent(
                 if (state.isSyncing) {
                     Text(
                         stringResource(Res.string.syncing_to_server),
-                        modifier = Modifier.padding(top = 16.dp),
+                        modifier = Modifier.padding(top = AppSpacing.md),
                     )
                 }
             }
@@ -547,7 +549,7 @@ private fun PatientAndPractitionerInfo(state: EncounterUiState) {
         Text(
             text = stringResource(Res.string.provider_format, prac.getFullName(currentLang)),
             style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.padding(vertical = 8.dp),
+            modifier = Modifier.padding(vertical = AppSpacing.sm),
         )
     }
 }
@@ -586,7 +588,7 @@ private fun QuestionnaireSelector(
                     qTitle,
                 ),
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(vertical = 8.dp).semantics { heading() },
+            modifier = Modifier.padding(vertical = AppSpacing.sm).semantics { heading() },
         )
     } else {
         ExposedDropdownMenuBox(
@@ -595,7 +597,7 @@ private fun QuestionnaireSelector(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = AppSpacing.sm)
                     .semantics { contentDescription = selectorCd },
         ) {
             OutlinedTextField(
@@ -679,9 +681,9 @@ private fun QuestionnaireFormArea(
                 formattedTargetCount,
             ),
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp).semantics { heading() },
+            modifier = Modifier.padding(bottom = AppSpacing.sm).semantics { heading() },
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
             Button(
                 onClick = { actions.onRecordAudioMemo?.invoke() },
                 modifier = Modifier.testTag("RecordVoiceMemoButton"),
@@ -691,8 +693,8 @@ private fun QuestionnaireFormArea(
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
                 )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Voice Memo")
+                Spacer(modifier = Modifier.width(AppSpacing.xs))
+                Text(stringResource(Res.string.action_voice_memo))
             }
             Button(onClick = { actions.onTakePhotos(state.selectedQuestionnaire?.id, null) }) {
                 Text(stringResource(Res.string.take_photos))
@@ -827,7 +829,7 @@ fun PhotoGridItem(
             Text(
                 text = photoDescription,
                 style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(8.dp),
+                modifier = Modifier.padding(AppSpacing.sm),
             )
         }
     }
@@ -865,7 +867,7 @@ fun PhotoGridItem(
                         },
                         modifier = Modifier.minimumInteractiveComponentSize(),
                     ) {
-                        Text("DICOM Viewer")
+                        Text(stringResource(Res.string.action_dicom_viewer))
                     }
                 }
             },

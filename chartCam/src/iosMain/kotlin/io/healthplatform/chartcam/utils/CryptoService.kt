@@ -142,6 +142,7 @@ actual class CryptoService actual constructor() {
                 val cryptorRef = cryptor.value!!
 
                 try {
+                    // allow-exception
                     status =
                         iv.usePinned { ivPinned ->
                             my_CCCryptorGCMAddIV(cryptorRef, ivPinned.addressOf(0), GCM_IV_LENGTH_U)
@@ -207,6 +208,7 @@ actual class CryptoService actual constructor() {
                 val cryptorRef = cryptor.value!!
 
                 try {
+                    // allow-exception
                     status =
                         iv.usePinned { ivPinned ->
                             my_CCCryptorGCMAddIV(cryptorRef, ivPinned.addressOf(0), GCM_IV_LENGTH_U)
@@ -293,9 +295,9 @@ actual class CryptoService actual constructor() {
         password: String,
     ): String =
         withContext(Dispatchers.Default) {
-            try {
+            runCatching {
                 val payload = Base64.decode(base64Data)
-                if (payload.size < ARGON2_SALT_LEN + GCM_IV_LENGTH + GCM_TAG_LENGTH) return@withContext ""
+                if (payload.size < ARGON2_SALT_LEN + GCM_IV_LENGTH + GCM_TAG_LENGTH) return@runCatching ""
 
                 val salt = payload.copyOfRange(0, GCM_TAG_LENGTH)
                 val ivAndCiphertextAndTag = payload.copyOfRange(ARGON2_SALT_LEN, payload.size)
@@ -304,9 +306,8 @@ actual class CryptoService actual constructor() {
                 val plaintext = decryptAesGcm(ivAndCiphertextAndTag, key)
 
                 plaintext.decodeToString()
-            } catch (ignored: Exception) {
+            }.onFailure { ignored ->
                 println(ignored.message)
-                ""
-            }
+            }.getOrDefault("")
         }
 }

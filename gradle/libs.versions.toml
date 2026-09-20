@@ -2,7 +2,7 @@
 slf4j = "2.0.18"
 kover = "0.9.9"
 dokka = "2.2.0"
-detekt = "1.23.8"
+detekt = "2.0.0-alpha.6"
 # Android Gradle Plugin 8.8.0 is the latest stable release (Jan 2025)
 agp = "9.3.1"
 
@@ -111,4 +111,4 @@ kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", versio
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }

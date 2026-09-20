@@ -138,7 +138,7 @@ open class DicomExportService(
                 encounter = encounter,
                 practitioner = practitioner,
                 anonymize = anonymize,
-            ).map { it }
+            )
     }
 
     /**

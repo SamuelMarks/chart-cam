@@ -743,5 +743,17 @@ class SdcEvaluatorExhaustiveCoverageTest {
         // evaluateDateOffset
         assertEquals("2026-05-15", SdcEvaluator.evaluateDateOffset("2026-05-10", 5))
         assertEquals("2026-05-08", SdcEvaluator.evaluateDateOffset("2026-05-10T12:00:00Z", -2))
+
+        // evaluateCalculatedValue fallback when string expression evaluation fails
+        val throwingObj =
+            object {
+                override fun toString(): String = error("Simulated toString failure")
+            }
+        assertEquals("", SdcEvaluator.evaluateCalculatedValue("concat(%bad, 'ok')", mapOf("bad" to throwingObj)))
+
+        // evaluateCalculatedDecimalExpression fallback when evalSimpleMath fails on non-numeric string variable
+        val decResult = SdcEvaluator.evaluateCalculatedDecimalExpression("%foo", mapOf("foo" to "not_a_number"))
+        assertTrue(decResult.isSuccess)
+        assertEquals(FhirDecimal.fromInt(0), decResult.getOrThrow())
     }
 }

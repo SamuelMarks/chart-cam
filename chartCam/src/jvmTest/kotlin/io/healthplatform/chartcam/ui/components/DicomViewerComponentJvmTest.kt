@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import io.healthplatform.chartcam.dicom.DicomDataset
+import io.healthplatform.chartcam.ui.setAppLanguage
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -25,6 +26,7 @@ class DicomViewerComponentJvmTest {
      */
     @Test
     fun testDicomViewerComponentRendering() {
+        setAppLanguage("en")
         val samplePdf = byteArrayOf(0x25, 0x50, 0x44, 0x46)
         val dataset =
             DicomDataset(

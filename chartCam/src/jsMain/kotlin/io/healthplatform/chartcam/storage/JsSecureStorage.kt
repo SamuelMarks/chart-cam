@@ -66,13 +66,11 @@ class JsSecureStorage : SecureStorage {
      */
     override fun getString(key: String): String? {
         val stored = localStorage.getItem(key) ?: return null
-        return try {
+        return runCatching {
             val decryptedWords = CryptoJS.AES.decrypt(stored, getMasterKey())
             val result = decryptedWords.toString(CryptoJS.enc.Utf8) as String
             if (result.isEmpty()) null else result
-        } catch (_: Throwable) {
-            null
-        }
+        }.getOrNull()
     }
 
     /**

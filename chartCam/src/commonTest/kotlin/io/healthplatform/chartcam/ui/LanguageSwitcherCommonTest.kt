@@ -21,17 +21,14 @@ class LanguageSwitcherCommonTest {
             // changeAppLanguage expects platform specific behavior, which may throw or do nothing.
             // We can test the flow updates.
             val old = currentLanguageState.value
-            try {
+            runCatching {
                 setAppLanguage("es")
                 assertEquals("es", currentLanguageState.value)
-            } catch (e: Exception) {
-                // expected in mock
-            } finally {
-                try {
-                    setAppLanguage(old)
-                } catch (e: Exception) {
-                    currentLanguageState.value = old
-                }
+            }
+            runCatching {
+                setAppLanguage(old)
+            }.onFailure {
+                currentLanguageState.value = old
             }
         }
 }

@@ -585,8 +585,7 @@ open class FhirRepository(
         val resourceType =
             io.healthplatform.chartcam.fhir
                 .resolveCanonicalResourceType<R>()
-                .getOrNull()
-                .orEmpty()
+                .getOrElse { return Result.failure(it) }
         val (prefix, cleanVal) = SearchPrefix.fromValue(value)
         val isDate =
             param.type == dev.ohs.fhir.model.r4.terminologies.SearchParamType.Date
@@ -739,8 +738,7 @@ open class FhirRepository(
         val primaryType =
             io.healthplatform.chartcam.fhir
                 .resolveCanonicalResourceType<R>()
-                .getOrNull()
-                .orEmpty()
+                .getOrElse { return Result.failure(it) }
 
         return runSuspendCatching {
             val targetEntities =
@@ -896,7 +894,9 @@ open class FhirRepository(
         var primaryMatches: List<R> = emptyList()
 
         for ((index, criterion) in criteria.withIndex()) {
-            val matches = searchByParam(criterion.param, criterion.value).getOrNull().orEmpty()
+            val matches =
+                searchByParam(criterion.param, criterion.value)
+                    .getOrElse { return Result.failure(it) }
             val currentIds = matches.mapNotNull { it.id }.toSet()
             if (index == 0) {
                 matchingIds = currentIds
@@ -919,31 +919,32 @@ open class FhirRepository(
         patientId: String,
     ): Result<Map<Encounter, List<Observation>>> {
         val cleanPatientId = patientId.removePrefix("Patient/")
-        val encounters =
-            searchEncountersByParam(
-                dev.ohs.fhir.model.r4.search.EncounterSearchParams.subject,
-                cleanPatientId,
-            ).getOrNull().orEmpty()
+        return searchEncountersByParam(
+            dev.ohs.fhir.model.r4.search.EncounterSearchParams.subject,
+            cleanPatientId,
+        ).fold(
+            onSuccess = { encounters ->
+                searchByParam<Observation>(
+                    dev.ohs.fhir.model.r4.search.ObservationSearchParams.subject,
+                    cleanPatientId,
+                ).map { observations ->
+                    val encMap = mutableMapOf<Encounter, MutableList<Observation>>()
+                    for (enc in encounters) {
+                        encMap[enc] = mutableListOf()
+                    }
 
-        val observations =
-            searchByParam<Observation>(
-                dev.ohs.fhir.model.r4.search.ObservationSearchParams.subject,
-                cleanPatientId,
-            ).getOrNull().orEmpty()
-
-        val encMap = mutableMapOf<Encounter, MutableList<Observation>>()
-        for (enc in encounters) {
-            encMap[enc] = mutableListOf()
-        }
-
-        for (obs in observations) {
-            val encRef = extractEncounterReferenceId(obs.encounter)
-            val targetEnc = encounters.firstOrNull { it.id == encRef }
-            if (targetEnc != null) {
-                encMap.getValue(targetEnc).add(obs)
-            }
-        }
-        return Result.success(encMap)
+                    for (obs in observations) {
+                        val encRef = extractEncounterReferenceId(obs.encounter)
+                        val targetEnc = encounters.firstOrNull { it.id == encRef }
+                        if (targetEnc != null) {
+                            encMap.getValue(targetEnc).add(obs)
+                        }
+                    }
+                    encMap
+                }
+            },
+            onFailure = { error -> Result.failure(error) },
+        )
     }
 
     /**
@@ -1095,7 +1096,7 @@ open class FhirRepository(
         fileStorage: io.healthplatform.chartcam.files.FileStorage?,
     ): Result<Unit> {
         val cleanId = id.removePrefix("Patient/")
-        for (enc in getEncountersForPatient(cleanId)) {
+        for (enc in getEncountersForPatientCatching(cleanId).getOrDefault(emptyList())) {
             val encId = enc.id
             if (encId != null) {
                 deleteEncounter(encId, fileStorage)
@@ -1159,6 +1160,15 @@ open class FhirRepository(
             decodeResource<Encounter>(it.serializedResource)
         }
     }
+
+    /**
+     * Safely retrieves Encounters for a specific Patient, wrapped in a [Result].
+     *
+     * @param patientId The unique identifier of the Patient.
+     * @return A [Result] enclosing the list of matching Encounter resources.
+     */
+    open suspend fun getEncountersForPatientCatching(patientId: String): Result<List<Encounter>> =
+        runSuspendCatching { getEncountersForPatient(patientId) }
 
     /**
      * Updates Encounter status.

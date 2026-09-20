@@ -68,6 +68,10 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.action_start_recording
+import chartcam.chartcam.generated.resources.action_stop_recording
+import chartcam.chartcam.generated.resources.action_switch_to_photo_mode
+import chartcam.chartcam.generated.resources.action_switch_to_video_mode
 import chartcam.chartcam.generated.resources.camera_permission_required
 import chartcam.chartcam.generated.resources.cancel
 import chartcam.chartcam.generated.resources.capturing_photo
@@ -87,6 +91,7 @@ import chartcam.chartcam.generated.resources.retake
 import chartcam.chartcam.generated.resources.step_count_format
 import chartcam.chartcam.generated.resources.take_photo
 import chartcam.chartcam.generated.resources.unknown_error
+import chartcam.chartcam.generated.resources.video_recording_duration_format
 import dev.ohs.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.camera.CameraManager
 import io.healthplatform.chartcam.camera.PermissionStatus
@@ -336,7 +341,12 @@ private fun CaptureScreenContent(
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
-            title = { Text(stringResource(Res.string.discard_capture_title)) },
+            title = {
+                Text(
+                    stringResource(Res.string.discard_capture_title),
+                    modifier = Modifier.semantics { heading() },
+                )
+            },
             text = { Text(stringResource(Res.string.discard_capture_message)) },
             confirmButton = {
                 TextButton(
@@ -616,7 +626,7 @@ private fun ControlsTopBar(
                 .background(
                     MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
                     MaterialTheme.shapes.large,
-                ).padding(horizontal = AppSpacing.md, vertical = 12.dp),
+                ).padding(horizontal = AppSpacing.md, vertical = AppSpacing.moderate),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -662,6 +672,8 @@ private fun ControlsBottomBar(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (state.isRecordingVideo) {
+            val videoDurationDesc =
+                stringResource(Res.string.video_recording_duration_format, state.videoDurationFormatted)
             Text(
                 text = state.videoDurationFormatted,
                 style = MaterialTheme.typography.titleLarge,
@@ -672,7 +684,7 @@ private fun ControlsBottomBar(
                         .testTag("VideoDurationCounter")
                         .semantics {
                             liveRegion = LiveRegionMode.Polite
-                            contentDescription = "Video recording duration: ${state.videoDurationFormatted}"
+                            contentDescription = videoDurationDesc
                         },
             )
         }
@@ -706,6 +718,8 @@ private fun ControlsBottomBar(
                     } else {
                         MaterialTheme.colorScheme.primary
                     }
+                val startRecordingText = stringResource(Res.string.action_start_recording)
+                val stopRecordingText = stringResource(Res.string.action_stop_recording)
                 FloatingActionButton(
                     onClick = onCapture,
                     shape = CircleShape,
@@ -719,7 +733,7 @@ private fun ControlsBottomBar(
                             .semantics {
                                 contentDescription =
                                     if (state.isVideoMode) {
-                                        if (state.isRecordingVideo) "Stop Recording" else "Start Recording"
+                                        if (state.isRecordingVideo) stopRecordingText else startRecordingText
                                     } else {
                                         takePhotoText
                                     }
@@ -750,6 +764,8 @@ private fun ControlsBottomBar(
                 Text(stringResource(Res.string.cancel))
             }
 
+            val switchToPhotoModeText = stringResource(Res.string.action_switch_to_photo_mode)
+            val switchToVideoModeText = stringResource(Res.string.action_switch_to_video_mode)
             Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
                 IconButton(
                     onClick = onToggleVideoMode,
@@ -761,7 +777,7 @@ private fun ControlsBottomBar(
                 ) {
                     Icon(
                         imageVector = if (state.isVideoMode) Icons.Default.PhotoCamera else Icons.Default.Videocam,
-                        contentDescription = if (state.isVideoMode) "Switch to Photo Mode" else "Switch to Video Mode",
+                        contentDescription = if (state.isVideoMode) switchToPhotoModeText else switchToVideoModeText,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }

@@ -54,10 +54,8 @@ class AndroidPermissionManagerTest {
     @Test
     fun testOpenSettings() {
         val manager = AndroidPermissionManager(context) {}
-        try {
+        runCatching {
             manager.openSettings()
-        } catch (e: Exception) {
-            // Might throw in isolated test env without full activity context, but covers the code.
         }
     }
 }

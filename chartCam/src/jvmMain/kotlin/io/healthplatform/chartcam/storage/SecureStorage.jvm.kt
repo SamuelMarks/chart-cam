@@ -101,11 +101,9 @@ class JvmSecureStorage(
      */
     override fun getString(key: String): String? {
         val encrypted = prefs.get(key, null) ?: return null
-        return try {
+        return runCatching {
             decrypt(encrypted)
-        } catch (_: Exception) {
-            null
-        }
+        }.getOrNull()
     }
 
     /**

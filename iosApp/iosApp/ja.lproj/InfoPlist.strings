@@ -1,2 +1,3 @@
 /* Japanese InfoPlist.strings */
-"NSCameraUsageDescription" = "ChartCamは臨床写真を撮影するためにカメラへのアクセスが必要です。";
+"NSCameraUsageDescription" = "臨床写真を撮影するために、ChartCamがカメラへアクセスすることを許可してください。";
+"NSMicrophoneUsageDescription" = "臨床ボイスメモを録音するために、ChartCamがマイクへアクセスすることを許可してください。";

@@ -24,6 +24,7 @@ private const val HASH_MULTIPLIER = 31L
 object AirGappedBundleTransferService {
     private const val PREFIX = "CHARTCAM_PART:"
     private const val PROTO_PREFIX = "CHARTCAM_PROTO_PART:"
+    private const val CHUNK_PARTS_COUNT = 4
 
     /**
      * Serializes a FHIR [Bundle] to binary Protobuf, encodes to Base64, and splits into QR chunks.
@@ -57,15 +58,15 @@ object AirGappedBundleTransferService {
      * @param chunks The received chunk strings (order does not matter).
      * @return A [Result] enclosing the reassembled and decoded [Bundle].
      */
-    fun assembleQrProtobufChunks(chunks: List<String>): Result<Bundle> {
-        if (chunks.isEmpty()) return Result.failure(IllegalStateException("Chunk list cannot be empty"))
-        return runCatching {
+    fun assembleQrProtobufChunks(chunks: List<String>): Result<Bundle> =
+        runCatching {
+            if (chunks.isEmpty()) error("Chunk list cannot be empty")
             val parsed =
                 chunks.map { chunk ->
                     if (!chunk.startsWith(PROTO_PREFIX)) error("Invalid chunk prefix: $chunk")
                     val body = chunk.removePrefix(PROTO_PREFIX)
-                    val parts = body.split(":", limit = 4)
-                    if (parts.size != 4) error("Malformed chunk structure: $chunk")
+                    val parts = body.split(":", limit = CHUNK_PARTS_COUNT)
+                    if (parts.size != CHUNK_PARTS_COUNT) error("Malformed chunk structure: $chunk")
                     val index = parts[0].toIntOrNull() ?: error("Invalid index: ${parts[0]}")
                     val total = parts[1].toIntOrNull() ?: error("Invalid total: ${parts[1]}")
                     val checksum = parts[2].toLongOrNull() ?: error("Invalid checksum: ${parts[2]}")
@@ -97,7 +98,6 @@ object AirGappedBundleTransferService {
         }.flatMap { rawBytes ->
             FhirProtobufParser.decodeFromProtobuf<Bundle>(rawBytes)
         }
-    }
 
     /**
      * Ingests a binary Protobuf bundle payload directly into the local repository offline.
@@ -155,8 +155,8 @@ object AirGappedBundleTransferService {
                 chunks.map { chunk ->
                     if (!chunk.startsWith(PREFIX)) error("Invalid chunk prefix: $chunk")
                     val body = chunk.removePrefix(PREFIX)
-                    val parts = body.split(":", limit = 4)
-                    if (parts.size != 4) error("Malformed chunk structure: $chunk")
+                    val parts = body.split(":", limit = CHUNK_PARTS_COUNT)
+                    if (parts.size != CHUNK_PARTS_COUNT) error("Malformed chunk structure: $chunk")
                     val index = parts[0].toIntOrNull() ?: error("Invalid index: ${parts[0]}")
                     val total = parts[1].toIntOrNull() ?: error("Invalid total: ${parts[1]}")
                     val checksum = parts[2].toLongOrNull() ?: error("Invalid checksum: ${parts[2]}")

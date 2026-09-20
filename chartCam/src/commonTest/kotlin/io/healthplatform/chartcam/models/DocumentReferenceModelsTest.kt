@@ -38,7 +38,7 @@ class DocumentReferenceModelsTest {
         assertEquals(CommonLanguages.En, (resultWhitespace.getOrThrow() as ExtensibleEnumeration.Predefined).value)
 
         val resultEmpty = parseExtensibleLanguage("   ")
-        assertTrue(resultEmpty.isSuccess)
+        assertTrue(resultEmpty.isFailure)
     }
 
     /**
@@ -105,6 +105,10 @@ class DocumentReferenceModelsTest {
         val contentNoLang = buildDocumentReferenceContent("image/png", "photos/no-lang.png").getOrThrow()
         assertEquals(1, contentNoLang.size)
         kotlin.test.assertNull(contentNoLang[0].attachment.language)
+
+        val contentBlankLang = buildDocumentReferenceContent("image/png", "photos/blank.png", "   ").getOrThrow()
+        assertEquals(1, contentBlankLang.size)
+        kotlin.test.assertNull(contentBlankLang[0].attachment.language)
     }
 
     /**
@@ -120,6 +124,10 @@ class DocumentReferenceModelsTest {
         val noteContentNoLang = buildClinicalNoteContent("Raw text note").getOrThrow()
         assertEquals(1, noteContentNoLang.size)
         kotlin.test.assertNull(noteContentNoLang[0].attachment.language)
+
+        val noteBlankLang = buildClinicalNoteContent("Raw text note", "   ").getOrThrow()
+        assertEquals(1, noteBlankLang.size)
+        kotlin.test.assertNull(noteBlankLang[0].attachment.language)
 
         val noteType = buildClinicalNoteType().getOrThrow()
         assertEquals(1, noteType.coding.size)

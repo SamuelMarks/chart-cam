@@ -194,7 +194,7 @@ actual class CryptoService actual constructor() {
         base64Data: String,
         password: String,
     ): String =
-        try {
+        runCatching {
             val payload = Base64.decode(base64Data)
             require(payload.size >= SALT_LENGTH + IV_LENGTH) { "Payload too short" }
 
@@ -205,10 +205,9 @@ actual class CryptoService actual constructor() {
             val plaintext = decryptAesGcm(ivAndCiphertext, key)
 
             plaintext.decodeToString()
-        } catch (e: IllegalStateException) {
+        }.onFailure { e ->
             println(e.message)
-            ""
-        }
+        }.getOrDefault("")
 
     /**
      * Converts a Kotlin [ByteArray] to a JS [Uint8Array].

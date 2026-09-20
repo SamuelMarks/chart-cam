@@ -100,7 +100,7 @@ class AndroidCameraManager(
                 .requireLensFacing(lensFacing)
                 .build()
 
-        try {
+        runCatching {
             cameraProvider.unbindAll()
             camera =
                 cameraProvider.bindToLifecycle(
@@ -109,7 +109,7 @@ class AndroidCameraManager(
                     preview,
                     imageCapture,
                 )
-        } catch (exc: IllegalArgumentException) {
+        }.onFailure { exc ->
             println("Camera binding failed: ${exc.message}")
         }
     }
@@ -133,23 +133,17 @@ class AndroidCameraManager(
                      * @param image The captured image proxy.
                      */
                     override fun onCaptureSuccess(image: ImageProxy) {
-                        try {
-                            val buffer = image.planes[0].buffer
-                            val bytes = ByteArray(buffer.capacity())
-                            buffer.get(bytes)
-                            continuation.resume(bytes)
-                        } catch (e: java.nio.BufferUnderflowException) {
-                            println("Image buffer read failed: ${e.message}")
-                            continuation.resume(null)
-                        } catch (e: IllegalArgumentException) {
-                            println("Image buffer allocation failed: ${e.message}")
-                            continuation.resume(null)
-                        } catch (e: IllegalStateException) {
-                            println("Image plane access failed: ${e.message}")
-                            continuation.resume(null)
-                        } finally {
-                            image.close()
-                        }
+                        val result =
+                            runCatching {
+                                val buffer = image.planes[0].buffer
+                                val bytes = ByteArray(buffer.capacity())
+                                buffer.get(bytes)
+                                bytes
+                            }.onFailure { e ->
+                                println("Image buffer read failed: ${e.message}")
+                            }
+                        image.close()
+                        continuation.resume(result.getOrNull())
                     }
 
                     /**

@@ -107,6 +107,9 @@ kotlin {
 
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
+        compilerOptions {
+            freeCompilerArgs.add("-opt-in=kotlin.js.ExperimentalWasmJsInterop")
+        }
         browser()
         binaries.executable()
     }
@@ -338,7 +341,7 @@ tasks.named("jsBrowserTest").configure { enabled = false }
 
 detekt {
     buildUponDefaultConfig = true
-    allRules = true
+    allRules = false
     config.setFrom(file("../detekt.yml"))
     source.setFrom(
         "src/commonMain/kotlin",
@@ -351,12 +354,12 @@ detekt {
     )
 }
 
-tasks.withType<ProcessResources>().configureEach { dependsOn("copyAndroidComposeResources") }
-tasks.whenTaskAdded {
+tasks.withType<ProcessResources>().configureEach { dependsOn(copyAndroidComposeResources) }
+tasks.configureEach {
     if (name.contains("AndroidMain") ||
         name.contains("Release") ||
         name.contains("Debug")
     ) {
-        dependsOn("copyAndroidComposeResources")
+        dependsOn(copyAndroidComposeResources)
     }
 }

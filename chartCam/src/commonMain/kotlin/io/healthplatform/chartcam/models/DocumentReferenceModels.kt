@@ -26,11 +26,13 @@ import dev.ohs.fhir.model.r4.String as FhirString
  */
 fun parseExtensibleLanguage(tag: String): Result<ExtensibleEnumeration<CommonLanguages>> =
     runCatching {
-        val predefined = runCatching { CommonLanguages.fromCode(tag.trim().lowercase()) }.getOrNull()
+        val trimmed = tag.trim()
+        require(trimmed.isNotEmpty()) { "Language tag cannot be empty" }
+        val predefined = runCatching { CommonLanguages.fromCode(trimmed.lowercase()) }.getOrNull()
         if (predefined != null) {
             ExtensibleEnumeration.of(predefined)
         } else {
-            ExtensibleEnumeration.of(tag.trim())
+            ExtensibleEnumeration.of(trimmed)
         }
     }
 

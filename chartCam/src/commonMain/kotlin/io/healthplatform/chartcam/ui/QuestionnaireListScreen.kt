@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -26,6 +27,8 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -58,6 +61,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -85,6 +89,7 @@ import chartcam.chartcam.generated.resources.import_error_format
 import chartcam.chartcam.generated.resources.import_from_file
 import chartcam.chartcam.generated.resources.import_questionnaire
 import chartcam.chartcam.generated.resources.invalid_fhir_format
+import chartcam.chartcam.generated.resources.label_qr_payload_chunk
 import chartcam.chartcam.generated.resources.number_of_items
 import chartcam.chartcam.generated.resources.paste_from_clipboard
 import chartcam.chartcam.generated.resources.questionnaires
@@ -635,20 +640,33 @@ fun QuestionnaireListScreen(
                         modifier = Modifier.fillMaxWidth().padding(AppSpacing.md),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Canvas(modifier = Modifier.size(200.dp)) {
-                            val cellSize = size.minDimension / matrix.size
-                            for (y in matrix.indices) {
-                                for (x in matrix[y].indices) {
-                                    if (matrix[y][x]) {
-                                        drawRect(
-                                            color = androidx.compose.ui.graphics.Color.Black,
-                                            topLeft =
-                                                androidx.compose.ui.geometry
-                                                    .Offset(x * cellSize, y * cellSize),
-                                            size =
-                                                androidx.compose.ui.geometry
-                                                    .Size(cellSize, cellSize),
-                                        )
+                        val qrDesc = stringResource(Res.string.display_qr_code)
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.White),
+                            modifier = Modifier.padding(AppSpacing.sm),
+                        ) {
+                            Canvas(
+                                modifier =
+                                    Modifier
+                                        .size(200.dp)
+                                        .padding(AppSpacing.sm)
+                                        .semantics { contentDescription = qrDesc },
+                            ) {
+                                val cellSize = size.minDimension / matrix.size
+                                for (y in matrix.indices) {
+                                    for (x in matrix[y].indices) {
+                                        if (matrix[y][x]) {
+                                            drawRect(
+                                                color = androidx.compose.ui.graphics.Color.Black,
+                                                topLeft =
+                                                    androidx.compose.ui.geometry
+                                                        .Offset(x * cellSize, y * cellSize),
+                                                size =
+                                                    androidx.compose.ui.geometry
+                                                        .Size(cellSize, cellSize),
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -668,7 +686,12 @@ fun QuestionnaireListScreen(
             val reassembler = remember { QrChunkReassembler() }
             AlertDialog(
                 onDismissRequest = { showQrScannerDialog = false },
-                title = { Text(stringResource(Res.string.scan_qr_code)) },
+                title = {
+                    Text(
+                        stringResource(Res.string.scan_qr_code),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 text = {
                     Column {
                         Button(
@@ -689,7 +712,7 @@ fun QuestionnaireListScreen(
                         OutlinedTextField(
                             value = scannedChunkInput,
                             onValueChange = { scannedChunkInput = it },
-                            label = { Text("QR Payload or Chunk") },
+                            label = { Text(stringResource(Res.string.label_qr_payload_chunk)) },
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }

@@ -116,27 +116,28 @@ class JsCameraManager : CameraManager {
      */
     override suspend fun captureImage(): ByteArray? =
         suspendCoroutine { continuation ->
-            try {
-                val canvas = document.createElement("canvas") as HTMLCanvasElement
-                canvas.width = videoElement.videoWidth
-                canvas.height = videoElement.videoHeight
-                val ctx = canvas.getContext("2d") as org.w3c.dom.CanvasRenderingContext2D
+            val result =
+                runCatching {
+                    val canvas = document.createElement("canvas") as HTMLCanvasElement
+                    canvas.width = videoElement.videoWidth
+                    canvas.height = videoElement.videoHeight
+                    val ctx = canvas.getContext("2d") as org.w3c.dom.CanvasRenderingContext2D
 
-                drawImageToCanvas(ctx, videoElement, canvas.width.toDouble(), canvas.height.toDouble())
+                    drawImageToCanvas(ctx, videoElement, canvas.width.toDouble(), canvas.height.toDouble())
 
-                val dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY)
-                val base64 = dataUrl.substringAfter("base64,")
+                    val dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY)
+                    val base64 = dataUrl.substringAfter("base64,")
 
-                val decoded = window.atob(base64)
-                val bytes = ByteArray(decoded.length)
-                for (i in 0 until decoded.length) {
-                    bytes[i] = decoded[i].code.toByte()
+                    val decoded = window.atob(base64)
+                    val bytes = ByteArray(decoded.length)
+                    for (i in 0 until decoded.length) {
+                        bytes[i] = decoded[i].code.toByte()
+                    }
+                    bytes
+                }.onFailure { e ->
+                    println(e.message)
                 }
-                continuation.resume(bytes)
-            } catch (e: IllegalStateException) {
-                println(e.message)
-                continuation.resume(null)
-            }
+            continuation.resume(result.getOrNull())
         }
 
     /**

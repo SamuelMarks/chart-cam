@@ -37,10 +37,10 @@ object FhirBundleOrchestrator {
             val cleanEncounterId = encounterId.removePrefix("Encounter/")
 
             val patient =
-                repository.getPatient(cleanPatientId)
+                repository.getPatientCatching(cleanPatientId).getOrNull()
                     ?: error("Patient not found for ID: $cleanPatientId")
             val encounter =
-                repository.getEncounter(cleanEncounterId)
+                repository.getEncounterCatching(cleanEncounterId).getOrNull()
                     ?: error("Encounter not found for ID: $cleanEncounterId")
 
             val observations = repository.getObservationsForEncounter(cleanEncounterId)
@@ -74,14 +74,13 @@ object FhirBundleOrchestrator {
      * @param bundle The source FHIR [Bundle] to unpack.
      * @return A [Result] enclosing the list of extracted [Resource] instances.
      */
-    fun unpackEncounterBundle(bundle: Bundle): Result<List<Resource>> =
-        runCatching {
-            val resources = bundle.entry.mapNotNull { it.resource }
-            if (resources.isEmpty()) {
-                error("Bundle contains no extractable resources.")
-            }
-            resources
+    fun unpackEncounterBundle(bundle: Bundle): Result<List<Resource>> {
+        val resources = bundle.entry.mapNotNull { it.resource }
+        if (resources.isEmpty()) {
+            return Result.failure(IllegalArgumentException("Bundle contains no extractable resources."))
         }
+        return Result.success(resources)
+    }
 
     /**
      * Atomically stores all extracted resources from a bundle into the local repository.
@@ -102,10 +101,12 @@ object FhirBundleOrchestrator {
         var count = 0
         for (res in resources) {
             val resType = resolveResourceTypeName(res)
-            val resId = res.id ?: UUID.randomUUID()
+            val rawId = res.id
+            val resId = if (rawId != null) rawId else UUID.randomUUID()
             val saveRes = repository.saveResource(resType, resId, res, isLocalChange)
-            if (saveRes.isFailure) {
-                error = saveRes.exceptionOrNull() ?: IllegalStateException("Save failed")
+            val saveEx = saveRes.exceptionOrNull()
+            if (saveEx != null) {
+                error = saveEx
                 break
             }
             count++
@@ -160,8 +161,9 @@ object FhirBundleOrchestrator {
         val type = urlStr.substringBefore('/')
         val id = urlStr.substringAfter('/')
         val delRes = repository.deleteResource(type, id, isLocalChange = true)
-        return if (delRes.isFailure) {
-            Result.failure(delRes.exceptionOrNull() ?: IllegalStateException("Delete failed"))
+        val delEx = delRes.exceptionOrNull()
+        return if (delEx != null) {
+            Result.failure(delEx)
         } else {
             Result.success(
                 Bundle.Entry(
@@ -196,10 +198,12 @@ object FhirBundleOrchestrator {
             res
                 ?: return Result.failure(IllegalStateException("Transaction entry missing resource"))
         val resType = resolveResourceTypeName(validRes)
-        val resId = validRes.id ?: UUID.randomUUID()
+        val rawId = validRes.id
+        val resId = if (rawId != null) rawId else UUID.randomUUID()
         val saveRes = repository.saveResource(resType, resId, validRes, isLocalChange = true)
-        return if (saveRes.isFailure) {
-            Result.failure(saveRes.exceptionOrNull() ?: IllegalStateException("Save failed"))
+        val saveEx = saveRes.exceptionOrNull()
+        return if (saveEx != null) {
+            Result.failure(saveEx)
         } else {
             val status = if (isPost) "201 Created" else "200 OK"
             Result.success(

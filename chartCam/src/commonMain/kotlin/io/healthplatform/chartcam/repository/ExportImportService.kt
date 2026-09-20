@@ -33,6 +33,7 @@ import io.healthplatform.chartcam.models.createFhirBinary
 import io.healthplatform.chartcam.models.mrn
 import io.healthplatform.chartcam.utils.CryptoService
 import io.healthplatform.chartcam.utils.UUID
+import io.healthplatform.chartcam.utils.decryptCatching
 import io.healthplatform.chartcam.utils.runSuspendCatching
 import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
@@ -67,8 +68,8 @@ open class ExportImportService(
         practitionerId: String? = null,
     ): Result<String> =
         runSuspendCatching {
-            require(isValidPassword(password)) {
-                "Encryption password must not be empty or weak (minimum 6 characters)."
+            if (!isValidPassword(password)) {
+                error("Encryption password must not be empty or weak (minimum 6 characters).")
             }
             val entries = mutableListOf<Bundle.Entry>()
             addBaseResources(entries)
@@ -85,9 +86,8 @@ open class ExportImportService(
                 )
 
             val jsonData =
-                io.healthplatform.chartcam.fhir.FhirJsonParser
-                    .encodeTypedResource(Bundle.serializer(), bundle)
-                    .getOrDefault("")
+                io.healthplatform.chartcam.fhir.FhirJsonParser.compactJson
+                    .encodeToString(Bundle.serializer(), bundle)
 
             cryptoService.encrypt(jsonData, password)
         }
@@ -403,15 +403,17 @@ open class ExportImportService(
         password: String,
     ): Result<ImportPreviewSummary> =
         runSuspendCatching {
-            require(isValidPassword(password)) {
-                "Decryption password must not be empty or weak (minimum 6 characters)."
+            if (!isValidPassword(password)) {
+                error("Decryption password must not be empty or weak (minimum 6 characters).")
             }
-            val jsonData = cryptoService.decrypt(encryptedData, password)
-            require(jsonData.isNotEmpty()) { "Decryption failed or data is empty." }
+            val jsonData = cryptoService.decryptCatching(encryptedData, password).getOrThrow()
+            if (jsonData.isEmpty()) {
+                error("Decryption failed or data is empty.")
+            }
             val decodeResult =
                 io.healthplatform.chartcam.fhir.FhirJsonParser
                     .decodeTypedResource(Bundle.serializer(), jsonData)
-            val bundle = decodeResult.getOrElse { return Result.failure(it) }
+            val bundle = decodeResult.getOrThrow()
 
             val resources = bundle.entry.mapNotNull { it.resource }
             val patients = resources.filterIsInstance<Patient>()
@@ -699,15 +701,17 @@ open class ExportImportService(
         resolutionMap: Map<String, ConflictResolutionStrategy> = emptyMap(),
     ): Result<Unit> =
         runSuspendCatching {
-            require(isValidPassword(password)) {
-                "Decryption password must not be empty or weak (minimum 6 characters)."
+            if (!isValidPassword(password)) {
+                error("Decryption password must not be empty or weak (minimum 6 characters).")
             }
-            val jsonData = cryptoService.decrypt(encryptedData, password)
-            require(jsonData.isNotEmpty()) { "Decryption failed or data is empty." }
+            val jsonData = cryptoService.decryptCatching(encryptedData, password).getOrThrow()
+            if (jsonData.isEmpty()) {
+                error("Decryption failed or data is empty.")
+            }
             val decodeResult =
                 io.healthplatform.chartcam.fhir.FhirJsonParser
                     .decodeTypedResource(Bundle.serializer(), jsonData)
-            val bundle = decodeResult.getOrElse { return Result.failure(it) }
+            val bundle = decodeResult.getOrThrow()
 
             val savedImageFiles = mutableListOf<String>()
             val importBatchResult =
@@ -732,8 +736,7 @@ open class ExportImportService(
                 for (savedFile in savedImageFiles) {
                     runCatching { fileStorage.deleteImage(savedFile) }
                 }
-                val msg = failureEx.message
-                error(if (msg != null && msg.isNotBlank()) msg else "Batch import failed.")
+                error(failureEx.message ?: "Batch import failed.")
             }
         }
 

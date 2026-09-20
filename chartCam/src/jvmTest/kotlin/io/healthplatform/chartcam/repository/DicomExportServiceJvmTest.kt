@@ -474,6 +474,16 @@ class DicomExportServiceJvmTest {
             assertTrue(populatedZip.size > 100)
             val zipStr = populatedZip.decodeToString()
             assertTrue(zipStr.contains("photo_doc-1.dcm"))
+
+            val failingPhotoService =
+                object : DicomExportService(db, fileStorage) {
+                    override suspend fun exportPhotoAsDicom(
+                        documentRefId: kotlin.String,
+                        anonymize: Boolean,
+                    ): Result<ByteArray?> = Result.failure(RuntimeException("Simulated photo failure"))
+                }
+            val partialZip = failingPhotoService.exportPatientDicomArchive("pat-1").getOrThrow()
+            assertTrue(partialZip.size >= 22)
         }
 
     /**

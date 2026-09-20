@@ -5,7 +5,10 @@
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
@@ -14,7 +17,6 @@ import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
-import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 import kotlin.test.Test
@@ -33,6 +35,7 @@ class QuestionnaireListScreenJvmTest {
      */
     @Before
     fun setup() {
+        setAppLanguage("en")
         driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         ChartCamDatabase.Schema.synchronous().create(driver)
         db = ChartCamDatabase(driver)
@@ -48,26 +51,22 @@ class QuestionnaireListScreenJvmTest {
     }
 
     /**
-     * Tests QuestionnaireListScreen on JVM.
+     * Tests QuestionnaireListScreen list rendering and Scan QR dialog interactions on JVM.
      */
     @OptIn(ExperimentalTestApi::class)
     @Test
-    fun testQuestionnaireListScreen() =
+    fun testQuestionnaireListScreen() {
+        val mockQ =
+            Questionnaire
+                .Builder(status = Enumeration(value = PublicationStatus.Active))
+                .apply {
+                    id = "q-123"
+                    title = FhirString(value = "Custom Test Form").toBuilder()
+                }.build()
+        repo.saveQuestionnaire(mockQ)
+
         runComposeUiTest {
-            val mockQ =
-                Questionnaire
-                    .Builder(status = Enumeration(value = PublicationStatus.Active))
-                    .apply {
-                        id = "q-123"
-                        title = FhirString.Builder().apply { value = "My Form" }
-                    }.build()
-
-            // This is async, so we'd better run it in runTest? But runComposeUiTest allows coroutines.
-            // For simplicity, we can block or run runTest wrapper. Actually, we can just save it inside runComposeUiTest.
-            runTest {
-                repo.saveQuestionnaire(mockQ)
-            }
-
+            setAppLanguage("en")
             setContent {
                 QuestionnaireListScreen(
                     questionnaireRepository = repo,
@@ -76,7 +75,23 @@ class QuestionnaireListScreenJvmTest {
                 )
             }
 
-            onNodeWithText("My Form").assertExists()
-            // onNodeWithText("ID: q-123").assertExists()
+            waitForIdle()
+            onNodeWithText("Custom Test Form", useUnmergedTree = true).assertIsDisplayed()
+
+            // Open Import options sheet
+            onNodeWithContentDescription("Import Questionnaire", useUnmergedTree = true).performClick()
+            waitForIdle()
+
+            // Click Scan QR Code action
+            onNodeWithText("Scan QR Code", useUnmergedTree = true).performClick()
+            waitForIdle()
+
+            // Verify dialog heading and localized chunk label
+            onNodeWithText("QR Payload or Chunk", useUnmergedTree = true).assertIsDisplayed()
+
+            // Dismiss dialog
+            onNodeWithText("Cancel", useUnmergedTree = true).performClick()
+            waitForIdle()
         }
+    }
 }

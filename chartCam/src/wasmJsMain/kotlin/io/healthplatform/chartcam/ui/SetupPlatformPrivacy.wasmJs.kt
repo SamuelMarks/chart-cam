@@ -2,6 +2,8 @@
  * @file SetupPlatformPrivacy.wasmJs.kt
  * Contains declarations for SetupPlatformPrivacy.wasmJs.kt.
  */
+@file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.runtime.Composable

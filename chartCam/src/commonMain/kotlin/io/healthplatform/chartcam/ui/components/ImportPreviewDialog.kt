@@ -23,10 +23,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.action_confirm_import
+import chartcam.chartcam.generated.resources.action_deselect_all
+import chartcam.chartcam.generated.resources.action_select_all
+import chartcam.chartcam.generated.resources.cancel
+import chartcam.chartcam.generated.resources.label_data_categories_to_import
+import chartcam.chartcam.generated.resources.label_resolution_strategy
+import chartcam.chartcam.generated.resources.patient_import_conflict_format
+import chartcam.chartcam.generated.resources.patients_to_ingest_count_format
+import chartcam.chartcam.generated.resources.title_import_review_merge
+import chartcam.chartcam.generated.resources.unknown_patient
 import io.healthplatform.chartcam.models.ConflictResolutionStrategy
 import io.healthplatform.chartcam.models.ConflictType
 import io.healthplatform.chartcam.models.ImportCategory
@@ -35,9 +50,14 @@ import io.healthplatform.chartcam.models.ImportPreviewSummary
 import io.healthplatform.chartcam.models.familyName
 import io.healthplatform.chartcam.models.givenName
 import io.healthplatform.chartcam.models.mrn
+import io.healthplatform.chartcam.ui.theme.AppSpacing
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Interactive dialog displaying import summary, category toggles, batch patient selection, and conflict resolutions.
+ *
+ * **State & Side Effects:**
+ * Hoists user selection actions through callback parameters. Modifiers apply to the root dialog elements.
  *
  * @param preview The staged import metadata and candidate patients.
  * @param filterOptions Current category filter configuration.
@@ -63,32 +83,45 @@ fun ImportPreviewDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
+    val cancelText = stringResource(Res.string.cancel)
+    val confirmText = stringResource(Res.string.action_confirm_import)
+    val titleText = stringResource(Res.string.title_import_review_merge)
+    val categoriesLabel = stringResource(Res.string.label_data_categories_to_import)
+    val resolutionLabel = stringResource(Res.string.label_resolution_strategy)
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Import Review & Merge",
+                text = titleText,
                 style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.semantics { heading() },
             )
         },
         text = {
             LazyColumn(
                 modifier = Modifier.fillMaxWidth().heightIn(max = 480.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
             ) {
                 item {
                     Text(
-                        text = "Data Categories to Import:",
+                        text = categoriesLabel,
                         style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.semantics { heading() },
                     )
                     ImportCategory.entries.forEach { category ->
                         val isChecked = filterOptions.isCategoryEnabled(category)
+                        val categoryName = category.name.replace('_', ' ')
                         Row(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .clickable { onToggleCategory(category, !isChecked) }
-                                    .padding(vertical = 4.dp),
+                                    .minimumInteractiveComponentSize()
+                                    .clickable(
+                                        role = Role.Checkbox,
+                                        onClickLabel = categoryName,
+                                    ) { onToggleCategory(category, !isChecked) }
+                                    .padding(vertical = AppSpacing.xs),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Checkbox(
@@ -96,7 +129,7 @@ fun ImportPreviewDialog(
                                 onCheckedChange = { onToggleCategory(category, it) },
                             )
                             Text(
-                                text = category.name.replace('_', ' '),
+                                text = categoryName,
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
@@ -104,19 +137,32 @@ fun ImportPreviewDialog(
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(AppSpacing.sm))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "Patients to Ingest (${selectedPatientIds.size}/${preview.stagedPatients.size}):",
+                            text =
+                                stringResource(
+                                    Res.string.patients_to_ingest_count_format,
+                                    selectedPatientIds.size,
+                                    preview.stagedPatients.size,
+                                ),
                             style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.semantics { heading() },
                         )
                         val allSelected = selectedPatientIds.size == preview.stagedPatients.size
-                        TextButton(onClick = { onToggleSelectAll(!allSelected) }) {
-                            Text(if (allSelected) "Deselect All" else "Select All")
+                        val toggleAllText =
+                            stringResource(
+                                if (allSelected) Res.string.action_deselect_all else Res.string.action_select_all,
+                            )
+                        TextButton(
+                            onClick = { onToggleSelectAll(!allSelected) },
+                            modifier = Modifier.minimumInteractiveComponentSize(),
+                        ) {
+                            Text(toggleAllText)
                         }
                     }
                 }
@@ -124,23 +170,28 @@ fun ImportPreviewDialog(
                 items(preview.stagedPatients) { stagingItem ->
                     val pid = stagingItem.incomingPatient.id ?: ""
                     val isSelected = selectedPatientIds.contains(pid)
+                    val unknownText = stringResource(Res.string.unknown_patient)
                     val patientName =
                         stagingItem.incomingPatient.name.firstOrNull()?.let {
-                            "${it.givenName} ${it.familyName}"
-                        } ?: "Unknown Patient"
+                            "${it.givenName} ${it.familyName}".trim()
+                        } ?: unknownText
                     val currentResolution = conflictResolutions[pid] ?: stagingItem.resolutionStrategy
 
                     Column(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 4.dp),
+                                .padding(vertical = AppSpacing.xs),
                     ) {
                         Row(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .clickable { onTogglePatient(pid, !isSelected) },
+                                    .minimumInteractiveComponentSize()
+                                    .clickable(
+                                        role = Role.Checkbox,
+                                        onClickLabel = patientName,
+                                    ) { onTogglePatient(pid, !isSelected) },
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Checkbox(
@@ -154,8 +205,11 @@ fun ImportPreviewDialog(
                                 )
                                 Text(
                                     text =
-                                        "Visits: ${stagingItem.encounterCount} | " +
-                                            "Conflict: ${stagingItem.conflictType.name}",
+                                        stringResource(
+                                            Res.string.patient_import_conflict_format,
+                                            stagingItem.encounterCount,
+                                            stagingItem.conflictType.name,
+                                        ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color =
                                         if (stagingItem.conflictType == ConflictType.EXACT_MATCH) {
@@ -168,17 +222,23 @@ fun ImportPreviewDialog(
                         }
 
                         if (isSelected && stagingItem.conflictType != ConflictType.EXACT_MATCH) {
-                            Column(modifier = Modifier.padding(start = 32.dp, top = 4.dp)) {
+                            Column(modifier = Modifier.padding(start = AppSpacing.xl, top = AppSpacing.xs)) {
                                 Text(
-                                    text = "Resolution Strategy:",
+                                    text = resolutionLabel,
                                     style = MaterialTheme.typography.labelMedium,
+                                    modifier = Modifier.semantics { heading() },
                                 )
                                 ConflictResolutionStrategy.entries.forEach { strategy ->
+                                    val strategyName = strategy.name.replace('_', ' ')
                                     Row(
                                         modifier =
                                             Modifier
                                                 .fillMaxWidth()
-                                                .clickable { onSetResolution(pid, strategy) },
+                                                .minimumInteractiveComponentSize()
+                                                .clickable(
+                                                    role = Role.RadioButton,
+                                                    onClickLabel = strategyName,
+                                                ) { onSetResolution(pid, strategy) },
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
                                         RadioButton(
@@ -186,7 +246,7 @@ fun ImportPreviewDialog(
                                             onClick = { onSetResolution(pid, strategy) },
                                         )
                                         Text(
-                                            text = strategy.name.replace('_', ' '),
+                                            text = strategyName,
                                             style = MaterialTheme.typography.bodySmall,
                                         )
                                     }
@@ -198,13 +258,19 @@ fun ImportPreviewDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onConfirm) {
-                Text("Confirm Import")
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.minimumInteractiveComponentSize(),
+            ) {
+                Text(confirmText)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.minimumInteractiveComponentSize(),
+            ) {
+                Text(cancelText)
             }
         },
     )

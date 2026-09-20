@@ -370,7 +370,9 @@ object FhirToDicomMapper {
         anonymize: Boolean = false,
     ): Result<ByteArray> =
         runCatching {
-            require(imageBytes.isNotEmpty()) { "Image bytes must not be empty" }
+            if (imageBytes.isEmpty()) {
+                error("Image bytes must not be empty")
+            }
             val elements = buildCommonElements(patient, encounter, practitioner, anonymize)
 
             val encId = encounter?.id ?: "ENC_DEFAULT"

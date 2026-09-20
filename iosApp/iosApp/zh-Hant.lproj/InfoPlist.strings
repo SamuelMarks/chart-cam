@@ -1,2 +1,3 @@
 /* Traditional Chinese InfoPlist.strings */
-"NSCameraUsageDescription" = "ChartCam 需要相機權限以拍攝臨床相片。";
+"NSCameraUsageDescription" = "ChartCam 需要相機權限以拍攝臨床照片。";
+"NSMicrophoneUsageDescription" = "ChartCam 需要麥克風權限以錄製臨床語音備忘錄。";

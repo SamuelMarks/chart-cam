@@ -7,10 +7,12 @@ package io.healthplatform.chartcam.ui.components
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.media.DefaultAudioRecorderManager
+import io.healthplatform.chartcam.ui.setAppLanguage
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -26,6 +28,7 @@ class AudioMemoControlJvmTest {
     @Test
     fun testAudioMemoControlLifecycle() =
         runComposeUiTest {
+            setAppLanguage("en")
             val storage = createFileStorage()
             val recorder = DefaultAudioRecorderManager(storage)
             var recordedPath: String? = null
@@ -39,8 +42,9 @@ class AudioMemoControlJvmTest {
                 )
             }
 
-            // Verify initial UI elements
+            // Verify initial UI elements and localized title
             onNodeWithTag("AudioMemoControlCard").assertIsDisplayed()
+            onNodeWithText("Clinical Voice Memo", useUnmergedTree = true).assertIsDisplayed()
             onNodeWithTag("StartAudioRecordButton").assertIsDisplayed()
             onNodeWithTag("AudioDurationCounter").assertIsDisplayed()
 
@@ -56,6 +60,20 @@ class AudioMemoControlJvmTest {
 
             // Verify callback invoked with saved path
             assertNotNull(recordedPath)
+
+            // Verify review controls: Play and Redo
+            onNodeWithTag("PlayAudioPreviewButton").assertIsDisplayed()
+            onNodeWithTag("DeleteAudioRecordButton").assertIsDisplayed()
+
+            // Click play / pause toggle
+            onNodeWithTag("PlayAudioPreviewButton").performClick()
+            onNodeWithText("Pause", useUnmergedTree = true).assertIsDisplayed()
+            onNodeWithTag("PlayAudioPreviewButton").performClick()
+            onNodeWithText("Play", useUnmergedTree = true).assertIsDisplayed()
+
+            // Click redo to reset back to initial record state
+            onNodeWithTag("DeleteAudioRecordButton").performClick()
+            onNodeWithTag("StartAudioRecordButton").assertIsDisplayed()
 
             // Verify close button triggers dismissal
             onNodeWithTag("CloseAudioMemoButton").performClick()

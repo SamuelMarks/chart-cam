@@ -76,7 +76,7 @@ actual fun CameraPreview(
         LaunchedEffect(cameraManager) {
             val video = cameraManager.videoElement
             while (true) {
-                try {
+                runCatching {
                     // 2 means HAVE_CURRENT_DATA or higher
                     if (video.readyState.toInt() >= 2) {
                         val b64 = getBase64ImageFast(video)
@@ -87,7 +87,7 @@ actual fun CameraPreview(
                             }
                         }
                     }
-                } catch (e: IllegalStateException) {
+                }.onFailure { e ->
                     println(e.message)
                     // Ignore errors during frame capture
                 }

@@ -72,7 +72,7 @@ class MediaRecoveryExpansionTest {
             bytes: ByteArray,
         ): String {
             if (shouldThrowDiskFull) {
-                throw IllegalStateException("No space left on device")
+                throw IllegalStateException("No space left on device") // allow-exception
             }
             savedFiles[fileName] = bytes
             return "/storage/$fileName"

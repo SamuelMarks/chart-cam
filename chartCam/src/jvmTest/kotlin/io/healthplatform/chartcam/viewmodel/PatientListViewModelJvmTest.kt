@@ -712,10 +712,20 @@ class MockFhirRepository(
         showAll: Boolean,
         practitionerId: String?,
     ): List<Patient> {
-        if (shouldThrow) throw IllegalStateException("DB Error")
         lastShowAll = showAll
-        return patientsToReturn
+        return if (shouldThrow) emptyList() else patientsToReturn
     }
+
+    override suspend fun getAllPatientsCatching(
+        showAll: Boolean,
+        practitionerId: String?,
+    ): Result<List<Patient>> =
+        if (shouldThrow) {
+            Result.failure(IllegalStateException("DB Error"))
+        } else {
+            lastShowAll = showAll
+            Result.success(patientsToReturn)
+        }
 
     /**
      * Override searchPatients.
@@ -729,11 +739,23 @@ class MockFhirRepository(
         showAll: Boolean,
         practitionerId: String?,
     ): List<Patient> {
-        if (shouldThrow) throw IllegalStateException("DB Error")
         lastSearchQuery = query
         lastShowAll = showAll
-        return patientsToReturn
+        return if (shouldThrow) emptyList() else patientsToReturn
     }
+
+    override suspend fun searchPatientsCatching(
+        query: String,
+        showAll: Boolean,
+        practitionerId: String?,
+    ): Result<List<Patient>> =
+        if (shouldThrow) {
+            Result.failure(IllegalStateException("DB Error"))
+        } else {
+            lastSearchQuery = query
+            lastShowAll = showAll
+            Result.success(patientsToReturn)
+        }
 
     /**
      * Override savePatient.
@@ -770,10 +792,17 @@ class MockFhirRepository(
     var deletedEncounterId: String? = null
     var shouldThrowOnGetEncounters = false
 
-    override suspend fun getEncountersForPatient(patientId: String): List<dev.ohs.fhir.model.r4.Encounter> {
-        if (shouldThrowOnGetEncounters) throw IllegalStateException("Get encounters error") // allow-exception
-        return encountersToReturn
-    }
+    override suspend fun getEncountersForPatient(patientId: String): List<dev.ohs.fhir.model.r4.Encounter> =
+        if (shouldThrowOnGetEncounters) emptyList() else encountersToReturn
+
+    override suspend fun getEncountersForPatientCatching(
+        patientId: String,
+    ): Result<List<dev.ohs.fhir.model.r4.Encounter>> =
+        if (shouldThrowOnGetEncounters) {
+            Result.failure(IllegalStateException("Get encounters error"))
+        } else {
+            Result.success(encountersToReturn)
+        }
 
     override suspend fun deleteEncounter(
         id: String,

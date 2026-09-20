@@ -153,6 +153,19 @@ class QuestionnaireRepositoryJvmTest {
         }
 
     /**
+     * Tests loading corrupted template fallback branch.
+     */
+    @Test
+    fun testLoadCorruptedTemplateFallback() =
+        runTest {
+            val repo = QuestionnaireRepository(null)
+            repo.loadTemplate("font/noto_sans_jp.ttf", "corrupted-template")
+            val corrupted = repo.getQuestionnaire("corrupted-template")
+            assertNotNull(corrupted)
+            assertEquals(PublicationStatus.Active, corrupted.status.value)
+        }
+
+    /**
      * Tests creating a questionnaire.
      */
     @Test

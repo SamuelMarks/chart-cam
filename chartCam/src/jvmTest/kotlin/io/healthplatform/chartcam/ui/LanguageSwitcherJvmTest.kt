@@ -19,7 +19,7 @@ class LanguageSwitcherJvmTest {
     fun testChangeAppLanguage() {
         val originalLocale = Locale.getDefault()
 
-        try {
+        runCatching {
             setAppLanguage("ja")
             assertEquals("ja", currentLanguageState.value)
             assertEquals("ja", Locale.getDefault().language)
@@ -38,9 +38,8 @@ class LanguageSwitcherJvmTest {
             assertEquals("zh-TW", currentLanguageState.value)
             assertEquals("zh", Locale.getDefault().language)
             assertEquals("TW", Locale.getDefault().country)
-        } finally {
-            Locale.setDefault(originalLocale)
-            currentLanguageState.value = originalLocale.language
         }
+        Locale.setDefault(originalLocale)
+        currentLanguageState.value = originalLocale.language
     }
 }

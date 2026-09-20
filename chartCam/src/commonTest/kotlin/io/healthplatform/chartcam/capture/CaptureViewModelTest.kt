@@ -45,7 +45,7 @@ class CaptureViewModelTest {
          * @return Mock byte array or null.
          */
         override suspend fun captureImage(): ByteArray? {
-            if (exceptionToThrow != null) throw exceptionToThrow!!
+            if (exceptionToThrow != null) throw exceptionToThrow!! // allow-exception
             return if (simulateFailure) null else ByteArray(10)
         }
 
@@ -86,7 +86,7 @@ class CaptureViewModelTest {
             fileName: String,
             bytes: ByteArray,
         ): String {
-            if (simulateFailure) throw IllegalStateException("Storage full")
+            if (simulateFailure) throw IllegalStateException("Storage full") // allow-exception
             files[fileName] = bytes
             return "path/to/$fileName"
         }

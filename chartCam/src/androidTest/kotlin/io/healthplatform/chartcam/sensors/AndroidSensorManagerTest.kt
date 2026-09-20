@@ -55,11 +55,11 @@ class AndroidSensorManagerTest {
      * Creating a SensorEvent requires reflection as its constructor is package-private.
      */
     @Test
-    fun testSensorChanged() =
+    fun testSensorChanged() {
         runBlocking {
             val manager = AndroidSensorManager(context)
 
-            try {
+            runCatching {
                 val constructor = SensorEvent::class.java.getDeclaredConstructors().first { it.parameterCount == 1 }
                 constructor.isAccessible = true
                 val event = constructor.newInstance(3) as SensorEvent
@@ -68,8 +68,7 @@ class AndroidSensorManagerTest {
                 // We just verify it doesn't crash on null
                 manager.onSensorChanged(null)
                 manager.onSensorChanged(event)
-            } catch (e: Exception) {
-                // Ignored, reflection can be flaky on different Android versions.
             }
         }
+    }
 }

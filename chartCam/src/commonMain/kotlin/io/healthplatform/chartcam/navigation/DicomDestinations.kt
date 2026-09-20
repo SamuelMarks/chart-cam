@@ -24,12 +24,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cd_back
+import chartcam.chartcam.generated.resources.error_dicom_parse_failed_format
+import chartcam.chartcam.generated.resources.loading
+import chartcam.chartcam.generated.resources.title_dicom_inspector
 import io.healthplatform.chartcam.dicom.DicomDataset
 import io.healthplatform.chartcam.dicom.DicomReader
 import io.healthplatform.chartcam.ui.components.DicomViewerComponent
@@ -58,33 +66,42 @@ fun NavGraphBuilder.dicomViewerDestination(
 /**
  * Screen presenting local DICOM dataset inspection and image/PDF viewing.
  *
+ * **State & Side Effects:**
+ * Asynchronously loads local DICOM byte payload from file storage and decodes via [DicomReader].
+ *
  * @param filePath Path to the DICOM file.
  * @param deps Application dependencies.
  * @param onBack Callback when back button is pressed.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DicomViewerScreen(
+internal fun DicomViewerScreen(
     filePath: String,
     deps: AppDependencies,
     onBack: () -> Unit,
 ) {
-    var dataset by remember { mutableStateOf<DicomDataset?>(null) }
+    var datasetResult by remember { mutableStateOf<Result<DicomDataset>?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    val loadingText = stringResource(Res.string.loading)
 
     LaunchedEffect(filePath) {
         val storage =
             deps.fileStorage ?: io.healthplatform.chartcam.files
                 .createFileStorage()
         val bytes = storage.readImage(filePath)
-        dataset = DicomReader.read(bytes).getOrNull()
+        datasetResult = DicomReader.read(bytes)
         isLoading = false
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("DICOM Inspector") },
+                title = {
+                    Text(
+                        text = stringResource(Res.string.title_dicom_inspector),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -100,11 +117,34 @@ private fun DicomViewerScreen(
             modifier = Modifier.fillMaxSize().padding(innerPadding),
             contentAlignment = Alignment.Center,
         ) {
-            val currentData = dataset
+            val result = datasetResult
             when {
-                isLoading -> CircularProgressIndicator()
-                currentData != null -> DicomViewerComponent(dataset = currentData)
-                else -> Text("Failed to parse DICOM file: $filePath")
+                isLoading -> {
+                    CircularProgressIndicator(
+                        modifier =
+                            Modifier.semantics {
+                                contentDescription = loadingText
+                                liveRegion = LiveRegionMode.Polite
+                            },
+                    )
+                }
+                result != null && result.isSuccess -> {
+                    val dataset = result.getOrNull()
+                    if (dataset != null) {
+                        DicomViewerComponent(dataset = dataset)
+                    } else {
+                        Text(
+                            text = stringResource(Res.string.error_dicom_parse_failed_format, filePath),
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        )
+                    }
+                }
+                else -> {
+                    Text(
+                        text = stringResource(Res.string.error_dicom_parse_failed_format, filePath),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
             }
         }
     }

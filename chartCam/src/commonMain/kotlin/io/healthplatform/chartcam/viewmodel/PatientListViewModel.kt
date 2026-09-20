@@ -23,7 +23,6 @@ import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.utils.UUID
-import io.healthplatform.chartcam.utils.runSuspendCatching
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -484,13 +483,12 @@ class PatientListViewModel(
 
                 // Delete all encounters associated with this practitioner,
                 // and delete patients solely if no other practitioner holds encounters on that patient
-                val allPatients = repository.getAllPatients(showAll = false, practitionerId = id)
+                val allPatients =
+                    repository.getAllPatientsCatching(showAll = false, practitionerId = id).getOrDefault(emptyList())
                 allPatients.forEach { patient ->
                     val pid = patient.id ?: return@forEach
                     val encounters =
-                        runSuspendCatching {
-                            repository.getEncountersForPatient(pid)
-                        }.getOrDefault(emptyList())
+                        repository.getEncountersForPatientCatching(pid).getOrDefault(emptyList())
                     val otherPractitionerEncounters =
                         encounters.filter { enc ->
                             enc.participant.any { p ->

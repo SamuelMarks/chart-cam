@@ -146,9 +146,9 @@ actual class CryptoService actual constructor() {
         password: String,
     ): String =
         withContext(Dispatchers.Default) {
-            try {
+            runCatching {
                 val payload = Base64.decode(base64Data)
-                if (payload.size < SALT_SIZE_BYTES + IV_SIZE_BYTES) return@withContext ""
+                if (payload.size < SALT_SIZE_BYTES + IV_SIZE_BYTES) return@runCatching ""
 
                 val salt = payload.copyOfRange(0, SALT_SIZE_BYTES)
                 val ivAndCiphertext = payload.copyOfRange(SALT_SIZE_BYTES, payload.size)
@@ -157,12 +157,8 @@ actual class CryptoService actual constructor() {
                 val plaintext = decryptAesGcm(ivAndCiphertext, key)
 
                 plaintext.decodeToString()
-            } catch (e: IllegalArgumentException) {
-                println("Decryption failed: ${e.message}")
-                ""
-            } catch (e: java.security.GeneralSecurityException) {
-                println("Security failure: ${e.message}")
-                ""
-            }
+            }.onFailure { e ->
+                println("Decryption or security failure: ${e.message}")
+            }.getOrDefault("")
         }
 }

@@ -32,9 +32,8 @@ class RepositoryCoverageTest {
             repo.getProvenancesForEncounter("enc1")
             repo.getAllPatients(false, null)
             repo.getAllPatients(false, "prac1")
-            try {
+            runCatching {
                 repo.updateEncounterStatus("enc1", "status", "notes")
-            } catch (e: Exception) {
             }
             repo.getAllEncounters()
             repo.saveDevice(Device.Builder().apply { id = "dev1" }.build())

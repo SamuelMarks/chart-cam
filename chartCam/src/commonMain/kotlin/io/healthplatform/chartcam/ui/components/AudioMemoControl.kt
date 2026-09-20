@@ -37,18 +37,38 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.action_pause
+import chartcam.chartcam.generated.resources.action_play
+import chartcam.chartcam.generated.resources.action_record
+import chartcam.chartcam.generated.resources.action_redo
+import chartcam.chartcam.generated.resources.action_stop_and_save
+import chartcam.chartcam.generated.resources.audio_recording_duration_format
+import chartcam.chartcam.generated.resources.cd_close_audio_memo
+import chartcam.chartcam.generated.resources.cd_pause_audio_preview
+import chartcam.chartcam.generated.resources.cd_play_audio_preview
+import chartcam.chartcam.generated.resources.cd_redo_voice_recording
+import chartcam.chartcam.generated.resources.cd_start_voice_recording
+import chartcam.chartcam.generated.resources.cd_stop_voice_recording
+import chartcam.chartcam.generated.resources.title_clinical_voice_memo
 import io.healthplatform.chartcam.media.AudioRecorderManager
 import io.healthplatform.chartcam.ui.theme.AppSpacing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Clock
 
 /**
  * UI Component for recording and previewing clinical voice memos.
+ *
+ * **State & Side Effects:**
+ * Interacts with [AudioRecorderManager] via coroutines, managing internal recording state
+ * and duration timer side-effects.
  *
  * @param recorder The audio recorder manager.
  * @param onMemoRecorded Callback invoked with the recorded file path when complete.
@@ -82,6 +102,10 @@ fun AudioMemoControl(
     val seconds = durationSeconds % 60
     val timeFormatted =
         "${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
+    val durationA11yText = stringResource(Res.string.audio_recording_duration_format, timeFormatted)
+    val startVoiceCd = stringResource(Res.string.cd_start_voice_recording)
+    val stopVoiceCd = stringResource(Res.string.cd_stop_voice_recording)
+    val redoVoiceCd = stringResource(Res.string.cd_redo_voice_recording)
 
     ElevatedCard(
         modifier =
@@ -100,8 +124,9 @@ fun AudioMemoControl(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Clinical Voice Memo",
+                    text = stringResource(Res.string.title_clinical_voice_memo),
                     style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.semantics { heading() },
                 )
                 IconButton(
                     onClick = onDismiss,
@@ -109,7 +134,7 @@ fun AudioMemoControl(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Close Audio Memo",
+                        contentDescription = stringResource(Res.string.cd_close_audio_memo),
                     )
                 }
             }
@@ -124,7 +149,7 @@ fun AudioMemoControl(
                         .testTag("AudioDurationCounter")
                         .semantics {
                             liveRegion = LiveRegionMode.Polite
-                            contentDescription = "Recording duration: $timeFormatted"
+                            contentDescription = durationA11yText
                         },
             )
 
@@ -137,8 +162,7 @@ fun AudioMemoControl(
                     OutlinedButton(
                         onClick = {
                             scope.launch {
-                                val result = recorder.startRecording()
-                                if (result.isSuccess) {
+                                recorder.startRecording().onSuccess {
                                     isRecording = true
                                 }
                             }
@@ -148,7 +172,7 @@ fun AudioMemoControl(
                                 .minimumInteractiveComponentSize()
                                 .testTag("StartAudioRecordButton")
                                 .semantics {
-                                    contentDescription = "Start Voice Memo Recording"
+                                    contentDescription = startVoiceCd
                                 },
                     ) {
                         Icon(
@@ -157,22 +181,22 @@ fun AudioMemoControl(
                             modifier = Modifier.size(20.dp),
                         )
                         Spacer(modifier = Modifier.width(AppSpacing.xs))
-                        Text("Record")
+                        Text(stringResource(Res.string.action_record))
                     }
                 } else if (isRecording) {
                     OutlinedButton(
                         onClick = {
                             scope.launch {
                                 val fileName = "voice_memo_${Clock.System.now().toEpochMilliseconds()}.m4a"
-                                val result = recorder.stopRecording(fileName)
-                                isRecording = false
-                                if (result.isSuccess) {
-                                    val path = result.getOrNull()
-                                    recordedFilePath = path
-                                    if (path != null) {
+                                recorder
+                                    .stopRecording(fileName)
+                                    .onSuccess { path ->
+                                        isRecording = false
+                                        recordedFilePath = path
                                         onMemoRecorded(path)
+                                    }.onFailure {
+                                        isRecording = false
                                     }
-                                }
                             }
                         },
                         modifier =
@@ -180,7 +204,7 @@ fun AudioMemoControl(
                                 .minimumInteractiveComponentSize()
                                 .testTag("StopAudioRecordButton")
                                 .semantics {
-                                    contentDescription = "Stop Voice Memo Recording"
+                                    contentDescription = stopVoiceCd
                                 },
                     ) {
                         Icon(
@@ -190,10 +214,22 @@ fun AudioMemoControl(
                             modifier = Modifier.size(20.dp),
                         )
                         Spacer(modifier = Modifier.width(AppSpacing.xs))
-                        Text("Stop & Save")
+                        Text(stringResource(Res.string.action_stop_and_save))
                     }
                 } else {
                     Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
+                        val previewActionText =
+                            stringResource(
+                                if (isPlayingPreview) Res.string.action_pause else Res.string.action_play,
+                            )
+                        val previewActionCd =
+                            stringResource(
+                                if (isPlayingPreview) {
+                                    Res.string.cd_pause_audio_preview
+                                } else {
+                                    Res.string.cd_play_audio_preview
+                                },
+                            )
                         Button(
                             onClick = {
                                 isPlayingPreview = !isPlayingPreview
@@ -203,7 +239,7 @@ fun AudioMemoControl(
                                     .minimumInteractiveComponentSize()
                                     .testTag("PlayAudioPreviewButton")
                                     .semantics {
-                                        contentDescription = if (isPlayingPreview) "Pause Preview" else "Play Preview"
+                                        contentDescription = previewActionCd
                                     },
                         ) {
                             Icon(
@@ -212,7 +248,7 @@ fun AudioMemoControl(
                                 modifier = Modifier.size(20.dp),
                             )
                             Spacer(modifier = Modifier.width(AppSpacing.xs))
-                            Text(if (isPlayingPreview) "Pause" else "Play")
+                            Text(previewActionText)
                         }
 
                         OutlinedButton(
@@ -226,7 +262,7 @@ fun AudioMemoControl(
                                     .minimumInteractiveComponentSize()
                                     .testTag("DeleteAudioRecordButton")
                                     .semantics {
-                                        contentDescription = "Delete and Redo Recording"
+                                        contentDescription = redoVoiceCd
                                     },
                         ) {
                             Icon(
@@ -235,7 +271,7 @@ fun AudioMemoControl(
                                 modifier = Modifier.size(20.dp),
                             )
                             Spacer(modifier = Modifier.width(AppSpacing.xs))
-                            Text("Redo")
+                            Text(stringResource(Res.string.action_redo))
                         }
                     }
                 }

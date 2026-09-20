@@ -142,9 +142,9 @@ class IOSCameraManager : CameraManager {
 
             activeDelegate = delegate
 
-            try {
+            runCatching {
                 photoOutput.capturePhotoWithSettings(settings, delegate)
-            } catch (e: IllegalStateException) {
+            }.onFailure { e ->
                 println(e.message)
                 activeDelegate = null
                 continuation.resume(null)

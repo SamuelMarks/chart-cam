@@ -2,6 +2,8 @@
  * @file SensorManager.wasmJs.kt
  * Provides the WebAssembly (WasmJs) specific implementation of [SensorManager].
  */
+@file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+
 package io.healthplatform.chartcam.sensors
 
 import androidx.compose.runtime.Composable

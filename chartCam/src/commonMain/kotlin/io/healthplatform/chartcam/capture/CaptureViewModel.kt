@@ -10,11 +10,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.error_camera_capture_failed
-import chartcam.chartcam.generated.resources.error_capture_empty_image
 import chartcam.chartcam.generated.resources.error_capture_save_failed
 import io.healthplatform.chartcam.camera.CameraManager
+import io.healthplatform.chartcam.camera.captureImageCatching
 import io.healthplatform.chartcam.files.FileStorage
-import io.healthplatform.chartcam.utils.runSuspendCatching
+import io.healthplatform.chartcam.files.saveImageCatching
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -92,10 +92,9 @@ class CaptureViewModel(
         _uiState.update { it.copy(isCapturing = true) }
 
         viewModelScope.launch {
-            runSuspendCatching {
-                cameraManager.captureImage()
-            }.onSuccess { bytes ->
-                if (bytes != null && bytes.isNotEmpty()) {
+            cameraManager
+                .captureImageCatching()
+                .onSuccess { bytes ->
                     _uiState.update {
                         it.copy(
                             isCapturing = false,
@@ -105,28 +104,18 @@ class CaptureViewModel(
                             errorMessageResource = null,
                         )
                     }
-                } else {
+                }.onFailure { e ->
+                    println("Capture error: ${e.message}")
+                    val detail = e.message ?: "Unknown error"
                     _uiState.update {
                         it.copy(
                             isCapturing = false,
-                            error = CaptureError.EmptyImage,
-                            errorMessage = "Captured image is empty or was interrupted.",
-                            errorMessageResource = Res.string.error_capture_empty_image,
+                            error = CaptureError.CameraFailed(detail),
+                            errorMessage = "Camera capture failed: $detail",
+                            errorMessageResource = Res.string.error_camera_capture_failed,
                         )
                     }
                 }
-            }.onFailure { e ->
-                println("Capture error: ${e.message}")
-                val detail = e.message ?: "Unknown error"
-                _uiState.update {
-                    it.copy(
-                        isCapturing = false,
-                        error = CaptureError.CameraFailed(detail),
-                        errorMessage = "Camera capture failed: $detail",
-                        errorMessageResource = Res.string.error_camera_capture_failed,
-                    )
-                }
-            }
         }
     }
 
@@ -139,50 +128,51 @@ class CaptureViewModel(
         val bytes = currentState.reviewImageBytes ?: return
         val currentStep = currentState.currentStep ?: return
 
-        runCatching {
-            // 1. Save File
-            val fileName = "capture_${io.healthplatform.chartcam.utils.UUID.randomUUID()}_${currentStep.id}.jpg"
-            val path = fileStorage.saveImage(fileName, bytes)
-            filePaths[currentStep] = path
+        // 1. Save File
+        val fileName = "capture_${io.healthplatform.chartcam.utils.UUID.randomUUID()}_${currentStep.id}.jpg"
+        fileStorage
+            .saveImageCatching(fileName, bytes)
+            .onSuccess { path ->
+                filePaths[currentStep] = path
 
-            // 2. Calculate Next Step
-            currentStepIndex++
-            val nextStep = if (currentStepIndex < stepsSequence.size) stepsSequence[currentStepIndex] else null
+                // 2. Calculate Next Step
+                currentStepIndex++
+                val nextStep = if (currentStepIndex < stepsSequence.size) stepsSequence[currentStepIndex] else null
 
-            if (nextStep != null) {
-                _uiState.update {
-                    it.copy(
-                        currentStep = nextStep,
-                        reviewImageBytes = null,
-                        capturedCount = filePaths.size,
-                        error = null,
-                        errorMessage = null,
-                        errorMessageResource = null,
-                    )
+                if (nextStep != null) {
+                    _uiState.update {
+                        it.copy(
+                            currentStep = nextStep,
+                            reviewImageBytes = null,
+                            capturedCount = filePaths.size,
+                            error = null,
+                            errorMessage = null,
+                            errorMessageResource = null,
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            reviewImageBytes = null,
+                            isFinished = true,
+                            capturedCount = filePaths.size,
+                            error = null,
+                            errorMessage = null,
+                            errorMessageResource = null,
+                        )
+                    }
                 }
-            } else {
+            }.onFailure { e ->
+                println("Storage error: ${e.message}")
                 _uiState.update {
                     it.copy(
                         reviewImageBytes = null,
-                        isFinished = true,
-                        capturedCount = filePaths.size,
-                        error = null,
-                        errorMessage = null,
-                        errorMessageResource = null,
+                        error = CaptureError.SaveFailed,
+                        errorMessage = "Failed to save photo: storage is full or disk error occurred.",
+                        errorMessageResource = Res.string.error_capture_save_failed,
                     )
                 }
             }
-        }.onFailure { e ->
-            println("Storage error: ${e.message}")
-            _uiState.update {
-                it.copy(
-                    reviewImageBytes = null,
-                    error = CaptureError.SaveFailed,
-                    errorMessage = "Failed to save photo: storage is full or disk error occurred.",
-                    errorMessageResource = Res.string.error_capture_save_failed,
-                )
-            }
-        }
     }
 
     /**
