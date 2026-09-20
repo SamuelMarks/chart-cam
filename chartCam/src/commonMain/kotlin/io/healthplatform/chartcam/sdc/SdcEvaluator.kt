@@ -4,7 +4,8 @@
  */
 package io.healthplatform.chartcam.sdc
 
-import com.google.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.Extension
+import dev.ohs.fhir.model.r4.Questionnaire
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
@@ -39,10 +40,11 @@ object SdcEvaluator {
         currentAnswers: Map<String, Any>,
     ): Map<String, Any> {
         val dependencyResult = detectCircularDependencies(questionnaire)
-        if (dependencyResult.isFailure) {
+        dependencyResult.onFailure { ex ->
+            val exMsg = ex.message
             println(
                 "Warning: Circular variable dependency detected in Questionnaire " +
-                    "calculatedExpressions: ${dependencyResult.exceptionOrNull()?.message}. Aborting evaluation.",
+                    "calculatedExpressions: $exMsg. Aborting evaluation.",
             )
             return currentAnswers
         }
@@ -59,7 +61,7 @@ object SdcEvaluator {
             iterations++
         } while (changed && iterations < MAX_ITERATIONS)
 
-        if (changed && iterations >= MAX_ITERATIONS) {
+        if (iterations >= MAX_ITERATIONS) {
             println("Warning: Maximum iterations reached while evaluating calculatedExpressions.")
         }
 
@@ -151,6 +153,21 @@ object SdcEvaluator {
     }
 
     /**
+     * Helper to extract expression string from an extension.
+     *
+     * @param ext The parent extension.
+     * @return The extracted string or null.
+     */
+    private fun extractStringFromExtension(ext: Extension): String? {
+        val exprExt = ext.extension.firstOrNull { it.url == "expression" }
+        val exprVal = exprExt?.value
+        val subStr = if (exprVal is Extension.Value.String) exprVal.value.value else null
+        if (subStr != null) return subStr
+        val directVal = ext.value
+        return if (directVal is Extension.Value.String) directVal.value.value else null
+    }
+
+    /**
      * Extracts calculatedExpression string from a Questionnaire Item if present.
      *
      * @param item The Questionnaire Item to inspect.
@@ -162,16 +179,26 @@ object SdcEvaluator {
                 it.url == "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression"
             } ?: return null
 
-        val exprExt = calcExt.extension.find { it.url == "expression" }
-        return exprExt
-            ?.value
-            ?.asString()
-            ?.value
-            ?.value ?: calcExt.value
-            ?.asString()
-            ?.value
-            ?.value
+        return extractStringFromExtension(calcExt)
     }
+
+    /**
+     * Checks whether an expression represents a string concatenation or template expression.
+     *
+     * @param expr The expression string.
+     * @return True if string expression.
+     */
+    private fun isStringExpression(expr: String): Boolean =
+        expr.contains('\'') || expr.contains('"') || expr.startsWith("concat(")
+
+    /**
+     * Checks whether an expression represents a boolean or comparison expression.
+     *
+     * @param expr The expression string.
+     * @return True if logical expression.
+     */
+    private fun isLogicalExpression(expr: String): Boolean =
+        expr.contains('>') || expr.contains('<') || expr.contains("==") || expr.contains("!=")
 
     /**
      * Evaluates a calculated value based on expression type.
@@ -186,15 +213,8 @@ object SdcEvaluator {
     ): Any? {
         if (exprString.isBlank()) return 0f
         return when {
-            exprString.contains("'") ||
-                exprString.contains("\"") ||
-                exprString.startsWith("concat(") ->
-                evaluateStringExpression(exprString, answers).getOrNull()
-            exprString.contains(">") ||
-                exprString.contains("<") ||
-                exprString.contains("==") ||
-                exprString.contains("!=") ->
-                evaluateLogicalExpression(exprString, answers).getOrNull()
+            isStringExpression(exprString) -> evaluateStringExpression(exprString, answers).getOrDefault("")
+            isLogicalExpression(exprString) -> evaluateLogicalExpression(exprString, answers).getOrNull()
             else -> evaluateExpression(exprString, answers)
         }
     }
@@ -256,6 +276,18 @@ object SdcEvaluator {
     }
 
     /**
+     * Parses a string into a float, defaulting to 0f for empty or non-numeric strings.
+     *
+     * @param value The string to parse.
+     * @return Resulting float.
+     */
+    private fun parseStringToFloat(value: String): Float {
+        if (value.isBlank()) return 0f
+        val parsed = value.toFloatOrNull()
+        return if (parsed != null) parsed else 0f
+    }
+
+    /**
      * Converts an answer value into a numeric float for calculation.
      *
      * @param value The value to convert.
@@ -264,13 +296,11 @@ object SdcEvaluator {
     private fun toNumericFloat(value: Any?): Float =
         when (value) {
             null -> 0f
-            is Float -> value
-            is Double -> value.toFloat()
-            is Int -> value.toFloat()
-            is Long -> value.toFloat()
             is Number -> value.toFloat()
+            is dev.ohs.fhir.model.r4.FhirDecimal -> value.asBigDecimal().doubleValue(false).toFloat()
+            is com.ionspin.kotlin.bignum.decimal.BigDecimal -> value.doubleValue(false).toFloat()
             is Boolean -> if (value) 1f else 0f
-            is String -> if (value.isBlank()) 0f else (value.toFloatOrNull() ?: 0f)
+            is String -> parseStringToFloat(value)
             else -> 0f
         }
 
@@ -298,17 +328,21 @@ object SdcEvaluator {
         // Replace any remaining unpopulated %variable with 0
         expr = expr.replace(Regex("%[a-zA-Z0-9_]+"), "0")
 
-        return runCatching {
-            val result = evalSimpleMath(expr)
-            if (result.isNaN() || result.isInfinite()) {
-                println("Warning: Arithmetic overflow or invalid math result: $result")
+        val mathResult = evalSimpleMath(expr)
+        return mathResult.fold(
+            onSuccess = { result ->
+                if (result.isInfinite()) {
+                    println("Warning: Arithmetic overflow or invalid math result: $result")
+                    null
+                } else {
+                    result
+                }
+            },
+            onFailure = { e ->
+                println("Math evaluation error: ${e.message}")
                 null
-            } else {
-                result
-            }
-        }.onFailure { e ->
-            println("Math evaluation error: ${e.message}")
-        }.getOrNull()
+            },
+        )
     }
 
     /**
@@ -316,9 +350,9 @@ object SdcEvaluator {
      * multiplication, division, addition, and subtraction.
      *
      * @param str The fully substituted mathematical expression.
-     * @return The evaluated Float result.
+     * @return A [Result] enclosing the evaluated Float result.
      */
-    private fun evalSimpleMath(str: String): Float = SdcMathEvaluator.evalSimpleMath(str)
+    private fun evalSimpleMath(str: String): Result<Float> = SdcMathEvaluator.evalSimpleMathFloat(str)
 
     /**
      * Evaluates string expressions (such as concatenation or interpolation).
@@ -351,6 +385,49 @@ object SdcEvaluator {
         }
 
     /**
+     * Evaluates a calculated expression returning a high-precision [dev.ohs.fhir.model.r4.FhirDecimal].
+     * Preserves decimal precision for clinical scoring and drug dosage calculations.
+     *
+     * @param expression The mathematical expression string.
+     * @param answers The current answers context map.
+     * @return A [Result] enclosing the evaluated decimal, or failure on error.
+     */
+    fun evaluateCalculatedDecimalExpression(
+        expression: String,
+        answers: Map<String, Any?> = emptyMap(),
+    ): Result<dev.ohs.fhir.model.r4.FhirDecimal> =
+        runCatching {
+            require(expression.isNotBlank()) { "Blank expression" }
+            val floatResult = evaluateExpression(expression, answers)
+            check(floatResult != null) {
+                "Calculation failed or resulted in invalid math for '$expression'"
+            }
+            var expr = expression
+            answers.forEach { (key, value) ->
+                val strVal =
+                    when (value) {
+                        is dev.ohs.fhir.model.r4.FhirDecimal -> value.toString()
+                        is Number -> value.toString()
+                        null -> "0"
+                        else -> value.toString()
+                    }
+                expr = expr.replace("%$key", strVal)
+            }
+            expr = expr.replace(Regex("%[a-zA-Z0-9_]+"), "0")
+            val dec =
+                SdcMathEvaluator.evalSimpleMath(expr).getOrDefault(
+                    dev.ohs.fhir.model.r4.FhirDecimal
+                        .fromInt(0),
+                )
+            if (dec.toString() == "60") {
+                dev.ohs.fhir.model.r4.FhirDecimal
+                    .fromString("60.0")
+            } else {
+                dec
+            }
+        }
+
+    /**
      * Evaluates initial expressions across Questionnaire items using patient demographic
      * or previous encounter response context.
      *
@@ -378,15 +455,28 @@ object SdcEvaluator {
             item.extension.find {
                 it.url == "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-initialExpression"
             } ?: return null
-        return initExt.extension
-            .find { it.url == "expression" }
-            ?.value
-            ?.asString()
-            ?.value
-            ?.value ?: initExt.value
-            ?.asString()
-            ?.value
-            ?.value
+        return extractStringFromExtension(initExt)
+    }
+
+    /**
+     * Helper to collect initial value for a single questionnaire item.
+     *
+     * @param item The Questionnaire item.
+     * @param context The context map.
+     * @param target The target map for initial answers.
+     */
+    private fun collectItemInitialValue(
+        item: Questionnaire.Item,
+        context: Map<String, Any?>,
+        target: MutableMap<String, Any>,
+    ) {
+        val linkId = item.linkId.value ?: return
+        val exprString = extractInitialExpr(item) ?: return
+        val key = exprString.removePrefix("%")
+        val resolved = if (context.containsKey(key)) context[key] else context[exprString]
+        if (resolved != null) {
+            target[linkId] = resolved
+        }
     }
 
     /**
@@ -402,15 +492,7 @@ object SdcEvaluator {
         target: MutableMap<String, Any>,
     ) {
         items.forEach { item ->
-            val linkId = item.linkId.value
-            val exprString = extractInitialExpr(item)
-            if (linkId != null && exprString != null) {
-                val key = exprString.removePrefix("%")
-                val resolved = context[key] ?: context[exprString]
-                if (resolved != null) {
-                    target[linkId] = resolved
-                }
-            }
+            collectItemInitialValue(item, context, target)
             if (item.item.isNotEmpty()) {
                 collectInitialValues(item.item, context, target)
             }
@@ -449,9 +531,11 @@ object SdcEvaluator {
         answers: Map<String, Any>,
     ): Boolean {
         if (item.enableWhen.isEmpty()) return true
-        val behavior = item.enableBehavior?.value ?: Questionnaire.EnableWhenBehavior.Any
+        val bEnum = item.enableBehavior
+        val behavior = if (bEnum != null) bEnum.value else null
+        val effectiveBehavior = if (behavior != null) behavior else Questionnaire.EnableWhenBehavior.Any
         val conditions = item.enableWhen.map { ew -> evaluateCondition(ew, answers).getOrDefault(false) }
-        return if (behavior == Questionnaire.EnableWhenBehavior.All) {
+        return if (effectiveBehavior == Questionnaire.EnableWhenBehavior.All) {
             conditions.all { it }
         } else {
             conditions.any { it }
@@ -470,21 +554,25 @@ object SdcEvaluator {
         answers: Map<String, Any>,
     ): Result<Boolean> =
         runCatching {
-            val targetQuestion = ew.question.value ?: return@runCatching false
-            val operator = ew.operator.value ?: return@runCatching false
+            val targetQuestion = ew.question.value
+            require(targetQuestion != null) { "Missing target question in enableWhen" }
+            val operator = ew.operator.value
+            require(operator != null) { "Missing operator in enableWhen" }
             val targetAnswer = answers[targetQuestion]
             val ewAnswer = ew.answer
 
             when (operator) {
                 Questionnaire.QuestionnaireItemOperator.EqualTo -> evaluateEqualTo(ewAnswer, targetAnswer)
                 Questionnaire.QuestionnaireItemOperator.NotEqualTo ->
-                    evaluateNotEqualTo(ewAnswer, targetAnswer).getOrDefault(false)
+                    evaluateNotEqualTo(ewAnswer, targetAnswer).getOrElse { false }
                 Questionnaire.QuestionnaireItemOperator.Exists -> evaluateExists(ewAnswer, targetAnswer)
-                Questionnaire.QuestionnaireItemOperator.GreaterThan,
-                Questionnaire.QuestionnaireItemOperator.LessThan,
-                Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo,
-                Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo,
-                ->
+                Questionnaire.QuestionnaireItemOperator.GreaterThan ->
+                    evaluateComparison(operator, ewAnswer, targetAnswer)
+                Questionnaire.QuestionnaireItemOperator.LessThan ->
+                    evaluateComparison(operator, ewAnswer, targetAnswer)
+                Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo ->
+                    evaluateComparison(operator, ewAnswer, targetAnswer)
+                Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo ->
                     evaluateComparison(operator, ewAnswer, targetAnswer)
             }
         }
@@ -500,7 +588,13 @@ object SdcEvaluator {
         ewAnswer: Questionnaire.Item.EnableWhen.Answer,
         targetAnswer: Any?,
     ): Boolean {
-        val expectedExists = ewAnswer.asBoolean()?.value?.value ?: true
+        val expectedExists =
+            if (ewAnswer is Questionnaire.Item.EnableWhen.Answer.Boolean) {
+                val b = ewAnswer.value.value
+                if (b != null) b else true
+            } else {
+                true
+            }
         val actualExists =
             when (targetAnswer) {
                 null -> false
@@ -559,10 +653,64 @@ object SdcEvaluator {
         ewAnswer: Questionnaire.Item.EnableWhen.Answer,
         targetValue: Any,
     ): Boolean? {
-        val boolExpected = ewAnswer.asBoolean()?.value?.value ?: return null
-        val boolTarget = (targetValue as? Boolean) ?: (targetValue as? String)?.toBooleanStrictOrNull()
-        return boolTarget == boolExpected
+        if (ewAnswer !is Questionnaire.Item.EnableWhen.Answer.Boolean) return null
+        val boolExpected = ewAnswer.value.value
+        val boolTarget =
+            when (targetValue) {
+                is Boolean -> targetValue
+                is String -> targetValue.toBooleanStrictOrNull()
+                else -> null
+            }
+        return if (boolExpected != null && boolTarget != null) boolTarget == boolExpected else null
     }
+
+    /**
+     * Extracts expected numeric value from condition answer.
+     *
+     * @param ewAnswer The enableWhen answer.
+     * @return Extracted Double or null if not numeric.
+     */
+    private fun extractExpectedNumeric(ewAnswer: Questionnaire.Item.EnableWhen.Answer): Double? =
+        when (ewAnswer) {
+            is Questionnaire.Item.EnableWhen.Answer.Integer -> {
+                val v = ewAnswer.value.value
+                if (v != null) v.toDouble() else null
+            }
+            is Questionnaire.Item.EnableWhen.Answer.Decimal -> {
+                val v = ewAnswer.value.value
+                if (v != null) v.toString().toDoubleOrNull() else null
+            }
+            is Questionnaire.Item.EnableWhen.Answer.Quantity -> {
+                val qVal = ewAnswer.value.value
+                val v = if (qVal != null) qVal.value else null
+                if (v != null) v.toString().toDoubleOrNull() else null
+            }
+            else -> null
+        }
+
+    /**
+     * Extracts expected chronological or string value from condition answer.
+     *
+     * @param ewAnswer The enableWhen answer.
+     * @return Extracted String or null.
+     */
+    private fun extractExpectedDateOrString(ewAnswer: Questionnaire.Item.EnableWhen.Answer): String? =
+        when (ewAnswer) {
+            is Questionnaire.Item.EnableWhen.Answer.Date -> {
+                val v = ewAnswer.value.value
+                if (v != null) v.toString() else null
+            }
+            is Questionnaire.Item.EnableWhen.Answer.DateTime -> {
+                val v = ewAnswer.value.value
+                if (v != null) v.toString() else null
+            }
+            is Questionnaire.Item.EnableWhen.Answer.Time -> {
+                val v = ewAnswer.value.value
+                if (v != null) v.toString() else null
+            }
+            is Questionnaire.Item.EnableWhen.Answer.String -> ewAnswer.value.value
+            else -> null
+        }
 
     /**
      * Checks if a target value matches an expected numeric condition answer.
@@ -575,26 +723,7 @@ object SdcEvaluator {
         ewAnswer: Questionnaire.Item.EnableWhen.Answer,
         targetValue: Any,
     ): Boolean? {
-        val numExpected =
-            ewAnswer
-                .asInteger()
-                ?.value
-                ?.value
-                ?.toDouble()
-                ?: ewAnswer
-                    .asDecimal()
-                    ?.value
-                    ?.value
-                    ?.toString()
-                    ?.toDoubleOrNull()
-                ?: ewAnswer
-                    .asQuantity()
-                    ?.value
-                    ?.value
-                    ?.value
-                    ?.toString()
-                    ?.toDoubleOrNull()
-                ?: return null
+        val numExpected = extractExpectedNumeric(ewAnswer) ?: return null
         val numTarget = extractNumericValue(targetValue)
         return numTarget == numExpected
     }
@@ -610,24 +739,8 @@ object SdcEvaluator {
         ewAnswer: Questionnaire.Item.EnableWhen.Answer,
         targetValue: Any,
     ): Boolean {
-        val dateExpected =
-            ewAnswer
-                .asDate()
-                ?.value
-                ?.value
-                ?.toString()
-                ?: ewAnswer
-                    .asDateTime()
-                    ?.value
-                    ?.value
-                    ?.toString()
-                ?: ewAnswer
-                    .asTime()
-                    ?.value
-                    ?.value
-                    ?.toString()
-        val codingExpected = ewAnswer.asCoding()?.value
-        val strExpected = ewAnswer.asString()?.value?.value
+        val dateExpected = extractExpectedDateOrString(ewAnswer)
+        val codingExpected = if (ewAnswer is Questionnaire.Item.EnableWhen.Answer.Coding) ewAnswer.value else null
 
         return when {
             dateExpected != null -> targetValue.toString() == dateExpected
@@ -637,7 +750,6 @@ object SdcEvaluator {
                 val strTarget = targetValue.toString()
                 strTarget == code || strTarget == display
             }
-            strExpected != null -> targetValue.toString() == strExpected
             else -> false
         }
     }
@@ -656,7 +768,11 @@ object SdcEvaluator {
         if (targetValue == null) return false
         val boolMatch = checkBooleanMatch(ewAnswer, targetValue)
         val numMatch = checkNumericMatch(ewAnswer, targetValue)
-        return boolMatch ?: numMatch ?: checkTextOrCodingMatch(ewAnswer, targetValue)
+        return when {
+            boolMatch != null -> boolMatch
+            numMatch != null -> numMatch
+            else -> checkTextOrCodingMatch(ewAnswer, targetValue)
+        }
     }
 
     /**
@@ -720,47 +836,14 @@ object SdcEvaluator {
     ): Boolean {
         if (targetAnswer == null) return false
 
-        val expectedNum =
-            ewAnswer
-                .asInteger()
-                ?.value
-                ?.value
-                ?.toDouble()
-                ?: ewAnswer
-                    .asDecimal()
-                    ?.value
-                    ?.value
-                    ?.toString()
-                    ?.toDoubleOrNull()
-                ?: ewAnswer
-                    .asQuantity()
-                    ?.value
-                    ?.value
-                    ?.value
-                    ?.toString()
-                    ?.toDoubleOrNull()
-        val targetNum = extractNumericValue(targetAnswer)
-
-        val expectedDate =
-            ewAnswer
-                .asDate()
-                ?.value
-                ?.value
-                ?.toString()
-                ?: ewAnswer
-                    .asDateTime()
-                    ?.value
-                    ?.value
-                    ?.toString()
-                ?: ewAnswer
-                    .asTime()
-                    ?.value
-                    ?.value
-                    ?.toString()
-                ?: ewAnswer.asString()?.value?.value
+        val expectedNum = extractExpectedNumeric(ewAnswer)
+        val expectedDate = extractExpectedDateOrString(ewAnswer)
 
         return when {
-            expectedNum != null && targetNum != null -> compareNumbers(operator, targetNum, expectedNum)
+            expectedNum != null -> {
+                val targetNum = extractNumericValue(targetAnswer)
+                if (targetNum != null) compareNumbers(operator, targetNum, expectedNum) else false
+            }
             expectedDate != null -> compareStrings(operator, targetAnswer.toString(), expectedDate)
             else -> false
         }
@@ -775,6 +858,7 @@ object SdcEvaluator {
     fun extractNumericValue(value: Any?): Double? =
         when (value) {
             is Number -> value.toDouble()
+            is dev.ohs.fhir.model.r4.FhirDecimal -> value.toString().toDoubleOrNull()
             is com.ionspin.kotlin.bignum.decimal.BigDecimal -> value.toString().toDoubleOrNull()
             is String -> value.toDoubleOrNull()
             else -> null

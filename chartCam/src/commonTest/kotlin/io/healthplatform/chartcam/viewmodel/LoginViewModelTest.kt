@@ -201,7 +201,7 @@ class LoginViewModelTest {
                     override suspend fun login(
                         username: String,
                         password: String,
-                    ): Result<com.google.fhir.model.r4.Practitioner> = Result.failure(Exception("Some unknown error"))
+                    ): Result<dev.ohs.fhir.model.r4.Practitioner> = Result.failure(Exception("Some unknown error"))
                 }
             val viewModel = LoginViewModel(throwingRepo)
 
@@ -245,7 +245,7 @@ class LoginViewModelTest {
                      *
                      * @return Failure result.
                      */
-                    override suspend fun loginAsDemo(): Result<com.google.fhir.model.r4.Practitioner> =
+                    override suspend fun loginAsDemo(): Result<dev.ohs.fhir.model.r4.Practitioner> =
                         Result.failure(Exception("Demo error"))
                 }
             val viewModel = LoginViewModel(failingRepo)
@@ -282,6 +282,7 @@ class LoginViewModelTest {
     fun testBiometricAuthenticationSuccess() =
         runTest {
             authRepository = AuthRepository(mockStorage)
+            authRepository.login("user", "password")
             val availableProvider =
                 io.healthplatform.chartcam.storage.DefaultKeystoreHardwareProvider(
                     isHardware = true,
@@ -301,5 +302,154 @@ class LoginViewModelTest {
 
             assertTrue(viewModel.uiState.value.isLoggedIn)
             assertTrue(successCallback)
+        }
+
+    /**
+     * Tests biometric authentication failure and hardware unconfigured scenarios.
+     */
+    @Test
+    fun testBiometricAuthenticationEdgeCases() =
+        runTest {
+            authRepository = AuthRepository(mockStorage)
+            val noBioViewModel = LoginViewModel(authRepository, biometricSecurityManager = null)
+            assertFalse(noBioViewModel.uiState.value.isBiometricAvailable)
+
+            val bioResult = noBioViewModel.authenticateWithBiometrics()
+            assertTrue(bioResult.isSuccess)
+            assertTrue(bioResult.getOrThrow() is io.healthplatform.chartcam.storage.BiometricAuthResult.HardwareError)
+
+            val promptResult = noBioViewModel.authenticateWithPrompt()
+            assertTrue(promptResult.isSuccess)
+            assertTrue(promptResult.getOrThrow() is io.healthplatform.chartcam.storage.BiometricAuthResult.HardwareError)
+
+            // Hardware availability without hardware-backed keystore
+            val softwareProvider =
+                io.healthplatform.chartcam.storage.DefaultKeystoreHardwareProvider(
+                    isHardware = false,
+                    status = io.healthplatform.chartcam.storage.BiometricHardwareStatus.AVAILABLE,
+                )
+            val softBioManager =
+                io.healthplatform.chartcam.storage
+                    .BiometricSecurityManager(mockStorage, hardwareProvider = softwareProvider)
+            val softViewModel = LoginViewModel(authRepository, softBioManager)
+            assertTrue(softViewModel.uiState.value.isBiometricAvailable)
+
+            // Failed biometric authentication
+            val failProvider =
+                object : io.healthplatform.chartcam.storage.KeystoreHardwareProvider {
+                    override fun checkHardwareBacked(): Result<Unit> = Result.success(Unit)
+
+                    override fun getHardwareStatus(): io.healthplatform.chartcam.storage.BiometricHardwareStatus =
+                        io.healthplatform.chartcam.storage.BiometricHardwareStatus.AVAILABLE
+
+                    override suspend fun promptBiometrics(title: String, subtitle: String): Result<Unit> =
+                        Result.failure(Exception("Prompt failed"))
+                }
+            val failBioManager =
+                io.healthplatform.chartcam.storage
+                    .BiometricSecurityManager(mockStorage, hardwareProvider = failProvider)
+            val failViewModel = LoginViewModel(authRepository, failBioManager)
+
+            val failBioRes = failViewModel.authenticateWithBiometrics(simulateSuccess = false)
+            assertTrue(failBioRes.isSuccess)
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(Res.string.invalid_credentials, failViewModel.uiState.value.errorMessage)
+
+            // authenticateWithPrompt failure
+            val failPromptRes = failViewModel.authenticateWithPrompt()
+            assertTrue(failPromptRes.isSuccess)
+            assertEquals(Res.string.invalid_credentials, failViewModel.uiState.value.errorMessage)
+
+            // authenticateWithPrompt success with active session
+            authRepository.login("user", "password")
+            val successProvider =
+                object : io.healthplatform.chartcam.storage.KeystoreHardwareProvider {
+                    override fun checkHardwareBacked(): Result<Unit> = Result.success(Unit)
+
+                    override fun getHardwareStatus(): io.healthplatform.chartcam.storage.BiometricHardwareStatus =
+                        io.healthplatform.chartcam.storage.BiometricHardwareStatus.AVAILABLE
+
+                    override suspend fun promptBiometrics(title: String, subtitle: String): Result<Unit> =
+                        Result.success(Unit)
+                }
+            val successBioManager =
+                io.healthplatform.chartcam.storage
+                    .BiometricSecurityManager(mockStorage, hardwareProvider = successProvider)
+            val promptSuccessViewModel = LoginViewModel(authRepository, successBioManager)
+
+            var promptCallbackInvoked = false
+            val promptSuccessRes = promptSuccessViewModel.authenticateWithPrompt { promptCallbackInvoked = true }
+            assertTrue(promptSuccessRes.isSuccess)
+            assertTrue(promptSuccessViewModel.uiState.value.isLoggedIn)
+            assertTrue(promptCallbackInvoked)
+
+            // authenticateWithPrompt success with demo fallback
+            mockStorage.data.clear()
+            val promptDemoViewModel = LoginViewModel(authRepository, successBioManager)
+            val promptDemoRes = promptDemoViewModel.authenticateWithPrompt()
+            assertTrue(promptDemoRes.isSuccess)
+            assertTrue(promptDemoViewModel.uiState.value.isLoggedIn)
+
+            // authenticateWithBiometrics with demo fallback and no callback
+            mockStorage.data.clear()
+            val bioDemoViewModel = LoginViewModel(authRepository, successBioManager)
+            bioDemoViewModel.authenticateWithBiometrics(simulateSuccess = true)
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertTrue(bioDemoViewModel.uiState.value.isLoggedIn)
+
+            // Failing demo fallback
+            val failingDemoRepo =
+                object : AuthRepository(mockStorage) {
+                    override suspend fun checkSession(): Result<dev.ohs.fhir.model.r4.Practitioner> =
+                        Result.failure(Exception("No session"))
+
+                    override suspend fun loginAsDemo(): Result<dev.ohs.fhir.model.r4.Practitioner> =
+                        Result.failure(Exception("Demo error"))
+                }
+            val failingDemoVm = LoginViewModel(failingDemoRepo, successBioManager)
+            val failPromptDemoRes = failingDemoVm.authenticateWithPrompt()
+            assertTrue(failPromptDemoRes.isSuccess)
+            assertFalse(failingDemoVm.uiState.value.isLoggedIn)
+
+            failingDemoVm.authenticateWithBiometrics(simulateSuccess = true)
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertFalse(failingDemoVm.uiState.value.isLoggedIn)
+
+            // Default parameter with status != AVAILABLE
+            val unavailProvider =
+                io.healthplatform.chartcam.storage.DefaultKeystoreHardwareProvider(
+                    isHardware = true,
+                    status = io.healthplatform.chartcam.storage.BiometricHardwareStatus.NO_HARDWARE,
+                )
+            val unavailManager =
+                io.healthplatform.chartcam.storage.BiometricSecurityManager(
+                    mockStorage,
+                    hardwareProvider = unavailProvider,
+                )
+            val unavailVm = LoginViewModel(authRepository, unavailManager)
+            unavailVm.authenticateWithBiometrics()
+            testDispatcher.scheduler.advanceUntilIdle()
+        }
+
+    /**
+     * Tests login failure with null exception message.
+     */
+    @Test
+    fun testLoginFailureWithNullExceptionMessage() =
+        runTest {
+            val throwingRepo =
+                object : AuthRepository(mockStorage) {
+                    override suspend fun login(
+                        username: String,
+                        password: String,
+                    ): Result<dev.ohs.fhir.model.r4.Practitioner> = Result.failure(Exception(null as String?))
+                }
+            val viewModel = LoginViewModel(throwingRepo)
+
+            viewModel.login("user", "pass")
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.isLoggedIn)
+            assertEquals(Res.string.unknown_error, viewModel.uiState.value.errorMessage)
         }
 }

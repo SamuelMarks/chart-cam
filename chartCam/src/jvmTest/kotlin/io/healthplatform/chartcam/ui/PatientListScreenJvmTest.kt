@@ -11,7 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.google.fhir.model.r4.Practitioner
+import dev.ohs.fhir.model.r4.Practitioner
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService

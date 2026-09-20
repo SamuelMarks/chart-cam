@@ -4,7 +4,7 @@
  */
 package io.healthplatform.chartcam.viewmodel
 
-import com.google.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.repository.QuestionnaireSharingService
 import org.junit.Test
@@ -121,6 +121,42 @@ class QuestionnaireBuilderViewModelJvmTest {
             viewModel.state.value.items
                 .isEmpty(),
         )
+    }
+
+    /**
+     * Test updateItemLabelAndOptions modifies target item and preserves other items.
+     */
+    @Test
+    fun testUpdateItemLabelAndOptions() {
+        val repo = QuestionnaireRepository()
+        val viewModel = QuestionnaireBuilderViewModel(repo)
+
+        viewModel.addItem(WidgetType.SINGLE_LINE_TEXT)
+        viewModel.addItem(WidgetType.SINGLE_SELECT)
+        val item1 = viewModel.state.value.items[0]
+        val item2 = viewModel.state.value.items[1]
+
+        viewModel.updateItem(item2.linkId, "Updated Label", listOf("Opt1", "Opt2"))
+        val updated2 =
+            viewModel.state.value.items
+                .first { it.linkId == item2.linkId }
+        val preserved1 =
+            viewModel.state.value.items
+                .first { it.linkId == item1.linkId }
+
+        assertEquals("Updated Label", updated2.label)
+        assertEquals(listOf("Opt1", "Opt2"), updated2.options)
+        assertEquals("New SINGLE_LINE_TEXT Item", preserved1.label)
+
+        viewModel.addItem(WidgetType.SEGMENTED_TILES)
+        val itemTiles =
+            viewModel.state.value.items
+                .last()
+        viewModel.updateItem(itemTiles.linkId, "Tiles", emptyList())
+        val updatedTiles =
+            viewModel.state.value.items
+                .first { it.linkId == itemTiles.linkId }
+        assertTrue(updatedTiles.isError)
     }
 
     /**
@@ -347,7 +383,7 @@ class QuestionnaireBuilderViewModelJvmTest {
                     val dupItemBuilder =
                         Questionnaire.Item.Builder(
                             linkId =
-                                com.google.fhir.model.r4.String
+                                dev.ohs.fhir.model.r4.String
                                     .Builder()
                                     .apply { value = "dup_id" },
                             type = questionnaire.item[0].type,
@@ -601,5 +637,505 @@ class QuestionnaireBuilderViewModelJvmTest {
         assertNotNull(qId)
         assertTrue(qId.startsWith("custom-"))
         assertTrue(qId.length > "custom-".length)
+    }
+
+    /**
+     * Tests saving duplicate questionnaire name triggers duplicate name error.
+     */
+    @Test
+    fun testSaveDuplicateQuestionnaire() {
+        val repo = QuestionnaireRepository()
+        val vm1 = QuestionnaireBuilderViewModel(repo)
+        vm1.updateTitle("Unique Form Name")
+        vm1.addItem(WidgetType.SINGLE_LINE_TEXT)
+        val id1 = vm1.saveQuestionnaire()
+        assertNotNull(id1)
+
+        val vm2 = QuestionnaireBuilderViewModel(repo)
+        vm2.updateTitle("Unique Form Name")
+        vm2.addItem(WidgetType.SINGLE_LINE_TEXT)
+        val id2 = vm2.saveQuestionnaire()
+        kotlin.test.assertNull(id2)
+        assertTrue(vm2.state.value.isDuplicateNameError)
+    }
+
+    /**
+     * Tests removing an item cleans up enableWhen conditions referencing it.
+     */
+    @Test
+    fun testRemoveItemCleansEnableWhenCondition() {
+        val repo = QuestionnaireRepository()
+        val vm = QuestionnaireBuilderViewModel(repo)
+        vm.addItem(WidgetType.SINGLE_LINE_TEXT)
+        vm.addItem(WidgetType.SINGLE_LINE_TEXT)
+        vm.addItem(WidgetType.SINGLE_LINE_TEXT)
+        val item1Id =
+            vm.state.value.items[0]
+                .linkId
+        val item2Id =
+            vm.state.value.items[1]
+                .linkId
+        vm.updateItemEnableWhen(
+            item2Id,
+            listOf(BuilderEnableWhen(question = item1Id, operator = Questionnaire.QuestionnaireItemOperator.Exists, answerBoolean = true)),
+        )
+        assertEquals(
+            1,
+            vm.state.value.items[1]
+                .enableWhen.size,
+        )
+        vm.removeItem(item1Id)
+        assertEquals(2, vm.state.value.items.size)
+        assertTrue(
+            vm.state.value.items[0]
+                .enableWhen
+                .isEmpty(),
+        )
+    }
+
+    /**
+     * Tests building enableWhen conditions across integer, decimal, string, and default palette options.
+     */
+    @Test
+    fun testBuildEnableWhenAnswerVariantsAndPaletteDefaultOptions() {
+        val repo = QuestionnaireRepository()
+        val vm = QuestionnaireBuilderViewModel(repo)
+        vm.updateTitle("EnableWhen Variants")
+        vm.addItem(WidgetType.SINGLE_LINE_TEXT)
+        vm.addItem(WidgetType.FITZPATRICK_PALETTE, options = emptyList())
+        val item2Id =
+            vm.state.value.items[1]
+                .linkId
+        val conditions =
+            listOf(
+                BuilderEnableWhen(question = "item_1", operator = Questionnaire.QuestionnaireItemOperator.EqualTo, answerInteger = 42),
+                BuilderEnableWhen(
+                    question = "item_1",
+                    operator = Questionnaire.QuestionnaireItemOperator.GreaterThan,
+                    answerDecimal = 3.14,
+                ),
+                BuilderEnableWhen(question = "item_1", operator = Questionnaire.QuestionnaireItemOperator.EqualTo, answerString = "test"),
+                BuilderEnableWhen(question = "item_1", operator = Questionnaire.QuestionnaireItemOperator.Exists, answerBoolean = null),
+            )
+        vm.updateItemEnableWhen(item2Id, conditions, Questionnaire.EnableWhenBehavior.All)
+        val q = vm.buildQuestionnaire()
+        assertEquals(2, q.item.size)
+        val paletteItem = q.item[1]
+        assertEquals(6, paletteItem.answerOption.size)
+        assertEquals(4, paletteItem.enableWhen.size)
+    }
+
+    /**
+     * Tests duplicating a questionnaire covering all FHIR item controls, standard types, and enableWhen formats.
+     */
+    @Test
+    fun testDuplicateAllFhirItemTypesAndItemControls() {
+        val repo = QuestionnaireRepository()
+        val controls =
+            listOf(
+                "photo",
+                "video",
+                "switch",
+                "slider",
+                "pain-vas",
+                "wong-baker",
+                "palette",
+                "color-palette",
+                "fitzpatrick",
+                "body-map",
+                "segmented-control",
+                "choice-cards",
+                "check-box",
+            )
+        val items = mutableListOf<Questionnaire.Item>()
+        val eqOp =
+            dev.ohs.fhir.model.r4
+                .Enumeration(value = Questionnaire.QuestionnaireItemOperator.EqualTo)
+        controls.forEachIndexed { i, ctrl ->
+            val ext =
+                dev.ohs.fhir.model.r4.Extension(
+                    url = "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                    value =
+                        dev.ohs.fhir.model.r4.Extension.Value.CodeableConcept(
+                            dev.ohs.fhir.model.r4.CodeableConcept(
+                                coding =
+                                    listOf(
+                                        dev.ohs.fhir.model.r4
+                                            .Coding(
+                                                code =
+                                                    dev.ohs.fhir.model.r4
+                                                        .Code(value = ctrl),
+                                            ),
+                                    ),
+                            ),
+                        ),
+                )
+            items.add(
+                Questionnaire.Item(
+                    linkId =
+                        dev.ohs.fhir.model.r4
+                            .String(value = "ctrl_$i"),
+                    type =
+                        dev.ohs.fhir.model.r4
+                            .Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                    extension = listOf(ext),
+                    repeats =
+                        if (ctrl == "check-box") {
+                            dev.ohs.fhir.model.r4
+                                .Boolean(value = true)
+                        } else {
+                            null
+                        },
+                ),
+            )
+        }
+
+        items.add(
+            Questionnaire.Item(
+                linkId =
+                    dev.ohs.fhir.model.r4
+                        .String(value = "cb_no_rep"),
+                type =
+                    dev.ohs.fhir.model.r4
+                        .Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                extension =
+                    listOf(
+                        dev.ohs.fhir.model.r4.Extension(
+                            url = "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                            value =
+                                dev.ohs.fhir.model.r4.Extension.Value.CodeableConcept(
+                                    dev.ohs.fhir.model.r4.CodeableConcept(
+                                        coding =
+                                            listOf(
+                                                dev.ohs.fhir.model.r4
+                                                    .Coding(
+                                                        code =
+                                                            dev.ohs.fhir.model.r4
+                                                                .Code(value = "check-box"),
+                                                    ),
+                                            ),
+                                    ),
+                                ),
+                        ),
+                    ),
+                repeats =
+                    dev.ohs.fhir.model.r4
+                        .Boolean(value = false),
+            ),
+        )
+
+        val standardTypes =
+            listOf(
+                Questionnaire.QuestionnaireItemType.Attachment,
+                Questionnaire.QuestionnaireItemType.Boolean,
+                Questionnaire.QuestionnaireItemType.Choice,
+                Questionnaire.QuestionnaireItemType.String,
+                Questionnaire.QuestionnaireItemType.Text,
+                Questionnaire.QuestionnaireItemType.Date,
+                Questionnaire.QuestionnaireItemType.DateTime,
+                Questionnaire.QuestionnaireItemType.Decimal,
+                Questionnaire.QuestionnaireItemType.Integer,
+                Questionnaire.QuestionnaireItemType.Group,
+                Questionnaire.QuestionnaireItemType.Display,
+            )
+        standardTypes.forEachIndexed { i, st ->
+            items.add(
+                Questionnaire.Item(
+                    linkId =
+                        dev.ohs.fhir.model.r4
+                            .String(value = "type_$i"),
+                    type =
+                        dev.ohs.fhir.model.r4
+                            .Enumeration(value = st),
+                    repeats =
+                        if (st == Questionnaire.QuestionnaireItemType.Choice) {
+                            dev.ohs.fhir.model.r4
+                                .Boolean(value = true)
+                        } else {
+                            null
+                        },
+                ),
+            )
+        }
+
+        items.add(
+            Questionnaire.Item(
+                linkId =
+                    dev.ohs.fhir.model.r4
+                        .String(value = "ew_all"),
+                type =
+                    dev.ohs.fhir.model.r4
+                        .Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                enableWhen =
+                    listOf(
+                        Questionnaire.Item.EnableWhen(
+                            question =
+                                dev.ohs.fhir.model.r4
+                                    .String(value = "q1"),
+                            operator = eqOp,
+                            answer =
+                                Questionnaire.Item.EnableWhen.Answer
+                                    .String(
+                                        dev.ohs.fhir.model.r4
+                                            .String(value = "str"),
+                                    ),
+                        ),
+                        Questionnaire.Item.EnableWhen(
+                            question =
+                                dev.ohs.fhir.model.r4
+                                    .String(value = "q2"),
+                            operator = eqOp,
+                            answer =
+                                Questionnaire.Item.EnableWhen.Answer
+                                    .Boolean(
+                                        dev.ohs.fhir.model.r4
+                                            .Boolean(value = true),
+                                    ),
+                        ),
+                        Questionnaire.Item.EnableWhen(
+                            question =
+                                dev.ohs.fhir.model.r4
+                                    .String(value = "q3"),
+                            operator = eqOp,
+                            answer =
+                                Questionnaire.Item.EnableWhen.Answer
+                                    .Integer(
+                                        dev.ohs.fhir.model.r4
+                                            .Integer(value = 10),
+                                    ),
+                        ),
+                        Questionnaire.Item.EnableWhen(
+                            question =
+                                dev.ohs.fhir.model.r4
+                                    .String(value = "q4"),
+                            operator = eqOp,
+                            answer =
+                                Questionnaire.Item.EnableWhen.Answer.Decimal(
+                                    dev.ohs.fhir.model.r4
+                                        .Decimal(
+                                            value =
+                                                dev.ohs.fhir.model.r4.FhirDecimal
+                                                    .fromString("1.5"),
+                                        ),
+                                ),
+                        ),
+                        Questionnaire.Item.EnableWhen(
+                            question =
+                                dev.ohs.fhir.model.r4
+                                    .String(value = "q5"),
+                            operator = eqOp,
+                            answer =
+                                Questionnaire.Item.EnableWhen.Answer
+                                    .Decimal(
+                                        dev.ohs.fhir.model.r4
+                                            .Decimal(value = null),
+                                    ),
+                        ),
+                        Questionnaire.Item.EnableWhen(
+                            question =
+                                dev.ohs.fhir.model.r4
+                                    .String(value = "q6"),
+                            operator =
+                                dev.ohs.fhir.model.r4
+                                    .Enumeration(value = null),
+                            answer =
+                                Questionnaire.Item.EnableWhen.Answer
+                                    .Boolean(
+                                        dev.ohs.fhir.model.r4
+                                            .Boolean(value = true),
+                                    ),
+                        ),
+                        Questionnaire.Item.EnableWhen(
+                            question =
+                                dev.ohs.fhir.model.r4
+                                    .String(value = null),
+                            operator = eqOp,
+                            answer =
+                                Questionnaire.Item.EnableWhen.Answer
+                                    .Boolean(
+                                        dev.ohs.fhir.model.r4
+                                            .Boolean(value = true),
+                                    ),
+                        ),
+                    ),
+                answerOption =
+                    listOf(
+                        Questionnaire.Item.AnswerOption(
+                            value =
+                                Questionnaire.Item.AnswerOption.Value.Coding(
+                                    dev.ohs.fhir.model.r4
+                                        .Coding(
+                                            display =
+                                                dev.ohs.fhir.model.r4
+                                                    .String(value = "Option Display"),
+                                        ),
+                                ),
+                        ),
+                        Questionnaire.Item.AnswerOption(
+                            value =
+                                Questionnaire.Item.AnswerOption.Value
+                                    .String(
+                                        dev.ohs.fhir.model.r4
+                                            .String(value = "Not Coding"),
+                                    ),
+                        ),
+                    ),
+            ),
+        )
+
+        // Item with Choice type and repeats = false
+        items.add(
+            Questionnaire.Item(
+                linkId =
+                    dev.ohs.fhir.model.r4
+                        .String(value = "choice_no_rep"),
+                type =
+                    dev.ohs.fhir.model.r4
+                        .Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                repeats = null,
+            ),
+        )
+
+        // Item with type.value == null and text.value == null
+        items.add(
+            Questionnaire.Item(
+                linkId =
+                    dev.ohs.fhir.model.r4
+                        .String(value = "null_type_item"),
+                type =
+                    dev.ohs.fhir.model.r4
+                        .Enumeration(value = null),
+                text =
+                    dev.ohs.fhir.model.r4
+                        .String(value = null),
+            ),
+        )
+
+        items.add(
+            Questionnaire.Item(
+                linkId =
+                    dev.ohs.fhir.model.r4
+                        .String(value = null),
+                text = null,
+                type =
+                    dev.ohs.fhir.model.r4
+                        .Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+            ),
+        )
+
+        val qSource =
+            Questionnaire(
+                id = "q-duplicate-source",
+                status =
+                    dev.ohs.fhir.model.r4
+                        .Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active),
+                title =
+                    dev.ohs.fhir.model.r4
+                        .String(value = null),
+                item = items,
+            )
+        repo.saveQuestionnaire(qSource)
+
+        val vm = QuestionnaireBuilderViewModel(repo, duplicateFromId = "q-duplicate-source")
+        assertTrue(
+            vm.state.value.items
+                .isNotEmpty(),
+        )
+        val qBuilt = vm.buildQuestionnaire()
+        assertTrue(qBuilt.item.isNotEmpty())
+
+        val qEmpty =
+            Questionnaire(
+                id = "q-empty",
+                status =
+                    dev.ohs.fhir.model.r4
+                        .Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active),
+                item = emptyList(),
+            )
+        repo.saveQuestionnaire(qEmpty)
+        val vmEmpty = QuestionnaireBuilderViewModel(repo, duplicateFromId = "q-empty")
+        assertTrue(
+            vmEmpty.state.value.items
+                .isEmpty(),
+        )
+
+        // Duplicate from non-existent ID
+        val vmNonExistent = QuestionnaireBuilderViewModel(repo, duplicateFromId = "non-existent-form-id")
+        assertTrue(
+            vmNonExistent.state.value.items
+                .isEmpty(),
+        )
+    }
+
+    /**
+     * Tests moveItem boundaries, update non-matching item, and blank title fallback.
+     */
+    @Test
+    fun testBuilderItemMovementAndBlankTitleFallback() {
+        val repo = QuestionnaireRepository()
+        val vm = QuestionnaireBuilderViewModel(repo)
+        vm.addItem(WidgetType.SINGLE_LINE_TEXT)
+        vm.addItem(WidgetType.MULTI_LINE_TEXT)
+        val id1 =
+            vm.state.value.items[0]
+                .linkId
+        val id2 =
+            vm.state.value.items[1]
+                .linkId
+
+        // Move first item up (cannot move up, index > 0 is false)
+        vm.moveItemUp(id1)
+        assertEquals(
+            id1,
+            vm.state.value.items[0]
+                .linkId,
+        )
+
+        // Move non-existent item up
+        vm.moveItemUp("non_existent_id")
+
+        // Move last item down (cannot move down, index < size - 1 is false)
+        vm.moveItemDown(id2)
+        assertEquals(
+            id2,
+            vm.state.value.items[1]
+                .linkId,
+        )
+
+        // Move non-existent item down
+        vm.moveItemDown("non_existent_id")
+
+        // Update item with non-matching linkId
+        vm.updateItem("unmatched_link_id", "New Label", emptyList())
+        assertEquals(
+            id1,
+            vm.state.value.items[0]
+                .linkId,
+        )
+
+        // Update item with blank label
+        vm.updateItem(id1, "   ", emptyList())
+        assertTrue(
+            vm.state.value.items[0]
+                .isError,
+        )
+
+        // Add segmented tiles and update with empty options
+        vm.addItem(WidgetType.SEGMENTED_TILES)
+        val segId =
+            vm.state.value.items
+                .last()
+                .linkId
+        vm.updateItem(segId, "Segmented", emptyList())
+        assertTrue(
+            vm.state.value.items
+                .last()
+                .isError,
+        )
+
+        // Blank title build fallback
+        vm.updateTitle("   ")
+        val q = vm.buildQuestionnaire()
+        assertNotNull(q.id)
     }
 }

@@ -12,14 +12,30 @@ import com.github.sarxos.webcam.Webcam
  * Checks for connected webcam hardware and provides OS settings navigation.
  */
 class JvmPermissionManager : PermissionManager {
+    private val webcamSupplier: () -> List<Webcam>?
+
+    /**
+     * Default constructor using standard Sarxos Webcam detection.
+     */
+    constructor() : this({ Webcam.getWebcams() })
+
+    /**
+     * Testing constructor allowing custom webcam detection provider.
+     *
+     * @param webcamSupplier The provider function returning detected webcams.
+     */
+    constructor(webcamSupplier: () -> List<Webcam>?) {
+        this.webcamSupplier = webcamSupplier
+    }
+
     /**
      * Gets the current camera permission status based on webcam hardware availability.
      *
      * @return [PermissionStatus.GRANTED] if hardware is present, [PermissionStatus.DENIED] otherwise.
      */
     override fun getCameraPermissionStatus(): PermissionStatus {
-        val webcams = runCatching { Webcam.getWebcams() }.getOrNull()
-        return if (webcams != null && webcams.isNotEmpty()) {
+        val webcams = runCatching { webcamSupplier() }.getOrNull()
+        return if (!webcams.isNullOrEmpty()) {
             PermissionStatus.GRANTED
         } else {
             PermissionStatus.DENIED
@@ -48,7 +64,8 @@ class JvmPermissionManager : PermissionManager {
      */
     override fun openSettings() {
         runCatching {
-            val os = System.getProperty("os.name")?.lowercase() ?: ""
+            val prop = System.getProperty("os.name")
+            val os = if (prop != null) prop.lowercase() else ""
             if (os.contains("mac")) {
                 ProcessBuilder("open", "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera").start()
             } else if (os.contains("win")) {

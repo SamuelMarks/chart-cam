@@ -31,5 +31,14 @@ class TerminologyServiceTest {
 
         val loincCodingNoDisplay = TerminologyService.getLoincCoding("123-5")
         assertEquals("123-5", loincCodingNoDisplay.code?.value)
+
+        val customCoding = TerminologyService.createCoding("http://example.org", "code-1", "Display 1")
+        assertEquals("http://example.org", customCoding.system?.value)
+        assertEquals("code-1", customCoding.code?.value)
+        assertEquals("Display 1", customCoding.display?.value)
+
+        val customCodingNoDisplay = TerminologyService.createCoding("http://example.org", "code-2")
+        assertEquals("code-2", customCodingNoDisplay.code?.value)
+        kotlin.test.assertNull(customCodingNoDisplay.display)
     }
 }

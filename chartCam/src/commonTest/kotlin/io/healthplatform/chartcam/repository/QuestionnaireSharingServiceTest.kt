@@ -4,9 +4,9 @@
  */
 package io.healthplatform.chartcam.repository
 
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -30,7 +30,7 @@ class QuestionnaireSharingServiceTest {
                 .apply {
                     this.id = "test-form"
                     this.title =
-                        com.google.fhir.model.r4.String
+                        dev.ohs.fhir.model.r4.String
                             .Builder()
                             .apply { value = "Test Title" }
                 }.build()

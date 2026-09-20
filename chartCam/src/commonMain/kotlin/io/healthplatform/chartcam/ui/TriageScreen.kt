@@ -246,7 +246,7 @@ fun TriageScreen(
  */
 @Composable
 internal fun TriagePatientSelectionHeader(
-    patient: com.google.fhir.model.r4.Patient,
+    patient: dev.ohs.fhir.model.r4.Patient,
     photoCount: Int,
     onProceed: () -> Unit,
 ) {

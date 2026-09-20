@@ -52,4 +52,37 @@ class ResultExtensionsTest {
                 }
             }
         }
+
+    /**
+     * Verifies that flatMap applies the transform on success.
+     */
+    @Test
+    fun testFlatMapSuccess() {
+        val initial = Result.success(10)
+        val transformed = initial.flatMap { Result.success(it * 2) }
+        assertTrue(transformed.isSuccess)
+        assertEquals(20, transformed.getOrNull())
+    }
+
+    /**
+     * Verifies that flatMap propagates failure from the initial Result.
+     */
+    @Test
+    fun testFlatMapPropagatesInitialFailure() {
+        val initial: Result<Int> = Result.failure(IllegalStateException("Initial error"))
+        val transformed = initial.flatMap { Result.success(it * 2) }
+        assertTrue(transformed.isFailure)
+        assertEquals("Initial error", transformed.exceptionOrNull()?.message)
+    }
+
+    /**
+     * Verifies that flatMap propagates failure from the transform function.
+     */
+    @Test
+    fun testFlatMapPropagatesTransformFailure() {
+        val initial = Result.success(10)
+        val transformed = initial.flatMap { Result.failure<Int>(IllegalStateException("Transform error")) }
+        assertTrue(transformed.isFailure)
+        assertEquals("Transform error", transformed.exceptionOrNull()?.message)
+    }
 }

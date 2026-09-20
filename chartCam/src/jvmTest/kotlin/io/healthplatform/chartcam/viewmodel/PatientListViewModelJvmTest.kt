@@ -9,10 +9,16 @@ import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.failed_to_import
 import chartcam.chartcam.generated.resources.failed_to_load_patients
 import chartcam.chartcam.generated.resources.unknown_error
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.Practitioner
+import dev.ohs.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Practitioner
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.FileStorage
+import io.healthplatform.chartcam.models.ConflictResolutionStrategy
+import io.healthplatform.chartcam.models.ConflictType
+import io.healthplatform.chartcam.models.ImportCategory
+import io.healthplatform.chartcam.models.ImportFilterOptions
+import io.healthplatform.chartcam.models.ImportPreviewSummary
+import io.healthplatform.chartcam.models.PatientStagingItem
 import io.healthplatform.chartcam.models.createFhirPatient
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
@@ -229,6 +235,23 @@ class PatientListViewModelTest {
         }
 
     /**
+     * Test createPatient sets error when creation fails.
+     */
+    @Test
+    fun `createPatient sets error when patient creation fails`() =
+        runTest(testDispatcher) {
+            viewModel.createPatient(
+                firstName = "New",
+                lastName = "Patient",
+                mrn = "",
+                dob = LocalDate(1980, 2, 2),
+            ) { }
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(Res.string.failed_to_load_patients, viewModel.uiState.value.error)
+        }
+
+    /**
      * Test exportData.
      */
     @Test
@@ -373,6 +396,295 @@ class PatientListViewModelTest {
             assertEquals(null, viewModel.uiState.value.exportedData)
             assertEquals(null, viewModel.uiState.value.exportPassword)
         }
+
+    /** Tests staged import complete workflow and selections. */
+    @Test
+    fun testStagedImportWorkflow() =
+        runTest(testDispatcher) {
+            viewModel.stageImport("test-data", "pass")
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(ImportStage.PREVIEW_STAGED, viewModel.uiState.value.importStage)
+            assertEquals(1, viewModel.uiState.value.selectedPatientIds.size)
+
+            // Toggle individual patient
+            viewModel.togglePatientSelection("p-staged-1", false)
+            assertTrue(
+                viewModel.uiState.value.selectedPatientIds
+                    .isEmpty(),
+            )
+            viewModel.togglePatientSelection("p-staged-1", true)
+            assertEquals(1, viewModel.uiState.value.selectedPatientIds.size)
+
+            // Toggle select all
+            viewModel.toggleSelectAllPatients(false)
+            assertTrue(
+                viewModel.uiState.value.selectedPatientIds
+                    .isEmpty(),
+            )
+            viewModel.toggleSelectAllPatients(true)
+            assertEquals(1, viewModel.uiState.value.selectedPatientIds.size)
+
+            // Toggle category
+            viewModel.toggleCategory(ImportCategory.BINARY_PHOTOS, false)
+            assertFalse(
+                viewModel.uiState.value.importFilterOptions.enabledCategories
+                    .contains(ImportCategory.BINARY_PHOTOS),
+            )
+            viewModel.toggleCategory(ImportCategory.BINARY_PHOTOS, true)
+            assertTrue(
+                viewModel.uiState.value.importFilterOptions.enabledCategories
+                    .contains(ImportCategory.BINARY_PHOTOS),
+            )
+
+            // Set conflict resolution
+            viewModel.setConflictResolution("p-staged-1", ConflictResolutionStrategy.OVERWRITE_LOCAL)
+            assertEquals(ConflictResolutionStrategy.OVERWRITE_LOCAL, viewModel.uiState.value.conflictResolutions["p-staged-1"])
+
+            // Execute import
+            var importSuccess = false
+            viewModel.confirmAndExecuteImport { importSuccess = true }
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertTrue(importSuccess)
+            assertEquals(ImportStage.SUCCESS, viewModel.uiState.value.importStage)
+
+            // Cancel import
+            viewModel.cancelImport()
+            assertEquals(ImportStage.IDLE, viewModel.uiState.value.importStage)
+
+            // Toggle select all when preview is null
+            viewModel.toggleSelectAllPatients(true)
+            assertTrue(
+                viewModel.uiState.value.selectedPatientIds
+                    .isEmpty(),
+            )
+        }
+
+    /** Tests staged import failure and validation aborts. */
+    @Test
+    fun testStagedImportFailures() =
+        runTest(testDispatcher) {
+            mockExportImportService.shouldThrow = true
+            viewModel.stageImport("bad-data", "bad-pass")
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(ImportStage.ERROR, viewModel.uiState.value.importStage)
+            assertEquals(Res.string.failed_to_import, viewModel.uiState.value.error)
+
+            // Execute import when data or password is null
+            var callbackCalled = false
+            viewModel.confirmAndExecuteImport { callbackCalled = true }
+            assertFalse(callbackCalled)
+
+            // Execute import failure
+            mockExportImportService.shouldThrow = false
+            viewModel.stageImport("test-data", "pass")
+            testDispatcher.scheduler.advanceUntilIdle()
+            mockExportImportService.shouldThrow = true
+            viewModel.confirmAndExecuteImport { callbackCalled = true }
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertFalse(callbackCalled)
+            assertEquals(ImportStage.ERROR, viewModel.uiState.value.importStage)
+        }
+
+    /** Tests complex cascade deletion across multiple practitioners and null identifiers. */
+    @Test
+    fun testDeleteAccountComplexScenarios() =
+        runTest(testDispatcher) {
+            val encClass =
+                dev.ohs.fhir.model.r4
+                    .Coding(
+                        code =
+                            dev.ohs.fhir.model.r4
+                                .Code(value = "AMB"),
+                    )
+            val encWithBothPractitioners =
+                dev.ohs.fhir.model.r4.Encounter(
+                    id = "enc-shared",
+                    status =
+                        dev.ohs.fhir.model.r4
+                            .Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                    `class` = encClass,
+                    participant =
+                        listOf(
+                            dev.ohs.fhir.model.r4.Encounter.Participant(
+                                individual =
+                                    dev.ohs.fhir.model.r4.Reference(
+                                        reference =
+                                            dev.ohs.fhir.model.r4
+                                                .String(value = "Practitioner/other"),
+                                    ),
+                            ),
+                            dev.ohs.fhir.model.r4.Encounter.Participant(
+                                individual =
+                                    dev.ohs.fhir.model.r4.Reference(
+                                        reference =
+                                            dev.ohs.fhir.model.r4
+                                                .String(value = "Practitioner/1"),
+                                    ),
+                            ),
+                            dev.ohs.fhir.model.r4.Encounter
+                                .Participant(individual = null),
+                            dev.ohs.fhir.model.r4.Encounter
+                                .Participant(
+                                    individual =
+                                        dev.ohs.fhir.model.r4
+                                            .Reference(reference = null),
+                                ),
+                        ),
+                )
+            val encNoId =
+                dev.ohs.fhir.model.r4.Encounter(
+                    id = null,
+                    status =
+                        dev.ohs.fhir.model.r4
+                            .Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                    `class` = encClass,
+                    participant =
+                        listOf(
+                            dev.ohs.fhir.model.r4.Encounter.Participant(
+                                individual =
+                                    dev.ohs.fhir.model.r4.Reference(
+                                        reference =
+                                            dev.ohs.fhir.model.r4
+                                                .String(value = "Practitioner/1"),
+                                    ),
+                            ),
+                            dev.ohs.fhir.model.r4.Encounter.Participant(
+                                individual =
+                                    dev.ohs.fhir.model.r4.Reference(
+                                        reference =
+                                            dev.ohs.fhir.model.r4
+                                                .String(value = "Practitioner/other"),
+                                    ),
+                            ),
+                        ),
+                )
+            val encOnlyOther =
+                dev.ohs.fhir.model.r4.Encounter(
+                    id = "enc-other-only",
+                    status =
+                        dev.ohs.fhir.model.r4
+                            .Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                    `class` = encClass,
+                    participant =
+                        listOf(
+                            dev.ohs.fhir.model.r4.Encounter
+                                .Participant(individual = null),
+                            dev.ohs.fhir.model.r4.Encounter
+                                .Participant(
+                                    individual =
+                                        dev.ohs.fhir.model.r4
+                                            .Reference(reference = null),
+                                ),
+                            dev.ohs.fhir.model.r4.Encounter.Participant(
+                                individual =
+                                    dev.ohs.fhir.model.r4.Reference(
+                                        reference =
+                                            dev.ohs.fhir.model.r4
+                                                .String(value = "Practitioner/other"),
+                                    ),
+                            ),
+                        ),
+                )
+            mockFhirRepository.encountersToReturn = listOf(encWithBothPractitioners, encNoId, encOnlyOther)
+
+            val patient = createFhirPatient("p-shared", "Shared", "Patient", LocalDate(1980, 1, 1), "MRN-SH")
+            val patientNoId =
+                createFhirPatient(
+                    "p-no-id",
+                    "No",
+                    "Id",
+                    LocalDate(1980, 1, 1),
+                    "MRN-NO",
+                ).toBuilder().apply { id = null }.build()
+            mockFhirRepository.patientsToReturn = listOf(patient, patientNoId)
+
+            val practitioner =
+                dev.ohs.fhir.model.r4.Practitioner(
+                    id = "1",
+                    name =
+                        listOf(
+                            dev.ohs.fhir.model.r4
+                                .HumanName(
+                                    family =
+                                        dev.ohs.fhir.model.r4
+                                            .String(value = "DrSmith"),
+                                ),
+                        ),
+                )
+            mockAuthRepository.currentUserFlow.value = practitioner
+
+            var deleteSuccess = false
+            viewModel.deleteAccount { deleteSuccess = true }
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertTrue(deleteSuccess)
+            assertEquals("enc-shared", mockFhirRepository.deletedEncounterId)
+            assertTrue(mockAuthRepository.deleteAccountCalled)
+
+            // Practitioner is null
+            mockAuthRepository.currentUserFlow.value = null
+            var nullPracCallback = false
+            viewModel.deleteAccount { nullPracCallback = true }
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertFalse(nullPracCallback)
+
+            // Encounters throwing error
+            mockAuthRepository.currentUserFlow.value = practitioner
+            mockFhirRepository.shouldThrowOnGetEncounters = true
+            viewModel.deleteAccount {}
+            testDispatcher.scheduler.advanceUntilIdle()
+            mockFhirRepository.shouldThrowOnGetEncounters = false
+
+            // Practitioner with empty name
+            val pracEmptyName =
+                dev.ohs.fhir.model.r4
+                    .Practitioner(id = "1", name = emptyList())
+            mockAuthRepository.currentUserFlow.value = pracEmptyName
+            viewModel.deleteAccount {}
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            // Practitioner with null family name
+            val pracNullFamily =
+                dev.ohs.fhir.model.r4.Practitioner(
+                    id = null,
+                    name =
+                        listOf(
+                            dev.ohs.fhir.model.r4
+                                .HumanName(family = null),
+                        ),
+                )
+            mockAuthRepository.currentUserFlow.value = pracNullFamily
+            viewModel.deleteAccount {}
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            // Practitioner with family value == null
+            val pracNullFamilyValue =
+                dev.ohs.fhir.model.r4.Practitioner(
+                    id = "1",
+                    name =
+                        listOf(
+                            dev.ohs.fhir.model.r4
+                                .HumanName(
+                                    family =
+                                        dev.ohs.fhir.model.r4
+                                            .String(value = null),
+                                ),
+                        ),
+                )
+            mockAuthRepository.currentUserFlow.value = pracNullFamilyValue
+            viewModel.deleteAccount {}
+            testDispatcher.scheduler.advanceUntilIdle()
+        }
+
+    /** Tests exportData when currentUser is null. */
+    @Test
+    fun testExportDataWhenUserNull() =
+        runTest(testDispatcher) {
+            mockAuthRepository.currentUserFlow.value = null
+            viewModel.exportData("pass", false)
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertNotNull(viewModel.uiState.value.exportedData)
+        }
 }
 
 /**
@@ -453,6 +765,23 @@ class MockFhirRepository(
         deletedPractitionerId = id
         return Result.success(Unit)
     }
+
+    var encountersToReturn = listOf<dev.ohs.fhir.model.r4.Encounter>()
+    var deletedEncounterId: String? = null
+    var shouldThrowOnGetEncounters = false
+
+    override suspend fun getEncountersForPatient(patientId: String): List<dev.ohs.fhir.model.r4.Encounter> {
+        if (shouldThrowOnGetEncounters) throw IllegalStateException("Get encounters error") // allow-exception
+        return encountersToReturn
+    }
+
+    override suspend fun deleteEncounter(
+        id: String,
+        fileStorage: io.healthplatform.chartcam.files.FileStorage?,
+    ): Result<Unit> {
+        deletedEncounterId = id
+        return Result.success(Unit)
+    }
 }
 
 /**
@@ -495,6 +824,52 @@ class MockExportImportService(
         lastImportData = encryptedData
         return Result.success(Unit)
     }
+
+    override suspend fun inspectArchive(
+        encryptedData: String,
+        password: String,
+    ): Result<ImportPreviewSummary> =
+        if (shouldThrow) {
+            Result.failure(IllegalStateException("Inspect error"))
+        } else {
+            val p1 = createFhirPatient("p-staged-1", "John", "Doe", LocalDate(1980, 1, 1), "MRN-1")
+            val p2 = createFhirPatient("p-staged-2", "Jane", "Doe", LocalDate(1980, 1, 1), "MRN-2").toBuilder().apply { id = null }.build()
+            Result.success(
+                ImportPreviewSummary(
+                    totalResources = 2,
+                    stagedPatients =
+                        listOf(
+                            PatientStagingItem(
+                                incomingPatient = p1,
+                                conflictType = ConflictType.EXACT_MATCH,
+                                resolutionStrategy = ConflictResolutionStrategy.CREATE_AS_NEW_ID,
+                            ),
+                            PatientStagingItem(
+                                incomingPatient = p2,
+                                conflictType = ConflictType.EXACT_MATCH,
+                                resolutionStrategy = ConflictResolutionStrategy.CREATE_AS_NEW_ID,
+                            ),
+                        ),
+                    stagedEncounterCount = 0,
+                    stagedPhotoCount = 0,
+                    stagedFormCount = 0,
+                    hasConflicts = false,
+                ),
+            )
+        }
+
+    override suspend fun importDataSelective(
+        encryptedData: String,
+        password: String,
+        filterOptions: ImportFilterOptions,
+        selectedPatientIds: Set<String>?,
+        resolutionMap: Map<String, ConflictResolutionStrategy>,
+    ): Result<Unit> =
+        if (shouldThrow) {
+            Result.failure(IllegalStateException("Selective import error"))
+        } else {
+            Result.success(Unit)
+        }
 }
 
 /**

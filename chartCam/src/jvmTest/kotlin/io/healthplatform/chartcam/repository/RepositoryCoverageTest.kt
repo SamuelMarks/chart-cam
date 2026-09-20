@@ -5,9 +5,9 @@
 package io.healthplatform.chartcam.repository
 
 import app.cash.sqldelight.async.coroutines.synchronous
-import com.google.fhir.model.r4.Device
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.Device
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import org.junit.Test
 
@@ -64,7 +64,7 @@ class RepositoryCoverageTest {
             repo.loadDefaultForms()
             val dummyQ =
                 Questionnaire
-                    .Builder(Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active))
+                    .Builder(Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active))
                     .apply {
                         id = "dummy1"
                     }.build()

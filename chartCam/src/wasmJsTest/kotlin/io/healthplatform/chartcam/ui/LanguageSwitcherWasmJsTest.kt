@@ -19,4 +19,15 @@ class LanguageSwitcherWasmJsTest {
         val lang = currentLanguageState.value
         assertTrue(lang.isNotBlank())
     }
+
+    /**
+     * Verifies that changeAppLanguage executes on WasmJS without exceptions.
+     */
+    @Test
+    fun testChangeAppLanguageWasmJs() {
+        changeAppLanguage("ja")
+        changeAppLanguage("en")
+        val lang = currentLanguageState.value
+        assertTrue(lang.isNotBlank())
+    }
 }

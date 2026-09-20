@@ -8,7 +8,7 @@ package io.healthplatform.chartcam.repository
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.google.fhir.model.r4.Practitioner
+import dev.ohs.fhir.model.r4.Practitioner
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.createFhirPatient
@@ -146,7 +146,7 @@ class ImportSecurityAndCorruptionTest {
                     .apply {
                         id = "existing-prac"
                         active =
-                            com.google.fhir.model.r4.Boolean
+                            dev.ohs.fhir.model.r4.Boolean
                                 .Builder()
                                 .apply { value = true }
                     }.build()

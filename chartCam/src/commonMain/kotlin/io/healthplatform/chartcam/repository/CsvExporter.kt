@@ -4,7 +4,7 @@
  */
 package io.healthplatform.chartcam.repository
 
-import com.google.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Patient
 
 /**
  * Utility for exporting resources to CSV format.
@@ -50,24 +50,25 @@ object CsvExporter {
         builder.append("$PATIENT_CSV_HEADER\n")
         for (patient in patients) {
             val id = escapeCsvField(patient.id ?: "")
-            val family =
-                escapeCsvField(
-                    patient.name
-                        .firstOrNull()
-                        ?.family
-                        ?.value ?: "",
-                )
-            val given =
-                escapeCsvField(
-                    patient.name
-                        .firstOrNull()
-                        ?.given
-                        ?.joinToString(" ") { it.value ?: "" } ?: "",
-                )
+            val firstName = patient.name.firstOrNull()
+            val familyVal = firstName?.family?.value ?: ""
+            val family = escapeCsvField(familyVal)
+
+            val givenItems = firstName?.given
+            val givenVal =
+                if (givenItems != null) {
+                    givenItems.joinToString(" ") { it.value ?: "" }
+                } else {
+                    ""
+                }
+            val given = escapeCsvField(givenVal)
+
             val active = patient.active?.value ?: false
 
             // Format BirthDate in ISO 8601 (YYYY-MM-DD for FhirDate)
-            val birthDate = escapeCsvField(patient.birthDate?.value?.toString() ?: "")
+            val fhirDate = patient.birthDate?.value
+            val birthDateVal = if (fhirDate != null) fhirDate.toString() else ""
+            val birthDate = escapeCsvField(birthDateVal)
 
             builder.append("$id,$family,$given,$active,$birthDate\n")
         }

@@ -26,5 +26,20 @@ class PlatformTest {
                 platform.name.contains("Wasm"),
             "Platform name should contain expected keyword",
         )
+        val customMobile =
+            object : Platform {
+                override val name: String = "Android 34"
+            }
+        val customDesktop =
+            object : Platform {
+                override val name: String = "Java 21"
+            }
+        val customIos =
+            object : Platform {
+                override val name: String = "iOS 17"
+            }
+        assertTrue(customMobile.isMobile())
+        assertTrue(customIos.isMobile())
+        assertTrue(!customDesktop.isMobile())
     }
 }

@@ -1,6 +1,6 @@
 /**
  * @file DateFormatterJvmTest.kt
- * Contains declarations for DateFormatterJvmTest.kt.
+ * Tests verifying unified multiplatform DateFormatter behavior on the JVM.
  */
 package io.healthplatform.chartcam.utils
 
@@ -38,7 +38,7 @@ class DateFormatterJvmTest {
     @Test
     fun testFormatLocalizedDate_isBlank() {
         assertEquals("", formatLocalizedDate(""))
-        assertEquals("   ", formatLocalizedDate("   "))
+        assertEquals("", formatLocalizedDate("   "))
     }
 
     /**
@@ -47,12 +47,8 @@ class DateFormatterJvmTest {
     @Test
     fun testFormatLocalizedDate_withTime() {
         val fhirDate = "2026-07-09T10:00:00Z"
-        // In US locale, FormatStyle.MEDIUM outputs something like "Jul 9, 2026, 10:00:00 AM" or "Jul 9, 2026, 10:00:00\u202fAM" depending on JDK version.
-        // We'll just verify it doesn't throw and parses properly.
-        val formatted = formatLocalizedDate(fhirDate)
-        assert(formatted.contains("2026"))
-        assert(formatted.contains("Jul"))
-        assert(formatted.contains("9"))
+        val formatted = formatLocalizedDate(fhirDate, "en")
+        assertEquals("07/09/2026 10:00", formatted)
     }
 
     /**
@@ -61,20 +57,20 @@ class DateFormatterJvmTest {
     @Test
     fun testFormatLocalizedDate_dateOnly() {
         val fhirDate = "2026-07-09"
-        val formatted = formatLocalizedDate(fhirDate)
-        assertEquals("Jul 9, 2026", formatted)
+        val formatted = formatLocalizedDate(fhirDate, "en")
+        assertEquals("07/09/2026", formatted)
     }
 
     /**
-     * Tests formatLocalizedDate with local datetime without offset.
+     * Tests formatLocalizedDate with partial dates.
      */
     @Test
-    fun testFormatLocalizedDate_withLocalDateTimeNoOffset() {
-        val fhirDate = "2026-07-09T10:00:00"
-        val formatted = formatLocalizedDate(fhirDate)
-        assert(formatted.contains("2026"))
-        assert(formatted.contains("Jul"))
-        assert(formatted.contains("9"))
+    fun testFormatLocalizedDate_partialDates() {
+        val yearOnly = formatLocalizedDate("1985", "en")
+        assertEquals("1985", yearOnly)
+
+        val yearMonth = formatLocalizedDate("1985-03", "en")
+        assertEquals("03/1985", yearMonth)
     }
 
     /**
@@ -94,13 +90,7 @@ class DateFormatterJvmTest {
         assertEquals("", formatLocalizedDateTime(""))
         val fhirDate = "2026-07-09T10:00:00Z"
         val formatted = formatLocalizedDateTime(fhirDate, "en")
-        assert(formatted.contains("2026"))
-        assert(formatted.contains("Jul"))
-        assert(formatted.contains("9"))
-
-        val localNoOffset = "2026-07-09T10:00:00"
-        val formattedLocal = formatLocalizedDateTime(localNoOffset, "en")
-        assert(formattedLocal.contains("2026"))
+        assertEquals("07/09/2026 10:00", formatted)
 
         val invalidDate = "Invalid-DateTime-String"
         assertEquals("Invalid-DateTime-String", formatLocalizedDateTime(invalidDate, "en"))

@@ -60,13 +60,13 @@ object AndroidAppInit {
         file: java.io.File,
         filesDir: java.io.File,
     ) {
-        try {
+        runCatching {
             val destFile = java.io.File(filesDir, file.name)
             if (!destFile.exists()) {
                 file.copyTo(destFile, overwrite = true)
             }
             file.delete()
-        } catch (e: java.io.IOException) {
+        }.onFailure { e ->
             println("Failed to migrate file ${file.name} from cache: ${e.message}")
         }
     }

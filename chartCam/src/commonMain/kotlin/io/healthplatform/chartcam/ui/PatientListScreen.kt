@@ -828,7 +828,7 @@ fun PatientListScreen(
  */
 @Composable
 fun PatientListItem(
-    patient: com.google.fhir.model.r4.Patient,
+    patient: dev.ohs.fhir.model.r4.Patient,
     onClick: () -> Unit,
 ) {
     val currentLang by currentLanguageState.collectAsState()

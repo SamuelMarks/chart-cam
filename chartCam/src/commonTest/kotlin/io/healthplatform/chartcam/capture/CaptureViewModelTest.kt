@@ -290,4 +290,45 @@ class CaptureViewModelTest {
         vm.onConfirm() // Should early return
         assertEquals(0, vm.uiState.value.capturedCount)
     }
+
+    /** Tests video recording advancing step and finishing session. */
+    @Test
+    fun testOnVideoRecorded() {
+        val vm = CaptureViewModel(MockCameraManager(), MockFileStorage())
+        // When currentStep is null
+        vm.onVideoRecorded("path/video.mp4")
+        assertEquals(0, vm.uiState.value.capturedCount)
+
+        val step1 = PhotoStep("1", "Step 1")
+        val step2 = PhotoStep("2", "Step 2")
+        vm.initSteps(listOf(step1, step2))
+
+        // First video recorded: advances to nextStep
+        vm.onVideoRecorded("path/step1.mp4")
+        assertEquals(1, vm.uiState.value.capturedCount)
+        assertEquals(step2, vm.uiState.value.currentStep)
+        assertFalse(vm.uiState.value.isFinished)
+
+        // Second video recorded: final step finishes session
+        vm.onVideoRecorded("path/step2.mp4")
+        assertEquals(2, vm.uiState.value.capturedCount)
+        assertTrue(vm.uiState.value.isFinished)
+    }
+
+    /** Tests camera capture exception with null message. */
+    @Test
+    fun testCaptureCameraExceptionWithNullMessage() =
+        runTest {
+            val camera = MockCameraManager()
+            camera.exceptionToThrow = Exception(null as String?)
+            val vm = CaptureViewModel(camera, MockFileStorage())
+            vm.initSteps(listOf(PhotoStep("1", "A")))
+
+            vm.onCapture()
+            advanceUntilIdle()
+
+            val err = vm.uiState.value.error
+            assertTrue(err is CaptureError.CameraFailed)
+            assertEquals("Unknown error", (err as CaptureError.CameraFailed).detail)
+        }
 }

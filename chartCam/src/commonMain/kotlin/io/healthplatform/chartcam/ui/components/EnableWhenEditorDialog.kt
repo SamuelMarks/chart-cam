@@ -61,7 +61,7 @@ import chartcam.chartcam.generated.resources.enable_when_operator_less_than
 import chartcam.chartcam.generated.resources.enable_when_operator_not_equal
 import chartcam.chartcam.generated.resources.enable_when_target_question
 import chartcam.chartcam.generated.resources.enable_when_title
-import com.google.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.viewmodel.BuilderEnableWhen
 import io.healthplatform.chartcam.viewmodel.BuilderItem

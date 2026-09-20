@@ -48,7 +48,7 @@ class ExistingVisitE2EJvmTest {
 
             val authRepository = mock(AuthRepository::class.java)
             val practitioner =
-                com.google.fhir.model.r4.Practitioner
+                dev.ohs.fhir.model.r4.Practitioner
                     .Builder()
                     .apply { id = "prac1" }
                     .build()
@@ -79,29 +79,29 @@ class ExistingVisitE2EJvmTest {
                     ).toBuilder()
                     .apply {
                         status =
-                            com.google.fhir.model.r4
-                                .Enumeration(value = com.google.fhir.model.r4.Encounter.EncounterStatus.Finished)
+                            dev.ohs.fhir.model.r4
+                                .Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished)
                     }.build()
             fhirRepository.saveEncounter(enc)
 
             // Add a QuestionnaireResponse to simulate a completed form
             val qr =
-                com.google.fhir.model.r4.QuestionnaireResponse
+                dev.ohs.fhir.model.r4.QuestionnaireResponse
                     .Builder(
-                        com.google.fhir.model.r4.Enumeration(
-                            value = com.google.fhir.model.r4.QuestionnaireResponse.QuestionnaireResponseStatus.Completed,
+                        dev.ohs.fhir.model.r4.Enumeration(
+                            value = dev.ohs.fhir.model.r4.QuestionnaireResponse.QuestionnaireResponseStatus.Completed,
                         ),
                     ).apply {
                         id = "qr-1"
                         encounter =
-                            com.google.fhir.model.r4.Reference.Builder().apply {
+                            dev.ohs.fhir.model.r4.Reference.Builder().apply {
                                 reference =
-                                    com.google.fhir.model.r4.String
+                                    dev.ohs.fhir.model.r4.String
                                         .Builder()
                                         .apply { value = "Encounter/enc-1" }
                             }
                         questionnaire =
-                            com.google.fhir.model.r4.Canonical
+                            dev.ohs.fhir.model.r4.Canonical
                                 .Builder()
                                 .apply { value = "Questionnaire/std-form" }
                     }.build()

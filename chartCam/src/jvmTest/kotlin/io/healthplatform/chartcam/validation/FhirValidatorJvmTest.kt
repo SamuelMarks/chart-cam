@@ -1,16 +1,16 @@
 /**
  * @file FhirValidatorJvmTest.kt
- * Contains declarations for FhirValidatorJvmTest.kt.
+ * Test verifying clinical and structural FHIR resource validation using direct data class instances.
  */
 package io.healthplatform.chartcam.validation
 
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.HumanName
-import com.google.fhir.model.r4.Identifier
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.String
-import com.google.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.HumanName
+import dev.ohs.fhir.model.r4.Identifier
+import dev.ohs.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -24,21 +24,16 @@ class FhirValidatorJvmTest {
     @Test
     fun testValidPatient() {
         val patient =
-            Patient
-                .Builder()
-                .apply {
-                    name.add(
-                        HumanName.Builder().apply {
-                            family = String.Builder().apply { value = "Doe" }
-                            given.add(String.Builder().apply { value = "John" })
-                        },
-                    )
-                    identifier.add(
-                        Identifier.Builder().apply {
-                            value = String.Builder().apply { value = "123" }
-                        },
-                    )
-                }.build()
+            Patient(
+                name =
+                    listOf(
+                        HumanName(
+                            family = String(value = "Doe"),
+                            given = listOf(String(value = "John")),
+                        ),
+                    ),
+                identifier = listOf(Identifier(value = String(value = "123"))),
+            )
         assertTrue(FhirValidator.validate(patient).isSuccess)
     }
 
@@ -47,16 +42,7 @@ class FhirValidatorJvmTest {
      */
     @Test
     fun testInvalidPatientNoName() {
-        val patient =
-            Patient
-                .Builder()
-                .apply {
-                    identifier.add(
-                        Identifier.Builder().apply {
-                            value = String.Builder().apply { value = "123" }
-                        },
-                    )
-                }.build()
+        val patient = Patient(identifier = listOf(Identifier(value = String(value = "123"))))
         assertTrue(FhirValidator.validate(patient).isFailure)
     }
 
@@ -66,20 +52,18 @@ class FhirValidatorJvmTest {
     @Test
     fun testValidQuestionnaire() {
         val q =
-            Questionnaire
-                .Builder(status = Enumeration(value = PublicationStatus.Active))
-                .apply {
-                    title = String.Builder().apply { value = "Test Q" }
-                    item.add(
-                        Questionnaire.Item
-                            .Builder(
-                                linkId = String.Builder().apply { value = "1" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
-                            ).apply {
-                                text = String.Builder().apply { value = "Text" }
-                            },
-                    )
-                }.build()
+            Questionnaire(
+                status = Enumeration(value = PublicationStatus.Active),
+                title = String(value = "Test Q"),
+                item =
+                    listOf(
+                        Questionnaire.Item(
+                            linkId = String(value = "1"),
+                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            text = String(value = "Text"),
+                        ),
+                    ),
+            )
         assertTrue(FhirValidator.validate(q).isSuccess)
     }
 
@@ -89,11 +73,10 @@ class FhirValidatorJvmTest {
     @Test
     fun testInvalidQuestionnaireEmptyItem() {
         val q =
-            Questionnaire
-                .Builder(status = Enumeration(value = PublicationStatus.Active))
-                .apply {
-                    title = String.Builder().apply { value = "Test Q" }
-                }.build()
+            Questionnaire(
+                status = Enumeration(value = PublicationStatus.Active),
+                title = String(value = "Test Q"),
+            )
         assertTrue(FhirValidator.validate(q).isFailure)
     }
 
@@ -103,21 +86,18 @@ class FhirValidatorJvmTest {
     @Test
     fun testInvalidQuestionnaireChoiceNoOptions() {
         val q =
-            Questionnaire
-                .Builder(status = Enumeration(value = PublicationStatus.Active))
-                .apply {
-                    title = String.Builder().apply { value = "Test Q" }
-                    item.add(
-                        Questionnaire.Item
-                            .Builder(
-                                linkId = String.Builder().apply { value = "1" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
-                            ).apply {
-                                text = String.Builder().apply { value = "Pick one" }
-                                // No answerOptions added!
-                            },
-                    )
-                }.build()
+            Questionnaire(
+                status = Enumeration(value = PublicationStatus.Active),
+                title = String(value = "Test Q"),
+                item =
+                    listOf(
+                        Questionnaire.Item(
+                            linkId = String(value = "1"),
+                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            text = String(value = "Pick one"),
+                        ),
+                    ),
+            )
         assertTrue(FhirValidator.validate(q).isFailure)
     }
 }

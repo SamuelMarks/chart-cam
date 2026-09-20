@@ -93,7 +93,7 @@ import chartcam.chartcam.generated.resources.share_questionnaire
 import chartcam.chartcam.generated.resources.share_text_json
 import chartcam.chartcam.generated.resources.title_format
 import chartcam.chartcam.generated.resources.unknown
-import com.google.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.fhir.getLocalizedTitle
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.repository.QuestionnaireSharingService

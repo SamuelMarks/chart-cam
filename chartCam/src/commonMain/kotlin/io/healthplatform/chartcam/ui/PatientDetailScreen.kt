@@ -298,7 +298,7 @@ private fun PatientDetailTopBar(
  * @param patient The patient.
  */
 @Composable
-private fun PatientInfo(patient: com.google.fhir.model.r4.Patient) {
+private fun PatientInfo(patient: dev.ohs.fhir.model.r4.Patient) {
     val currentLang by currentLanguageState.collectAsState()
     Column(modifier = Modifier.fillMaxWidth().padding(AppSpacing.md)) {
         Text(

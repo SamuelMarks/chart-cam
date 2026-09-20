@@ -6,14 +6,14 @@
  */
 package io.healthplatform.chartcam.repository
 
-import com.google.fhir.model.r4.Canonical
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.QuestionnaireResponse
-import com.google.fhir.model.r4.Reference
-import com.google.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.Canonical
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.Reference
 import io.healthplatform.chartcam.models.createFhirEncounter
 import io.healthplatform.chartcam.models.createFhirPatient
 import kotlinx.datetime.LocalDate
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * Manages the seeding and teardown of synthetic clinical demo data.
@@ -90,7 +90,7 @@ object DemoDataSeeder {
      */
     suspend fun seedDemoData(
         fhirRepository: FhirRepository,
-        practitionerId: kotlin.String = "prac_demo_user",
+        practitionerId: String = "prac_demo_user",
     ) {
         seedPatients(fhirRepository)
         seedEncounters(fhirRepository, practitionerId)
@@ -142,7 +142,7 @@ object DemoDataSeeder {
      */
     private suspend fun seedEncounters(
         fhirRepository: FhirRepository,
-        practitionerId: kotlin.String,
+        practitionerId: String,
     ) {
         val pediatricEncounter =
             createFhirEncounter(
@@ -233,41 +233,33 @@ object DemoDataSeeder {
      * @return A constructed [QuestionnaireResponse].
      */
     private fun buildSampleQr(
-        qrId: kotlin.String,
-        patientId: kotlin.String,
-        encounterId: kotlin.String,
-        chiefComplaint: kotlin.String,
+        qrId: String,
+        patientId: String,
+        encounterId: String,
+        chiefComplaint: String,
     ): QuestionnaireResponse =
         QuestionnaireResponse
             .Builder(status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
             .apply {
                 id = qrId
-                questionnaire =
-                    Canonical
-                        .Builder()
-                        .apply { value = "Questionnaire/std-form" }
-                subject =
-                    Reference
-                        .Builder()
-                        .apply { reference = String.Builder().apply { value = "Patient/$patientId" } }
-                encounter =
-                    Reference
-                        .Builder()
-                        .apply { reference = String.Builder().apply { value = "Encounter/$encounterId" } }
+                questionnaire = Canonical(value = "Questionnaire/std-form").toBuilder()
+                subject = Reference(reference = FhirString(value = "Patient/$patientId")).toBuilder()
+                encounter = Reference(reference = FhirString(value = "Encounter/$encounterId")).toBuilder()
                 item.add(
-                    QuestionnaireResponse.Item
-                        .Builder(linkId = String.Builder().apply { value = "q_chief_complaint" })
-                        .apply {
-                            text = String.Builder().apply { value = "Chief Complaint / Clinical Notes" }
-                            answer.add(
-                                QuestionnaireResponse.Item.Answer.Builder().apply {
-                                    value =
-                                        QuestionnaireResponse.Item.Answer.Value.String(
-                                            String.Builder().apply { value = chiefComplaint }.build(),
-                                        )
-                                },
-                            )
-                        },
+                    QuestionnaireResponse
+                        .Item(
+                            linkId = FhirString(value = "q_chief_complaint"),
+                            text = FhirString(value = "Chief Complaint / Clinical Notes"),
+                            answer =
+                                listOf(
+                                    QuestionnaireResponse.Item.Answer(
+                                        value =
+                                            QuestionnaireResponse.Item.Answer.Value.String(
+                                                FhirString(value = chiefComplaint),
+                                            ),
+                                    ),
+                                ),
+                        ).toBuilder(),
                 )
             }.build()
 }

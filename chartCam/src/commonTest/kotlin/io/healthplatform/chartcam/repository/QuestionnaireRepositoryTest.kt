@@ -4,9 +4,9 @@
  */
 package io.healthplatform.chartcam.repository
 
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.String
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -68,7 +68,7 @@ class QuestionnaireRepositoryTest {
             val questionnaireId = "q-123"
             val questionnaire =
                 Questionnaire
-                    .Builder(Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active))
+                    .Builder(Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active))
                     .apply {
                         id = questionnaireId
                         title = String.Builder().apply { value = "Patient Intake Form" }
@@ -85,7 +85,7 @@ class QuestionnaireRepositoryTest {
             // 3. Update (Replace)
             val updatedQuestionnaire =
                 Questionnaire
-                    .Builder(Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active))
+                    .Builder(Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active))
                     .apply {
                         id = questionnaireId
                         title = String.Builder().apply { value = "Updated Intake Form" }
@@ -118,7 +118,7 @@ class QuestionnaireRepositoryTest {
 
         val stdQ =
             Questionnaire
-                .Builder(Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active))
+                .Builder(Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active))
                 .apply {
                     id = "std-form"
                     title = String.Builder().apply { value = "Standard Clinical Photo" }
@@ -186,11 +186,11 @@ class QuestionnaireRepositoryTest {
                     answerOption.add(
                         Questionnaire.Item.AnswerOption.Builder(
                             Questionnaire.Item.AnswerOption.Value.Coding(
-                                com.google.fhir.model.r4.Coding
+                                dev.ohs.fhir.model.r4.Coding
                                     .Builder()
                                     .apply {
                                         code =
-                                            com.google.fhir.model.r4.Code
+                                            dev.ohs.fhir.model.r4.Code
                                                 .Builder()
                                                 .apply { value = "routine" }
                                         display = String.Builder().apply { value = "Routine" }
@@ -202,7 +202,7 @@ class QuestionnaireRepositoryTest {
 
         val choiceQ =
             Questionnaire
-                .Builder(Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active))
+                .Builder(Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active))
                 .apply {
                     id = "basic-followup"
                     title = String.Builder().apply { value = "Followup" }
@@ -257,7 +257,7 @@ class QuestionnaireRepositoryTest {
         val repo = QuestionnaireRepository()
         val qWithoutId =
             Questionnaire
-                .Builder(Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active))
+                .Builder(Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active))
                 .apply {
                     title = String.Builder().apply { value = "No ID" }
                 }.build()

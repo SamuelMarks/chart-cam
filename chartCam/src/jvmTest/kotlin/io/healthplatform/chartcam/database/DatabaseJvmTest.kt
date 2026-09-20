@@ -6,10 +6,10 @@ package io.healthplatform.chartcam.database
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.google.fhir.model.r4.HumanName
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.Practitioner
-import com.google.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.HumanName
+import dev.ohs.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Practitioner
+import dev.ohs.fhir.model.r4.String
 import io.healthplatform.chartcam.models.createFhirEncounter
 import io.healthplatform.chartcam.models.createFhirPatient
 import io.healthplatform.chartcam.repository.FhirRepository

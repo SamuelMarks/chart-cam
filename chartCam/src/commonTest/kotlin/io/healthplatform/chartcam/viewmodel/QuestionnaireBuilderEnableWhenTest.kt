@@ -4,7 +4,7 @@
  */
 package io.healthplatform.chartcam.viewmodel
 
-import com.google.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -118,6 +118,7 @@ class QuestionnaireBuilderEnableWhenTest {
                 .asDecimal()
                 ?.value
                 ?.value
+                ?.asBigDecimal()
                 ?.doubleValue(exactRequired = false),
         )
 

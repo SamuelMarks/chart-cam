@@ -4,6 +4,9 @@
  */
 package io.healthplatform.chartcam.navigation
 
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.v2.runComposeUiTest
+import androidx.navigation.compose.rememberNavController
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -12,11 +15,16 @@ import kotlin.test.assertEquals
  */
 class BrowserHistorySetupJvmTest {
     /**
-     * Test browser history setup component presence on JVM.
+     * Test browser history setup component execution on JVM.
      */
+    @OptIn(ExperimentalTestApi::class)
     @Test
-    fun testBrowserHistorySetupJvm() {
-        val rootRoute = Routes.LOGIN
-        assertEquals("/auth/login", rootRoute)
-    }
+    fun testBrowserHistorySetupJvm() =
+        runComposeUiTest {
+            setContent {
+                val navController = rememberNavController()
+                SetupBrowserHistory(navController)
+            }
+            assertEquals("/auth/login", Routes.LOGIN)
+        }
 }

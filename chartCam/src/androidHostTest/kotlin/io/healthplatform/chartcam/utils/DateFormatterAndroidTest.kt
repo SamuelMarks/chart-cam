@@ -32,7 +32,7 @@ class DateFormatterAndroidTest {
 
         // Blank
         val blank = formatLocalizedDate("   ")
-        assertEquals("   ", blank)
+        assertEquals("", blank)
 
         // Invalid parsing falls back to original string
         val invalid = formatLocalizedDate("Invalid Date")
@@ -54,7 +54,7 @@ class DateFormatterAndroidTest {
         assert(localDateTime.isNotEmpty())
 
         val blank = formatLocalizedDateTime("   ", "en")
-        assertEquals("   ", blank)
+        assertEquals("", blank)
 
         val invalid = formatLocalizedDateTime("Invalid DateTime", "en")
         assertEquals("Invalid DateTime", invalid)

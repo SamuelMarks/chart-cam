@@ -4,10 +4,10 @@
  */
 package io.healthplatform.chartcam.sdc
 
-import com.google.fhir.model.r4.Boolean
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.Boolean
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.String
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

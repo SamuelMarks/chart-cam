@@ -4,13 +4,13 @@
  */
 package io.healthplatform.chartcam.ui
 
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Extension
-import com.google.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Extension
+import dev.ohs.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.fhir.SdcExtensions
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import com.google.fhir.model.r4.String as FhirString
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * Common test wrapper for the Capture Screen logic.

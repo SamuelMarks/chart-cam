@@ -43,6 +43,10 @@ class IosFileStorage : FileStorage {
         bytes: ByteArray,
     ): String {
         val path = documentDir / fileName
+        val parent = path.parent
+        if (parent != null && !fileSystem.exists(parent)) {
+            fileSystem.createDirectories(parent)
+        }
         fileSystem.write(path) {
             write(bytes)
         }

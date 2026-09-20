@@ -12,9 +12,9 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -38,7 +38,7 @@ class QuestionnaireListScreenTest {
                     .apply {
                         id = "q-123"
                         title =
-                            com.google.fhir.model.r4.String
+                            dev.ohs.fhir.model.r4.String
                                 .Builder()
                                 .apply { value = "Test Questionnaire 123" }
                     }.build()
@@ -138,7 +138,7 @@ class QuestionnaireListScreenTest {
                     .apply {
                         id = "q-456"
                         title =
-                            com.google.fhir.model.r4.String
+                            dev.ohs.fhir.model.r4.String
                                 .Builder()
                                 .apply { value = "Preview Me" }
                     }.build()
@@ -174,7 +174,7 @@ class QuestionnaireListScreenTest {
                     .apply {
                         id = "shareable-form"
                         title =
-                            com.google.fhir.model.r4.String
+                            dev.ohs.fhir.model.r4.String
                                 .Builder()
                                 .apply { value = "Share This" }
                     }.build()
@@ -301,7 +301,7 @@ class QuestionnaireListScreenTest {
                     .apply {
                         id = "exportable-form"
                         title =
-                            com.google.fhir.model.r4.String
+                            dev.ohs.fhir.model.r4.String
                                 .Builder()
                                 .apply { value = "Exportable Form" }
                     }.build()

@@ -21,7 +21,7 @@ import java.util.Locale
 actual fun changeAppLanguage(language: String) {
     val locale = Locale.forLanguageTag(language)
     Locale.setDefault(locale)
-    val context = AndroidAppInit.getContext()
+    val context = runCatching { AndroidAppInit.getContext() }.getOrNull() ?: return
     val resources = context.resources
     val config = resources.configuration
     config.setLocale(locale)

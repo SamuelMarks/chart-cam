@@ -4,9 +4,14 @@
  */
 package io.healthplatform.chartcam.validation
 
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.Resource
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.OperationOutcome
+import dev.ohs.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.Resource
+import io.healthplatform.chartcam.utils.UUID
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * Base sealed class for FHIR validation exceptions.
@@ -58,12 +63,12 @@ sealed class FhirValidationException(
 }
 
 /**
- * Native kotlin-fhir validation engine wrapper.
- * Enforces StructureDefinition rules on FHIR resources.
+ * Enforces ChartCam clinical profile conformance and business integrity rules on FHIR resources.
+ * Distinguishes application-specific clinical constraints from base FHIR schema serialization checks.
  */
 object FhirValidator {
     /**
-     * Validates a FHIR resource against its StructureDefinition.
+     * Validates a FHIR resource against ChartCam clinical profiles.
      *
      * @param resource The FHIR Resource to validate.
      * @return A [Result] indicating success if valid, or a [FhirValidationException] on failure.
@@ -72,7 +77,35 @@ object FhirValidator {
         when (resource) {
             is Patient -> validatePatient(resource)
             is Questionnaire -> validateQuestionnaire(resource)
+            is QuestionnaireResponse -> validateQuestionnaireResponse(resource)
             else -> Result.success(Unit)
+        }
+
+    /**
+     * Validates a FHIR resource and returns a standard FHIR [OperationOutcome] describing any issues.
+     *
+     * @param resource The FHIR Resource to validate.
+     * @return A [Result] enclosing an [OperationOutcome] if defects exist, or null if completely valid.
+     */
+    fun validateToOutcome(resource: Resource): Result<OperationOutcome?> =
+        runCatching {
+            val issues = mutableListOf<OperationOutcome.Issue>()
+
+            when (resource) {
+                is Patient -> checkPatientOutcomeIssues(resource, issues)
+                is Questionnaire -> checkQuestionnaireOutcomeIssues(resource, issues)
+                is QuestionnaireResponse -> checkQuestionnaireResponseOutcomeIssues(resource, issues)
+                else -> Unit
+            }
+
+            if (issues.isEmpty()) {
+                null
+            } else {
+                OperationOutcome(
+                    id = UUID.randomUUID(),
+                    issue = issues,
+                )
+            }
         }
 
     /**
@@ -81,7 +114,7 @@ object FhirValidator {
      * @param patient The Patient resource to validate.
      * @return A [Result] indicating success or failure.
      */
-    private fun validatePatient(patient: Patient): Result<Unit> {
+    fun validatePatient(patient: Patient): Result<Unit> {
         val err = checkPatientErrors(patient)
         return if (err != null) Result.failure(err) else Result.success(Unit)
     }
@@ -109,10 +142,23 @@ object FhirValidator {
      * @param questionnaire The Questionnaire to validate.
      * @return A [Result] indicating success or failure.
      */
-    private fun validateQuestionnaire(questionnaire: Questionnaire): Result<Unit> {
+    fun validateQuestionnaire(questionnaire: Questionnaire): Result<Unit> {
         val err = checkQuestionnaireErrors(questionnaire)
         return if (err != null) Result.failure(err) else Result.success(Unit)
     }
+
+    /**
+     * Validates a QuestionnaireResponse ensuring required links and status are populated.
+     *
+     * @param response The [QuestionnaireResponse] to validate.
+     * @return A [Result] indicating success or failure.
+     */
+    fun validateQuestionnaireResponse(response: QuestionnaireResponse): Result<Unit> =
+        if (response.status.value == null) {
+            Result.failure(FhirValidationException.MissingRequiredFieldException("status"))
+        } else {
+            Result.success(Unit)
+        }
 
     /**
      * Evaluates structural questionnaire errors.
@@ -182,7 +228,7 @@ object FhirValidator {
      * @param linkIds Set of valid linkIds in the questionnaire.
      * @return A validation exception if a dangling clause is found, or null.
      */
-    private fun validateEnableWhenClauses(
+    internal fun validateEnableWhenClauses(
         items: List<Questionnaire.Item>,
         linkIds: Set<String>,
     ): FhirValidationException? {
@@ -197,4 +243,145 @@ object FhirValidator {
         }
         return null
     }
+
+    /**
+     * Collects Patient validation issues for OperationOutcome generation.
+     *
+     * @param patient The Patient to validate.
+     * @param issues The list of issues to populate.
+     */
+    private fun checkPatientOutcomeIssues(
+        patient: Patient,
+        issues: MutableList<OperationOutcome.Issue>,
+    ) {
+        if (patient.name.isEmpty()) {
+            issues.add(
+                createIssue(
+                    severity = OperationOutcome.IssueSeverity.Error,
+                    code = OperationOutcome.IssueType.Required,
+                    diagnostics = "Patient is missing required field 'name'",
+                    expression = "Patient.name",
+                ),
+            )
+        }
+        if (!patient.name.any { it.given.isNotEmpty() }) {
+            issues.add(
+                createIssue(
+                    severity = OperationOutcome.IssueSeverity.Error,
+                    code = OperationOutcome.IssueType.Required,
+                    diagnostics = "Patient.name is missing 'given' name",
+                    expression = "Patient.name.given",
+                ),
+            )
+        }
+        if (!patient.name.any { it.family?.value?.isNotEmpty() == true }) {
+            issues.add(
+                createIssue(
+                    severity = OperationOutcome.IssueSeverity.Error,
+                    code = OperationOutcome.IssueType.Required,
+                    diagnostics = "Patient.name is missing 'family' name",
+                    expression = "Patient.name.family",
+                ),
+            )
+        }
+        if (patient.identifier.isEmpty()) {
+            issues.add(
+                createIssue(
+                    severity = OperationOutcome.IssueSeverity.Error,
+                    code = OperationOutcome.IssueType.Required,
+                    diagnostics = "Patient is missing required field 'identifier'",
+                    expression = "Patient.identifier",
+                ),
+            )
+        }
+    }
+
+    /**
+     * Collects Questionnaire validation issues for OperationOutcome generation.
+     *
+     * @param questionnaire The Questionnaire to validate.
+     * @param issues The list of issues to populate.
+     */
+    private fun checkQuestionnaireOutcomeIssues(
+        questionnaire: Questionnaire,
+        issues: MutableList<OperationOutcome.Issue>,
+    ) {
+        if (questionnaire.title?.value.isNullOrBlank()) {
+            issues.add(
+                createIssue(
+                    severity = OperationOutcome.IssueSeverity.Error,
+                    code = OperationOutcome.IssueType.Required,
+                    diagnostics = "Questionnaire is missing required field 'title'",
+                    expression = "Questionnaire.title",
+                ),
+            )
+        }
+        val linkIds = mutableSetOf<String>()
+        for (item in questionnaire.item) {
+            val id = item.linkId.value
+            if (id.isNullOrBlank()) {
+                issues.add(
+                    createIssue(
+                        severity = OperationOutcome.IssueSeverity.Error,
+                        code = OperationOutcome.IssueType.Required,
+                        diagnostics = "Questionnaire item missing linkId",
+                        expression = "Questionnaire.item.linkId",
+                    ),
+                )
+            } else if (!linkIds.add(id)) {
+                issues.add(
+                    createIssue(
+                        severity = OperationOutcome.IssueSeverity.Error,
+                        code = OperationOutcome.IssueType.Duplicate,
+                        diagnostics = "Duplicate linkId: $id",
+                        expression = "Questionnaire.item.where(linkId='$id')",
+                    ),
+                )
+            }
+        }
+    }
+
+    /**
+     * Collects QuestionnaireResponse validation issues for OperationOutcome generation.
+     *
+     * @param response The QuestionnaireResponse to validate.
+     * @param issues The list of issues to populate.
+     */
+    private fun checkQuestionnaireResponseOutcomeIssues(
+        response: QuestionnaireResponse,
+        issues: MutableList<OperationOutcome.Issue>,
+    ) {
+        if (response.status.value == null) {
+            issues.add(
+                createIssue(
+                    severity = OperationOutcome.IssueSeverity.Error,
+                    code = OperationOutcome.IssueType.Required,
+                    diagnostics = "QuestionnaireResponse is missing required field 'status'",
+                    expression = "QuestionnaireResponse.status",
+                ),
+            )
+        }
+    }
+
+    /**
+     * Constructs a typed OperationOutcome Issue.
+     *
+     * @param severity The severity level.
+     * @param code The issue type code.
+     * @param diagnostics Descriptive error message.
+     * @param expression Target FHIRPath expression.
+     * @return The populated [OperationOutcome.Issue].
+     */
+    private fun createIssue(
+        severity: OperationOutcome.IssueSeverity,
+        code: OperationOutcome.IssueType,
+        diagnostics: kotlin.String,
+        expression: kotlin.String,
+    ): OperationOutcome.Issue =
+        OperationOutcome.Issue(
+            severity = Enumeration(value = severity),
+            code = Enumeration(value = code),
+            diagnostics = FhirString(value = diagnostics),
+            expression = listOf(FhirString(value = expression)),
+        )
 }

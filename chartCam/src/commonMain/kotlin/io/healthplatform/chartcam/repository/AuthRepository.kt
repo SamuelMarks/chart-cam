@@ -7,11 +7,9 @@
  */
 package io.healthplatform.chartcam.repository
 
-import com.google.fhir.model.r4.Boolean
-import com.google.fhir.model.r4.HumanName
-import com.google.fhir.model.r4.Practitioner
-import com.google.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.Practitioner
 import io.healthplatform.chartcam.models.TokenResponse
+import io.healthplatform.chartcam.models.createFhirPractitioner
 import io.healthplatform.chartcam.storage.SecureStorage
 import io.healthplatform.chartcam.utils.runSuspendCatching
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -166,18 +164,12 @@ open class AuthRepository(
             storage.save(KEY_CURRENT_USERNAME, username)
 
             val practitioner =
-                Practitioner
-                    .Builder()
-                    .apply {
-                        id = "prac_${username.hashCode()}"
-                        active = Boolean.Builder().apply { value = true }
-                        name.add(
-                            HumanName.Builder().apply {
-                                family = String.Builder().apply { value = username }
-                                given.add(String.Builder().apply { value = "Dr." })
-                            },
-                        )
-                    }.build()
+                createFhirPractitioner(
+                    id = "prac_${username.hashCode()}",
+                    lastName = username,
+                    firstName = "Dr.",
+                    isActive = true,
+                )
 
             _currentUser.value = practitioner
             practitioner
@@ -205,18 +197,12 @@ open class AuthRepository(
         storage.save(KEY_IS_DEMO, "true")
 
         val practitioner =
-            Practitioner
-                .Builder()
-                .apply {
-                    id = DEMO_PRACTITIONER_ID
-                    active = Boolean.Builder().apply { value = true }
-                    name.add(
-                        HumanName.Builder().apply {
-                            family = String.Builder().apply { value = "Clinician" }
-                            given.add(String.Builder().apply { value = "Dr. Demo" })
-                        },
-                    )
-                }.build()
+            createFhirPractitioner(
+                id = DEMO_PRACTITIONER_ID,
+                lastName = "Clinician",
+                firstName = "Dr. Demo",
+                isActive = true,
+            )
 
         _currentUser.value = practitioner
         _isDemoSession.value = true
@@ -240,18 +226,12 @@ open class AuthRepository(
             val givenName = if (isDemo) "Dr. Demo" else "Dr."
 
             val practitioner =
-                Practitioner
-                    .Builder()
-                    .apply {
-                        id = pracId
-                        active = Boolean.Builder().apply { value = true }
-                        name.add(
-                            HumanName.Builder().apply {
-                                family = String.Builder().apply { value = familyName }
-                                given.add(String.Builder().apply { value = givenName })
-                            },
-                        )
-                    }.build()
+                createFhirPractitioner(
+                    id = pracId,
+                    lastName = familyName,
+                    firstName = givenName,
+                    isActive = true,
+                )
             _currentUser.value = practitioner
             return Result.success(practitioner)
         }

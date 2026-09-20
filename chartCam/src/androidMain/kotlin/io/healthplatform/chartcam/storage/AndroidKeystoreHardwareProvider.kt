@@ -13,9 +13,11 @@ import android.os.Build
  * Evaluates hardware backing via KeyStore capability and OS version.
  *
  * @param sdkInt The Android API version code to evaluate.
+ * @param contextProvider Optional context provider for test environments.
  */
 class AndroidKeystoreHardwareProvider(
     private val sdkInt: Int = Build.VERSION.SDK_INT,
+    private val contextProvider: (() -> Context?)? = null,
 ) : KeystoreHardwareProvider {
     /**
      * Checks whether KeyStore is backed by secure hardware.
@@ -51,25 +53,30 @@ class AndroidKeystoreHardwareProvider(
     override suspend fun promptBiometrics(
         title: String,
         subtitle: String,
-    ): Result<Unit> =
-        runCatching {
-            val status = getHardwareStatus()
-            if (status != BiometricHardwareStatus.AVAILABLE) {
-                return Result.failure(IllegalStateException("Biometrics unavailable: $status"))
-            }
-            val context =
+    ): Result<Unit> {
+        val status = getHardwareStatus()
+        if (status != BiometricHardwareStatus.AVAILABLE) {
+            return Result.failure(IllegalStateException("Biometrics unavailable: $status"))
+        }
+        val context =
+            if (contextProvider != null) {
+                contextProvider.invoke()
+            } else {
                 runCatching {
                     io.healthplatform.chartcam.AndroidAppInit
                         .getContext()
                 }.getOrNull()
-            if (context != null) {
-                val keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
-                if (keyguardManager != null && !keyguardManager.isDeviceSecure) {
-                    return Result.failure(IllegalStateException("Device credentials/biometrics not secure"))
-                }
             }
+
+        val keyguardManager = context?.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+        val isInsecure = keyguardManager?.isDeviceSecure == false
+
+        return if (isInsecure) {
+            Result.failure(IllegalStateException("Device credentials/biometrics not secure"))
+        } else {
             Result.success(Unit)
         }
+    }
 }
 
 /**

@@ -20,8 +20,12 @@ class FormValidatorTest {
     fun testRequiredFieldValidation() {
         assertFalse(FormValidator.validateText(null, required = true), "Null should fail if required")
         assertFalse(FormValidator.validateText("", required = true), "Empty string should fail if required")
+        assertFalse(FormValidator.validateText("   ", required = true), "Whitespace should fail if required")
         assertTrue(FormValidator.validateText(null, required = false), "Null should pass if not required")
+        assertTrue(FormValidator.validateText("", required = false), "Empty string should pass if not required")
+        assertTrue(FormValidator.validateText("   ", required = false), "Whitespace should pass if not required")
         assertTrue(FormValidator.validateText("Valid", required = true), "Valid text should pass")
+        assertTrue(FormValidator.validateText("Valid", required = false), "Valid text should pass when not required")
     }
 
     /**
@@ -29,7 +33,7 @@ class FormValidatorTest {
      */
     @Test
     fun testRegexValidation() {
-        val emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$"
+        val emailRegex = """^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}$"""
         assertTrue(FormValidator.validateText("test@example.com", required = true, regex = emailRegex), "Valid email should pass regex")
         assertFalse(FormValidator.validateText("invalid-email", required = true, regex = emailRegex), "Invalid email should fail regex")
         assertTrue(
@@ -37,11 +41,11 @@ class FormValidatorTest {
             "Null should pass if not required, even with regex",
         )
 
-        val phoneRegex = "^\\+?[1-9]\\d{1,14}\$"
+        val phoneRegex = """^\+?[1-9]\d{1,14}$"""
         assertTrue(FormValidator.validateText("+1234567890", required = true, regex = phoneRegex), "Valid phone should pass")
         assertFalse(FormValidator.validateText("not-a-phone", required = true, regex = phoneRegex), "Invalid phone should fail")
 
-        val identifierRegex = "^[A-Z]{3}-\\d{4}\$"
+        val identifierRegex = """^[A-Z]{3}-\d{4}$"""
         assertTrue(FormValidator.validateText("ABC-1234", required = true, regex = identifierRegex), "Valid identifier should pass")
         assertFalse(FormValidator.validateText("abc-1234", required = true, regex = identifierRegex), "Invalid identifier should fail")
     }
@@ -54,7 +58,7 @@ class FormValidatorTest {
         val extremelyLongString = "A".repeat(10000)
         assertTrue(FormValidator.validateText(extremelyLongString, required = true), "Extremely long string should pass if no length limit")
 
-        val customLengthRegex = "^.{1,10}\$"
+        val customLengthRegex = """^.{1,10}$"""
         assertFalse(
             FormValidator.validateText(extremelyLongString, required = true, regex = customLengthRegex),
             "Extremely long string should fail length regex",
@@ -70,11 +74,25 @@ class FormValidatorTest {
      */
     @Test
     fun testNumericRangeValidation() {
+        // Null checks
+        assertFalse(FormValidator.validateNumber(null, required = true), "Null number should fail when required")
+        assertTrue(FormValidator.validateNumber(null, required = false), "Null number should pass when not required")
+
+        // Unbounded on both ends (min = null, max = null)
+        assertTrue(FormValidator.validateNumber(42.0, required = true), "Unbounded number should pass")
+        assertTrue(FormValidator.validateNumber(42.0, required = false), "Unbounded optional number should pass")
+
+        // Max only (min = null)
+        assertTrue(FormValidator.validateNumber(5.0, required = true, min = null, max = 10.0), "Number below max should pass")
+        assertTrue(FormValidator.validateNumber(10.0, required = true, min = null, max = 10.0), "Number at max should pass")
+        assertFalse(FormValidator.validateNumber(15.0, required = true, min = null, max = 10.0), "Number above max should fail")
+
+        // Range bounded on both ends
         assertTrue(FormValidator.validateNumber(15.0, required = true, min = 10.0, max = 20.0), "Value within range should pass")
         assertFalse(FormValidator.validateNumber(5.0, required = true, min = 10.0, max = 20.0), "Value below min should fail")
         assertFalse(FormValidator.validateNumber(25.0, required = true, min = 10.0, max = 20.0), "Value above max should fail")
 
-        // Unbounded ends
+        // Unbounded ends (min only)
         assertTrue(FormValidator.validateNumber(25.0, required = true, min = 10.0), "Value above min should pass if no max")
         assertFalse(FormValidator.validateNumber(5.0, required = true, min = 10.0), "Value below min should fail if no max")
 
@@ -93,5 +111,23 @@ class FormValidatorTest {
             FormValidator.validateNumber(-Double.MAX_VALUE, required = true, min = 0.0),
             "-Double.MAX_VALUE should fail min constraint",
         )
+    }
+
+    /**
+     * Verifies calling validateText and validateNumber with default arguments.
+     */
+    @Test
+    fun testDefaultArguments() {
+        assertTrue(FormValidator.validateText("simple"))
+        assertTrue(FormValidator.validateText(null))
+        assertTrue(FormValidator.validateText("simple", required = true))
+        assertFalse(FormValidator.validateText(null, required = true))
+        assertTrue(FormValidator.validateText("simple", regex = "^sim.*$"))
+        assertTrue(FormValidator.validateNumber(100.0))
+        assertTrue(FormValidator.validateNumber(null))
+        assertTrue(FormValidator.validateNumber(100.0, required = true))
+        assertTrue(FormValidator.validateNumber(100.0, min = 50.0))
+        assertTrue(FormValidator.validateNumber(100.0, max = 200.0))
+        assertTrue(FormValidator.validateNumber(100.0, min = 50.0, max = 150.0))
     }
 }

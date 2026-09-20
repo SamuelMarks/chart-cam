@@ -4,13 +4,13 @@
  */
 package io.healthplatform.chartcam.terminology
 
-import com.google.fhir.model.r4.Code
-import com.google.fhir.model.r4.CodeSystem
-import com.google.fhir.model.r4.Coding
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.String
-import com.google.fhir.model.r4.Uri
-import com.google.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.Code
+import dev.ohs.fhir.model.r4.CodeSystem
+import dev.ohs.fhir.model.r4.Coding
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Uri
+import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * Service that provides standard clinical terminology resources (e.g. LOINC, SNOMED)
@@ -18,10 +18,10 @@ import com.google.fhir.model.r4.terminologies.PublicationStatus
  */
 object TerminologyService {
     /** The canonical URI for the LOINC code system. */
-    const val LOINC_URI: kotlin.String = "http://loinc.org"
+    const val LOINC_URI: String = "http://loinc.org"
 
     /** The canonical URI for the SNOMED CT code system. */
-    const val SNOMED_URI: kotlin.String = "http://snomed.info/sct"
+    const val SNOMED_URI: String = "http://snomed.info/sct"
 
     /**
      * Retrieves the basic [CodeSystem] resource definition for LOINC.
@@ -29,15 +29,13 @@ object TerminologyService {
      * @return A constructed FHIR [CodeSystem] representing LOINC.
      */
     fun getLoincCodeSystem(): CodeSystem =
-        CodeSystem
-            .Builder(
-                status = Enumeration(value = PublicationStatus.Active),
-                content = Enumeration(value = CodeSystem.CodeSystemContentMode.Complete),
-            ).apply {
-                url = Uri.Builder().apply { value = LOINC_URI }
-                name = String.Builder().apply { value = "LOINC" }
-                title = String.Builder().apply { value = "Logical Observation Identifiers Names and Codes" }
-            }.build()
+        CodeSystem(
+            status = Enumeration(value = PublicationStatus.Active),
+            content = Enumeration(value = CodeSystem.CodeSystemContentMode.Complete),
+            url = Uri(value = LOINC_URI),
+            name = FhirString(value = "LOINC"),
+            title = FhirString(value = "Logical Observation Identifiers Names and Codes"),
+        )
 
     /**
      * Retrieves the basic [CodeSystem] resource definition for SNOMED CT.
@@ -45,15 +43,13 @@ object TerminologyService {
      * @return A constructed FHIR [CodeSystem] representing SNOMED CT.
      */
     fun getSnomedCodeSystem(): CodeSystem =
-        CodeSystem
-            .Builder(
-                status = Enumeration(value = PublicationStatus.Active),
-                content = Enumeration(value = CodeSystem.CodeSystemContentMode.Complete),
-            ).apply {
-                url = Uri.Builder().apply { value = SNOMED_URI }
-                name = String.Builder().apply { value = "SNOMED CT" }
-                title = String.Builder().apply { value = "Systematized Nomenclature of Medicine Clinical Terms" }
-            }.build()
+        CodeSystem(
+            status = Enumeration(value = PublicationStatus.Active),
+            content = Enumeration(value = CodeSystem.CodeSystemContentMode.Complete),
+            url = Uri(value = SNOMED_URI),
+            name = FhirString(value = "SNOMED CT"),
+            title = FhirString(value = "Systematized Nomenclature of Medicine Clinical Terms"),
+        )
 
     /**
      * Constructs a LOINC [Coding] element for use in FHIR resources.
@@ -63,16 +59,31 @@ object TerminologyService {
      * @return A FHIR [Coding] object populated with the LOINC system and provided code.
      */
     fun getLoincCoding(
-        codeVal: kotlin.String,
-        displayVal: kotlin.String? = null,
+        codeVal: String,
+        displayVal: String? = null,
     ): Coding =
-        Coding
-            .Builder()
-            .apply {
-                system = Uri.Builder().apply { value = LOINC_URI }
-                code = Code.Builder().apply { value = codeVal }
-                if (displayVal != null) {
-                    display = String.Builder().apply { value = displayVal }
-                }
-            }.build()
+        Coding(
+            system = Uri(value = LOINC_URI),
+            code = Code(value = codeVal),
+            display = displayVal?.let { FhirString(value = it) },
+        )
+
+    /**
+     * Helper factory to construct standard clinical Coding elements.
+     *
+     * @param system Canonical terminology system URI.
+     * @param code The terminology code.
+     * @param display Optional human-readable display string.
+     * @return A constructed FHIR [Coding] object.
+     */
+    fun createCoding(
+        system: String,
+        code: String,
+        display: String? = null,
+    ): Coding =
+        Coding(
+            system = Uri(value = system),
+            code = Code(value = code),
+            display = display?.let { FhirString(value = it) },
+        )
 }

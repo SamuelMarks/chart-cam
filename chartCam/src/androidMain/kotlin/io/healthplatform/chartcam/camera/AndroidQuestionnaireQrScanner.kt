@@ -18,9 +18,7 @@ class AndroidQuestionnaireQrScanner : QuestionnaireQrScanner {
      */
     override suspend fun scanQuestionnaireQrCode(): Result<String> =
         withContext(Dispatchers.Default) {
-            runCatching {
-                Result.failure<String>(IllegalStateException("No active camera barcode detected")).getOrThrow()
-            }
+            Result.failure(IllegalStateException("No active camera barcode detected"))
         }
 }
 

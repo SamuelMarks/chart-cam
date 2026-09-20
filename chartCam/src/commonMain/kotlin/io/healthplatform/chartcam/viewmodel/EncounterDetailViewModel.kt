@@ -10,17 +10,17 @@ package io.healthplatform.chartcam.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.fhir.model.r4.Canonical
-import com.google.fhir.model.r4.DateTime
-import com.google.fhir.model.r4.DocumentReference
-import com.google.fhir.model.r4.Encounter
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.FhirDateTime
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.Practitioner
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.QuestionnaireResponse
-import com.google.fhir.model.r4.Reference
+import dev.ohs.fhir.model.r4.Canonical
+import dev.ohs.fhir.model.r4.DateTime
+import dev.ohs.fhir.model.r4.DocumentReference
+import dev.ohs.fhir.model.r4.Encounter
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.FhirDateTime
+import dev.ohs.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Practitioner
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.Reference
 import io.healthplatform.chartcam.models.DocumentReferenceCreationParams
 import io.healthplatform.chartcam.models.createFhirDocumentReference
 import io.healthplatform.chartcam.models.createFhirEncounter
@@ -78,6 +78,7 @@ data class EncounterUiState(
  * @param recoveredFormResolver Function providing the localized title for recovered questionnaires.
  * @param fileStorage The file storage instance for media file operations.
  */
+@Suppress("LargeClass")
 class EncounterDetailViewModel(
     private val fhirRepository: FhirRepository,
     private val authRepository: AuthRepository,
@@ -146,8 +147,8 @@ class EncounterDetailViewModel(
         val newEncounter =
             createFhirEncounter(
                 id = encounterId,
-                patientId = patient.id ?: "",
-                practitionerId = practitioner.id ?: "",
+                patientId = extractResourceStringId(patient.id),
+                practitionerId = extractResourceStringId(practitioner.id),
                 dateStr = now.toString(),
             )
 
@@ -156,17 +157,16 @@ class EncounterDetailViewModel(
         val docs =
             photosMap.map { (stepName, path) ->
                 val label =
-                    questionnaires.firstOrNull()?.item?.let { items ->
-                        io.healthplatform.chartcam.utils.QuestionnaireUtils
-                            .findItemRecursively(items, stepName)
-                            ?.text
-                            ?.value
-                    } ?: stepName
+                    resolvePhotoLabel(
+                        stepName,
+                        questionnaires.firstOrNull(),
+                        questionnaires,
+                    )
 
                 createFhirDocumentReference(
                     DocumentReferenceCreationParams(
                         id = UUID.randomUUID(),
-                        patientId = patient.id ?: "",
+                        patientId = extractResourceStringId(patient.id),
                         encounterId = encounterId,
                         dateStr = now.toString(),
                         desc = label,
@@ -205,7 +205,9 @@ class EncounterDetailViewModel(
     ): Questionnaire? {
         if (existingResponses.isEmpty()) return null
         val latestQr = existingResponses.first()
-        val rawCanonical = latestQr.questionnaire?.value ?: ""
+        val qCanonical = latestQr.questionnaire
+        val rawVal = if (qCanonical != null) qCanonical.value else null
+        val rawCanonical = if (rawVal != null) rawVal else ""
         val resolvedQId = rawCanonical.substringAfterLast("/")
         var existingSelectedQ = questionnaires.find { it.id == resolvedQId }
         if (existingSelectedQ == null) {
@@ -217,8 +219,83 @@ class EncounterDetailViewModel(
     }
 
     /**
-     * Handles existing encounter.
-     * @param visitId The visitId.
+     * Resolves display label for a photo step based on active or fallback questionnaires.
+     *
+     * @param stepName The step name identifier.
+     * @param existingSelectedQ The selected questionnaire.
+     * @param questionnaires Fallback questionnaires list.
+     * @return The resolved display label.
+     */
+    private fun resolvePhotoLabel(
+        stepName: String,
+        existingSelectedQ: Questionnaire?,
+        questionnaires: List<Questionnaire>,
+    ): String {
+        var label = stepName
+        if (existingSelectedQ != null) {
+            val found =
+                io.healthplatform.chartcam.utils.QuestionnaireUtils
+                    .findItemRecursively(existingSelectedQ.item, stepName)
+            val txt = if (found != null) found.text else null
+            val txtVal = if (txt != null) txt.value else null
+            if (txtVal != null) {
+                label = txtVal
+            }
+        }
+        if (label == stepName && questionnaires.isNotEmpty()) {
+            val found =
+                io.healthplatform.chartcam.utils.QuestionnaireUtils
+                    .findItemRecursively(questionnaires[0].item, stepName)
+            val txt = if (found != null) found.text else null
+            val txtVal = if (txt != null) txt.value else null
+            if (txtVal != null) {
+                label = txtVal
+            }
+        }
+        return label
+    }
+
+    /**
+     * Creates new DocumentReference objects for photos attached to an existing encounter.
+     *
+     * @param photosMap Map of step names to photo file paths.
+     * @param existingEncounter The existing FHIR encounter.
+     * @param patient The current FHIR patient.
+     * @param existingSelectedQ The currently selected questionnaire, or null.
+     * @param questionnaires The list of available questionnaires.
+     * @return List of persisted [DocumentReference] instances.
+     */
+    private suspend fun createPhotosForExistingEncounter(
+        photosMap: Map<String, String>,
+        existingEncounter: Encounter,
+        patient: Patient,
+        existingSelectedQ: Questionnaire?,
+        questionnaires: List<Questionnaire>,
+    ): List<DocumentReference> {
+        val now =
+            kotlin.time.Clock.System
+                .now()
+        return photosMap.map { (stepName, path) ->
+            val label = resolvePhotoLabel(stepName, existingSelectedQ, questionnaires)
+            createFhirDocumentReference(
+                DocumentReferenceCreationParams(
+                    id = UUID.randomUUID(),
+                    patientId = extractResourceStringId(patient.id),
+                    encounterId = extractResourceStringId(existingEncounter.id),
+                    dateStr = now.toString(),
+                    desc = label,
+                    mime = "image/jpeg",
+                    urlPath = path,
+                    answerCode = stepName,
+                ),
+            ).also { fhirRepository.saveDocumentReference(it) }
+        }
+    }
+
+    /**
+     * Handles existing encounter initialization and merges photos and questionnaire responses.
+     *
+     * @param visitId The encounter identifier.
      * @param patient The patient.
      * @param practitioner The practitioner.
      * @param questionnaires The questionnaires.
@@ -232,64 +309,39 @@ class EncounterDetailViewModel(
         photosMap: Map<String, String>,
     ) {
         val existingEncounter = fhirRepository.getEncounter(visitId)
+        if (existingEncounter == null) {
+            _uiState.update { it.copy(patient = patient, isLoading = false) }
+            return
+        }
+
         val existingDocs = fhirRepository.getPhotosForEncounter(visitId).toMutableList()
         val existingResponses = fhirRepository.getQuestionnaireResponsesForEncounter(visitId)
 
         val existingAnswers = mutableMapOf<String, Any>()
-        var existingSelectedQ: Questionnaire? =
+        val existingSelectedQ: Questionnaire? =
             extractExistingAnswers(existingResponses, questionnaires, existingAnswers)
 
-        if (existingEncounter != null) {
-            val now =
-                kotlin.time.Clock.System
-                    .now()
-            val newDocs =
-                photosMap.map { (stepName, path) ->
-                    var label = stepName
-                    existingSelectedQ?.item?.let { items ->
-                        label = io.healthplatform.chartcam.utils.QuestionnaireUtils
-                            .findItemRecursively(items, stepName)
-                            ?.text
-                            ?.value ?: label
-                    }
-                    if (label == stepName) {
-                        questionnaires.firstOrNull()?.item?.let { items ->
-                            label = io.healthplatform.chartcam.utils.QuestionnaireUtils
-                                .findItemRecursively(items, stepName)
-                                ?.text
-                                ?.value ?: label
-                        }
-                    }
+        val newDocs =
+            createPhotosForExistingEncounter(
+                photosMap,
+                existingEncounter,
+                patient,
+                existingSelectedQ,
+                questionnaires,
+            )
+        existingDocs.addAll(newDocs)
 
-                    createFhirDocumentReference(
-                        DocumentReferenceCreationParams(
-                            id = UUID.randomUUID(),
-                            patientId = patient.id ?: "",
-                            encounterId = existingEncounter.id ?: "",
-                            dateStr = now.toString(),
-                            desc = label,
-                            mime = "image/jpeg",
-                            urlPath = path,
-                            answerCode = stepName,
-                        ),
-                    ).also { fhirRepository.saveDocumentReference(it) }
-                }
-            existingDocs.addAll(newDocs)
-
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    patient = patient,
-                    practitioner = practitioner,
-                    encounter = existingEncounter,
-                    photos = existingDocs,
-                    answers = existingAnswers,
-                    availableQuestionnaires = questionnaires,
-                    selectedQuestionnaire = existingSelectedQ ?: questionnaires.firstOrNull(),
-                )
-            }
-        } else {
-            _uiState.update { it.copy(isLoading = false) }
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                patient = patient,
+                practitioner = practitioner,
+                encounter = existingEncounter,
+                photos = existingDocs,
+                answers = existingAnswers,
+                availableQuestionnaires = questionnaires,
+                selectedQuestionnaire = existingSelectedQ ?: questionnaires.firstOrNull(),
+            )
         }
     }
 
@@ -301,18 +353,21 @@ class EncounterDetailViewModel(
      */
     private suspend fun createRecoveredQuestionnaire(
         latestQr: QuestionnaireResponse,
-        recoveredFormStr: String = "Recovered Form",
+        recoveredFormStr: String,
     ): Questionnaire {
         val dummyItems =
             io.healthplatform.chartcam.utils.QuestionnaireUtils
                 .buildDummyItemsRecursively(latestQr.item)
+        val qCanonical = latestQr.questionnaire
+        val rawVal = if (qCanonical != null) qCanonical.value else null
+        val qId = if (rawVal != null) rawVal else "unknown"
         return Questionnaire
             .Builder(
-                Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active),
+                Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active),
             ).apply {
-                this.id = latestQr.questionnaire?.value ?: "unknown"
+                this.id = qId
                 this.title =
-                    com.google.fhir.model.r4.String
+                    dev.ohs.fhir.model.r4.String
                         .Builder()
                         .apply { value = recoveredFormStr }
                 this.item.addAll(dummyItems)
@@ -378,20 +433,24 @@ class EncounterDetailViewModel(
         val queue = ArrayDeque(targetQ.item)
         while (queue.isNotEmpty()) {
             val item = queue.removeFirst()
-            item.linkId.value?.let { targetItems[it] = item }
+            val lId = item.linkId.value
+            if (lId != null) {
+                targetItems[lId] = item
+            }
             queue.addAll(item.item)
         }
 
         return currentAnswers.filter { (linkId, value) ->
             val targetItem = targetItems[linkId] ?: return@filter true
-            when (targetItem.type.value) {
-                Questionnaire.QuestionnaireItemType.Integer ->
-                    value is Int || value is Long || value.toString().toIntOrNull() != null
-                Questionnaire.QuestionnaireItemType.Decimal ->
-                    value is Number || value.toString().toDoubleOrNull() != null
-                Questionnaire.QuestionnaireItemType.Boolean ->
-                    value is Boolean || value.toString().toBooleanStrictOrNull() != null
-                else -> true
+            val itemType = targetItem.type.value
+            if (itemType == Questionnaire.QuestionnaireItemType.Integer) {
+                value is Int || value is Long || value.toString().toIntOrNull() != null
+            } else if (itemType == Questionnaire.QuestionnaireItemType.Decimal) {
+                value is Number || value.toString().toDoubleOrNull() != null
+            } else if (itemType == Questionnaire.QuestionnaireItemType.Boolean) {
+                value is Boolean || value.toString().toBooleanStrictOrNull() != null
+            } else {
+                true
             }
         }
     }
@@ -462,6 +521,17 @@ class EncounterDetailViewModel(
     }
 
     /**
+     * Extracts the current practitioner ID from state.
+     *
+     * @return The practitioner string identifier, or empty string.
+     */
+    internal fun extractCurrentPractitionerId(): String {
+        val p = _uiState.value.practitioner
+        if (p == null) return ""
+        return extractResourceStringId(p.id)
+    }
+
+    /**
      * Saves all dynamic answers and photos into a QuestionnaireResponse,
      * updates the Encounter status to Finished, and attempts a cloud sync.
      *
@@ -482,7 +552,7 @@ class EncounterDetailViewModel(
             _uiState.update { it.copy(isSyncing = true) }
 
             // Build and save QuestionnaireResponse
-            buildAndSaveQuestionnaireResponse(q, enc)
+            buildAndSaveQuestionnaireResponse(q, enc, id)
             updateEncounterWithNotes(q, id, yesStr, noStr, noNotesStr)
 
             _uiState.update {
@@ -538,8 +608,8 @@ class EncounterDetailViewModel(
      * @param photosMap Map of step names to photo paths.
      */
     fun addPhotos(photosMap: Map<String, String>) {
-        val enc = _uiState.value.encounter ?: return
         val patient = _uiState.value.patient ?: return
+        val enc = _uiState.value.encounter ?: return
 
         viewModelScope.launch {
             val now =
@@ -548,20 +618,19 @@ class EncounterDetailViewModel(
             val newDocs =
                 photosMap.map { (stepName, path) ->
                     val label =
-                        _uiState.value.selectedQuestionnaire?.item?.let { items ->
-                            io.healthplatform.chartcam.utils.QuestionnaireUtils
-                                .findItemRecursively(items, stepName)
-                                ?.text
-                                ?.value
-                        } ?: stepName
+                        resolvePhotoLabel(
+                            stepName,
+                            _uiState.value.selectedQuestionnaire,
+                            _uiState.value.availableQuestionnaires,
+                        )
 
                     createFhirDocumentReference(
                         DocumentReferenceCreationParams(
                             id =
                                 io.healthplatform.chartcam.utils.UUID
                                     .randomUUID(),
-                            patientId = patient.id ?: "",
-                            encounterId = enc.id ?: "",
+                            patientId = extractResourceStringId(patient.id),
+                            encounterId = extractResourceStringId(enc.id),
                             dateStr = now.toString(),
                             desc = label,
                             mime = "image/jpeg",
@@ -589,8 +658,8 @@ class EncounterDetailViewModel(
         audioPath: String,
         label: String = "Voice Memo",
     ) {
-        val enc = _uiState.value.encounter ?: return
         val patient = _uiState.value.patient ?: return
+        val enc = _uiState.value.encounter ?: return
 
         viewModelScope.launch {
             val now =
@@ -602,8 +671,8 @@ class EncounterDetailViewModel(
                         id =
                             io.healthplatform.chartcam.utils.UUID
                                 .randomUUID(),
-                        patientId = patient.id ?: "",
-                        encounterId = enc.id ?: "",
+                        patientId = extractResourceStringId(patient.id),
+                        encounterId = extractResourceStringId(enc.id),
                         dateStr = now.toString(),
                         desc = label,
                         mime = "audio/mp4",
@@ -623,7 +692,8 @@ class EncounterDetailViewModel(
      * @param onSuccess Callback executed when deletion completes successfully.
      */
     fun deleteEncounter(onSuccess: () -> Unit) {
-        val encId = _uiState.value.encounter?.id ?: return
+        val enc = _uiState.value.encounter ?: return
+        val encId = enc.id ?: return
         viewModelScope.launch {
             if (fileStorage != null) {
                 fhirRepository.deleteEncounter(encId, fileStorage)
@@ -638,16 +708,19 @@ class EncounterDetailViewModel(
      * Builds and saves a QuestionnaireResponse.
      * @param q The q.
      * @param enc The enc.
+     * @param id The encounter identifier.
      */
     private suspend fun buildAndSaveQuestionnaireResponse(
         q: Questionnaire?,
         enc: Encounter,
+        id: String,
     ) {
-        val id = enc.id ?: return
         if (q == null) return
 
         val qrId = UUID.randomUUID()
         val answers = _uiState.value.answers
+        val qCanonical = q.id
+        val canonicalVal = if (qCanonical != null) qCanonical else ""
 
         val qr =
             QuestionnaireResponse
@@ -657,7 +730,7 @@ class EncounterDetailViewModel(
                     this.id = qrId
                     this.subject = buildSubjectReference(enc)
                     this.encounter = buildEncounterReference(id)
-                    this.questionnaire = Canonical.Builder().apply { value = q.id ?: "" }
+                    this.questionnaire = Canonical.Builder().apply { value = canonicalVal }
 
                     runCatching {
                         this.authored =
@@ -683,18 +756,29 @@ class EncounterDetailViewModel(
 
         fhirRepository.saveQuestionnaireResponse(qr)
 
+        val pracId = extractCurrentPractitionerId()
+
         val prov =
             createFhirProvenance(
                 id = UUID.randomUUID(),
                 targetResourceId = qr.id!!,
-                practitionerId = "Practitioner/${_uiState.value.practitioner?.id}",
+                practitionerId = "Practitioner/$pracId",
                 dateStr =
                     kotlin.time.Clock.System
                         .now()
                         .toString(),
             )
-        fhirRepository.saveProvenance(prov, _uiState.value.encounter?.id)
+        fhirRepository.saveProvenance(prov, enc.id)
     }
+
+    /**
+     * Extracts a non-null resource identifier string.
+     *
+     * @param rawId The raw nullable identifier.
+     * @return The non-null string identifier.
+     */
+    private fun extractResourceStringId(rawId: String?): String =
+        if (rawId != null) rawId else ""
 
     /**
      * Builds subject reference.
@@ -702,12 +786,15 @@ class EncounterDetailViewModel(
      * @return The result.
      */
     private fun buildSubjectReference(enc: Encounter): Reference.Builder {
-        val rawSubjectValue = enc.subject?.reference?.value ?: ""
+        val subj = enc.subject
+        val ref = if (subj != null) subj.reference else null
+        val rawVal = if (ref != null) ref.value else null
+        val rawSubjectValue = if (rawVal != null) rawVal else ""
         val subjectReference =
             if (rawSubjectValue.startsWith("Patient/")) rawSubjectValue else "Patient/$rawSubjectValue"
         return Reference.Builder().apply {
             reference =
-                com.google.fhir.model.r4.String
+                dev.ohs.fhir.model.r4.String
                     .Builder()
                     .apply { value = subjectReference }
         }
@@ -722,10 +809,42 @@ class EncounterDetailViewModel(
         val encounterReference = if (id.startsWith("Encounter/")) id else "Encounter/$id"
         return Reference.Builder().apply {
             reference =
-                com.google.fhir.model.r4.String
+                dev.ohs.fhir.model.r4.String
                     .Builder()
                     .apply { value = encounterReference }
         }
+    }
+
+    /**
+     * Extracts step name from DocumentReference context or description.
+     *
+     * @param photo The document reference.
+     * @return The step name, or null.
+     */
+    private fun extractStepName(photo: dev.ohs.fhir.model.r4.DocumentReference): String? {
+        val ctx = photo.context
+        val related = if (ctx != null) ctx.related else emptyList()
+        if (related.isNotEmpty()) {
+            val ident = related[0].identifier
+            val v = if (ident != null) ident.value else null
+            val raw = if (v != null) v.value else null
+            if (raw != null) return raw
+        }
+        val desc = photo.description
+        return if (desc != null) desc.value else null
+    }
+
+    /**
+     * Extracts attachment URL from DocumentReference content.
+     *
+     * @param photo The document reference.
+     * @return The URL string, or null.
+     */
+    private fun extractAttachmentUrl(photo: dev.ohs.fhir.model.r4.DocumentReference): String? {
+        val content = photo.content
+        if (content.isEmpty()) return null
+        val u = content[0].attachment.url
+        return if (u != null) u.value else null
     }
 
     /**
@@ -734,37 +853,26 @@ class EncounterDetailViewModel(
      */
     private fun appendPhotosToResponseItems(items: MutableList<QuestionnaireResponse.Item.Builder>) {
         _uiState.value.photos.forEach { photo ->
-            val stepName =
-                photo.context
-                    ?.related
-                    ?.firstOrNull()
-                    ?.identifier
-                    ?.value
-                    ?.value ?: photo.description?.value
+            val stepName = extractStepName(photo)
             if (stepName != null) {
-                val urlPath =
-                    photo.content
-                        .firstOrNull()
-                        ?.attachment
-                        ?.url
-                        ?.value
+                val urlPath = extractAttachmentUrl(photo)
                 if (urlPath != null) {
                     items.add(
                         QuestionnaireResponse.Item
                             .Builder(
-                                com.google.fhir.model.r4.String
+                                dev.ohs.fhir.model.r4.String
                                     .Builder()
                                     .apply { value = stepName },
                             ).apply {
                                 answer.add(
                                     QuestionnaireResponse.Item.Answer.Builder().apply {
                                         value =
-                                            com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Attachment(
-                                                com.google.fhir.model.r4.Attachment
+                                            dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Attachment(
+                                                dev.ohs.fhir.model.r4.Attachment
                                                     .Builder()
                                                     .apply {
                                                         url =
-                                                            com.google.fhir.model.r4.Url
+                                                            dev.ohs.fhir.model.r4.Url
                                                                 .Builder()
                                                                 .apply { value = urlPath }
                                                     }.build(),
@@ -797,24 +905,34 @@ class EncounterDetailViewModel(
         val notesBuilder = StringBuilder()
         allAnswers.forEach { (linkId, answer) ->
             val questionItem =
-                q?.item?.let {
+                if (q != null) {
                     io.healthplatform.chartcam.utils.QuestionnaireUtils
-                        .findItemRecursively(it, linkId)
+                        .findItemRecursively(q.item, linkId)
+                } else {
+                    null
                 }
-            val questionTitle = questionItem?.text?.value ?: linkId
+            val txt = if (questionItem != null) questionItem.text else null
+            val txtVal = if (txt != null) txt.value else null
+            val questionTitle = if (txtVal != null) txtVal else linkId
             when (answer) {
-                is String -> if (answer.isNotBlank()) notesBuilder.append("$questionTitle: $answer. ")
-                is Boolean ->
-                    notesBuilder.append(
-                        "$questionTitle: ${if (answer) yesStr else noStr}. ",
-                    )
+                is String -> {
+                    if (answer.isNotBlank()) {
+                        notesBuilder.append("$questionTitle: $answer. ")
+                    }
+                }
+                is Boolean -> {
+                    val boolStr = if (answer) yesStr else noStr
+                    notesBuilder.append("$questionTitle: $boolStr. ")
+                }
                 is List<*> -> {
                     val strList = answer.filterIsInstance<String>()
                     if (strList.isNotEmpty()) {
                         notesBuilder.append("$questionTitle: ${strList.joinToString(", ")}. ")
                     }
                 }
-                is Float -> notesBuilder.append("$questionTitle: $answer. ")
+                is Float -> {
+                    notesBuilder.append("$questionTitle: $answer. ")
+                }
             }
         }
         val notesStr = notesBuilder.toString().trim()
@@ -822,7 +940,7 @@ class EncounterDetailViewModel(
         fhirRepository.updateEncounterStatus(
             encounterId,
             "finished",
-            notesStr.ifBlank { noNotesStr },
+            if (notesStr.isBlank()) noNotesStr else notesStr,
         )
 
         // Ignore result to support offline persistence

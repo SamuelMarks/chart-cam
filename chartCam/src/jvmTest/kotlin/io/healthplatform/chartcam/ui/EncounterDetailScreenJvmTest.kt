@@ -12,7 +12,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.google.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Patient
 import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.navigation.PhotoSessionManager
 import io.healthplatform.chartcam.repository.AuthRepository
@@ -49,7 +49,7 @@ class EncounterDetailScreenJvmTest {
             val photoSessionManager = PhotoSessionManager()
 
             val practitioner =
-                com.google.fhir.model.r4.Practitioner
+                dev.ohs.fhir.model.r4.Practitioner
                     .Builder()
                     .apply { id = "prac1" }
                     .build()

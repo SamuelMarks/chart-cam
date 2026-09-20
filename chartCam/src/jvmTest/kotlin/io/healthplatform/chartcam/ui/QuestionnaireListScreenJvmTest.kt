@@ -9,16 +9,16 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.v2.runComposeUiTest
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 import kotlin.test.Test
-import com.google.fhir.model.r4.String as FhirString
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * Test class for QuestionnaireListScreen on JVM.

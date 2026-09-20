@@ -4,8 +4,8 @@
  */
 package io.healthplatform.chartcam.viewmodel
 
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.Practitioner
+import dev.ohs.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Practitioner
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository

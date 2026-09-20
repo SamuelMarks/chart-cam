@@ -4,9 +4,9 @@
  */
 package io.healthplatform.chartcam.utils
 
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.QuestionnaireResponse
 
 private const val MAX_RECURSION_DEPTH = 50
 
@@ -35,7 +35,7 @@ object QuestionnaireUtils {
      * @param depth The current recursion depth.
      * @return The found item or null.
      */
-    private fun findItemRecursivelyInternal(
+    internal fun findItemRecursivelyInternal(
         items: List<Questionnaire.Item>,
         linkId: String,
         visitedLinkIds: MutableSet<String>,
@@ -100,13 +100,13 @@ object QuestionnaireUtils {
             val builder =
                 Questionnaire.Item
                     .Builder(
-                        com.google.fhir.model.r4.String
+                        dev.ohs.fhir.model.r4.String
                             .Builder()
                             .apply { value = linkId },
                         Enumeration(value = qItemType),
                     ).apply {
                         this.text =
-                            com.google.fhir.model.r4.String.Builder().apply {
+                            dev.ohs.fhir.model.r4.String.Builder().apply {
                                 value = linkId.replaceFirstChar { it.uppercase() }
                             }
                         if (qrItem.item.isNotEmpty()) {
@@ -160,45 +160,66 @@ object QuestionnaireUtils {
     ): List<QuestionnaireResponse.Item.Builder> {
         val responseItems = mutableListOf<QuestionnaireResponse.Item.Builder>()
         for (qItem in qItems) {
-            val linkId = qItem.linkId.value
-            val isEnabled =
-                io.healthplatform.chartcam.sdc.SdcEvaluator
-                    .isItemHierarchyEnabled(qItem, ancestors, answers)
-            if (!isEnabled || linkId == null) continue
-
-            val qType = qItem.type.value ?: Questionnaire.QuestionnaireItemType.String
-            val answer = answers[linkId]
-
-            val itemBuilder =
-                QuestionnaireResponse.Item
-                    .Builder(
-                        com.google.fhir.model.r4.String
-                            .Builder()
-                            .apply { value = linkId },
-                    ).apply {
-                        this.text = qItem.text?.toBuilder()
-                    }
-
-            var hasAnswer = false
-
-            if (answer != null) {
-                hasAnswer = applyAnswerToItem(itemBuilder, answer, qType)
-            }
-
-            if (qItem.item.isNotEmpty()) {
-                val nextAncestors = ancestors + qItem
-                val nestedItems = buildResponseItemsRecursively(qItem.item, answers, nextAncestors)
-                if (nestedItems.isNotEmpty()) {
-                    itemBuilder.item.addAll(nestedItems)
-                    hasAnswer = true
-                }
-            }
-
-            if (hasAnswer || qType == Questionnaire.QuestionnaireItemType.Group) {
-                responseItems.add(itemBuilder)
+            val item = buildSingleResponseItem(qItem, answers, ancestors)
+            if (item != null) {
+                responseItems.add(item)
             }
         }
         return responseItems
+    }
+
+    /**
+     * Builds a response item for a single questionnaire item if enabled and applicable.
+     *
+     * @param qItem The Questionnaire item to build a response for.
+     * @param answers The map of current answers.
+     * @param ancestors The list of ancestor items for hierarchy checks.
+     * @return The populated builder, or null if disabled or unpopulated.
+     */
+    private fun buildSingleResponseItem(
+        qItem: Questionnaire.Item,
+        answers: Map<String, Any>,
+        ancestors: List<Questionnaire.Item>,
+    ): QuestionnaireResponse.Item.Builder? {
+        val linkId = qItem.linkId.value
+        val isEnabled =
+            io.healthplatform.chartcam.sdc.SdcEvaluator
+                .isItemHierarchyEnabled(qItem, ancestors, answers)
+        if (linkId == null || !isEnabled) return null
+
+        val qType = qItem.type.value ?: Questionnaire.QuestionnaireItemType.String
+        val answer = answers[linkId]
+
+        val itemBuilder =
+            QuestionnaireResponse.Item
+                .Builder(
+                    dev.ohs.fhir.model.r4.String
+                        .Builder()
+                        .apply { value = linkId },
+                ).apply {
+                    this.text = qItem.text?.toBuilder()
+                }
+
+        var hasAnswer = false
+
+        if (answer != null) {
+            hasAnswer = applyAnswerToItem(itemBuilder, answer, qType)
+        }
+
+        if (qItem.item.isNotEmpty()) {
+            val nextAncestors = ancestors + qItem
+            val nestedItems = buildResponseItemsRecursively(qItem.item, answers, nextAncestors)
+            if (nestedItems.isNotEmpty()) {
+                itemBuilder.item.addAll(nestedItems)
+                hasAnswer = true
+            }
+        }
+
+        return if (hasAnswer || qType == Questionnaire.QuestionnaireItemType.Group) {
+            itemBuilder
+        } else {
+            null
+        }
     }
 
     /**
@@ -232,8 +253,8 @@ object QuestionnaireUtils {
                         itemBuilder.answer.add(
                             QuestionnaireResponse.Item.Answer.Builder().apply {
                                 value =
-                                    com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String(
-                                        com.google.fhir.model.r4.String
+                                    dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String(
+                                        dev.ohs.fhir.model.r4.String
                                             .Builder()
                                             .apply { value = strVal }
                                             .build(),
@@ -248,8 +269,8 @@ object QuestionnaireUtils {
                 itemBuilder.answer.add(
                     QuestionnaireResponse.Item.Answer.Builder().apply {
                         value =
-                            com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Boolean(
-                                com.google.fhir.model.r4.Boolean
+                            dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Boolean(
+                                dev.ohs.fhir.model.r4.Boolean
                                     .Builder()
                                     .apply { value = answer }
                                     .build(),
@@ -279,49 +300,49 @@ object QuestionnaireUtils {
     private fun mapStringAnswer(
         answer: String,
         qType: Questionnaire.QuestionnaireItemType,
-    ): com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value =
+    ): dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value =
         when (qType) {
             Questionnaire.QuestionnaireItemType.Date ->
-                com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Date(
-                    com.google.fhir.model.r4.Date
+                dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Date(
+                    dev.ohs.fhir.model.r4.Date
                         .Builder()
                         .apply {
                             value =
-                                com.google.fhir.model.r4.FhirDate
+                                dev.ohs.fhir.model.r4.FhirDate
                                     .fromString(answer)
                         }.build(),
                 )
             Questionnaire.QuestionnaireItemType.DateTime ->
-                com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.DateTime(
-                    com.google.fhir.model.r4.DateTime
+                dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.DateTime(
+                    dev.ohs.fhir.model.r4.DateTime
                         .Builder()
                         .apply {
                             value =
-                                com.google.fhir.model.r4.FhirDateTime
+                                dev.ohs.fhir.model.r4.FhirDateTime
                                     .fromString(answer)
                         }.build(),
                 )
             Questionnaire.QuestionnaireItemType.Decimal ->
-                com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Decimal(
-                    com.google.fhir.model.r4.Decimal
+                dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Decimal(
+                    dev.ohs.fhir.model.r4.Decimal
                         .Builder()
                         .apply {
                             value =
-                                com.ionspin.kotlin.bignum.decimal.BigDecimal
-                                    .parseString(answer)
+                                dev.ohs.fhir.model.r4.FhirDecimal
+                                    .fromString(answer)
                         }.build(),
                 )
             Questionnaire.QuestionnaireItemType.Integer ->
-                com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Integer(
-                    com.google.fhir.model.r4.Integer
+                dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Integer(
+                    dev.ohs.fhir.model.r4.Integer
                         .Builder()
                         .apply {
                             value = answer.toIntOrNull() ?: 0
                         }.build(),
                 )
             else ->
-                com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String(
-                    com.google.fhir.model.r4.String
+                dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String(
+                    dev.ohs.fhir.model.r4.String
                         .Builder()
                         .apply { value = answer }
                         .build(),
@@ -337,23 +358,23 @@ object QuestionnaireUtils {
     private fun mapFloatAnswer(
         answer: Float,
         qType: Questionnaire.QuestionnaireItemType,
-    ): com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value =
+    ): dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value =
         when (qType) {
             Questionnaire.QuestionnaireItemType.Integer ->
-                com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Integer(
-                    com.google.fhir.model.r4.Integer
+                dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Integer(
+                    dev.ohs.fhir.model.r4.Integer
                         .Builder()
                         .apply { value = answer.toInt() }
                         .build(),
                 )
             else ->
-                com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Decimal(
-                    com.google.fhir.model.r4.Decimal
+                dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Decimal(
+                    dev.ohs.fhir.model.r4.Decimal
                         .Builder()
                         .apply {
                             value =
-                                com.ionspin.kotlin.bignum.decimal.BigDecimal
-                                    .parseString(answer.toString())
+                                dev.ohs.fhir.model.r4.FhirDecimal
+                                    .fromString(answer.toString())
                         }.build(),
                 )
         }
@@ -388,8 +409,8 @@ object QuestionnaireUtils {
      */
     private fun extractListAnswer(answers: List<QuestionnaireResponse.Item.Answer>): List<String> =
         answers.mapNotNull { ans ->
-            val strValue = ans.value as? com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String
-            strValue?.value?.value
+            val strValue = ans.value as? dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String
+            strValue?.let { it.value.value }
         }
 
     /**
@@ -400,7 +421,7 @@ object QuestionnaireUtils {
      */
     private fun extractSingleAnswer(
         linkId: String,
-        answer: com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value,
+        answer: dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value,
         existingAnswers: MutableMap<String, Any>,
     ) {
         extractStringOrBoolean(linkId, answer, existingAnswers)
@@ -416,12 +437,12 @@ object QuestionnaireUtils {
      */
     private fun extractStringOrBoolean(
         linkId: String,
-        answer: com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value,
+        answer: dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value,
         existingAnswers: MutableMap<String, Any>,
     ) {
-        if (answer is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String) {
+        if (answer is dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String) {
             answer.value.value?.let { existingAnswers[linkId] = it }
-        } else if (answer is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Boolean) {
+        } else if (answer is dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Boolean) {
             answer.value.value?.let { existingAnswers[linkId] = it }
         }
     }
@@ -434,15 +455,15 @@ object QuestionnaireUtils {
      */
     private fun extractNumber(
         linkId: String,
-        answer: com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value,
+        answer: dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value,
         existingAnswers: MutableMap<String, Any>,
     ) {
-        if (answer is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Decimal) {
+        if (answer is dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Decimal) {
             val decVal = answer.value.value
             if (decVal != null) {
-                existingAnswers[linkId] = decVal.toStringExpanded().toFloatOrNull() ?: 0f
+                existingAnswers[linkId] = decVal.toString().toFloat()
             }
-        } else if (answer is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Integer) {
+        } else if (answer is dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Integer) {
             existingAnswers[linkId] = answer.value.value?.toFloat() ?: 0f
         }
     }
@@ -455,12 +476,12 @@ object QuestionnaireUtils {
      */
     private fun extractDate(
         linkId: String,
-        answer: com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value,
+        answer: dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value,
         existingAnswers: MutableMap<String, Any>,
     ) {
-        if (answer is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Date) {
+        if (answer is dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Date) {
             answer.value.value?.let { existingAnswers[linkId] = it.toString() }
-        } else if (answer is com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.DateTime) {
+        } else if (answer is dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.DateTime) {
             answer.value.value?.let { existingAnswers[linkId] = it.toString() }
         }
     }
@@ -476,6 +497,6 @@ object QuestionnaireUtils {
         val trimmed = div.trim()
         val regex = Regex("^<div(?:\\s+[^>]*)?>([\\s\\S]*)</div>$")
         val match = regex.find(trimmed)
-        return match?.groupValues?.get(1)?.trim() ?: trimmed
+        return if (match != null) match.groupValues[1].trim() else trimmed
     }
 }

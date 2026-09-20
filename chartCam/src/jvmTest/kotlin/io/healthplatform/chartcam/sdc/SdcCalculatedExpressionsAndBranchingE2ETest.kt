@@ -7,18 +7,17 @@
  */
 package io.healthplatform.chartcam.sdc
 
-import com.google.fhir.model.r4.Decimal
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Extension
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.terminologies.PublicationStatus
-import com.ionspin.kotlin.bignum.decimal.BigDecimal
+import dev.ohs.fhir.model.r4.Decimal
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Extension
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
 import io.healthplatform.chartcam.validation.FhirValidator
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import com.google.fhir.model.r4.String as FhirString
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * End-to-End workflow tests validating mathematical SDC expressions,
@@ -82,7 +81,9 @@ class SdcCalculatedExpressionsAndBranchingE2ETest {
                             Decimal
                                 .Builder()
                                 .apply {
-                                    value = BigDecimal.parseString("25.0")
+                                    value =
+                                        dev.ohs.fhir.model.r4.FhirDecimal
+                                            .fromString("25.0")
                                 }.build(),
                         ),
                 )

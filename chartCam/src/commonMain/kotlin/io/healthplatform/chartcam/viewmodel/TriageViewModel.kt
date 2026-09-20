@@ -9,7 +9,7 @@ package io.healthplatform.chartcam.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Patient
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.createFhirPatient
 import io.healthplatform.chartcam.repository.FhirRepository

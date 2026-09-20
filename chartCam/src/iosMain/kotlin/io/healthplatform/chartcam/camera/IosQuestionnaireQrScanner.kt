@@ -17,10 +17,8 @@ class IosQuestionnaireQrScanner : QuestionnaireQrScanner {
      * @return A [Result] enclosing the decoded QR string.
      */
     override suspend fun scanQuestionnaireQrCode(): Result<String> =
-        withContext(Dispatchers.Main) {
-            runCatching {
-                Result.failure<String>(IllegalStateException("No active AVCapture metadata detected")).getOrThrow()
-            }
+        withContext(Dispatchers.Default) {
+            Result.failure(IllegalStateException("No active AVCapture metadata detected"))
         }
 }
 

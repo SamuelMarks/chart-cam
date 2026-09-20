@@ -23,8 +23,8 @@ android {
             libs.versions.android.targetSdk
                 .get()
                 .toInt()
-        versionCode = 5
-        versionName = "1.0.5"
+        versionCode = 6
+        versionName = "1.0.6"
         vectorDrawables.useSupportLibrary = true
     }
 
@@ -92,6 +92,9 @@ android {
     buildFeatures {
         compose = true
     }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
     lint {
         disable.add("OldTargetApi")
         disable.add("GradleDependency")
@@ -102,6 +105,7 @@ android {
 dependencies {
     testImplementation(kotlin("test"))
     testImplementation(libs.junit)
+    testImplementation("org.robolectric:robolectric:4.14.1")
 
     androidTestImplementation(libs.kotlin.test)
     androidTestImplementation(libs.junit)

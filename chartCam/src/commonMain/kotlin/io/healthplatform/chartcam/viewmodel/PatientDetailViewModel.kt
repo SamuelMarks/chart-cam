@@ -9,8 +9,8 @@ package io.healthplatform.chartcam.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.fhir.model.r4.Encounter
-import com.google.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Encounter
+import dev.ohs.fhir.model.r4.Patient
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.repository.FhirRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -81,11 +81,13 @@ class PatientDetailViewModel(
         val patientId = _uiState.value.patient?.id ?: return
         viewModelScope.launch {
             val result = fhirRepository.deletePatient(patientId, fileStorage)
-            if (result.isSuccess) {
-                onSuccess()
-            } else {
-                _uiState.update { it.copy(error = result.exceptionOrNull()?.message ?: "Failed to delete patient") }
-            }
+            result
+                .onSuccess {
+                    onSuccess()
+                }.onFailure { ex ->
+                    val errorMsg = ex.message ?: "Failed to delete patient"
+                    _uiState.update { it.copy(error = errorMsg) }
+                }
         }
     }
 }

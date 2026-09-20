@@ -6,18 +6,18 @@ package io.healthplatform.chartcam.repository
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.google.fhir.model.r4.Bundle
-import com.google.fhir.model.r4.Canonical
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Extension
-import com.google.fhir.model.r4.FhirR4Json
-import com.google.fhir.model.r4.HumanName
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.QuestionnaireResponse
-import com.google.fhir.model.r4.Reference
-import com.google.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.Bundle
+import dev.ohs.fhir.model.r4.Canonical
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Extension
+import dev.ohs.fhir.model.r4.HumanName
+import dev.ohs.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.Reference
+import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
+import io.healthplatform.chartcam.fhir.FhirJsonParser
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.createFhirEncounter
 import io.healthplatform.chartcam.utils.CryptoService
@@ -27,8 +27,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import com.google.fhir.model.r4.Boolean as FhirBoolean
-import com.google.fhir.model.r4.String as FhirString
+import dev.ohs.fhir.model.r4.Boolean as FhirBoolean
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * Unit tests covering Section 2: FHIR Bundle Large Imports & Streaming.
@@ -39,7 +39,6 @@ class FhirBundleImportExpansionTest {
     private lateinit var service: ExportImportService
     private lateinit var fileStorage: FakeFileStorage
     private val cryptoService = CryptoService()
-    private val fhirJson = FhirR4Json()
     private val password = "TestPassword123"
 
     /**
@@ -125,7 +124,7 @@ class FhirBundleImportExpansionTest {
             val bundle = bundleBuilder.build()
             assertEquals(1000, bundle.entry.size)
 
-            val jsonString = fhirJson.encodeToString(bundle)
+            val jsonString = FhirJsonParser.encodeResource(bundle).getOrNull() ?: ""
             assertTrue(jsonString.length > 100_000, "Bundle JSON should be substantial")
 
             val encrypted = cryptoService.encrypt(jsonString, password)
@@ -169,10 +168,10 @@ class FhirBundleImportExpansionTest {
 
             // 2. Corrupt Binary (null ID)
             val corruptBinary =
-                com.google.fhir.model.r4.Binary
+                dev.ohs.fhir.model.r4.Binary
                     .Builder(
                         contentType =
-                            com.google.fhir.model.r4.Code
+                            dev.ohs.fhir.model.r4.Code
                                 .Builder()
                                 .apply { value = "image/jpeg" },
                     ).apply {
@@ -191,7 +190,7 @@ class FhirBundleImportExpansionTest {
             bundleBuilder.entry.add(Bundle.Entry.Builder().apply { resource = validPatient2.toBuilder() })
 
             val bundle = bundleBuilder.build()
-            val encrypted = cryptoService.encrypt(fhirJson.encodeToString(bundle), password)
+            val encrypted = cryptoService.encrypt(FhirJsonParser.encodeResource(bundle).getOrNull() ?: "", password)
 
             // Importing must not throw and must commit both valid patients
             service.importData(encrypted, password).getOrThrow()
@@ -344,7 +343,7 @@ class FhirBundleImportExpansionTest {
             bundleBuilder.entry.add(Bundle.Entry.Builder().apply { resource = patientWithUnknownExt.toBuilder() })
 
             val bundle = bundleBuilder.build()
-            val encrypted = cryptoService.encrypt(fhirJson.encodeToString(bundle), password)
+            val encrypted = cryptoService.encrypt(FhirJsonParser.encodeResource(bundle).getOrNull() ?: "", password)
 
             service.importData(encrypted, password).getOrThrow()
 

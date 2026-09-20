@@ -17,11 +17,11 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Extension
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.QuestionnaireResponse
-import com.google.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Extension
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
 import io.healthplatform.chartcam.fhir.QuestionnaireResponseGenerator
 import io.healthplatform.chartcam.models.BodyMapLocation
 import io.healthplatform.chartcam.models.FitzpatrickSkinType
@@ -32,7 +32,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import com.google.fhir.model.r4.String as FhirString
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * End-to-End test suite verifying that advanced visual clinical controls

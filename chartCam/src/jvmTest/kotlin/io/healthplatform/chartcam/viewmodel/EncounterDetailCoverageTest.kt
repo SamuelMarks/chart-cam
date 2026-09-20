@@ -4,19 +4,19 @@
  */
 package io.healthplatform.chartcam.viewmodel
 
-import com.google.fhir.model.r4.Attachment
-import com.google.fhir.model.r4.Canonical
-import com.google.fhir.model.r4.Date
-import com.google.fhir.model.r4.DateTime
-import com.google.fhir.model.r4.Decimal
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.FhirDate
-import com.google.fhir.model.r4.FhirDateTime
-import com.google.fhir.model.r4.Integer
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.Practitioner
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.Attachment
+import dev.ohs.fhir.model.r4.Canonical
+import dev.ohs.fhir.model.r4.Date
+import dev.ohs.fhir.model.r4.DateTime
+import dev.ohs.fhir.model.r4.Decimal
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.FhirDate
+import dev.ohs.fhir.model.r4.FhirDateTime
+import dev.ohs.fhir.model.r4.Integer
+import dev.ohs.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Practitioner
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
@@ -52,7 +52,7 @@ class EncounterDetailCoverageTest {
                     item.add(
                         QuestionnaireResponse.Item
                             .Builder(
-                                com.google.fhir.model.r4.String
+                                dev.ohs.fhir.model.r4.String
                                     .Builder()
                                     .apply { value = "str" },
                             ).apply {
@@ -60,7 +60,7 @@ class EncounterDetailCoverageTest {
                                     QuestionnaireResponse.Item.Answer.Builder().apply {
                                         value =
                                             QuestionnaireResponse.Item.Answer.Value.String(
-                                                com.google.fhir.model.r4.String
+                                                dev.ohs.fhir.model.r4.String
                                                     .Builder()
                                                     .apply { value = "str" }
                                                     .build(),
@@ -72,7 +72,7 @@ class EncounterDetailCoverageTest {
                     item.add(
                         QuestionnaireResponse.Item
                             .Builder(
-                                com.google.fhir.model.r4.String
+                                dev.ohs.fhir.model.r4.String
                                     .Builder()
                                     .apply { value = "bool" },
                             ).apply {
@@ -80,7 +80,7 @@ class EncounterDetailCoverageTest {
                                     QuestionnaireResponse.Item.Answer.Builder().apply {
                                         value =
                                             QuestionnaireResponse.Item.Answer.Value.Boolean(
-                                                com.google.fhir.model.r4.Boolean
+                                                dev.ohs.fhir.model.r4.Boolean
                                                     .Builder()
                                                     .apply { value = true }
                                                     .build(),
@@ -92,7 +92,7 @@ class EncounterDetailCoverageTest {
                     item.add(
                         QuestionnaireResponse.Item
                             .Builder(
-                                com.google.fhir.model.r4.String
+                                dev.ohs.fhir.model.r4.String
                                     .Builder()
                                     .apply { value = "dec" },
                             ).apply {
@@ -104,8 +104,8 @@ class EncounterDetailCoverageTest {
                                                     .Builder()
                                                     .apply {
                                                         value =
-                                                            com.ionspin.kotlin.bignum.decimal.BigDecimal
-                                                                .parseString("1.0")
+                                                            dev.ohs.fhir.model.r4.FhirDecimal
+                                                                .fromString("1.0")
                                                     }.build(),
                                             )
                                     },
@@ -115,7 +115,7 @@ class EncounterDetailCoverageTest {
                     item.add(
                         QuestionnaireResponse.Item
                             .Builder(
-                                com.google.fhir.model.r4.String
+                                dev.ohs.fhir.model.r4.String
                                     .Builder()
                                     .apply { value = "int" },
                             ).apply {
@@ -131,7 +131,7 @@ class EncounterDetailCoverageTest {
                     item.add(
                         QuestionnaireResponse.Item
                             .Builder(
-                                com.google.fhir.model.r4.String
+                                dev.ohs.fhir.model.r4.String
                                     .Builder()
                                     .apply { value = "date" },
                             ).apply {
@@ -147,7 +147,7 @@ class EncounterDetailCoverageTest {
                     item.add(
                         QuestionnaireResponse.Item
                             .Builder(
-                                com.google.fhir.model.r4.String
+                                dev.ohs.fhir.model.r4.String
                                     .Builder()
                                     .apply { value = "dt" },
                             ).apply {
@@ -169,7 +169,7 @@ class EncounterDetailCoverageTest {
                     item.add(
                         QuestionnaireResponse.Item
                             .Builder(
-                                com.google.fhir.model.r4.String
+                                dev.ohs.fhir.model.r4.String
                                     .Builder()
                                     .apply { value = "att" },
                             ).apply {
@@ -186,14 +186,14 @@ class EncounterDetailCoverageTest {
                     item.add(
                         QuestionnaireResponse.Item
                             .Builder(
-                                com.google.fhir.model.r4.String
+                                dev.ohs.fhir.model.r4.String
                                     .Builder()
                                     .apply { value = "grp" },
                             ).apply {
                                 item.add(
                                     QuestionnaireResponse.Item
                                         .Builder(
-                                            com.google.fhir.model.r4.String
+                                            dev.ohs.fhir.model.r4.String
                                                 .Builder()
                                                 .apply { value = "nested" },
                                         ).apply {
@@ -201,7 +201,7 @@ class EncounterDetailCoverageTest {
                                                 QuestionnaireResponse.Item.Answer.Builder().apply {
                                                     value =
                                                         QuestionnaireResponse.Item.Answer.Value.String(
-                                                            com.google.fhir.model.r4.String
+                                                            dev.ohs.fhir.model.r4.String
                                                                 .Builder()
                                                                 .apply { value = "str" }
                                                                 .build(),
@@ -255,7 +255,7 @@ class EncounterDetailCoverageTest {
 
         val q =
             Questionnaire
-                .Builder(Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active))
+                .Builder(Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active))
                 .apply {
                     id = "q-fresh"
                 }.build()

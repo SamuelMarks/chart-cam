@@ -4,19 +4,18 @@
  */
 package io.healthplatform.chartcam.sdc
 
-import com.google.fhir.model.r4.Boolean
-import com.google.fhir.model.r4.Coding
-import com.google.fhir.model.r4.Date
-import com.google.fhir.model.r4.DateTime
-import com.google.fhir.model.r4.Decimal
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.FhirDate
-import com.google.fhir.model.r4.FhirDateTime
-import com.google.fhir.model.r4.Integer
-import com.google.fhir.model.r4.Quantity
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.String
-import com.ionspin.kotlin.bignum.decimal.BigDecimal
+import dev.ohs.fhir.model.r4.Boolean
+import dev.ohs.fhir.model.r4.Coding
+import dev.ohs.fhir.model.r4.Date
+import dev.ohs.fhir.model.r4.DateTime
+import dev.ohs.fhir.model.r4.Decimal
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.FhirDate
+import dev.ohs.fhir.model.r4.FhirDateTime
+import dev.ohs.fhir.model.r4.Integer
+import dev.ohs.fhir.model.r4.Quantity
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.String
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -135,7 +134,13 @@ class SdcEvaluatorOperatorsTest {
         // Decimal comparison
         val ewDec =
             Questionnaire.Item.EnableWhen.Answer.Decimal(
-                Decimal.Builder().apply { value = BigDecimal.parseString("38.5") }.build(),
+                Decimal
+                    .Builder()
+                    .apply {
+                        value =
+                            dev.ohs.fhir.model.r4.FhirDecimal
+                                .fromString("38.5")
+                    }.build(),
             )
         val feverCond = createCondition("temp", Questionnaire.QuestionnaireItemOperator.GreaterThan, ewDec)
         assertTrue(eval(feverCond, mapOf("temp" to 39.0)))
@@ -184,7 +189,7 @@ class SdcEvaluatorOperatorsTest {
                     .Builder()
                     .apply {
                         code =
-                            com.google.fhir.model.r4.Code
+                            dev.ohs.fhir.model.r4.Code
                                 .Builder()
                                 .apply { value = "opt_cough" }
                         display = String.Builder().apply { value = "Persistent Cough" }
@@ -207,7 +212,12 @@ class SdcEvaluatorOperatorsTest {
                 Quantity
                     .Builder()
                     .apply {
-                        value = Decimal.Builder().apply { value = BigDecimal.fromInt(100) }
+                        value =
+                            Decimal.Builder().apply {
+                                value =
+                                    dev.ohs.fhir.model.r4.FhirDecimal
+                                        .fromInt(100)
+                            }
                         unit = String.Builder().apply { value = "mg" }
                     }.build(),
             )

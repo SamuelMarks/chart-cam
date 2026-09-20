@@ -72,6 +72,10 @@ class FhirRepositoryResultTest {
             assertTrue(allPatientsResult.isSuccess)
             assertEquals(1, allPatientsResult.getOrNull()?.size)
 
+            val searchPatientsResult = repository.searchPatientsCatching("Smith")
+            assertTrue(searchPatientsResult.isSuccess)
+            assertEquals(1, searchPatientsResult.getOrNull()?.size)
+
             val deleteResult = repository.deletePatient("p-res-1")
             assertTrue(deleteResult.isSuccess, "Deleting patient should return Result.success")
 

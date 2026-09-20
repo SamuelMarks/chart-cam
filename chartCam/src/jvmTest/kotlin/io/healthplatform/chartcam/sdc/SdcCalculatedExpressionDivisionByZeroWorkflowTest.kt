@@ -9,13 +9,13 @@ package io.healthplatform.chartcam.sdc
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Extension
-import com.google.fhir.model.r4.HumanName
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.terminologies.AdministrativeGender
-import com.google.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Extension
+import dev.ohs.fhir.model.r4.HumanName
+import dev.ohs.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.AdministrativeGender
+import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.fhir.QuestionnaireResponseGenerator
 import io.healthplatform.chartcam.models.createFhirPractitioner
@@ -37,7 +37,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import com.google.fhir.model.r4.String as FhirString
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * Workflow tests validating division-by-zero resilience and safe decimal conversions in clinical forms.

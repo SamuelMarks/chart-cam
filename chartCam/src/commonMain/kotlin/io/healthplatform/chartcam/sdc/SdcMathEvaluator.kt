@@ -4,6 +4,8 @@
  */
 package io.healthplatform.chartcam.sdc
 
+import dev.ohs.fhir.model.r4.FhirDecimal
+
 private const val CONCAT_PREFIX_LEN = 7
 
 /**
@@ -11,22 +13,34 @@ private const val CONCAT_PREFIX_LEN = 7
  */
 internal object SdcMathEvaluator {
     /**
-     * Evaluates a mathematical expression string.
+     * Evaluates a mathematical expression string using arbitrary-precision [FhirDecimal].
      *
      * @param str The substituted arithmetic expression string.
-     * @return The resulting Float value.
+     * @return A [Result] enclosing the resulting [FhirDecimal] value.
      */
-    fun evalSimpleMath(str: String): Float = parseSimpleMath(str)
+    fun evalSimpleMath(str: String): Result<FhirDecimal> =
+        runCatching {
+            parseSimpleMathDecimal(str)
+        }
 
     /**
-     * Parses a sanitized arithmetic expression string into a Float.
+     * Evaluates a mathematical expression string and returns a Float approximation wrapped in a [Result].
+     *
+     * @param str The substituted arithmetic expression string.
+     * @return A [Result] enclosing the resulting Float value.
+     */
+    fun evalSimpleMathFloat(str: String): Result<Float> =
+        evalSimpleMath(str).map { it.asBigDecimal().doubleValue(false).toFloat() }
+
+    /**
+     * Parses a sanitized arithmetic expression string into a [FhirDecimal].
      *
      * @param str The expression string.
-     * @return The evaluated Float outcome.
+     * @return The evaluated [FhirDecimal] outcome.
      */
-    private fun parseSimpleMath(str: String): Float {
+    private fun parseSimpleMathDecimal(str: String): FhirDecimal {
         var s = str.replace(" ", "")
-        if (s.isEmpty()) return 0f
+        if (s.isEmpty()) return FhirDecimal.fromInt(0)
 
         var parenDepth = 0
         for (ch in s) {
@@ -38,11 +52,10 @@ internal object SdcMathEvaluator {
 
         while (s.contains("(")) {
             val endIdx = s.indexOf(')')
-            val startIdx = if (endIdx != -1) s.substring(0, endIdx).lastIndexOf('(') else -1
-            require(startIdx != -1 && endIdx != -1) { "Invalid parenthesis ordering in expression: $str" }
+            val startIdx = s.substring(0, endIdx).lastIndexOf('(')
             val inner = s.substring(startIdx + 1, endIdx)
-            val res = parseSimpleMath(inner)
-            s = s.substring(0, startIdx) + res + s.substring(endIdx + 1)
+            val res = parseSimpleMathDecimal(inner)
+            s = s.substring(0, startIdx) + res.toString() + s.substring(endIdx + 1)
         }
 
         val sanitizedOps =
@@ -57,7 +70,7 @@ internal object SdcMathEvaluator {
 
         s = processMultiplicationAndDivision(s)
         s = processAdditionAndSubtraction(s)
-        return s.toFloat()
+        return FhirDecimal.fromString(s)
     }
 
     /**
@@ -72,11 +85,27 @@ internal object SdcMathEvaluator {
         while (s.contains("*") || s.contains("/")) {
             val match = mulDivRegex.find(s) ?: break
             val op = match.value
-            val parts = op.split("*", "/")
             val isMul = op.contains("*")
-            val a = parts[0].toFloat()
-            val b = parts[1].toFloat()
-            val res = if (isMul) a * b else a / b
+            val parts = op.split("*", "/")
+            val a = FhirDecimal.fromString(parts[0])
+            val b = FhirDecimal.fromString(parts[1])
+            require(isMul || !b.isZero()) { "Division by zero in expression: $str" }
+            val res =
+                if (isMul) {
+                    a * b
+                } else {
+                    runCatching { a / b }.getOrElse {
+                        val bigA = a.asBigDecimal()
+                        val bigB = b.asBigDecimal()
+                        val mode =
+                            com.ionspin.kotlin.bignum.decimal.DecimalMode(
+                                decimalPrecision = 8L,
+                                roundingMode = com.ionspin.kotlin.bignum.decimal.RoundingMode.ROUND_HALF_AWAY_FROM_ZERO,
+                            )
+                        val divResult = bigA.divide(bigB, mode)
+                        FhirDecimal.fromBigDecimal(divResult)
+                    }
+                }
             s = s.replaceFirst(op, res.toString())
         }
         return s
@@ -91,24 +120,12 @@ internal object SdcMathEvaluator {
     private fun processAdditionAndSubtraction(str: String): String {
         var s = str
         val addSubRegex = Regex("""(-?\d+\.?\d*)[+-](-?\d+\.?\d*)""")
-        while (s.contains("+") || s.drop(1).contains("-")) {
-            var opMatch: MatchResult? = null
-            var startIndex = 0
-            var m = addSubRegex.find(s, startIndex)
-            while (m != null && startIndex < s.length && opMatch == null) {
-                if (m.range.first > 0 || (s.length > m.range.last + 1 && s[m.range.last + 1] in listOf('+', '-'))) {
-                    opMatch = m
-                } else {
-                    startIndex = m.range.last
-                    m = addSubRegex.find(s, startIndex)
-                }
-            }
-
-            val match = opMatch ?: addSubRegex.find(s) ?: break
+        while (true) {
+            val match = addSubRegex.find(s) ?: break
             val op = match.value
             val opIdx = op.drop(1).indexOfFirst { it == '+' || it == '-' } + 1
-            val a = op.substring(0, opIdx).toFloat()
-            val b = op.substring(opIdx + 1).toFloat()
+            val a = FhirDecimal.fromString(op.substring(0, opIdx))
+            val b = FhirDecimal.fromString(op.substring(opIdx + 1))
             val res = if (op[opIdx] == '+') a + b else a - b
             s = s.replaceFirst(op, res.toString())
         }
@@ -206,28 +223,22 @@ internal object SdcMathEvaluator {
     ): Result<String> =
         runCatching {
             val expr = expression.trim()
-            if (expr.startsWith("concat(") && expr.endsWith(")")) {
-                val inner = expr.substring(CONCAT_PREFIX_LEN, expr.length - 1)
-                val parts = splitArgumentsRespectingQuotes(inner)
-                parts.joinToString("") { part ->
-                    val trimmed = part.trim()
-                    if (trimmed.startsWith("%")) {
-                        val varName = trimmed.removePrefix("%")
-                        answers[varName]?.toString() ?: ""
-                    } else {
-                        trimmed.trim('\'', '"')
-                    }
+            val isConcat = expr.startsWith("concat(") && expr.endsWith(")")
+            val parts =
+                if (isConcat) {
+                    val inner = expr.substring(CONCAT_PREFIX_LEN, expr.length - 1)
+                    splitArgumentsRespectingQuotes(inner)
+                } else {
+                    splitByPlusRespectingQuotes(expr)
                 }
-            } else {
-                val parts = splitByPlusRespectingQuotes(expr)
-                parts.joinToString("") { part ->
-                    val trimmed = part.trim()
-                    if (trimmed.startsWith("%")) {
-                        val varName = trimmed.removePrefix("%")
-                        answers[varName]?.toString() ?: ""
-                    } else {
-                        trimmed.trim('\'', '"')
-                    }
+            parts.joinToString("") { part ->
+                val trimmed = part.trim()
+                if (trimmed.startsWith("%")) {
+                    val varName = trimmed.removePrefix("%")
+                    val ans = answers[varName]
+                    if (ans != null) ans.toString() else ""
+                } else {
+                    trimmed.trim('\'', '"')
                 }
             }
         }

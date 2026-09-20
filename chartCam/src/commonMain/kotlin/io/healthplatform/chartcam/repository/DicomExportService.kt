@@ -4,6 +4,8 @@
  */
 package io.healthplatform.chartcam.repository
 
+import dev.ohs.fhir.model.r4.DocumentReference
+import dev.ohs.fhir.model.r4.Encounter
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.dicom.FhirToDicomMapper
 import io.healthplatform.chartcam.files.FileStorage
@@ -35,6 +37,72 @@ open class DicomExportService(
     private val fhirRepo = FhirRepository(database)
 
     /**
+     * Extracts local image file path from a DocumentReference.
+     *
+     * @param docRef The FHIR DocumentReference.
+     * @return Path string or null.
+     */
+    private fun extractFilePath(docRef: DocumentReference): String? {
+        val contents = docRef.content
+        val url = if (contents.isNotEmpty()) contents[0].attachment.url else null
+        return if (url != null) url.value else null
+    }
+
+    /**
+     * Extracts referenced Encounter ID from DocumentReference.
+     *
+     * @param docRef The FHIR DocumentReference.
+     * @return Clean Encounter ID or null.
+     */
+    private fun extractEncounterId(docRef: DocumentReference): String? {
+        val ctx = docRef.context ?: return null
+        val encounters = ctx.encounter
+        val ref = if (encounters.isNotEmpty()) encounters[0].reference else null
+        val v = if (ref != null) ref.value else null
+        return if (v != null) v.removePrefix("Encounter/") else null
+    }
+
+    /**
+     * Extracts referenced Patient ID from DocumentReference.
+     *
+     * @param docRef The FHIR DocumentReference.
+     * @return Clean Patient ID or null.
+     */
+    private fun extractPatientId(docRef: DocumentReference): String? {
+        val subj = docRef.subject ?: return null
+        val ref = subj.reference
+        val v = if (ref != null) ref.value else null
+        return if (v != null) v.removePrefix("Patient/") else null
+    }
+
+    /**
+     * Extracts referenced Patient ID from Encounter.
+     *
+     * @param encounter The FHIR Encounter.
+     * @return Clean Patient ID or null.
+     */
+    private fun extractEncounterPatientId(encounter: Encounter?): String? {
+        val subj = encounter?.subject
+        val ref = if (subj != null) subj.reference else null
+        val v = if (ref != null) ref.value else null
+        return if (v != null) v.removePrefix("Patient/") else null
+    }
+
+    /**
+     * Extracts referenced Practitioner ID from Encounter.
+     *
+     * @param encounter The FHIR Encounter.
+     * @return Clean Practitioner ID or null.
+     */
+    private fun extractPractitionerId(encounter: Encounter?): String? {
+        val participants = encounter?.participant
+        val ind = if (!participants.isNullOrEmpty()) participants[0].individual else null
+        val ref = if (ind != null) ind.reference else null
+        val v = if (ref != null) ref.value else null
+        return if (v != null) v.removePrefix("Practitioner/") else null
+    }
+
+    /**
      * Exports a single captured photo as a standard DICOM Visible Light Photographic Image.
      *
      * @param documentRefId The ID of the FHIR DocumentReference representing the clinical image.
@@ -45,59 +113,33 @@ open class DicomExportService(
     open suspend fun exportPhotoAsDicom(
         documentRefId: String,
         anonymize: Boolean = false,
-    ): Result<ByteArray?> =
-        runSuspendCatching {
-            val docRef = fhirRepo.getDocumentReference(documentRefId)
-            val filePath =
-                docRef
-                    ?.content
-                    ?.firstOrNull()
-                    ?.attachment
-                    ?.url
-                    ?.value
-            val imageBytes = if (filePath != null) fileStorage.readImage(filePath) else ByteArray(0)
-            if (imageBytes.isEmpty()) {
-                return@runSuspendCatching null
-            }
-
-            val encounterId =
-                docRef
-                    ?.context
-                    ?.encounter
-                    ?.firstOrNull()
-                    ?.reference
-                    ?.value
-                    ?.removePrefix("Encounter/")
-            val encounter = encounterId?.let { fhirRepo.getEncounter(it) }
-
-            val patientId =
-                docRef
-                    ?.subject
-                    ?.reference
-                    ?.value
-                    ?.removePrefix("Patient/")
-            val patient = patientId?.let { fhirRepo.getPatient(it) }
-
-            val participant = encounter?.participant?.firstOrNull()
-            val practitionerId =
-                participant
-                    ?.individual
-                    ?.reference
-                    ?.value
-                    ?.removePrefix("Practitioner/")
-            val practitioner = practitionerId?.let { fhirRepo.getPractitioner(it) }
-
-            val dicomResult =
-                FhirToDicomMapper.createVisibleLightImageDicom(
-                    imageBytes = imageBytes,
-                    imageId = documentRefId,
-                    patient = patient,
-                    encounter = encounter,
-                    practitioner = practitioner,
-                    anonymize = anonymize,
-                )
-            dicomResult.getOrThrow()
+    ): Result<ByteArray?> {
+        val docRef = fhirRepo.getDocumentReference(documentRefId)
+        val filePath = if (docRef != null) extractFilePath(docRef) else null
+        val imageBytes = if (filePath != null) fileStorage.readImage(filePath) else ByteArray(0)
+        if (docRef == null || imageBytes.isEmpty()) {
+            return Result.success(null)
         }
+
+        val encounterId = extractEncounterId(docRef)
+        val encounter = if (encounterId != null) fhirRepo.getEncounter(encounterId) else null
+
+        val patientId = extractPatientId(docRef)
+        val patient = if (patientId != null) fhirRepo.getPatient(patientId) else null
+
+        val practitionerId = extractPractitionerId(encounter)
+        val practitioner = if (practitionerId != null) fhirRepo.getPractitioner(practitionerId) else null
+
+        return FhirToDicomMapper
+            .createVisibleLightImageDicom(
+                imageBytes = imageBytes,
+                imageId = documentRefId,
+                patient = patient,
+                encounter = encounter,
+                practitioner = practitioner,
+                anonymize = anonymize,
+            ).map { it }
+    }
 
     /**
      * Encapsulates a clinical PDF report into a standard DICOM Part 10 Encapsulated PDF document.
@@ -113,37 +155,24 @@ open class DicomExportService(
         pdfBytes: ByteArray,
         title: String = "Clinical Encounter Report",
         anonymize: Boolean = false,
-    ): Result<ByteArray> =
-        runSuspendCatching {
-            val encounter = fhirRepo.getEncounter(encounterId)
-            val patientId =
-                encounter
-                    ?.subject
-                    ?.reference
-                    ?.value
-                    ?.removePrefix("Patient/")
-            val patient = patientId?.let { fhirRepo.getPatient(it) }
+    ): Result<ByteArray> {
+        val cleanEncounterId = encounterId.removePrefix("Encounter/")
+        val encounter = fhirRepo.getEncounter(cleanEncounterId)
+        val patientId = extractEncounterPatientId(encounter)
+        val patient = if (patientId != null) fhirRepo.getPatient(patientId) else null
 
-            val participant = encounter?.participant?.firstOrNull()
-            val practitionerId =
-                participant
-                    ?.individual
-                    ?.reference
-                    ?.value
-                    ?.removePrefix("Practitioner/")
-            val practitioner = practitionerId?.let { fhirRepo.getPractitioner(it) }
+        val practitionerId = extractPractitionerId(encounter)
+        val practitioner = if (practitionerId != null) fhirRepo.getPractitioner(practitionerId) else null
 
-            val pdfResult =
-                FhirToDicomMapper.createEncapsulatedPdfDicom(
-                    pdfBytes = pdfBytes,
-                    title = title,
-                    patient = patient,
-                    encounter = encounter,
-                    practitioner = practitioner,
-                    anonymize = anonymize,
-                )
-            pdfResult.getOrThrow()
-        }
+        return FhirToDicomMapper.createEncapsulatedPdfDicom(
+            pdfBytes = pdfBytes,
+            title = title,
+            patient = patient,
+            encounter = encounter,
+            practitioner = practitioner,
+            anonymize = anonymize,
+        )
+    }
 
     /**
      * Compiles all clinical photos and documents for a patient into a standardized ZIP archive of DICOM files.
@@ -159,34 +188,22 @@ open class DicomExportService(
         runSuspendCatching {
             val files = mutableMapOf<String, ByteArray>()
             val cleanPatientId = patientId.removePrefix("Patient/")
-            val patient = fhirRepo.getPatient(cleanPatientId)
             val encounters =
                 fhirRepo.getAllEncounters().filter {
-                    val ref =
-                        it.subject
-                            ?.reference
-                            ?.value
-                            ?.removePrefix("Patient/")
+                    val ref = extractEncounterPatientId(it)
                     ref == cleanPatientId
                 }
             val encIds = encounters.mapNotNull { it.id?.removePrefix("Encounter/") }.toSet()
 
             val docRefs =
                 fhirRepo.getAllDocumentReferences().filter { doc ->
-                    val refEnc =
-                        doc.context
-                            ?.encounter
-                            ?.firstOrNull()
-                            ?.reference
-                            ?.value
-                            ?.removePrefix("Encounter/")
-                    refEnc != null && encIds.contains(refEnc)
+                    val refEnc = extractEncounterId(doc) ?: return@filter false
+                    encIds.contains(refEnc)
                 }
 
-            docRefs.forEachIndexed { index, doc ->
-                val docId = doc.id ?: "doc_$index"
-                val dicomResult = exportPhotoAsDicom(docId, anonymize)
-                val dicomBytes = dicomResult.getOrNull()
+            docRefs.forEach { doc ->
+                val docId = doc.id.orEmpty()
+                val dicomBytes = exportPhotoAsDicom(docId, anonymize).getOrElse { null }
                 if (dicomBytes != null) {
                     files["photo_$docId.dcm"] = dicomBytes
                 }

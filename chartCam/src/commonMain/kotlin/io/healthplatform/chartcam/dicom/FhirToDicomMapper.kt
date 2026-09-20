@@ -4,10 +4,11 @@
  */
 package io.healthplatform.chartcam.dicom
 
-import com.google.fhir.model.r4.Encounter
-import com.google.fhir.model.r4.HumanName
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.Practitioner
+import dev.ohs.fhir.model.r4.Encounter
+import dev.ohs.fhir.model.r4.HumanName
+import dev.ohs.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Practitioner
+import dev.ohs.fhir.model.r4.terminologies.AdministrativeGender
 import io.healthplatform.chartcam.files.ImageMetadataParser
 import okio.Buffer
 import kotlin.math.abs
@@ -38,7 +39,7 @@ object FhirToDicomMapper {
      * @param names The list of FHIR string wrappers.
      * @return Space-separated combined string.
      */
-    fun joinNames(names: List<com.google.fhir.model.r4.String>): kotlin.String {
+    fun joinNames(names: List<dev.ohs.fhir.model.r4.String>): kotlin.String {
         val sb = StringBuilder()
         for (n in names) {
             val v = n.value
@@ -70,30 +71,44 @@ object FhirToDicomMapper {
      * @return Extracted birth date string or empty string.
      */
     fun extractBirthDate(patient: Patient): kotlin.String {
-        val b = patient.birthDate
-        if (b != null) {
-            val d = b.value
-            if (d != null) {
-                return d.toString()
-            }
-        }
-        return ""
+        val bd = patient.birthDate?.value
+        return if (bd != null) bd.toString() else ""
     }
+
+    /**
+     * Extracts formatted date of birth from Patient resource wrapped in a [Result].
+     *
+     * @param patient The Patient resource.
+     * @return A [Result] enclosing the extracted birth date string or empty string.
+     */
+    fun extractBirthDateCatching(patient: Patient): Result<kotlin.String> =
+        runCatching { extractBirthDate(patient) }
 
     /**
      * Extracts standard administrative gender code from Patient resource.
      *
      * @param patient The Patient resource.
-     * @return "M", "F", or "O".
+     * @return Extracted gender string "M", "F", or "O".
      */
     fun extractGender(patient: Patient): kotlin.String {
-        val genderName = patient.gender?.value?.name
-        return when (genderName?.lowercase()) {
-            "male" -> "M"
-            "female" -> "F"
-            else -> "O"
+        val g = patient.gender?.value
+        return if (g == AdministrativeGender.Male) {
+            "M"
+        } else if (g == AdministrativeGender.Female) {
+            "F"
+        } else {
+            "O"
         }
     }
+
+    /**
+     * Extracts standard administrative gender code from Patient resource wrapped in a [Result].
+     *
+     * @param patient The Patient resource.
+     * @return A [Result] enclosing the extracted gender string ("M", "F", or "O").
+     */
+    fun extractGenderCatching(patient: Patient): Result<kotlin.String> =
+        runCatching { extractGender(patient) }
 
     /**
      * Extracts period start time from Encounter resource.
@@ -102,9 +117,19 @@ object FhirToDicomMapper {
      * @return Extracted ISO datetime string or empty string.
      */
     fun extractPeriodStart(encounter: Encounter?): kotlin.String {
-        val startVal = encounter?.period?.start?.value
-        return if (startVal != null) startVal.toString() else ""
+        if (encounter == null) return ""
+        val start = encounter.period?.start?.value
+        return if (start != null) start.toString() else ""
     }
+
+    /**
+     * Extracts period start time from Encounter resource wrapped in a [Result].
+     *
+     * @param encounter The Encounter resource.
+     * @return A [Result] enclosing the extracted period start string or empty string.
+     */
+    fun extractPeriodStartCatching(encounter: Encounter?): Result<kotlin.String> =
+        runCatching { extractPeriodStart(encounter) }
 
     /**
      * Extracts family name from a HumanName record.
@@ -112,16 +137,17 @@ object FhirToDicomMapper {
      * @param docName The HumanName record.
      * @return Extracted family name or empty string.
      */
-    fun extractFamilyName(docName: HumanName?): kotlin.String {
-        if (docName != null) {
-            val fam = docName.family
-            if (fam != null) {
-                val v = fam.value
-                if (v != null) return v
-            }
-        }
-        return ""
-    }
+    fun extractFamilyName(docName: HumanName?): kotlin.String =
+        docName?.family?.value ?: ""
+
+    /**
+     * Extracts family name from a HumanName record wrapped in a [Result].
+     *
+     * @param docName The HumanName record.
+     * @return A [Result] enclosing the extracted family name or empty string.
+     */
+    fun extractFamilyNameCatching(docName: HumanName?): Result<kotlin.String> =
+        runCatching { extractFamilyName(docName) }
 
     /**
      * Extracts given names combined into a space-separated string from a HumanName record.
@@ -129,12 +155,17 @@ object FhirToDicomMapper {
      * @param docName The HumanName record.
      * @return Space-separated given names or empty string.
      */
-    fun extractGivenName(docName: HumanName?): kotlin.String {
-        if (docName != null) {
-            return joinNames(docName.given)
-        }
-        return ""
-    }
+    fun extractGivenName(docName: HumanName?): kotlin.String =
+        if (docName != null) joinNames(docName.given) else ""
+
+    /**
+     * Extracts given names combined into a space-separated string from a HumanName record wrapped in a [Result].
+     *
+     * @param docName The HumanName record.
+     * @return A [Result] enclosing the space-separated given names or empty string.
+     */
+    fun extractGivenNameCatching(docName: HumanName?): Result<kotlin.String> =
+        runCatching { extractGivenName(docName) }
 
     /**
      * Builds a list of standard Patient and Study module DICOM elements from FHIR models.

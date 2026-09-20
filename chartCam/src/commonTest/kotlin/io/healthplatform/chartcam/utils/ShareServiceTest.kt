@@ -100,5 +100,8 @@ class ShareServiceTest {
         assertEquals("secret-pass-123", mockService.sharedText)
 
         assertTrue(mockService.shareText("").isFailure)
+
+        assertTrue(mockService.isValidSharePath("path/to/file"))
+        assertTrue(!mockService.isValidSharePath("   "))
     }
 }

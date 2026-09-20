@@ -4,9 +4,14 @@
  */
 package io.healthplatform.chartcam.repository
 
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.terminologies.PublicationStatus
+import app.cash.sqldelight.async.coroutines.synchronous
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import dev.ohs.fhir.model.r4.Code
+import dev.ohs.fhir.model.r4.Coding
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import io.healthplatform.chartcam.database.ChartCamDatabase
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -21,15 +26,23 @@ class QuestionnaireRepositoryJvmTest {
     /**
      * Fake FHIR repository for testing.
      */
-    class FakeFhirRepo :
-        FhirRepository(
-            io.healthplatform.chartcam.database.ChartCamDatabase(
-                app.cash.sqldelight.driver.jdbc.sqlite
-                    .JdbcSqliteDriver(app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver.IN_MEMORY),
-            ),
-        ) {
+    class FakeFhirRepo(
+        db: ChartCamDatabase = createTestDb(),
+    ) : FhirRepository(db) {
+        companion object {
+            /**
+             * Creates in-memory test database with schema initialized.
+             * @return Initialized [ChartCamDatabase].
+             */
+            fun createTestDb(): ChartCamDatabase {
+                val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+                ChartCamDatabase.Schema.synchronous().create(driver)
+                return ChartCamDatabase(driver)
+            }
+        }
+
         /** Map of saved resources. */
-        val savedResources = mutableMapOf<String, com.google.fhir.model.r4.Resource>()
+        val savedResources = mutableMapOf<String, dev.ohs.fhir.model.r4.Resource>()
 
         /** List of deleted resources. */
         val deletedResources = mutableListOf<String>()
@@ -45,7 +58,7 @@ class QuestionnaireRepositoryJvmTest {
         override suspend fun saveResource(
             resourceType: String,
             resourceId: String,
-            resource: com.google.fhir.model.r4.Resource,
+            resource: dev.ohs.fhir.model.r4.Resource,
             isLocalChange: Boolean,
         ): Result<Unit> {
             savedResources[resourceId] = resource
@@ -76,17 +89,54 @@ class QuestionnaireRepositoryJvmTest {
     fun testLoadDefaultForms() =
         runTest {
             val fhirRepo = FakeFhirRepo()
+            val db = fhirRepo.database
+            val validQ =
+                Questionnaire
+                    .Builder(Enumeration(value = PublicationStatus.Active))
+                    .apply {
+                        id = "custom-from-db"
+                    }.build()
+            val validJson =
+                io.healthplatform.chartcam.fhir.FhirJsonParser
+                    .encodeTypedResource(
+                        Questionnaire.serializer(),
+                        validQ,
+                    ).getOrThrow()
+            db.chartCamQueries.insertResource("custom-from-db", "Questionnaire", validJson, "2026-09-18T10:00:00Z")
+            db.chartCamQueries.insertResource("corrupt-json", "Questionnaire", "{corrupt", "2026-09-18T10:00:00Z")
+            val nullIdQ = Questionnaire.Builder(Enumeration(value = PublicationStatus.Active)).build()
+            val nullIdJson =
+                io.healthplatform.chartcam.fhir.FhirJsonParser
+                    .encodeTypedResource(
+                        Questionnaire.serializer(),
+                        nullIdQ,
+                    ).getOrThrow()
+            db.chartCamQueries.insertResource("no-id-q", "Questionnaire", nullIdJson, "2026-09-18T10:00:00Z")
+
             val qrRepo = QuestionnaireRepository(fhirRepo)
 
             qrRepo.loadDefaultForms()
 
             val q1 = qrRepo.getQuestionnaire("std-form")
             val q2 = qrRepo.getQuestionnaire("basic-followup")
+            val qDb = qrRepo.getQuestionnaire("custom-from-db")
 
             // Default forms should be loaded
             assertNotNull(q1)
             assertNotNull(q2)
+            assertNotNull(qDb)
         }
+
+    /**
+     * Tests creating a questionnaire with zero photos.
+     */
+    @Test
+    fun testCreateQuestionnaireWithZeroPhotos() {
+        val qrRepo = QuestionnaireRepository(null)
+        val q = qrRepo.createQuestionnaire("No Photos Form", 0, "")
+        assertEquals(1, q.item.size)
+        assertEquals("notes", q.item[0].linkId.value)
+    }
 
     /**
      * Tests loading default forms exceptions.
@@ -242,5 +292,202 @@ class QuestionnaireRepositoryJvmTest {
             // Available questionnaires with localization
             val availableEs = qrRepo.getAvailableQuestionnaires("es")
             assertTrue(availableEs.any { it.title?.value == "Formulario Clínico Estándar" })
+        }
+
+    /**
+     * Tests localization edge cases: nested items, string options, unknown values, and null IDs.
+     */
+    @Test
+    fun testLocalizationEdgeCases() =
+        runTest {
+            val qrRepo = QuestionnaireRepository(null)
+
+            // Nested item with String answer option and Coding answer option
+            val childItem =
+                Questionnaire.Item
+                    .Builder(
+                        linkId =
+                            dev.ohs.fhir.model.r4.String
+                                .Builder()
+                                .apply { value = "child-item" },
+                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                    ).apply {
+                        text =
+                            dev.ohs.fhir.model.r4.String
+                                .Builder()
+                                .apply { value = "Child Question" }
+                        answerOption.add(
+                            Questionnaire.Item.AnswerOption.Builder(
+                                value =
+                                    Questionnaire.Item.AnswerOption.Value.String(
+                                        dev.ohs.fhir.model.r4.String
+                                            .Builder()
+                                            .apply { value = "Routine" }
+                                            .build(),
+                                    ),
+                            ),
+                        )
+                        answerOption.add(
+                            Questionnaire.Item.AnswerOption.Builder(
+                                value =
+                                    Questionnaire.Item.AnswerOption.Value.String(
+                                        dev.ohs.fhir.model.r4.String
+                                            .Builder()
+                                            .apply { value = "unknown-option" }
+                                            .build(),
+                                    ),
+                            ),
+                        )
+                    }
+
+            val parentItem =
+                Questionnaire.Item
+                    .Builder(
+                        linkId =
+                            dev.ohs.fhir.model.r4.String
+                                .Builder()
+                                .apply { value = "group-item" },
+                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    ).apply {
+                        item.add(childItem)
+                    }
+
+            val customQ =
+                Questionnaire
+                    .Builder(Enumeration(value = PublicationStatus.Active))
+                    .apply {
+                        id = "custom-nested-q"
+                        item.add(parentItem)
+                    }.build()
+
+            qrRepo.saveQuestionnaire(customQ)
+            val localizedCustom = qrRepo.getQuestionnaire("custom-nested-q", "es")
+            assertNotNull(localizedCustom)
+            assertEquals(1, localizedCustom.item.size)
+            val group = localizedCustom.item[0]
+            assertEquals(1, group.item.size)
+            val localizedChild = group.item[0]
+            val opt1 =
+                localizedChild.answerOption[0]
+                    .value
+                    .asString()
+                    ?.value
+                    ?.value
+            assertEquals("Rutina", opt1)
+            val opt2 =
+                localizedChild.answerOption[1]
+                    .value
+                    .asString()
+                    ?.value
+                    ?.value
+            assertEquals("unknown-option", opt2)
+
+            // Saving questionnaire with null ID
+            val noIdQ = Questionnaire.Builder(Enumeration(value = PublicationStatus.Active)).build()
+            val saveResult = qrRepo.saveQuestionnaire(noIdQ)
+            assertTrue(saveResult.isFailure)
+
+            // Questionnaire with no title, item with no text, coding options with no display
+            val codingNoDisplayItem =
+                Questionnaire.Item
+                    .Builder(
+                        linkId =
+                            dev.ohs.fhir.model.r4.String
+                                .Builder()
+                                .apply { value = "unknown-link" },
+                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                    ).apply {
+                        answerOption.add(
+                            Questionnaire.Item.AnswerOption.Builder(
+                                value =
+                                    Questionnaire.Item.AnswerOption.Value.Coding(
+                                        Coding
+                                            .Builder()
+                                            .apply {
+                                                code = Code.Builder().apply { value = "routine" }
+                                            }.build(),
+                                    ),
+                            ),
+                        )
+                        answerOption.add(
+                            Questionnaire.Item.AnswerOption.Builder(
+                                value =
+                                    Questionnaire.Item.AnswerOption.Value.Coding(
+                                        Coding.Builder().build(),
+                                    ),
+                            ),
+                        )
+                    }
+
+            val qNoTitle =
+                Questionnaire
+                    .Builder(Enumeration(value = PublicationStatus.Active))
+                    .apply {
+                        id = "unknown-custom-form"
+                        item.add(codingNoDisplayItem)
+                    }.build()
+
+            val localizedNoTitle = qrRepo.localizeQuestionnaire(qNoTitle, "es")
+            assertNotNull(localizedNoTitle)
+            assertNull(localizedNoTitle.title)
+
+            // Form with ID std-form but unknown linkId to trigger line 405
+            qrRepo.loadDefaultForms()
+            val stdQ = qrRepo.getQuestionnaire("std-form")!!
+            val stdWithUnknownLink = stdQ.toBuilder().apply { item.add(codingNoDisplayItem) }.build()
+            val localizedStd = qrRepo.localizeQuestionnaire(stdWithUnknownLink, "es")
+            assertNotNull(localizedStd)
+
+            // Questionnaire with null ID and option with null string and integer value
+            val nullStringOptionItem =
+                Questionnaire.Item
+                    .Builder(
+                        linkId =
+                            dev.ohs.fhir.model.r4.String
+                                .Builder()
+                                .apply { value = null },
+                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                    ).apply {
+                        answerOption.add(
+                            Questionnaire.Item.AnswerOption.Builder(
+                                value =
+                                    Questionnaire.Item.AnswerOption.Value.String(
+                                        dev.ohs.fhir.model.r4.String
+                                            .Builder()
+                                            .apply { value = null }
+                                            .build(),
+                                    ),
+                            ),
+                        )
+                        answerOption.add(
+                            Questionnaire.Item.AnswerOption.Builder(
+                                value =
+                                    Questionnaire.Item.AnswerOption.Value.Integer(
+                                        dev.ohs.fhir.model.r4.Integer
+                                            .Builder()
+                                            .apply { value = 123 }
+                                            .build(),
+                                    ),
+                            ),
+                        )
+                    }
+
+            val qNullId =
+                Questionnaire
+                    .Builder(Enumeration(value = PublicationStatus.Active))
+                    .apply {
+                        title =
+                            dev.ohs.fhir.model.r4.String
+                                .Builder()
+                                .apply { value = "Form With Null ID" }
+                        item.add(nullStringOptionItem)
+                    }.build()
+
+            val localizedNullId = qrRepo.localizeQuestionnaire(qNullId, "es")
+            assertNotNull(localizedNullId)
+            assertEquals("Form With Null ID", localizedNullId.title?.value)
+
+            // Repeated loadDefaultForms to test already-loaded branch
+            qrRepo.loadDefaultForms()
         }
 }

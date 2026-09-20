@@ -139,7 +139,9 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
         }
         commonMain.dependencies {
-            implementation(libs.google.fhir.model)
+            implementation(libs.ohs.fhir.model.r4)
+            implementation(libs.ohs.fhir.model.r4b)
+            implementation(libs.ohs.fhir.model.r5)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
@@ -153,6 +155,7 @@ kotlin {
             implementation(libs.jetbrains.navigation.compose)
 
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.serialization.protobuf)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.datetime)
             implementation(libs.sqldelight.coroutines)
@@ -231,7 +234,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "io.healthplatform.chartcam"
-            packageVersion = "1.0.5"
+            packageVersion = "1.0.6"
             macOS {
                 iconFile.set(project.file("src/jvmMain/resources/icon.icns"))
             }
@@ -269,41 +272,35 @@ kover {
                     "io.healthplatform.chartcam.utils.JvmShareService",
                     "io.healthplatform.chartcam.AppKt",
                     "io.healthplatform.chartcam.InitDatabaseKt",
-                    "io.healthplatform.chartcam.utils.QuestionnaireUtils",
                     "io.healthplatform.chartcam.storage.AndroidSecureStorage",
                     "io.healthplatform.chartcam.storage.AndroidKeystoreHardwareProvider*",
                     "io.healthplatform.chartcam.files.AndroidFileStorage",
                     "io.healthplatform.chartcam.sensors.AndroidSensorManagerKt",
                     "io.healthplatform.chartcam.media.Android*",
                     "io.healthplatform.chartcam.media.JvmAudioRecorderManager*",
+                    "io.healthplatform.chartcam.camera.JvmCameraManager*",
+                    "io.healthplatform.chartcam.navigation.QuestionnaireBuilderRoute*",
+                    "io.healthplatform.chartcam.navigation.CaptureDestinations*",
+                    "io.healthplatform.chartcam.navigation.DicomDestinations*",
+                    "io.healthplatform.chartcam.navigation.PatientDestinations*",
+                    "io.healthplatform.chartcam.navigation.QuestionnaireDestinations*",
+                    "io.healthplatform.chartcam.navigation.ComposableSingletons*",
+                    "io.healthplatform.chartcam.database.ChartCamQueries*",
+                    "io.healthplatform.chartcam.database.ChartCamDatabaseImpl*",
+                    "io.healthplatform.chartcam.database.*Entity*",
+                    "io.healthplatform.chartcam.database.chartCam.*",
+                    "io.healthplatform.chartcam.sdc.SdcQuestionnaireForm*",
                     "io.healthplatform.chartcam.ComposableSingletons*",
                 )
                 packages(
                     "chartcam.chartcam.generated.resources",
-                    "io.healthplatform.chartcam.navigation",
                     "io.healthplatform.chartcam.ui",
                     "io.healthplatform.chartcam.ui.*",
                     "io.healthplatform.chartcam.database",
                     "io.healthplatform.chartcam.database.*",
-                    "io.healthplatform.chartcam.models",
-                    "io.healthplatform.chartcam.models.*",
-                    "io.healthplatform.chartcam.camera",
-                    "io.healthplatform.chartcam.camera.*",
                     "io.healthplatform.chartcam.ComposableSingletons*",
-                    "io.healthplatform.chartcam.viewmodel",
-                    "io.healthplatform.chartcam.viewmodel.*",
-                    "io.healthplatform.chartcam.repository",
-                    "io.healthplatform.chartcam.repository.*",
-                    "io.healthplatform.chartcam.sdc",
-                    "io.healthplatform.chartcam.sdc.*",
                     "io.healthplatform.chartcam.sync",
                     "io.healthplatform.chartcam.sync.*",
-                    "io.healthplatform.chartcam.validation",
-                    "io.healthplatform.chartcam.validation.*",
-                    "io.healthplatform.chartcam.fhir",
-                    "io.healthplatform.chartcam.fhir.*",
-                    "io.healthplatform.chartcam.capture",
-                    "io.healthplatform.chartcam.capture.*",
                 )
             }
         }

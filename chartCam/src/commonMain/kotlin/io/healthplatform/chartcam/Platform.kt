@@ -19,6 +19,13 @@ interface Platform {
      * E.g., "Android 34", "iOS 17.2", "Java 21".
      */
     val name: String
+
+    /**
+     * Returns true if this platform is a mobile platform (e.g. Android or iOS).
+     *
+     * @return True if mobile, false otherwise.
+     */
+    fun isMobile(): Boolean = name.contains("Android") || name.contains("iOS")
 }
 
 /**

@@ -4,7 +4,7 @@
  */
 package io.healthplatform.chartcam.validation
 
-import com.google.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.Questionnaire
 
 /**
  * Validates form answers against [Questionnaire.Item] constraints.

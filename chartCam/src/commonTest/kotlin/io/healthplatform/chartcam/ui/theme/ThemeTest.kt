@@ -5,7 +5,9 @@
 package io.healthplatform.chartcam.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -160,12 +162,16 @@ class ThemeTest {
      */
     @Test
     fun testAppSpacingTokens() {
-        assertNotNull(AppSpacing.xs)
-        assertNotNull(AppSpacing.sm)
-        assertNotNull(AppSpacing.md)
-        assertNotNull(AppSpacing.lg)
-        assertNotNull(AppSpacing.xl)
-        assertNotNull(AppSpacing.minTouchTarget)
+        assertEquals(2.dp, AppSpacing.xxs)
+        assertEquals(4.dp, AppSpacing.xs)
+        assertEquals(6.dp, AppSpacing.compact)
+        assertEquals(8.dp, AppSpacing.sm)
+        assertEquals(12.dp, AppSpacing.moderate)
+        assertEquals(16.dp, AppSpacing.md)
+        assertEquals(24.dp, AppSpacing.lg)
+        assertEquals(32.dp, AppSpacing.xl)
+        assertEquals(48.dp, AppSpacing.xxl)
+        assertEquals(48.dp, AppSpacing.minTouchTarget)
     }
 
     /**

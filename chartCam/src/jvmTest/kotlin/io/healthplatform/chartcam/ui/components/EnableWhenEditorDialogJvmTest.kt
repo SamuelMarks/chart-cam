@@ -14,7 +14,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.unit.Density
-import com.google.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.viewmodel.BuilderEnableWhen
 import io.healthplatform.chartcam.viewmodel.BuilderItem
 import io.healthplatform.chartcam.viewmodel.WidgetType

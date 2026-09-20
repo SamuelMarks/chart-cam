@@ -36,7 +36,7 @@ class IosAudioRecorderManager(
      * @return A [Result] indicating success.
      */
     override suspend fun startRecording(): Result<Unit> =
-        withContext(Dispatchers.Main) {
+        withContext(Dispatchers.Default) {
             runCatching {
                 _isRecording.value = true
                 isPaused = false
@@ -73,7 +73,7 @@ class IosAudioRecorderManager(
      * @return A [Result] enclosing the saved file path.
      */
     override suspend fun stopRecording(fileName: String): Result<String> =
-        withContext(Dispatchers.Main) {
+        withContext(Dispatchers.Default) {
             runCatching {
                 _isRecording.value = false
                 isPaused = false

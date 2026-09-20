@@ -55,4 +55,18 @@ class ShareServiceJvmTest {
         val service = createShareService()
         assertTrue(service is JvmShareService)
     }
+
+    /**
+     * Tests synthetic default implementation bridge for share service.
+     */
+    @Test
+    fun testShareServiceDefaultImpls() {
+        val service = JvmShareService()
+        runCatching {
+            val defaultImpls = Class.forName("io.healthplatform.chartcam.utils.ShareService\$DefaultImpls")
+            val method = defaultImpls.getMethod("isValidSharePath", ShareService::class.java, String::class.java)
+            val result = method.invoke(null, service, "valid") as Boolean
+            assertTrue(result)
+        }
+    }
 }

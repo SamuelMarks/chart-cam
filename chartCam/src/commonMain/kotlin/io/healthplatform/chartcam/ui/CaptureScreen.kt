@@ -87,7 +87,7 @@ import chartcam.chartcam.generated.resources.retake
 import chartcam.chartcam.generated.resources.step_count_format
 import chartcam.chartcam.generated.resources.take_photo
 import chartcam.chartcam.generated.resources.unknown_error
-import com.google.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.camera.CameraManager
 import io.healthplatform.chartcam.camera.PermissionStatus
 import io.healthplatform.chartcam.camera.rememberCameraManager

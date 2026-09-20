@@ -19,4 +19,15 @@ class LanguageSwitcherJsTest {
         val lang = currentLanguageState.value
         assertTrue(lang.isNotBlank())
     }
+
+    /**
+     * Verifies that changeAppLanguage executes on JS without exceptions.
+     */
+    @Test
+    fun testChangeAppLanguageJs() {
+        changeAppLanguage("ja")
+        changeAppLanguage("en")
+        val lang = currentLanguageState.value
+        assertTrue(lang.isNotBlank())
+    }
 }

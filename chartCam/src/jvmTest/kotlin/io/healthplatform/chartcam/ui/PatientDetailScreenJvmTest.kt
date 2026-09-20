@@ -7,7 +7,7 @@ package io.healthplatform.chartcam.ui
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.v2.runComposeUiTest
-import com.google.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Patient
 import io.healthplatform.chartcam.repository.FhirRepository
 import kotlinx.coroutines.test.runTest
 import org.mockito.Mockito

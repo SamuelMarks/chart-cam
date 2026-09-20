@@ -46,6 +46,10 @@ class ClipboardUtilsIosTest {
                         get() = UIPasteboard.generalPasteboard
                 }
 
+            // 1. Initial state with null clipEntry returns null
+            kotlin.test.assertNull(fakeClipboard.getPlainText())
+
+            // 2. Setting plain text and retrieving returns text
             val testText = "Hello, iOS Clipboard!"
             fakeClipboard.setPlainText(testText)
 

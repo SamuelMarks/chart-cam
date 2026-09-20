@@ -4,13 +4,13 @@
  */
 package io.healthplatform.chartcam.fhir
 
-import com.google.fhir.model.r4.Boolean
-import com.google.fhir.model.r4.Code
-import com.google.fhir.model.r4.CodeableConcept
-import com.google.fhir.model.r4.Coding
-import com.google.fhir.model.r4.Extension
-import com.google.fhir.model.r4.Integer
-import com.google.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.Boolean
+import dev.ohs.fhir.model.r4.Code
+import dev.ohs.fhir.model.r4.CodeableConcept
+import dev.ohs.fhir.model.r4.Coding
+import dev.ohs.fhir.model.r4.Extension
+import dev.ohs.fhir.model.r4.Integer
+import dev.ohs.fhir.model.r4.Questionnaire
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -28,11 +28,11 @@ class SdcExtensionsJvmTest {
     private fun createBuilder() =
         Questionnaire.Item.Builder(
             linkId =
-                com.google.fhir.model.r4.String
+                dev.ohs.fhir.model.r4.String
                     .Builder()
                     .apply { value = "test_link" },
             type =
-                com.google.fhir.model.r4
+                dev.ohs.fhir.model.r4
                     .Enumeration(value = Questionnaire.QuestionnaireItemType.String),
         )
 

@@ -80,8 +80,8 @@ import chartcam.chartcam.generated.resources.remove_entry
 import chartcam.chartcam.generated.resources.select_an_option
 import chartcam.chartcam.generated.resources.take_photo
 import chartcam.chartcam.generated.resources.yes
-import com.google.fhir.model.r4.DocumentReference
-import com.google.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.DocumentReference
+import dev.ohs.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.fhir.getItemControl
 import io.healthplatform.chartcam.fhir.getLocalizedText
 import io.healthplatform.chartcam.fhir.getMaxValue
@@ -176,7 +176,7 @@ fun SdcQuestionnaireForm(
     questionnaire: Questionnaire,
     answers: Map<String, Any>,
     config: SdcFormConfig = SdcFormConfig(),
-    onFormUpdated: (Map<String, Any>, com.google.fhir.model.r4.QuestionnaireResponse) -> Unit,
+    onFormUpdated: (Map<String, Any>, dev.ohs.fhir.model.r4.QuestionnaireResponse) -> Unit,
     onTakePhotoRequested: (String) -> Unit = {},
     onTakeVideoRequested: (String) -> Unit = onTakePhotoRequested,
 ) {
@@ -838,7 +838,7 @@ private fun getDateAnswerText(
     val raw: String =
         when (answer) {
             is String -> answer
-            is com.google.fhir.model.r4.Date -> answer.value?.toString() ?: ""
+            is dev.ohs.fhir.model.r4.Date -> answer.value?.toString() ?: ""
             else -> answer?.toString() ?: ""
         }
     if (raw.isBlank()) return ""
@@ -861,7 +861,7 @@ private fun getDateTimeAnswerText(
     val raw: String =
         when (answer) {
             is String -> answer
-            is com.google.fhir.model.r4.DateTime -> answer.value?.toString() ?: ""
+            is dev.ohs.fhir.model.r4.DateTime -> answer.value?.toString() ?: ""
             else -> answer?.toString() ?: ""
         }
     if (raw.isBlank()) return ""
@@ -929,7 +929,7 @@ private fun getIntegerAnswerText(
  */
 
 @Composable
-private fun RenderAttachmentGrid(relatedAttachments: List<com.google.fhir.model.r4.DocumentReference>) {
+private fun RenderAttachmentGrid(relatedAttachments: List<dev.ohs.fhir.model.r4.DocumentReference>) {
     androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
         columns =
             androidx.compose.foundation.lazy.grid.GridCells

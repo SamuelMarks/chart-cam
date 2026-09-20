@@ -19,10 +19,10 @@ import kotlinx.datetime.LocalDate
  * @param language The BCP-47 language tag to use for formatting (e.g. "en", "es", "ja").
  * @return The locale-formatted date string.
  */
-expect fun formatLocalizedDate(
+fun formatLocalizedDate(
     fhirDate: String,
     language: String = io.healthplatform.chartcam.ui.currentLanguageState.value,
-): String
+): String = formatLocalizedDateCatching(fhirDate, language).getOrDefault(fhirDate)
 
 /**
  * Formats a FHIR DateTime string according to the user's current locale.
@@ -31,10 +31,45 @@ expect fun formatLocalizedDate(
  * @param language The BCP-47 language tag to use for formatting (e.g. "en", "es", "ja").
  * @return The locale-formatted datetime string.
  */
-expect fun formatLocalizedDateTime(
+fun formatLocalizedDateTime(
     fhirDateTime: String,
     language: String = io.healthplatform.chartcam.ui.currentLanguageState.value,
-): String
+): String = formatLocalizedDateTimeCatching(fhirDateTime, language).getOrDefault(fhirDateTime)
+
+/**
+ * Formats a FHIR date or datetime string into a localized, human-readable format returning a [Result].
+ *
+ * @param fhirDate The raw FHIR date string (e.g., "1990-01-01" or "1990-01-01T10:00:00Z").
+ * @param language The BCP-47 language tag to use for formatting (e.g. "en", "es", "ja").
+ * @return A [Result] enclosing the locale-formatted date string.
+ */
+fun formatLocalizedDateCatching(
+    fhirDate: String,
+    language: String = io.healthplatform.chartcam.ui.currentLanguageState.value,
+): Result<String> {
+    if (fhirDate.isBlank()) return Result.success("")
+    val parsedDate = parseFhirDate(fhirDate)
+    return if (parsedDate.isSuccess) {
+        parsedDate.flatMap { it.formatLocalized(language) }
+    } else {
+        parseFhirDateTime(fhirDate).flatMap { it.formatLocalized(language, preserveOffset = false) }
+    }
+}
+
+/**
+ * Formats a FHIR datetime string into a localized, human-readable format returning a [Result].
+ *
+ * @param fhirDateTime The raw FHIR datetime string (e.g., "1990-01-01T10:00:00Z").
+ * @param language The BCP-47 language tag to use for formatting (e.g. "en", "es", "ja").
+ * @return A [Result] enclosing the locale-formatted datetime string.
+ */
+fun formatLocalizedDateTimeCatching(
+    fhirDateTime: String,
+    language: String = io.healthplatform.chartcam.ui.currentLanguageState.value,
+): Result<String> {
+    if (fhirDateTime.isBlank()) return Result.success("")
+    return parseFhirDateTime(fhirDateTime).flatMap { it.formatLocalized(language) }
+}
 
 /**
  * Represents the ordering convention of date components for input entry.
@@ -129,3 +164,101 @@ fun getLocalizedDateTimePattern(language: String = io.healthplatform.chartcam.ui
  * @return A [Result] containing the parsed [LocalDate] or failure.
  */
 fun parseIsoDate(dateStr: String): Result<LocalDate> = runCatching { LocalDate.parse(dateStr.trim()) }
+
+/**
+ * Safely parses a string into a [dev.ohs.fhir.model.r4.FhirDate], encapsulating the result in a [Result].
+ *
+ * @param string The FHIR date string to parse.
+ * @return A [Result] enclosing the parsed [dev.ohs.fhir.model.r4.FhirDate] or an error.
+ */
+fun parseFhirDate(string: String): Result<dev.ohs.fhir.model.r4.FhirDate> =
+    runCatching {
+        dev.ohs.fhir.model.r4.FhirDate
+            .fromString(string.trim())
+    }
+
+/**
+ * Safely parses a string into a [dev.ohs.fhir.model.r4.FhirDateTime], encapsulating the result in a [Result].
+ *
+ * @param string The FHIR datetime string to parse.
+ * @return A [Result] enclosing the parsed [dev.ohs.fhir.model.r4.FhirDateTime] or an error.
+ */
+fun parseFhirDateTime(string: String): Result<dev.ohs.fhir.model.r4.FhirDateTime> =
+    runCatching {
+        dev.ohs.fhir.model.r4.FhirDateTime
+            .fromString(string.trim())
+    }
+
+/**
+ * Formats a [dev.ohs.fhir.model.r4.FhirDate] according to the specified language layout.
+ *
+ * @param language The BCP-47 language tag to use for formatting.
+ * @return A [Result] enclosing the formatted localized date string.
+ */
+fun dev.ohs.fhir.model.r4.FhirDate.formatLocalized(
+    language: String = io.healthplatform.chartcam.ui.currentLanguageState.value,
+): Result<String> =
+    runCatching {
+        val pattern = resolveDatePattern(language)
+        when (this) {
+            is dev.ohs.fhir.model.r4.FhirDate.Year -> value.toString()
+            is dev.ohs.fhir.model.r4.FhirDate.YearMonth -> {
+                val y = value.year.toString()
+                val m = value.toString().substringAfter('-')
+                when (pattern) {
+                    DatePattern.YEAR_FIRST -> "$y/$m"
+                    DatePattern.MONTH_FIRST -> "$m/$y"
+                    DatePattern.DAY_FIRST -> "$m/$y"
+                    DatePattern.ISO_STANDARD -> "$y-$m"
+                }
+            }
+            is dev.ohs.fhir.model.r4.FhirDate.Date -> formatDateForPattern(date, pattern)
+        }
+    }
+
+/**
+ * Formats a [dev.ohs.fhir.model.r4.FhirDateTime] according to the specified language layout.
+ *
+ * @param language The BCP-47 language tag to use for formatting.
+ * @param preserveOffset Whether to append the timezone UTC offset string.
+ * @return A [Result] enclosing the formatted localized datetime string.
+ */
+fun dev.ohs.fhir.model.r4.FhirDateTime.formatLocalized(
+    language: String = io.healthplatform.chartcam.ui.currentLanguageState.value,
+    preserveOffset: Boolean = false,
+): Result<String> =
+    runCatching {
+        val pattern = resolveDatePattern(language)
+        when (this) {
+            is dev.ohs.fhir.model.r4.FhirDateTime.Year -> value.toString()
+            is dev.ohs.fhir.model.r4.FhirDateTime.YearMonth -> {
+                val y = value.year.toString()
+                val m = value.toString().substringAfter('-')
+                when (pattern) {
+                    DatePattern.YEAR_FIRST -> "$y/$m"
+                    DatePattern.MONTH_FIRST -> "$m/$y"
+                    DatePattern.DAY_FIRST -> "$m/$y"
+                    DatePattern.ISO_STANDARD -> "$y-$m"
+                }
+            }
+            is dev.ohs.fhir.model.r4.FhirDateTime.Date -> formatDateForPattern(date, pattern)
+            is dev.ohs.fhir.model.r4.FhirDateTime.DateTime -> {
+                val datePart = formatDateForPattern(dateTime.date, pattern)
+                val hour = dateTime.hour.toString().padStart(2, '0')
+                val min = dateTime.minute.toString().padStart(2, '0')
+                val sec = if (dateTime.second > 0) ":${dateTime.second.toString().padStart(2, '0')}" else ""
+                val offset = if (preserveOffset) " $utcOffset" else ""
+                "$datePart $hour:$min$sec$offset".trim()
+            }
+        }
+    }
+
+/**
+ * Formats a [dev.ohs.fhir.model.r4.FhirDateTime] with full timezone offset preservation.
+ *
+ * @param language The BCP-47 language tag to use for formatting.
+ * @return A [Result] enclosing the formatted localized datetime string with timezone offset.
+ */
+fun dev.ohs.fhir.model.r4.FhirDateTime.formatLocalizedWithOffset(
+    language: String = io.healthplatform.chartcam.ui.currentLanguageState.value,
+): Result<String> = formatLocalized(language, preserveOffset = true)

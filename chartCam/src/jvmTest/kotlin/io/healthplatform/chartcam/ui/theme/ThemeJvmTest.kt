@@ -36,7 +36,7 @@ class ThemeJvmTest {
     }
 
     /**
-     * Verifies that AppTheme renders with dynamic color flags without failure.
+     * Verifies that AppTheme renders with dynamic color flags and dark mode options without failure.
      */
     @OptIn(ExperimentalTestApi::class)
     @Test
@@ -44,6 +44,30 @@ class ThemeJvmTest {
         runComposeUiTest {
             setContent {
                 AppTheme(darkTheme = false, dynamicColor = true) {
+                    assertNotNull(AppShapes)
+                }
+                AppTheme(darkTheme = true, dynamicColor = false) {
+                    assertNotNull(AppShapes)
+                }
+                AppTheme(darkTheme = false, dynamicColor = false) {
+                    assertNotNull(AppShapes)
+                }
+                AppTheme(darkTheme = true, dynamicColor = true) {
+                    assertNotNull(AppShapes)
+                }
+                AppTheme(darkTheme = true) {
+                    assertNotNull(AppShapes)
+                }
+                AppTheme(darkTheme = false) {
+                    assertNotNull(AppShapes)
+                }
+                AppTheme(dynamicColor = true) {
+                    assertNotNull(AppShapes)
+                }
+                AppTheme(dynamicColor = false) {
+                    assertNotNull(AppShapes)
+                }
+                AppTheme {
                     assertNotNull(AppShapes)
                 }
             }

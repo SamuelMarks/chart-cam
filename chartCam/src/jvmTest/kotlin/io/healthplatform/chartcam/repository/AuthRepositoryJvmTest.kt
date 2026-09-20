@@ -182,6 +182,21 @@ class AuthRepositoryJvmTest {
         }
 
     /**
+     * Tests logging in when the stored password hash has a different length to cover constant-time comparison branches.
+     */
+    @Test
+    fun testIncorrectPasswordDifferentLength() =
+        runTest {
+            val storage = MockStorage()
+            val repo = AuthRepository(storage)
+
+            storage.save("hash_dr_house", "short_hash")
+            val result = repo.login("dr_house", "password123")
+            assertTrue(result.isFailure)
+            assertEquals("incorrect password", result.exceptionOrNull()?.message)
+        }
+
+    /**
      * Tests checking the session validity before and after logging in and logging out.
      */
     @Test

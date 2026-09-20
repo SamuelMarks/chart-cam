@@ -140,15 +140,14 @@ internal class SdcLogicalParser(
         val token = input.substring(start, pos).trim()
         require(token.isNotEmpty()) { "Empty comparison token in expression: $input" }
 
-        val foundOp = findOperatorOutsideQuotes(token) ?: return evaluateBooleanToken(token)
+        val found = findOperatorOutsideQuotes(token) ?: return evaluateBooleanToken(token)
+        val foundOp = found.first
+        val opIndex = found.second
+        val lhs = token.substring(0, opIndex).trim()
+        val rhs = token.substring(opIndex + foundOp.length).trim()
 
-        val parts = splitOperatorOutsideQuotes(token, foundOp)
-        require(parts.size == 2) { "Malformed comparison '$token' in expression: $input" }
-
-        val lhs = parts[0]
-        val rhs = parts[1]
         val numRes = compareNumeric(lhs, foundOp, rhs)
-        return numRes ?: compareStrings(lhs, foundOp, rhs) ?: false
+        return numRes ?: compareStrings(lhs, foundOp, rhs)
     }
 
     /**
@@ -160,9 +159,31 @@ internal class SdcLogicalParser(
     private fun resolveNumeric(s: String): Float? {
         if (s.startsWith("%")) {
             val v = answers[s.removePrefix("%")]
-            return (v as? Number)?.toFloat() ?: v?.toString()?.toFloatOrNull()
+            val num = (v as? Number)?.toFloat()
+            val sVal = v?.toString()
+            return if (num != null) {
+                num
+            } else if (sVal != null) {
+                sVal.toFloatOrNull()
+            } else {
+                null
+            }
         }
         return s.toFloatOrNull()
+    }
+
+    /**
+     * Resolves a string value from an operand string or context variable.
+     *
+     * @param s The operand string.
+     * @return The resolved string value.
+     */
+    private fun resolveString(s: String): String {
+        if (s.startsWith("%")) {
+            val v = answers[s.removePrefix("%")]
+            return if (v != null) v.toString() else ""
+        }
+        return s.trim('\'', '"')
     }
 
     /**
@@ -196,15 +217,14 @@ internal class SdcLogicalParser(
         lhsNum: Float,
         op: String,
         rhsNum: Float,
-    ): Boolean? =
+    ): Boolean =
         when (op) {
             ">=" -> lhsNum >= rhsNum
             "<=" -> lhsNum <= rhsNum
             "==" -> lhsNum == rhsNum
             "!=" -> lhsNum != rhsNum
             ">" -> lhsNum > rhsNum
-            "<" -> lhsNum < rhsNum
-            else -> null
+            else -> lhsNum < rhsNum
         }
 
     /**
@@ -219,27 +239,16 @@ internal class SdcLogicalParser(
         lhsStr: String,
         op: String,
         rhsStr: String,
-    ): Boolean? {
-        val lhsVal =
-            if (lhsStr.startsWith("%")) {
-                answers[lhsStr.removePrefix("%")]?.toString() ?: ""
-            } else {
-                lhsStr.trim('\'', '"')
-            }
-        val rhsVal =
-            if (rhsStr.startsWith("%")) {
-                answers[rhsStr.removePrefix("%")]?.toString() ?: ""
-            } else {
-                rhsStr.trim('\'', '"')
-            }
+    ): Boolean {
+        val lhsVal = resolveString(lhsStr)
+        val rhsVal = resolveString(rhsStr)
         return when (op) {
             "==" -> lhsVal == rhsVal
             "!=" -> lhsVal != rhsVal
             ">=" -> lhsVal >= rhsVal
             "<=" -> lhsVal <= rhsVal
             ">" -> lhsVal > rhsVal
-            "<" -> lhsVal < rhsVal
-            else -> null
+            else -> lhsVal < rhsVal
         }
     }
 
@@ -273,9 +282,9 @@ internal class SdcLogicalParser(
      * Finds comparison operator outside quotes.
      *
      * @param token The comparison token string.
-     * @return The operator string, or null if none found.
+     * @return The operator and its index, or null if none found.
      */
-    private fun findOperatorOutsideQuotes(token: String): String? {
+    private fun findOperatorOutsideQuotes(token: String): Pair<String, Int>? {
         val compOps = listOf(">=", "<=", "==", "!=", ">", "<")
         var inQuotes = false
         var quoteChar = ' '
@@ -290,40 +299,9 @@ internal class SdcLogicalParser(
                 }
             } else if (!inQuotes) {
                 val matched = compOps.firstOrNull { token.startsWith(it, i) }
-                if (matched != null) return matched
+                if (matched != null) return matched to i
             }
         }
         return null
-    }
-
-    /**
-     * Splits a token by the first operator found outside quotes.
-     *
-     * @param token The comparison token string.
-     * @param op The comparison operator.
-     * @return Pair of left and right operand strings.
-     */
-    private fun splitOperatorOutsideQuotes(
-        token: String,
-        op: String,
-    ): List<String> {
-        var inQuotes = false
-        var quoteChar = ' '
-        for (i in token.indices) {
-            val c = token[i]
-            if (c == '\'' || c == '"') {
-                if (!inQuotes) {
-                    inQuotes = true
-                    quoteChar = c
-                } else if (c == quoteChar) {
-                    inQuotes = false
-                }
-            } else if (!inQuotes && token.startsWith(op, i)) {
-                val lhs = token.substring(0, i).trim()
-                val rhs = token.substring(i + op.length).trim()
-                return listOf(lhs, rhs)
-            }
-        }
-        return emptyList()
     }
 }

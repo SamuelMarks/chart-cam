@@ -18,11 +18,7 @@ class JvmQuestionnaireQrScanner : QuestionnaireQrScanner {
      */
     override suspend fun scanQuestionnaireQrCode(): Result<String> =
         withContext(Dispatchers.IO) {
-            runCatching {
-                Result
-                    .failure<String>(IllegalStateException("No QR code detected in desktop camera frame"))
-                    .getOrThrow()
-            }
+            Result.failure(IllegalStateException("No QR code detected in desktop camera frame"))
         }
 }
 

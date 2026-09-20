@@ -4,16 +4,16 @@
  */
 package io.healthplatform.chartcam.dicom
 
-import com.google.fhir.model.r4.Date
-import com.google.fhir.model.r4.Encounter
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.FhirDate
-import com.google.fhir.model.r4.HumanName
-import com.google.fhir.model.r4.Identifier
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.Practitioner
-import com.google.fhir.model.r4.String
-import com.google.fhir.model.r4.terminologies.AdministrativeGender
+import dev.ohs.fhir.model.r4.Date
+import dev.ohs.fhir.model.r4.Encounter
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.FhirDate
+import dev.ohs.fhir.model.r4.HumanName
+import dev.ohs.fhir.model.r4.Identifier
+import dev.ohs.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Practitioner
+import dev.ohs.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.terminologies.AdministrativeGender
 import io.healthplatform.chartcam.models.createFhirEncounter
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -117,6 +117,64 @@ class FhirToDicomMapperTest {
 
         val studyUid = elemMap[DicomTag.STUDY_INSTANCE_UID]?.value?.decodeToString()?.trim()
         assertTrue(studyUid?.startsWith(DicomTag.UID_CHARTCAM_IMPLEMENTATION_CLASS) == true)
+
+        assertEquals("", FhirToDicomMapper.extractFamilyName(null))
+        assertEquals("", FhirToDicomMapper.extractGivenName(null))
+        assertEquals("O", FhirToDicomMapper.extractGender(Patient()))
+        assertEquals("", FhirToDicomMapper.extractBirthDate(Patient()))
+        assertEquals("", FhirToDicomMapper.extractPeriodStart(null))
+        assertTrue(FhirToDicomMapper.extractFamilyNameCatching(null).isSuccess)
+        assertTrue(FhirToDicomMapper.extractGivenNameCatching(null).isSuccess)
+        assertTrue(FhirToDicomMapper.extractGenderCatching(Patient()).isSuccess)
+        assertTrue(FhirToDicomMapper.extractBirthDateCatching(Patient()).isSuccess)
+        assertTrue(FhirToDicomMapper.extractPeriodStartCatching(null).isSuccess)
+
+        assertEquals("M", FhirToDicomMapper.extractGender(Patient(gender = Enumeration(value = AdministrativeGender.Male))))
+        assertEquals("F", FhirToDicomMapper.extractGender(Patient(gender = Enumeration(value = AdministrativeGender.Female))))
+        assertEquals("O", FhirToDicomMapper.extractGender(Patient(gender = Enumeration(value = AdministrativeGender.Other))))
+        assertEquals("O", FhirToDicomMapper.extractGender(Patient(gender = Enumeration(value = AdministrativeGender.Unknown))))
+        assertEquals("O", FhirToDicomMapper.extractGender(Patient(gender = null)))
+
+        val patWithDob =
+            Patient(
+                birthDate =
+                    dev.ohs.fhir.model.r4
+                        .Date(
+                            value =
+                                dev.ohs.fhir.model.r4.FhirDate
+                                    .fromString("1988-04-25"),
+                        ),
+            )
+        assertEquals("1988-04-25", FhirToDicomMapper.extractBirthDate(patWithDob))
+
+        val encWithPeriod =
+            Encounter(
+                status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                `class` =
+                    dev.ohs.fhir.model.r4
+                        .Coding(),
+                period =
+                    dev.ohs.fhir.model.r4.Period(
+                        start =
+                            dev.ohs.fhir.model.r4
+                                .DateTime(
+                                    value =
+                                        dev.ohs.fhir.model.r4.FhirDateTime
+                                            .fromString("2026-09-17T10:00:00Z"),
+                                ),
+                    ),
+            )
+        assertEquals("2026-09-17T10:00:00Z", FhirToDicomMapper.extractPeriodStart(encWithPeriod))
+
+        val encWithoutPeriod =
+            Encounter(
+                status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                `class` =
+                    dev.ohs.fhir.model.r4
+                        .Coding(),
+                period = null,
+            )
+        assertEquals("", FhirToDicomMapper.extractPeriodStart(encWithoutPeriod))
     }
 
     /**
@@ -166,6 +224,7 @@ class FhirToDicomMapperTest {
         assertEquals("^Cher", givenMap[DicomTag.PATIENT_NAME]?.value?.decodeToString()?.trim())
         assertEquals("NO_MRN", givenMap[DicomTag.PATIENT_ID]?.value?.decodeToString()?.trim())
         assertEquals("O", givenMap[DicomTag.PATIENT_SEX]?.value?.decodeToString()?.trim())
+        assertEquals("O", FhirToDicomMapper.extractGender(givenOnlyPatient))
 
         // Patient with empty elements inside Name and Identifier
         val blankPatient =
@@ -250,11 +309,11 @@ class FhirToDicomMapperTest {
                 .Builder(
                     status = Enumeration(value = Encounter.EncounterStatus.Finished),
                     `class` =
-                        com.google.fhir.model.r4.Coding
+                        dev.ohs.fhir.model.r4.Coding
                             .Builder()
                             .apply {
                                 code =
-                                    com.google.fhir.model.r4.Code
+                                    dev.ohs.fhir.model.r4.Code
                                         .Builder()
                                         .apply { value = "AMB" }
                             },
@@ -268,17 +327,17 @@ class FhirToDicomMapperTest {
                 .Builder(
                     status = Enumeration(value = Encounter.EncounterStatus.Finished),
                     `class` =
-                        com.google.fhir.model.r4.Coding
+                        dev.ohs.fhir.model.r4.Coding
                             .Builder()
                             .apply {
                                 code =
-                                    com.google.fhir.model.r4.Code
+                                    dev.ohs.fhir.model.r4.Code
                                         .Builder()
                                         .apply { value = "AMB" }
                             },
                 ).apply {
                     period =
-                        com.google.fhir.model.r4.Period
+                        dev.ohs.fhir.model.r4.Period
                             .Builder()
                 }.build()
         val nullStartMap = FhirToDicomMapper.buildCommonElements(null, encNullStart, null).associateBy { it.tag }
@@ -558,11 +617,11 @@ class FhirToDicomMapperTest {
                 .Builder(
                     status = Enumeration(value = Encounter.EncounterStatus.Finished),
                     `class` =
-                        com.google.fhir.model.r4.Coding
+                        dev.ohs.fhir.model.r4.Coding
                             .Builder()
                             .apply {
                                 code =
-                                    com.google.fhir.model.r4.Code
+                                    dev.ohs.fhir.model.r4.Code
                                         .Builder()
                                         .apply { value = "AMB" }
                             },
@@ -573,11 +632,11 @@ class FhirToDicomMapperTest {
                 .toBuilder()
                 .apply {
                     period =
-                        com.google.fhir.model.r4.Period
+                        dev.ohs.fhir.model.r4.Period
                             .Builder()
                             .apply {
                                 start =
-                                    com.google.fhir.model.r4.DateTime
+                                    dev.ohs.fhir.model.r4.DateTime
                                         .Builder()
                             }
                 }.build()

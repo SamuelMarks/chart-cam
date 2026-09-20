@@ -46,18 +46,30 @@ class LanguageSwitcherAndroidTest {
     @Test
     fun testChangeAppLanguageAndroid() {
         val originalLocale = Locale.getDefault()
-        try {
-            changeAppLanguage("ja")
-            assertEquals("ja", Locale.getDefault().language)
+        changeAppLanguage("ja")
+        assertEquals("ja", Locale.getDefault().language)
 
-            val context = AndroidAppInit.getContext()
-            assertEquals(
-                "ja",
-                context.resources.configuration.locales[0]
-                    .language,
-            )
-        } finally {
-            Locale.setDefault(originalLocale)
-        }
+        val context = AndroidAppInit.getContext()
+        assertEquals(
+            "ja",
+            context.resources.configuration.locales[0]
+                .language,
+        )
+        Locale.setDefault(originalLocale)
+    }
+
+    /**
+     * Test changing the app language on Android when AndroidAppInit has no context.
+     */
+    @Test
+    fun testChangeAppLanguageAndroidWithoutContext() {
+        val field = AndroidAppInit::class.java.getDeclaredField("context")
+        field.isAccessible = true
+        field.set(AndroidAppInit, null)
+
+        val originalLocale = Locale.getDefault()
+        changeAppLanguage("es")
+        assertEquals("es", Locale.getDefault().language)
+        Locale.setDefault(originalLocale)
     }
 }

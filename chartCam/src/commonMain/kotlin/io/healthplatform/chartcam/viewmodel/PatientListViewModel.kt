@@ -13,12 +13,12 @@ import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.failed_to_import
 import chartcam.chartcam.generated.resources.failed_to_load_patients
 import chartcam.chartcam.generated.resources.unknown_error
-import com.google.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Patient
 import io.healthplatform.chartcam.models.ConflictResolutionStrategy
 import io.healthplatform.chartcam.models.ImportCategory
 import io.healthplatform.chartcam.models.ImportFilterOptions
 import io.healthplatform.chartcam.models.ImportPreviewSummary
-import io.healthplatform.chartcam.models.createFhirPatient
+import io.healthplatform.chartcam.models.createFhirPatientCatching
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
 import io.healthplatform.chartcam.repository.FhirRepository
@@ -53,6 +53,17 @@ enum class ImportStage {
 }
 
 /**
+ * Staged import payload bundling the encrypted archive data and password.
+ *
+ * @param data The raw encrypted data string.
+ * @param password The decryption password.
+ */
+data class StagedImportPayload(
+    val data: String,
+    val password: String,
+)
+
+/**
  * UI State definition for the Patient List Screen.
  *
  * @param patients The list of patients currently being displayed.
@@ -65,8 +76,7 @@ enum class ImportStage {
  * @param showAllPatients Flag indicating whether to show all patients or just the current practitioner's patients.
  * @param importStage Current phase of the import and conflict resolution pipeline.
  * @param importPreview Staged archive preview metadata, or null if no archive is staged.
- * @param stagedRawData The encrypted raw data of the currently staged import.
- * @param stagedPassword The decryption password of the currently staged import.
+ * @param stagedPayload The currently staged import payload bundle, or null if no archive is staged.
  * @param importFilterOptions Category filter configuration for selective import.
  * @param selectedPatientIds The set of staged incoming patient IDs selected for import.
  * @param conflictResolutions Chosen conflict resolution strategies keyed by incoming patient ID.
@@ -82,8 +92,7 @@ data class PatientListUiState(
     val showAllPatients: Boolean = false,
     val importStage: ImportStage = ImportStage.IDLE,
     val importPreview: ImportPreviewSummary? = null,
-    val stagedRawData: String? = null,
-    val stagedPassword: String? = null,
+    val stagedPayload: StagedImportPayload? = null,
     val importFilterOptions: ImportFilterOptions = ImportFilterOptions.all(),
     val selectedPatientIds: Set<String> = emptySet(),
     val conflictResolutions: Map<String, ConflictResolutionStrategy> = emptyMap(),
@@ -128,18 +137,19 @@ class PatientListViewModel(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            runSuspendCatching {
+            val result =
                 if (query.isBlank()) {
-                    repository.getAllPatients(showAll = showAll, practitionerId = practitionerId)
+                    repository.getAllPatientsCatching(showAll = showAll, practitionerId = practitionerId)
                 } else {
-                    repository.searchPatients(query, showAll = showAll, practitionerId = practitionerId)
+                    repository.searchPatientsCatching(query, showAll = showAll, practitionerId = practitionerId)
                 }
-            }.onSuccess { results ->
-                _uiState.update { it.copy(patients = results, isLoading = false) }
-            }.onFailure { e ->
-                println(e.message)
-                _uiState.update { it.copy(isLoading = false, error = Res.string.failed_to_load_patients) }
-            }
+            result
+                .onSuccess { results ->
+                    _uiState.update { it.copy(patients = results.orEmpty(), isLoading = false) }
+                }.onFailure { e ->
+                    println(e.message)
+                    _uiState.update { it.copy(isLoading = false, error = Res.string.failed_to_load_patients) }
+                }
         }
     }
 
@@ -191,28 +201,33 @@ class PatientListViewModel(
         onSuccess: (String) -> Unit,
     ) {
         val practitionerId = authRepository.currentUser.value?.id
+        val newId = UUID.randomUUID()
         viewModelScope.launch {
-            runSuspendCatching {
-                val newPatient =
-                    createFhirPatient(
-                        id = UUID.randomUUID(),
-                        firstName = firstName,
-                        lastName = lastName,
-                        dob = dob,
-                        mrnValue = mrn,
-                        organizationId = practitionerId,
-                        gender = gender,
-                    )
-                repository.savePatient(newPatient).getOrThrow()
-                newPatient
-            }.onSuccess { newPatient ->
-                setCreateDialogVisible(false)
-                loadPatients()
-                onSuccess(newPatient.id ?: "")
-            }.onFailure { e ->
-                println(e.message)
-                _uiState.update { it.copy(error = Res.string.failed_to_load_patients) }
-            }
+            val patientResult =
+                createFhirPatientCatching(
+                    id = newId,
+                    firstName = firstName,
+                    lastName = lastName,
+                    dob = dob,
+                    mrnValue = mrn,
+                    organizationId = practitionerId,
+                    gender = gender,
+                )
+            val newPatient =
+                patientResult.getOrElse {
+                    _uiState.update { it.copy(error = Res.string.failed_to_load_patients) }
+                    return@launch
+                }
+            repository
+                .savePatient(newPatient)
+                .onSuccess {
+                    setCreateDialogVisible(false)
+                    loadPatients()
+                    onSuccess(newId)
+                }.onFailure { e ->
+                    println(e.message)
+                    _uiState.update { it.copy(error = Res.string.failed_to_load_patients) }
+                }
         }
     }
 
@@ -296,8 +311,7 @@ class PatientListViewModel(
                         it.copy(
                             importStage = ImportStage.PREVIEW_STAGED,
                             importPreview = preview,
-                            stagedRawData = data,
-                            stagedPassword = password,
+                            stagedPayload = StagedImportPayload(data, password),
                             selectedPatientIds = allPatientIds,
                             conflictResolutions = initialResolutions,
                             error = null,
@@ -334,12 +348,10 @@ class PatientListViewModel(
      */
     fun toggleSelectAllPatients(selected: Boolean) {
         _uiState.update { current ->
+            val preview = current.importPreview
             val allIds =
-                if (selected) {
-                    current.importPreview
-                        ?.stagedPatients
-                        ?.mapNotNull { it.incomingPatient.id }
-                        ?.toSet() ?: emptySet()
+                if (selected && preview != null) {
+                    preview.stagedPatients.mapNotNull { it.incomingPatient.id }.toSet()
                 } else {
                     emptySet()
                 }
@@ -387,8 +399,7 @@ class PatientListViewModel(
      * @param onSuccess Callback triggered upon successful completion.
      */
     fun confirmAndExecuteImport(onSuccess: () -> Unit) {
-        val data = _uiState.value.stagedRawData ?: return
-        val password = _uiState.value.stagedPassword ?: return
+        val payload = _uiState.value.stagedPayload ?: return
         val filter = _uiState.value.importFilterOptions
         val selectedIds = _uiState.value.selectedPatientIds
         val resolutions = _uiState.value.conflictResolutions
@@ -397,8 +408,8 @@ class PatientListViewModel(
             _uiState.update { it.copy(importStage = ImportStage.IMPORTING) }
             exportImportService
                 .importDataSelective(
-                    encryptedData = data,
-                    password = password,
+                    encryptedData = payload.data,
+                    password = payload.password,
                     filterOptions = filter,
                     selectedPatientIds = selectedIds,
                     resolutionMap = resolutions,
@@ -408,8 +419,7 @@ class PatientListViewModel(
                         it.copy(
                             importStage = ImportStage.SUCCESS,
                             importPreview = null,
-                            stagedRawData = null,
-                            stagedPassword = null,
+                            stagedPayload = null,
                             error = null,
                         )
                     }
@@ -429,8 +439,7 @@ class PatientListViewModel(
             it.copy(
                 importStage = ImportStage.IDLE,
                 importPreview = null,
-                stagedRawData = null,
-                stagedPassword = null,
+                stagedPayload = null,
             )
         }
     }
@@ -443,20 +452,35 @@ class PatientListViewModel(
     }
 
     /**
-     * Deletes the currently logged-in practitioner's account and all associated patients.
+     * Extracts reference string value from a FHIR Reference element.
      *
-     * @param onSuccess Callback triggered after successful deletion.
+     * @param ref The reference element.
+     * @return The raw reference value, or null.
+     */
+    private fun extractReferenceValue(ref: dev.ohs.fhir.model.r4.Reference?): String? {
+        val r = if (ref != null) ref.reference else null
+        return if (r != null) r.value else null
+    }
+
+    /**
+     * Deletes the clinician account, cascading deletions to practitioner resources.
+     *
+     * @param onSuccess Callback triggered upon successful deletion.
      */
     fun deleteAccount(onSuccess: () -> Unit) {
         viewModelScope.launch {
             val practitioner = authRepository.currentUser.value
             if (practitioner != null) {
+                val names = practitioner.name
                 val username =
-                    practitioner.name
-                        .firstOrNull()
-                        ?.family
-                        ?.value ?: ""
-                val id = practitioner.id ?: ""
+                    if (names.isNotEmpty()) {
+                        val fam = names[0].family
+                        if (fam != null && fam.value != null) fam.value!! else ""
+                    } else {
+                        ""
+                    }
+                val rawId = practitioner.id
+                val id = if (rawId != null) rawId else ""
 
                 // Delete all encounters associated with this practitioner,
                 // and delete patients solely if no other practitioner holds encounters on that patient
@@ -470,7 +494,7 @@ class PatientListViewModel(
                     val otherPractitionerEncounters =
                         encounters.filter { enc ->
                             enc.participant.any { p ->
-                                val ref = p.individual?.reference?.value
+                                val ref = extractReferenceValue(p.individual)
                                 ref != null && !ref.contains(id)
                             }
                         }
@@ -478,12 +502,15 @@ class PatientListViewModel(
                         val myEncounters =
                             encounters.filter { enc ->
                                 enc.participant.any { p ->
-                                    val ref = p.individual?.reference?.value
+                                    val ref = extractReferenceValue(p.individual)
                                     ref != null && ref.contains(id)
                                 }
                             }
                         myEncounters.forEach { enc ->
-                            enc.id?.let { repository.deleteEncounter(it) }
+                            val encId = enc.id
+                            if (encId != null) {
+                                repository.deleteEncounter(encId)
+                            }
                         }
                     } else {
                         repository.deletePatient(pid)

@@ -9,10 +9,10 @@ package io.healthplatform.chartcam.security
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.google.fhir.model.r4.Bundle
-import com.google.fhir.model.r4.FhirR4Json
-import com.google.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Bundle
+import dev.ohs.fhir.model.r4.Patient
 import io.healthplatform.chartcam.database.ChartCamDatabase
+import io.healthplatform.chartcam.fhir.FhirJsonParser
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.createFhirEncounter
 import io.healthplatform.chartcam.models.createFhirPractitioner
@@ -64,7 +64,6 @@ class MultiPractitionerScopedExportAndVisibilityWorkflowTest {
     private lateinit var authRepo: AuthRepository
     private lateinit var exportImportService: ExportImportService
     private val cryptoService = CryptoService()
-    private val fhirJson = FhirR4Json()
 
     /**
      * Initializes test database and authentication repository.
@@ -141,7 +140,7 @@ class MultiPractitionerScopedExportAndVisibilityWorkflowTest {
                         practitionerId = carterId,
                     ).getOrThrow()
             val decryptedCarterJson = cryptoService.decrypt(encryptedCarterExport, password)
-            val carterBundle = fhirJson.decodeFromString(decryptedCarterJson) as Bundle
+            val carterBundle = FhirJsonParser.decodeTypedResource(Bundle.serializer(), decryptedCarterJson).getOrNull()!!
             val exportedPatientIds =
                 carterBundle.entry
                     .mapNotNull { (it.resource as? Patient)?.id }
@@ -169,7 +168,7 @@ class MultiPractitionerScopedExportAndVisibilityWorkflowTest {
                         practitionerId = rossId,
                     ).getOrThrow()
             val decryptedRossJson = cryptoService.decrypt(encryptedRossExport, password)
-            val rossBundle = fhirJson.decodeFromString(decryptedRossJson) as Bundle
+            val rossBundle = FhirJsonParser.decodeTypedResource(Bundle.serializer(), decryptedRossJson).getOrNull()!!
             val rossExportedPatientIds =
                 rossBundle.entry
                     .mapNotNull { (it.resource as? Patient)?.id }
@@ -202,7 +201,7 @@ class MultiPractitionerScopedExportAndVisibilityWorkflowTest {
                         practitionerId = rossId,
                     ).getOrThrow()
             val updatedRossJson = cryptoService.decrypt(updatedRossExport, password)
-            val updatedRossBundle = fhirJson.decodeFromString(updatedRossJson) as Bundle
+            val updatedRossBundle = FhirJsonParser.decodeTypedResource(Bundle.serializer(), updatedRossJson).getOrNull()!!
             val updatedRossPatientIds =
                 updatedRossBundle.entry
                     .mapNotNull { (it.resource as? Patient)?.id }

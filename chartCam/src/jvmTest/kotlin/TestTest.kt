@@ -20,11 +20,11 @@ class TestTest {
     @Test
     fun testFoo() {
         val date =
-            com.google.fhir.model.r4.Date
+            dev.ohs.fhir.model.r4.Date
                 .Builder()
                 .apply {
                     value =
-                        com.google.fhir.model.r4.FhirDate
+                        dev.ohs.fhir.model.r4.FhirDate
                             .fromString("2020-01-01")
                 }.build()
         kotlin.test.assertEquals("2020-01-01", date.value?.toString())

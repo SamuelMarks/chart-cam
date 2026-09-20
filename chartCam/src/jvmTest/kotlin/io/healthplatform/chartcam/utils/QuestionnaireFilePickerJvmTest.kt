@@ -41,6 +41,19 @@ class QuestionnaireFilePickerJvmTest {
             assertTrue(successRes.getOrNull()!!.contains("test-picker"))
 
             tempFile.delete()
+
+            // Exercise isQuestionnaireJson
+            assertTrue(picker.isQuestionnaireJson("""{"resourceType": "Questionnaire", "id": "123"}"""))
+            assertTrue(picker.isQuestionnaireJson("""{"resourceType":"Questionnaire","id":"123"}"""))
+            assertTrue(!picker.isQuestionnaireJson("""{"resourceType": "Patient", "id": "123"}"""))
+
+            // Exercise synthetic DefaultImpls bridge if present on JVM/Android
+            runCatching {
+                val defaultImpls = Class.forName("io.healthplatform.chartcam.utils.QuestionnaireFilePicker\$DefaultImpls")
+                val method = defaultImpls.getMethod("isQuestionnaireJson", QuestionnaireFilePicker::class.java, String::class.java)
+                val result = method.invoke(null, picker, """{"resourceType": "Questionnaire"}""") as Boolean
+                assertTrue(result)
+            }
         }
 
     /**

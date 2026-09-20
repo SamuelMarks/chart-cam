@@ -16,6 +16,10 @@ class FhirConstantsJvmTest {
      */
     @Test
     fun testFhirConstantsJvm() {
+        val instance = FhirConstants
+        assertEquals("application/fhir+json", instance.CONTENT_TYPE_FHIR_JSON)
         assertEquals("application/fhir+json", FhirConstants.CONTENT_TYPE_FHIR_JSON)
+        assertEquals(true, FhirConstants.isFhirJsonContentType("application/fhir+json"))
+        assertEquals(false, FhirConstants.isFhirJsonContentType("application/json"))
     }
 }

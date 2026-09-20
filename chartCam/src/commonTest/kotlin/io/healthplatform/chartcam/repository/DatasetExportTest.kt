@@ -4,13 +4,13 @@
  */
 package io.healthplatform.chartcam.repository
 
-import com.google.fhir.model.r4.Boolean
-import com.google.fhir.model.r4.Date
-import com.google.fhir.model.r4.FhirDate
-import com.google.fhir.model.r4.FhirR4Json
-import com.google.fhir.model.r4.HumanName
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.Boolean
+import dev.ohs.fhir.model.r4.Date
+import dev.ohs.fhir.model.r4.FhirDate
+import dev.ohs.fhir.model.r4.HumanName
+import dev.ohs.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.String
+import io.healthplatform.chartcam.fhir.FhirJsonParser
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -74,8 +74,6 @@ class DatasetExportTest {
      */
     @Test
     fun testPatientJsonExportAccuracy() {
-        val fhirJson = FhirR4Json()
-
         val patient =
             Patient
                 .Builder()
@@ -84,7 +82,7 @@ class DatasetExportTest {
                     birthDate = Date.Builder().apply { value = FhirDate.fromString("2020-01-01") }
                 }.build()
 
-        val jsonOutput = fhirJson.encodeToString(patient)
+        val jsonOutput = FhirJsonParser.encodeResource(patient).getOrNull() ?: ""
         println(jsonOutput)
         assertTrue(
             jsonOutput.contains("\"resourceType\":\"Patient\"") || jsonOutput.contains("\"resourceType\": \"Patient\""),

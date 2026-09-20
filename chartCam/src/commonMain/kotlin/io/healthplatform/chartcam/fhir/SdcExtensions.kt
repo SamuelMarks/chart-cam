@@ -4,7 +4,8 @@
  */
 package io.healthplatform.chartcam.fhir
 
-import com.google.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.Extension
+import dev.ohs.fhir.model.r4.Questionnaire
 import io.healthplatform.chartcam.ui.currentLanguageState
 
 /**
@@ -56,6 +57,19 @@ object SdcExtensions {
     /** Extension URL for coordinate coordinates (x, y percentages) on body map. */
     const val BODY_MAP_COORDINATES =
         "http://chartcam.local/fhir/StructureDefinition/body-map-coordinates"
+
+    /** The questionnaire unit extension URL. */
+    const val QUESTIONNAIRE_UNIT = "http://hl7.org/fhir/StructureDefinition/questionnaire-unit"
+
+    /** The sdc itemWeight extension URL. */
+    const val ITEM_WEIGHT = "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-itemWeight"
+
+    /** The choiceOrientation extension URL. */
+    const val CHOICE_ORIENTATION = "http://hl7.org/fhir/StructureDefinition/questionnaire-choiceOrientation"
+
+    /** SDC observation extract extension URL. */
+    const val OBSERVATION_EXTRACT =
+        "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-observationExtract"
 }
 
 /**
@@ -107,16 +121,112 @@ fun Questionnaire.Item.isSegmentedControl(): Boolean {
 }
 
 /**
+ * Safe accessor for item control returning a [Result].
+ */
+val Questionnaire.Item.safeItemControl: Result<String?>
+    get() = runCatching { getItemControl() }
+
+/**
+ * Safe accessor for min value returning a [Result].
+ */
+val Questionnaire.Item.safeMinValue: Result<dev.ohs.fhir.model.r4.FhirDecimal?>
+    get() =
+        runCatching {
+            val ext = this.extension.firstOrNull { it.url == SdcExtensions.MIN_VALUE } ?: return@runCatching null
+            when (val v = ext.value) {
+                is Extension.Value.Decimal -> v.value.value
+                is Extension.Value.Integer ->
+                    v.value.value?.let {
+                        dev.ohs.fhir.model.r4.FhirDecimal
+                            .fromInt(it)
+                    }
+                else -> null
+            }
+        }
+
+/**
+ * Safe accessor for max value returning a [Result].
+ */
+val Questionnaire.Item.safeMaxValue: Result<dev.ohs.fhir.model.r4.FhirDecimal?>
+    get() =
+        runCatching {
+            val ext = this.extension.firstOrNull { it.url == SdcExtensions.MAX_VALUE } ?: return@runCatching null
+            when (val v = ext.value) {
+                is Extension.Value.Decimal -> v.value.value
+                is Extension.Value.Integer ->
+                    v.value.value?.let {
+                        dev.ohs.fhir.model.r4.FhirDecimal
+                            .fromInt(it)
+                    }
+                else -> null
+            }
+        }
+
+/**
+ * Safe accessor for initial expression returning a [Result].
+ */
+val Questionnaire.Item.safeInitialExpression: Result<String?>
+    get() = runCatching { getInitialExpression() }
+
+/**
+ * Safe accessor for questionnaire-unit returning a [Result].
+ */
+val Questionnaire.Item.safeUnit: Result<dev.ohs.fhir.model.r4.Coding?>
+    get() =
+        runCatching {
+            val ext =
+                this.extension.firstOrNull {
+                    it.url == SdcExtensions.QUESTIONNAIRE_UNIT
+                } ?: return@runCatching null
+            when (val v = ext.value) {
+                is Extension.Value.Coding -> v.value
+                else -> null
+            }
+        }
+
+/**
+ * Safe accessor for sdc-questionnaire-itemWeight returning a [Result].
+ */
+val Questionnaire.Item.safeItemWeight: Result<dev.ohs.fhir.model.r4.FhirDecimal?>
+    get() =
+        runCatching {
+            val ext =
+                this.extension.firstOrNull {
+                    it.url == SdcExtensions.ITEM_WEIGHT
+                } ?: return@runCatching null
+            when (val v = ext.value) {
+                is Extension.Value.Decimal -> v.value.value
+                else -> null
+            }
+        }
+
+/**
+ * Safe accessor for questionnaire-choiceOrientation returning a [Result].
+ */
+val Questionnaire.Item.safeChoiceOrientation: Result<String?>
+    get() =
+        runCatching {
+            val ext =
+                this.extension.firstOrNull {
+                    it.url == SdcExtensions.CHOICE_ORIENTATION
+                } ?: return@runCatching null
+            when (val v = ext.value) {
+                is Extension.Value.Code -> v.value.value
+                is Extension.Value.String -> v.value.value
+                else -> null
+            }
+        }
+
+/**
  * Checks if a Questionnaire Item is hidden based on the SDC hidden extension.
  * @return True if hidden, false otherwise.
  */
 fun Questionnaire.Item.isHidden(): Boolean {
     val hiddenExt = this.extension.firstOrNull { it.url == SdcExtensions.HIDDEN }
-    return hiddenExt
-        ?.value
-        ?.asBoolean()
-        ?.value
-        ?.value == true
+    return when (val v = hiddenExt?.value) {
+        is Extension.Value.Boolean -> v.value.value == true
+        else -> false
+    }
 }
 
 /**
@@ -124,59 +234,124 @@ fun Questionnaire.Item.isHidden(): Boolean {
  * @return The initial expression string or null.
  */
 fun Questionnaire.Item.getInitialExpression(): String? {
-    val initExt = this.extension.firstOrNull { it.url == SdcExtensions.INITIAL_EXPRESSION } ?: return null
+    val initExt =
+        this.extension.firstOrNull {
+            it.url == SdcExtensions.INITIAL_EXPRESSION
+        } ?: return null
     val exprExt = initExt.extension.firstOrNull { it.url == "expression" }
-    return exprExt
-        ?.value
-        ?.asString()
-        ?.value
-        ?.value
-        ?: initExt.value
-            ?.asString()
-            ?.value
-            ?.value
+    val exprVal = exprExt?.value
+    return if (exprVal is Extension.Value.String) {
+        exprVal.value.value
+    } else {
+        when (val v = initExt.value) {
+            is Extension.Value.String -> v.value.value
+            else -> null
+        }
+    }
 }
 
 /**
  * Retrieves the ItemControl code from the item, or null if not present.
  * @return The item control code, or null.
  */
-fun Questionnaire.Item.getItemControl(): String? =
-    this.extension
-        .firstOrNull { it.url == SdcExtensions.ITEM_CONTROL }
-        ?.value
-        ?.asCodeableConcept()
-        ?.value
-        ?.coding
-        ?.firstOrNull()
-        ?.code
-        ?.value
+fun Questionnaire.Item.getItemControl(): String? {
+    val ext = this.extension.firstOrNull { it.url == SdcExtensions.ITEM_CONTROL } ?: return null
+    return when (val v = ext.value) {
+        is Extension.Value.CodeableConcept ->
+            v.value.coding
+                .firstOrNull()
+                ?.code
+                ?.value
+        is Extension.Value.Code -> v.value.value
+        is Extension.Value.String -> v.value.value
+        else -> null
+    }
+}
+
+/**
+ * Safe accessor for decimal min value returning a [Result].
+ *
+ * @return A [Result] enclosing the [dev.ohs.fhir.model.r4.FhirDecimal] minimum value.
+ */
+fun Questionnaire.Item.getDecimalMinValue(): Result<dev.ohs.fhir.model.r4.FhirDecimal?> = safeMinValue
+
+/**
+ * Safe accessor for decimal max value returning a [Result].
+ *
+ * @return A [Result] enclosing the [dev.ohs.fhir.model.r4.FhirDecimal] maximum value.
+ */
+fun Questionnaire.Item.getDecimalMaxValue(): Result<dev.ohs.fhir.model.r4.FhirDecimal?> = safeMaxValue
 
 /**
  * Retrieves the minimum value extension for numeric inputs.
  * @return The minimum value, or null.
  */
-fun Questionnaire.Item.getMinValue(): Float? =
-    this.extension
-        .firstOrNull { it.url == SdcExtensions.MIN_VALUE }
-        ?.value
-        ?.asInteger()
-        ?.value
-        ?.value
-        ?.toFloat()
+fun Questionnaire.Item.getMinValue(): Float? {
+    val ext = this.extension.firstOrNull { it.url == SdcExtensions.MIN_VALUE }
+    val dec =
+        when (val v = ext?.value) {
+            is Extension.Value.Decimal -> v.value.value
+            is Extension.Value.Integer ->
+                v.value.value?.let {
+                    dev.ohs.fhir.model.r4.FhirDecimal
+                        .fromInt(it)
+                }
+            else -> null
+        }
+    val str = dec?.toString()
+    return if (str != null) str.toFloatOrNull() else null
+}
 
 /**
  * Retrieves the maximum value extension for numeric inputs.
  * @return The maximum value, or null.
  */
-fun Questionnaire.Item.getMaxValue(): Float? =
-    this.extension
-        .firstOrNull { it.url == SdcExtensions.MAX_VALUE }
-        ?.value
-        ?.asInteger()
-        ?.value
-        ?.value
-        ?.toFloat()
+fun Questionnaire.Item.getMaxValue(): Float? {
+    val ext = this.extension.firstOrNull { it.url == SdcExtensions.MAX_VALUE }
+    val dec =
+        when (val v = ext?.value) {
+            is Extension.Value.Decimal -> v.value.value
+            is Extension.Value.Integer ->
+                v.value.value?.let {
+                    dev.ohs.fhir.model.r4.FhirDecimal
+                        .fromInt(it)
+                }
+            else -> null
+        }
+    val str = dec?.toString()
+    return if (str != null) str.toFloatOrNull() else null
+}
+
+/**
+ * Helper to find localized content in translation extensions.
+ *
+ * @param extensions List of extensions to search.
+ * @param langPrefix Language prefix.
+ * @return Localized string or null.
+ */
+private fun findTranslation(
+    extensions: List<Extension>,
+    langPrefix: String,
+): String? {
+    for (ext in extensions) {
+        val langExt = ext.extension.firstOrNull { it.url == "lang" }
+        val langCode =
+            when (val langVal = langExt?.value) {
+                is Extension.Value.Code -> langVal.value.value
+                is Extension.Value.String -> langVal.value.value
+                else -> null
+            }
+        if (langCode != null && langCode.lowercase().startsWith(langPrefix)) {
+            val contentExt = ext.extension.firstOrNull { it.url == "content" }
+            val v = contentExt?.value
+            val content = if (v is Extension.Value.String) v.value.value else null
+            if (!content.isNullOrBlank()) {
+                return content
+            }
+        }
+    }
+    return null
+}
 
 /**
  * Retrieves the localized text for a questionnaire item using the FHIR translation extension.
@@ -187,33 +362,7 @@ fun Questionnaire.Item.getMaxValue(): Float? =
 fun Questionnaire.Item.getLocalizedText(language: String = currentLanguageState.value): String {
     val langPrefix = language.lowercase().split("-", "_").first()
     val transExt = this.extension.filter { it.url == SdcExtensions.TRANSLATION }
-    for (ext in transExt) {
-        val langExt = ext.extension.firstOrNull { it.url == "lang" }
-        val langCode =
-            langExt
-                ?.value
-                ?.asCode()
-                ?.value
-                ?.value
-                ?: langExt
-                    ?.value
-                    ?.asString()
-                    ?.value
-                    ?.value
-        if (langCode?.lowercase()?.startsWith(langPrefix) == true) {
-            val contentExt = ext.extension.firstOrNull { it.url == "content" }
-            val content =
-                contentExt
-                    ?.value
-                    ?.asString()
-                    ?.value
-                    ?.value
-            if (!content.isNullOrBlank()) {
-                return content
-            }
-        }
-    }
-    return this.text?.value ?: ""
+    return findTranslation(transExt, langPrefix) ?: (this.text?.value ?: "")
 }
 
 /**
@@ -225,34 +374,12 @@ fun Questionnaire.Item.getLocalizedText(language: String = currentLanguageState.
 fun Questionnaire.getLocalizedTitle(language: String = currentLanguageState.value): String {
     val langPrefix = language.lowercase().split("-", "_").first()
     val directTransExt = this.extension.filter { it.url == SdcExtensions.TRANSLATION }
-    val titleTransExt = this.title?.extension?.filter { it.url == SdcExtensions.TRANSLATION } ?: emptyList()
-    val allTransExt = titleTransExt + directTransExt
-
-    for (ext in allTransExt) {
-        val langExt = ext.extension.firstOrNull { it.url == "lang" }
-        val langCode =
-            langExt
-                ?.value
-                ?.asCode()
-                ?.value
-                ?.value
-                ?: langExt
-                    ?.value
-                    ?.asString()
-                    ?.value
-                    ?.value
-        if (langCode?.lowercase()?.startsWith(langPrefix) == true) {
-            val contentExt = ext.extension.firstOrNull { it.url == "content" }
-            val content =
-                contentExt
-                    ?.value
-                    ?.asString()
-                    ?.value
-                    ?.value
-            if (!content.isNullOrBlank()) {
-                return content
-            }
+    val titleExt = this.title
+    val titleTransExt =
+        if (titleExt != null) {
+            titleExt.extension.filter { it.url == SdcExtensions.TRANSLATION }
+        } else {
+            emptyList()
         }
-    }
-    return this.title?.value ?: ""
+    return findTranslation(titleTransExt + directTransExt, langPrefix) ?: (this.title?.value ?: "")
 }

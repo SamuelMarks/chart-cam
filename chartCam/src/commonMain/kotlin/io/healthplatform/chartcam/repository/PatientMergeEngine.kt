@@ -4,12 +4,12 @@
  */
 package io.healthplatform.chartcam.repository
 
-import com.google.fhir.model.r4.DocumentReference
-import com.google.fhir.model.r4.Encounter
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.QuestionnaireResponse
-import com.google.fhir.model.r4.Reference
-import com.google.fhir.model.r4.String as FhirString
+import dev.ohs.fhir.model.r4.DocumentReference
+import dev.ohs.fhir.model.r4.Encounter
+import dev.ohs.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.Reference
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * Engine responsible for executing conflict resolution strategies across Patients and their dependent resources.
@@ -26,22 +26,13 @@ class PatientMergeEngine {
     fun mergeDemographics(
         local: Patient,
         incoming: Patient,
-    ): Patient {
-        val builder = local.toBuilder()
-        if (local.gender == null && incoming.gender != null) {
-            builder.gender = incoming.gender
-        }
-        if (local.birthDate == null && incoming.birthDate != null) {
-            builder.birthDate = incoming.birthDate?.toBuilder()
-        }
-        if (local.telecom.isEmpty() && incoming.telecom.isNotEmpty()) {
-            incoming.telecom.forEach { builder.telecom.add(it.toBuilder()) }
-        }
-        if (local.address.isEmpty() && incoming.address.isNotEmpty()) {
-            incoming.address.forEach { builder.address.add(it.toBuilder()) }
-        }
-        return builder.build()
-    }
+    ): Patient =
+        local.copy(
+            gender = local.gender ?: incoming.gender,
+            birthDate = local.birthDate ?: incoming.birthDate,
+            telecom = if (local.telecom.isEmpty()) incoming.telecom else local.telecom,
+            address = if (local.address.isEmpty()) incoming.address else local.address,
+        )
 
     /**
      * Re-parents an Encounter from an old patient ID to a new target patient ID.
@@ -54,13 +45,10 @@ class PatientMergeEngine {
         encounter: Encounter,
         targetPatientId: String,
     ): Encounter {
-        val builder = encounter.toBuilder()
         val cleanTargetId = targetPatientId.removePrefix("Patient/")
-        builder.subject =
-            Reference.Builder().apply {
-                reference = FhirString.Builder().apply { value = "Patient/$cleanTargetId" }
-            }
-        return builder.build()
+        return encounter.copy(
+            subject = Reference(reference = FhirString(value = "Patient/$cleanTargetId")),
+        )
     }
 
     /**
@@ -74,13 +62,10 @@ class PatientMergeEngine {
         doc: DocumentReference,
         targetPatientId: String,
     ): DocumentReference {
-        val builder = doc.toBuilder()
         val cleanTargetId = targetPatientId.removePrefix("Patient/")
-        builder.subject =
-            Reference.Builder().apply {
-                reference = FhirString.Builder().apply { value = "Patient/$cleanTargetId" }
-            }
-        return builder.build()
+        return doc.copy(
+            subject = Reference(reference = FhirString(value = "Patient/$cleanTargetId")),
+        )
     }
 
     /**
@@ -94,12 +79,9 @@ class PatientMergeEngine {
         qr: QuestionnaireResponse,
         targetPatientId: String,
     ): QuestionnaireResponse {
-        val builder = qr.toBuilder()
         val cleanTargetId = targetPatientId.removePrefix("Patient/")
-        builder.subject =
-            Reference.Builder().apply {
-                reference = FhirString.Builder().apply { value = "Patient/$cleanTargetId" }
-            }
-        return builder.build()
+        return qr.copy(
+            subject = Reference(reference = FhirString(value = "Patient/$cleanTargetId")),
+        )
     }
 }

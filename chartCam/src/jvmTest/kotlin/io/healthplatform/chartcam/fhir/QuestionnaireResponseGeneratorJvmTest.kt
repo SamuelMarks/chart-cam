@@ -4,10 +4,10 @@
  */
 package io.healthplatform.chartcam.fhir
 
-import com.google.fhir.model.r4.Boolean
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.Boolean
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.String
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -42,7 +42,7 @@ class QuestionnaireResponseGeneratorJvmTest {
         val questionnaire =
             Questionnaire
                 .Builder(
-                    status = Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active),
+                    status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active),
                 ).apply {
                     id = "test-q"
                     item.add(groupItem.toBuilder())
@@ -70,7 +70,7 @@ class QuestionnaireResponseGeneratorJvmTest {
             response2.item[0]
                 .item[0]
                 .answer[0]
-                .value as? com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String
+                .value as? dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String
         assertEquals(
             "Some answer",
             stringValueWrapper?.value?.value,

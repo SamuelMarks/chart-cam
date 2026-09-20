@@ -6,10 +6,10 @@ package io.healthplatform.chartcam.workflow
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.google.fhir.model.r4.Bundle
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.FhirR4Json
+import dev.ohs.fhir.model.r4.Bundle
+import dev.ohs.fhir.model.r4.Enumeration
 import io.healthplatform.chartcam.database.ChartCamDatabase
+import io.healthplatform.chartcam.fhir.FhirJsonParser
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.createFhirBinary
 import io.healthplatform.chartcam.repository.ExportImportService
@@ -20,7 +20,6 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.serialization.encodeToString
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -105,7 +104,7 @@ class PartialImportTransactionRollbackTest {
                     entry.add(Bundle.Entry.Builder().apply { resource = binary2.toBuilder() })
                 }
 
-            val validJson = FhirR4Json().encodeToString(bundleBuilder.build())
+            val validJson = FhirJsonParser.encodeResource(bundleBuilder.build()).getOrNull() ?: ""
             val crypto = CryptoService()
             val encrypted = crypto.encrypt(validJson, pass)
 

@@ -17,25 +17,14 @@ import java.awt.datatransfer.StringSelection
  */
 actual suspend fun Clipboard.getPlainText(): String? {
     val clipboard: java.awt.datatransfer.Clipboard = this.nativeClipboard as java.awt.datatransfer.Clipboard
-    return try {
+    return runCatching {
         val transferable = clipboard.getContents(null)
         if (transferable != null && transferable.isDataFlavorSupported(DataFlavor.stringFlavor)) {
             transferable.getTransferData(DataFlavor.stringFlavor) as? String
         } else {
             null
         }
-    } catch (
-        e: java.awt.datatransfer.UnsupportedFlavorException,
-    ) {
-        println(e.message)
-        null
-    } catch (e: java.io.IOException) {
-        println(e.message)
-        null
-    } catch (e: IllegalStateException) {
-        println(e.message)
-        null
-    }
+    }.onFailure { println(it.message) }.getOrNull()
 }
 
 /**

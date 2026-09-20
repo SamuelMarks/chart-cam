@@ -1,8 +1,8 @@
 PRODUCT_NAME=ChartCam
 PRODUCT_BUNDLE_IDENTIFIER=io.healthplatform.chartcam
 
-CURRENT_PROJECT_VERSION=5
-MARKETING_VERSION=1.0.5
+CURRENT_PROJECT_VERSION=6
+MARKETING_VERSION=1.0.6
 
 // Default to empty, but optionally overridden by xcodebuild arguments
 EXPORT_COMPLIANCE_CODE=

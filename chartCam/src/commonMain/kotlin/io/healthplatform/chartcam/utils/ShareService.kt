@@ -25,6 +25,14 @@ interface ShareService {
      * @return A [Result] indicating success or failure containing a domain [ExportException].
      */
     fun shareText(text: String): Result<Unit>
+
+    /**
+     * Validates that the provided file path is not empty.
+     *
+     * @param filePath The path to validate.
+     * @return True if valid non-empty path, false otherwise.
+     */
+    fun isValidSharePath(filePath: String): Boolean = filePath.isNotBlank()
 }
 
 /**

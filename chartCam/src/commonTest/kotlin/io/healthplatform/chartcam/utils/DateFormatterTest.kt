@@ -7,6 +7,7 @@ package io.healthplatform.chartcam.utils
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -84,6 +85,15 @@ class DateFormatterTest {
 
         val jaFormatted = formatLocalizedDateTime(fhirDateTime, "ja")
         assertTrue(jaFormatted.isNotEmpty())
+
+        val utcDt = parseFhirDateTime("2026-09-08T14:30:00Z").getOrThrow()
+        assertEquals("09/08/2026 14:30 Z", utcDt.formatLocalizedWithOffset("en").getOrThrow())
+
+        val posDt = parseFhirDateTime("2026-09-08T14:30:00+02:00").getOrThrow()
+        assertEquals("09/08/2026 14:30 +02:00", posDt.formatLocalizedWithOffset("en").getOrThrow())
+
+        val negDt = parseFhirDateTime("2026-09-08T14:30:00-05:00").getOrThrow()
+        assertEquals("09/08/2026 14:30 -05:00", negDt.formatLocalizedWithOffset("en").getOrThrow())
     }
 
     /**
@@ -109,5 +119,119 @@ class DateFormatterTest {
 
         val invalidResult = parseIsoDate("invalid-date-string")
         assertTrue(invalidResult.isFailure)
+    }
+
+    /**
+     * Verifies safe parsing of FhirDate and formatting across locales with Result percolation.
+     */
+    @Test
+    fun testParseFhirDateAndFormatLocalized() {
+        val yearResult = parseFhirDate("1985")
+        assertTrue(yearResult.isSuccess)
+        val year = yearResult.getOrNull()
+        assertTrue(year is dev.ohs.fhir.model.r4.FhirDate.Year)
+        assertEquals("1985", year.formatLocalized().getOrNull())
+        assertEquals("1985", year.formatLocalized("en").getOrNull())
+
+        val ymResult = parseFhirDate("1985-03")
+        assertTrue(ymResult.isSuccess)
+        val ym = ymResult.getOrNull()
+        assertTrue(ym is dev.ohs.fhir.model.r4.FhirDate.YearMonth)
+        assertEquals("1985/03", ym.formatLocalized("ja").getOrNull())
+        assertEquals("03/1985", ym.formatLocalized("es").getOrNull())
+        assertEquals("03/1985", ym.formatLocalized("en").getOrNull())
+        assertEquals("1985-03", ym.formatLocalized("").getOrNull())
+
+        val fullDateResult = parseFhirDate("1985-03-15")
+        assertTrue(fullDateResult.isSuccess)
+        val fullDate = fullDateResult.getOrNull()
+        assertTrue(fullDate is dev.ohs.fhir.model.r4.FhirDate.Date)
+        assertEquals("15/03/1985", fullDate.formatLocalized("es").getOrNull())
+        assertEquals("03/15/1985", fullDate.formatLocalized("en").getOrNull())
+        assertEquals("1985/03/15", fullDate.formatLocalized("ja").getOrNull())
+
+        val invalidResult = parseFhirDate("not-a-date")
+        assertTrue(invalidResult.isFailure)
+    }
+
+    /**
+     * Verifies safe parsing of FhirDateTime and formatting across locales with Result percolation.
+     */
+    @Test
+    fun testParseFhirDateTimeAndFormatLocalized() {
+        val yearDtResult = parseFhirDateTime("1985")
+        assertTrue(yearDtResult.isSuccess)
+        val yearDt = yearDtResult.getOrNull()
+        assertTrue(yearDt is dev.ohs.fhir.model.r4.FhirDateTime.Year)
+        assertEquals("1985", yearDt.formatLocalized().getOrNull())
+
+        val ymDtResult = parseFhirDateTime("1985-03")
+        assertTrue(ymDtResult.isSuccess)
+        val ymDt = ymDtResult.getOrNull()
+        assertTrue(ymDt is dev.ohs.fhir.model.r4.FhirDateTime.YearMonth)
+        assertEquals("1985/03", ymDt.formatLocalized("ja").getOrNull())
+        assertEquals("03/1985", ymDt.formatLocalized("es").getOrNull())
+        assertEquals("03/1985", ymDt.formatLocalized("en").getOrNull())
+        assertEquals("1985-03", ymDt.formatLocalized("").getOrNull())
+
+        val dateDtResult = parseFhirDateTime("1985-03-15")
+        assertTrue(dateDtResult.isSuccess)
+        val dateDt = dateDtResult.getOrNull()
+        assertTrue(dateDt is dev.ohs.fhir.model.r4.FhirDateTime.Date)
+        assertEquals("15/03/1985", dateDt.formatLocalized("es").getOrNull())
+
+        val dtResult = parseFhirDateTime("2026-09-08T14:30:00Z")
+        assertTrue(dtResult.isSuccess)
+        val dt = dtResult.getOrNull()
+        assertTrue(dt is dev.ohs.fhir.model.r4.FhirDateTime.DateTime)
+        assertEquals("08/09/2026 14:30", dt.formatLocalized("es").getOrNull())
+        assertEquals("09/08/2026 14:30", dt.formatLocalized("en").getOrNull())
+        assertEquals("2026/09/08 14:30", dt.formatLocalized("ja").getOrNull())
+        assertNotNull(dt.formatLocalized().getOrNull())
+
+        val invalidResult = parseFhirDateTime("bad-datetime")
+        assertTrue(invalidResult.isFailure)
+    }
+
+    /**
+     * Verifies formatLocalizedDateCatching and formatLocalizedDateTimeCatching return Result.
+     */
+    @Test
+    fun testFormatLocalizedCatching() {
+        val dateRes = formatLocalizedDateCatching("1990-05-20", "en")
+        assertTrue(dateRes.isSuccess)
+        assertEquals("05/20/1990", dateRes.getOrNull())
+
+        val dateResDefaultLang = formatLocalizedDateCatching("1990-05-20")
+        assertTrue(dateResDefaultLang.isSuccess)
+
+        val dtInDateRes = formatLocalizedDateCatching("2026-09-08T14:30:00Z", "en")
+        assertTrue(dtInDateRes.isSuccess)
+        assertEquals("09/08/2026 14:30", dtInDateRes.getOrNull())
+
+        val dtRes = formatLocalizedDateTimeCatching("2026-09-08T14:30:00Z", "en")
+        assertTrue(dtRes.isSuccess)
+        assertEquals("09/08/2026 14:30", dtRes.getOrNull())
+
+        val dtResDefaultLang = formatLocalizedDateTimeCatching("2026-09-08T14:30:00Z")
+        assertTrue(dtResDefaultLang.isSuccess)
+
+        val emptyRes = formatLocalizedDateCatching("", "en")
+        assertTrue(emptyRes.isSuccess)
+        assertEquals("", emptyRes.getOrNull())
+
+        val spacesRes = formatLocalizedDateCatching("   ", "en")
+        assertTrue(spacesRes.isSuccess)
+        assertEquals("", spacesRes.getOrNull())
+
+        val badRes = formatLocalizedDateCatching("invalid-date", "en")
+        assertTrue(badRes.isFailure)
+
+        val dt = parseFhirDateTime("2026-09-08T14:30:00Z").getOrThrow()
+        assertNotNull(dt.formatLocalizedWithOffset().getOrNull())
+
+        val dtWithSec = parseFhirDateTime("2026-09-08T14:30:45Z").getOrThrow()
+        val secFormatted = dtWithSec.formatLocalized("en").getOrThrow()
+        assertEquals("09/08/2026 14:30:45", secFormatted)
     }
 }

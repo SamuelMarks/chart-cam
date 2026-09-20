@@ -61,8 +61,12 @@ class LoginViewModel(
         MutableStateFlow(
             LoginUiState(
                 isBiometricAvailable =
-                    biometricSecurityManager?.isHardwareBackedKeystore() == true ||
-                        biometricSecurityManager?.checkKeystoreAvailability() == BiometricHardwareStatus.AVAILABLE,
+                    if (biometricSecurityManager != null) {
+                        biometricSecurityManager.isHardwareBackedKeystore() ||
+                            biometricSecurityManager.checkKeystoreAvailability() == BiometricHardwareStatus.AVAILABLE
+                    } else {
+                        false
+                    },
             ),
         )
 
@@ -80,10 +84,12 @@ class LoginViewModel(
      */
     fun authenticateWithBiometrics(
         simulateSuccess: Boolean =
-            (
-                biometricSecurityManager?.checkKeystoreAvailability() ==
+            if (biometricSecurityManager != null) {
+                biometricSecurityManager.checkKeystoreAvailability() ==
                     io.healthplatform.chartcam.storage.BiometricHardwareStatus.AVAILABLE
-            ),
+            } else {
+                false
+            },
         onSuccess: (() -> Unit)? = null,
     ): Result<BiometricAuthResult> =
         runCatching {
@@ -102,7 +108,9 @@ class LoginViewModel(
                         }
                     if (result.isSuccess) {
                         _uiState.update { it.copy(isLoggedIn = true) }
-                        onSuccess?.invoke()
+                        if (onSuccess != null) {
+                            onSuccess()
+                        }
                     }
                 }
             } else {
@@ -135,7 +143,9 @@ class LoginViewModel(
                     }
                 if (result.isSuccess) {
                     _uiState.update { it.copy(isLoggedIn = true) }
-                    onSuccess?.invoke()
+                    if (onSuccess != null) {
+                        onSuccess()
+                    }
                 }
             } else {
                 _uiState.update {
@@ -195,23 +205,24 @@ class LoginViewModel(
         viewModelScope.launch {
             val result = authRepository.login(username, password)
 
-            if (result.isSuccess) {
-                _uiState.update {
-                    it.copy(isLoading = false, isLoggedIn = true)
+            result
+                .onSuccess {
+                    _uiState.update {
+                        it.copy(isLoading = false, isLoggedIn = true)
+                    }
+                }.onFailure { error ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage =
+                                when (error.message) {
+                                    "incorrect password" -> Res.string.incorrect_password
+                                    "Invalid Credentials" -> Res.string.invalid_credentials
+                                    else -> Res.string.unknown_error
+                                },
+                        )
+                    }
                 }
-            } else {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage =
-                            when (result.exceptionOrNull()?.message) {
-                                "incorrect password" -> Res.string.incorrect_password
-                                "Invalid Credentials" -> Res.string.invalid_credentials
-                                else -> Res.string.unknown_error
-                            },
-                    )
-                }
-            }
         }
     }
 }

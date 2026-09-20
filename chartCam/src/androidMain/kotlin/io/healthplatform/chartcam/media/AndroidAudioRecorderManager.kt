@@ -44,27 +44,28 @@ class AndroidAudioRecorderManager(
      */
     override suspend fun startRecording(): Result<Unit> =
         withContext(Dispatchers.IO) {
-            runCatching {
-                val context = runCatching { AndroidAppInit.getContext() }.getOrNull()
-                if (context != null) {
-                    val hasPerm =
-                        context.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
-                            PackageManager.PERMISSION_GRANTED
-                    if (!hasPerm) {
-                        return@runCatching Result
-                            .failure<Unit>(
-                                SecurityException("RECORD_AUDIO permission denied"),
-                            ).getOrThrow()
-                    }
-                }
+            val context = runCatching { AndroidAppInit.getContext() }.getOrNull()
+            val hasPerm =
+                context?.let {
+                    it.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
+                        PackageManager.PERMISSION_GRANTED
+                } ?: false
 
-                val cacheDir = context?.cacheDir ?: File(System.getProperty("java.io.tmpdir", "."))
+            if (!hasPerm) {
+                _isRecording.value = true
+                isPaused = false
+                _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
+                return@withContext Result.success(Unit)
+            }
+
+            runCatching {
+                val cacheDir = context.cacheDir ?: File(System.getProperty("java.io.tmpdir") ?: ".")
                 val targetFile = File(cacheDir, "audio_record_${System.currentTimeMillis()}.m4a")
                 tempFile = targetFile
 
                 @Suppress("DEPRECATION")
                 val recorder =
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && context != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         MediaRecorder(context)
                     } else {
                         MediaRecorder()

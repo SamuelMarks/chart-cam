@@ -1,98 +1,129 @@
 /**
  * @file DocumentReferenceModels.kt
- * Contains declarations for DocumentReferenceModels.kt.
+ * Pure multiplatform data models and builders for FHIR DocumentReference resources.
  */
 package io.healthplatform.chartcam.models
 
-import com.google.fhir.model.r4.Attachment
-import com.google.fhir.model.r4.Code
-import com.google.fhir.model.r4.Coding
-import com.google.fhir.model.r4.DocumentReference
-import com.google.fhir.model.r4.Identifier
-import com.google.fhir.model.r4.Reference
-import com.google.fhir.model.r4.String
-import com.google.fhir.model.r4.Uri
-import com.google.fhir.model.r4.Url
+import dev.ohs.fhir.model.r4.Attachment
+import dev.ohs.fhir.model.r4.Code
+import dev.ohs.fhir.model.r4.CodeableConcept
+import dev.ohs.fhir.model.r4.Coding
+import dev.ohs.fhir.model.r4.DocumentReference
+import dev.ohs.fhir.model.r4.ExtensibleEnumeration
+import dev.ohs.fhir.model.r4.Identifier
+import dev.ohs.fhir.model.r4.Reference
+import dev.ohs.fhir.model.r4.Uri
+import dev.ohs.fhir.model.r4.Url
+import dev.ohs.fhir.model.r4.terminologies.CommonLanguages
 import io.healthplatform.chartcam.terminology.TerminologyService
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
- * Helper function for document reference construction.
- * @param mime The mime.
- * @param urlPath The urlPath.
- * @return The result.
+ * Safely parses a BCP-47 language tag or custom dialect into an [ExtensibleEnumeration].
+ *
+ * @param tag The language code tag (e.g., "en", "es", "he", "zh", or a custom dialect).
+ * @return A [Result] enclosing the parsed [ExtensibleEnumeration].
  */
-internal fun buildDocumentReferenceContent(
-    mime: kotlin.String,
-    urlPath: kotlin.String,
-): MutableList<DocumentReference.Content.Builder> =
-    mutableListOf(
-        DocumentReference.Content.Builder(
-            attachment =
-                Attachment.Builder().apply {
-                    contentType = Code.Builder().apply { value = mime }
-                    url = Url.Builder().apply { value = urlPath }
-                },
-        ),
-    )
-
-/**
- * Helper function for document reference construction.
- * @param encounterId The encounterId.
- * @param answerCode The answerCode.
- * @return The result.
- */
-internal fun buildDocumentReferenceContext(
-    encounterId: kotlin.String,
-    answerCode: kotlin.String?,
-): DocumentReference.Context.Builder =
-    DocumentReference.Context.Builder().apply {
-        encounter.add(
-            Reference.Builder().apply {
-                reference = String.Builder().apply { value = encounterId }
-            },
-        )
-        if (answerCode != null) {
-            related.add(
-                Reference.Builder().apply {
-                    identifier =
-                        Identifier.Builder().apply {
-                            value = String.Builder().apply { value = answerCode }
-                        }
-                },
-            )
+fun parseExtensibleLanguage(tag: String): Result<ExtensibleEnumeration<CommonLanguages>> =
+    runCatching {
+        val predefined = runCatching { CommonLanguages.fromCode(tag.trim().lowercase()) }.getOrNull()
+        if (predefined != null) {
+            ExtensibleEnumeration.of(predefined)
+        } else {
+            ExtensibleEnumeration.of(tag.trim())
         }
     }
 
 /**
- * Helper function for document reference construction.
- * @param notesText The notesText.
- * @return The result.
+ * Helper function for document reference content construction using immutable data classes.
+ *
+ * @param mime The MIME type string of the media artifact.
+ * @param urlPath The relative or local storage URL of the media artifact.
+ * @param languageTag Optional BCP-47 language tag or custom dialect string.
+ * @return A [Result] enclosing the list of [DocumentReference.Content] elements.
  */
-internal fun buildClinicalNoteContent(notesText: kotlin.String): MutableList<DocumentReference.Content.Builder> =
-    mutableListOf(
-        DocumentReference.Content.Builder(
-            attachment =
-                Attachment.Builder().apply {
-                    contentType = Code.Builder().apply { value = "text/plain" }
-                    url =
-                        Url.Builder().apply {
-                            value = "data:text/plain;charset=utf-8,$notesText"
-                        }
-                },
-        ),
-    )
+fun buildDocumentReferenceContent(
+    mime: String,
+    urlPath: String,
+    languageTag: String? = null,
+): Result<List<DocumentReference.Content>> =
+    runCatching {
+        val lang = languageTag?.let { parseExtensibleLanguage(it).getOrNull() }
+        listOf(
+            DocumentReference.Content(
+                attachment =
+                    Attachment(
+                        contentType = Code(value = mime),
+                        url = Url(value = urlPath),
+                        language = lang,
+                    ),
+            ),
+        )
+    }
 
 /**
- * Helper function for document reference construction.
- * @return The result.
+ * Helper function for document reference context construction using immutable data classes.
+ *
+ * @param encounterId The associated encounter identifier.
+ * @param answerCode Optional linkId or clinical answer code relating the document.
+ * @return A [Result] enclosing the [DocumentReference.Context] element.
  */
-internal fun buildClinicalNoteType(): com.google.fhir.model.r4.CodeableConcept.Builder =
-    com.google.fhir.model.r4.CodeableConcept.Builder().apply {
-        coding.add(
-            Coding.Builder().apply {
-                system = Uri.Builder().apply { value = TerminologyService.LOINC_URI }
-                code = Code.Builder().apply { value = "11488-4" }
-                display = String.Builder().apply { value = "Consultation note" }
-            },
+fun buildDocumentReferenceContext(
+    encounterId: String,
+    answerCode: String? = null,
+): Result<DocumentReference.Context> =
+    runCatching {
+        DocumentReference.Context(
+            encounter = listOf(Reference(reference = FhirString(value = encounterId))),
+            related =
+                if (answerCode != null) {
+                    listOf(Reference(identifier = Identifier(value = FhirString(value = answerCode))))
+                } else {
+                    emptyList()
+                },
+        )
+    }
+
+/**
+ * Helper function for constructing textual clinical note contents using immutable data classes.
+ *
+ * @param notesText The raw clinical text note.
+ * @param languageTag Optional language code.
+ * @return A [Result] enclosing the list of [DocumentReference.Content] elements.
+ */
+fun buildClinicalNoteContent(
+    notesText: String,
+    languageTag: String? = null,
+): Result<List<DocumentReference.Content>> =
+    runCatching {
+        val lang = languageTag?.let { parseExtensibleLanguage(it).getOrNull() }
+        listOf(
+            DocumentReference.Content(
+                attachment =
+                    Attachment(
+                        contentType = Code(value = "text/plain"),
+                        url = Url(value = "data:text/plain;charset=utf-8,$notesText"),
+                        language = lang,
+                    ),
+            ),
+        )
+    }
+
+/**
+ * Helper function for creating the LOINC Consultation Note codeable concept.
+ *
+ * @return A [Result] enclosing the LOINC consultation note [CodeableConcept].
+ */
+fun buildClinicalNoteType(): Result<CodeableConcept> =
+    runCatching {
+        CodeableConcept(
+            coding =
+                listOf(
+                    Coding(
+                        system = Uri(value = TerminologyService.LOINC_URI),
+                        code = Code(value = "11488-4"),
+                        display = FhirString(value = "Consultation note"),
+                    ),
+                ),
         )
     }

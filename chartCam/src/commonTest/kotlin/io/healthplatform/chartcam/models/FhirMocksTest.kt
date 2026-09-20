@@ -13,7 +13,7 @@ import kotlin.test.assertNotNull
  */
 class FhirMocksTest {
     /**
-     * Verifies construction of mock questionnaire resources.
+     * Verifies construction of mock questionnaire resources with both explicit and default parameters.
      */
     @Test
     fun testMocks() {
@@ -21,5 +21,20 @@ class FhirMocksTest {
         assertNotNull(q)
         assertEquals("q-test-1", q.id)
         assertEquals("Test Questionnaire", q.title?.value)
+
+        val qDefault = FhirMocks.createMockQuestionnaire()
+        assertNotNull(qDefault)
+        assertEquals("mock-questionnaire-1", qDefault.id)
+        assertEquals("Mock Questionnaire", qDefault.title?.value)
+
+        val qrDefault = FhirMocks.createMockQuestionnaireResponse()
+        assertNotNull(qrDefault)
+        assertEquals("mock-response-1", qrDefault.id)
+        assertEquals("Questionnaire/mock-questionnaire-1", qrDefault.questionnaire?.value)
+
+        val qrCustom = FhirMocks.createMockQuestionnaireResponse("custom-qr", "Questionnaire/custom-1")
+        assertNotNull(qrCustom)
+        assertEquals("custom-qr", qrCustom.id)
+        assertEquals("Questionnaire/custom-1", qrCustom.questionnaire?.value)
     }
 }

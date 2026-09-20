@@ -27,3 +27,18 @@ inline fun <T> runSuspendCatching(block: () -> T): Result<T> =
     } catch (throwable: Throwable) {
         Result.failure(throwable)
     }
+
+/**
+ * Transforms the encapsulated value using the given [transform] function which returns a [Result],
+ * or returns the original failure if this instance represents a failure.
+ *
+ * @param T The incoming value type.
+ * @param R The resulting value type.
+ * @param transform The transformation producing another [Result].
+ * @return The result of [transform] if this was success, or a failure.
+ */
+inline fun <T, R> Result<T>.flatMap(transform: (T) -> Result<R>): Result<R> =
+    fold(
+        onSuccess = { transform(it) },
+        onFailure = { Result.failure(it) },
+    )

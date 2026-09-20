@@ -60,15 +60,11 @@ class AndroidFileStorage : FileStorage {
         val file = resolveImageFile(path) ?: return ByteArray(0)
 
         val encryptedBytes = file.readBytes()
-        return try {
+        return runCatching {
             CryptoHelper.decrypt(encryptedBytes)
-        } catch (e: java.security.GeneralSecurityException) {
+        }.onFailure { e ->
             println("Failed to decrypt file: ${e.message}")
-            ByteArray(0)
-        } catch (e: IllegalArgumentException) {
-            println("Invalid encrypted file data: ${e.message}")
-            ByteArray(0)
-        }
+        }.getOrDefault(ByteArray(0))
     }
 
     /**
@@ -103,17 +99,16 @@ class AndroidFileStorage : FileStorage {
         cacheFile: File,
         fileName: String,
     ): File =
-        try {
+        runCatching {
             val destFile = File(filesDir, fileName)
             if (!destFile.exists()) {
                 cacheFile.copyTo(destFile, overwrite = true)
             }
             cacheFile.delete()
             destFile
-        } catch (e: java.io.IOException) {
+        }.onFailure { e ->
             println("Failed to promote cache file $fileName: ${e.message}")
-            cacheFile
-        }
+        }.getOrDefault(cacheFile)
 
     /**
      * Deletes the specified image file from storage.

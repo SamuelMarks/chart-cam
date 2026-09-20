@@ -4,7 +4,7 @@
  */
 package io.healthplatform.chartcam.models
 
-import com.google.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Patient
 
 /**
  * Types of conflicts that can occur when importing a resource.

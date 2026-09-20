@@ -15,10 +15,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.v2.runComposeUiTest
-import com.google.fhir.model.r4.Boolean
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.Boolean
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.String
 import io.healthplatform.chartcam.fhir.isHidden
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -63,7 +63,7 @@ class SdcQuestionnaireFormJvmTest {
 
             val questionnaire =
                 Questionnaire
-                    .Builder(Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active))
+                    .Builder(Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active))
                     .apply {
                         id = "test-q"
                         title = String.Builder().apply { value = "Test Q" }
@@ -122,7 +122,7 @@ class SdcQuestionnaireFormJvmTest {
 
             val questionnaire =
                 Questionnaire
-                    .Builder(Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active))
+                    .Builder(Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active))
                     .apply {
                         id = "test-q-nested"
                         title = String.Builder().apply { value = "Test Q Nested" }
@@ -158,12 +158,12 @@ class SdcQuestionnaireFormJvmTest {
                     Enumeration(value = Questionnaire.QuestionnaireItemType.String),
                 ).apply {
                     extension.add(
-                        com.google.fhir.model.r4.Extension
+                        dev.ohs.fhir.model.r4.Extension
                             .Builder(
                                 url = "http://hl7.org/fhir/StructureDefinition/questionnaire-hidden",
                             ).apply {
                                 value =
-                                    com.google.fhir.model.r4.Extension.Value.Boolean(
+                                    dev.ohs.fhir.model.r4.Extension.Value.Boolean(
                                         Boolean.Builder().apply { value = true }.build(),
                                     )
                             },
@@ -193,11 +193,11 @@ class SdcQuestionnaireFormJvmTest {
                             answerOption.add(
                                 Questionnaire.Item.AnswerOption.Builder(
                                     Questionnaire.Item.AnswerOption.Value.Coding(
-                                        com.google.fhir.model.r4.Coding
+                                        dev.ohs.fhir.model.r4.Coding
                                             .Builder()
                                             .apply {
                                                 code =
-                                                    com.google.fhir.model.r4.Code
+                                                    dev.ohs.fhir.model.r4.Code
                                                         .Builder()
                                                         .apply { value = "opt$index" }
                                                 display = String.Builder().apply { value = optionText }
@@ -209,19 +209,19 @@ class SdcQuestionnaireFormJvmTest {
 
                         // Add check-box itemControl
                         extension.add(
-                            com.google.fhir.model.r4.Extension
+                            dev.ohs.fhir.model.r4.Extension
                                 .Builder(
                                     url = "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
                                 ).apply {
                                     value =
-                                        com.google.fhir.model.r4.Extension.Value.CodeableConcept(
-                                            com.google.fhir.model.r4.CodeableConcept
+                                        dev.ohs.fhir.model.r4.Extension.Value.CodeableConcept(
+                                            dev.ohs.fhir.model.r4.CodeableConcept
                                                 .Builder()
                                                 .apply {
                                                     coding.add(
-                                                        com.google.fhir.model.r4.Coding.Builder().apply {
+                                                        dev.ohs.fhir.model.r4.Coding.Builder().apply {
                                                             code =
-                                                                com.google.fhir.model.r4.Code
+                                                                dev.ohs.fhir.model.r4.Code
                                                                     .Builder()
                                                                     .apply { value = "check-box" }
                                                         },
@@ -235,7 +235,7 @@ class SdcQuestionnaireFormJvmTest {
             val questionnaire =
                 Questionnaire
                     .Builder(
-                        Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active),
+                        Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active),
                     ).apply {
                         item.add(choiceItemBuilder)
                     }.build()
@@ -279,7 +279,7 @@ class SdcQuestionnaireFormJvmTest {
                 Questionnaire.Item
                     .Builder(
                         linkId =
-                            com.google.fhir.model.r4.String
+                            dev.ohs.fhir.model.r4.String
                                 .Builder()
                                 .apply { value = "repeatsChoice" },
                         type =
@@ -288,11 +288,11 @@ class SdcQuestionnaireFormJvmTest {
                             ),
                     ).apply {
                         text =
-                            com.google.fhir.model.r4.String
+                            dev.ohs.fhir.model.r4.String
                                 .Builder()
                                 .apply { value = "Select Options" }
                         repeats =
-                            com.google.fhir.model.r4.Boolean
+                            dev.ohs.fhir.model.r4.Boolean
                                 .Builder()
                                 .apply { value = true }
                     }
@@ -300,7 +300,7 @@ class SdcQuestionnaireFormJvmTest {
             val questionnaire =
                 Questionnaire
                     .Builder(
-                        Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active),
+                        Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active),
                     ).apply {
                         item.add(choiceItemBuilder)
                     }.build()
@@ -350,7 +350,7 @@ class SdcQuestionnaireFormJvmTest {
             val questionnaire =
                 Questionnaire
                     .Builder(
-                        Enumeration(value = com.google.fhir.model.r4.terminologies.PublicationStatus.Active),
+                        Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active),
                     ).apply {
                         id = "test-repeating-q"
                         title = String.Builder().apply { value = "Repeating Test" }

@@ -121,6 +121,31 @@ SELECT r.* FROM ResourceEntity r
 INNER JOIN DateIndexEntity d ON r.resourceType = d.resourceType AND r.resourceId = d.resourceId
 WHERE r.resourceType = ? AND d.indexName = ? AND d.indexValue = ?;
 
+searchResourcesByDatePrefixGe:
+SELECT r.* FROM ResourceEntity r
+INNER JOIN DateIndexEntity d ON r.resourceType = d.resourceType AND r.resourceId = d.resourceId
+WHERE r.resourceType = ? AND d.indexName = ? AND d.indexValue >= ?;
+
+searchResourcesByDatePrefixLe:
+SELECT r.* FROM ResourceEntity r
+INNER JOIN DateIndexEntity d ON r.resourceType = d.resourceType AND r.resourceId = d.resourceId
+WHERE r.resourceType = ? AND d.indexName = ? AND d.indexValue <= ?;
+
+searchResourcesByDatePrefixGt:
+SELECT r.* FROM ResourceEntity r
+INNER JOIN DateIndexEntity d ON r.resourceType = d.resourceType AND r.resourceId = d.resourceId
+WHERE r.resourceType = ? AND d.indexName = ? AND d.indexValue > ?;
+
+searchResourcesByDatePrefixLt:
+SELECT r.* FROM ResourceEntity r
+INNER JOIN DateIndexEntity d ON r.resourceType = d.resourceType AND r.resourceId = d.resourceId
+WHERE r.resourceType = ? AND d.indexName = ? AND d.indexValue < ?;
+
+searchResourcesByDatePrefixNe:
+SELECT r.* FROM ResourceEntity r
+INNER JOIN DateIndexEntity d ON r.resourceType = d.resourceType AND r.resourceId = d.resourceId
+WHERE r.resourceType = ? AND d.indexName = ? AND d.indexValue != ?;
+
 searchResourcesByReferenceDesc:
 SELECT r.* FROM ResourceEntity r
 INNER JOIN ReferenceIndexEntity ref ON r.resourceType = ref.resourceType AND r.resourceId = ref.resourceId

@@ -220,4 +220,115 @@ class PatientDetailViewModelTest {
             assertEquals(null, repo.getPatient(patientId))
             assertEquals(null, repo.getEncounter("enc-casc-1"))
         }
+
+    /**
+     * Verifies deletePatient failure branches with custom and fallback error messages.
+     */
+    @Test
+    fun testPatientDeleteFailureHandling() =
+        runTest {
+            val patientId = "pat-fail"
+            repo.savePatient(createFhirPatient(patientId, "Fail", "User", kotlinx.datetime.LocalDate(1990, 1, 1), "001"))
+
+            val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+            ChartCamDatabase.Schema.awaitCreate(driver)
+            val db = ChartCamDatabase(driver)
+
+            val failingRepo =
+                object : FhirRepository(db) {
+                    override suspend fun getPatient(id: String): dev.ohs.fhir.model.r4.Patient =
+                        createFhirPatient(patientId, "Fail", "User", kotlinx.datetime.LocalDate(1990, 1, 1), "001")
+
+                    override suspend fun deletePatient(
+                        id: String,
+                        fileStorage: io.healthplatform.chartcam.files.FileStorage?,
+                    ): Result<Unit> = Result.failure(RuntimeException("Disk write error"))
+                }
+
+            val vm = PatientDetailViewModel(failingRepo)
+            vm.loadPatientData(patientId)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            var successCalled = false
+            vm.deletePatient { successCalled = true }
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            kotlin.test.assertFalse(successCalled)
+            assertEquals("Disk write error", vm.uiState.value.error)
+
+            // Fallback message when exception message is null
+            val nullMsgRepo =
+                object : FhirRepository(db) {
+                    override suspend fun getPatient(id: String): dev.ohs.fhir.model.r4.Patient =
+                        createFhirPatient(patientId, "Fail", "User", kotlinx.datetime.LocalDate(1990, 1, 1), "001")
+
+                    override suspend fun deletePatient(
+                        id: String,
+                        fileStorage: io.healthplatform.chartcam.files.FileStorage?,
+                    ): Result<Unit> = Result.failure(Exception(null as String?))
+                }
+
+            val vm2 = PatientDetailViewModel(nullMsgRepo)
+            vm2.loadPatientData(patientId)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            vm2.deletePatient { successCalled = true }
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals("Failed to delete patient", vm2.uiState.value.error)
+        }
+
+    /**
+     * Verifies deletePatient when loaded patient has null id.
+     */
+    @Test
+    fun testPatientDeleteWhenPatientIdIsNull() =
+        runTest {
+            val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+            ChartCamDatabase.Schema.awaitCreate(driver)
+            val db = ChartCamDatabase(driver)
+
+            val noIdRepo =
+                object : FhirRepository(db) {
+                    override suspend fun getPatient(id: String): dev.ohs.fhir.model.r4.Patient =
+                        dev.ohs.fhir.model.r4
+                            .Patient(id = null)
+                }
+
+            val vm = PatientDetailViewModel(noIdRepo)
+            vm.loadPatientData("any-id")
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            var successCalled = false
+            vm.deletePatient { successCalled = true }
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            kotlin.test.assertFalse(successCalled)
+        }
+
+    /**
+     * Verifies data class contract of PatientDetailUiState.
+     */
+    @Test
+    fun testPatientDetailUiStateContract() {
+        val s1 = PatientDetailUiState()
+        val s2 = PatientDetailUiState()
+        val p = createFhirPatient("p1", "First", "Last", kotlinx.datetime.LocalDate(1990, 1, 1), "123")
+        val s3 = PatientDetailUiState(patient = p, isLoading = true, error = "err")
+
+        assertEquals(s1, s2)
+        kotlin.test.assertNotEquals(s1, s3)
+        kotlin.test.assertFalse(s1.equals(null))
+        kotlin.test.assertFalse(s1.equals("different type"))
+        assertEquals(s1.hashCode(), s2.hashCode())
+        assertTrue(s3.toString().contains("err"))
+
+        val copy1 = s3.copy(isLoading = false)
+        kotlin.test.assertFalse(copy1.isLoading)
+
+        assertEquals(p, s3.component1())
+        assertEquals(emptyList(), s3.component2())
+        assertTrue(s3.component3())
+        assertEquals("err", s3.component4())
+    }
 }

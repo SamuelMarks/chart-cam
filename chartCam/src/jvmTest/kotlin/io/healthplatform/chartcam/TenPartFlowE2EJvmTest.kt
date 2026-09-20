@@ -6,7 +6,7 @@ package io.healthplatform.chartcam
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.google.fhir.model.r4.Encounter
+import dev.ohs.fhir.model.r4.Encounter
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.repository.AuthRepository

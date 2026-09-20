@@ -8,8 +8,8 @@ package io.healthplatform.chartcam.viewmodel
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.google.fhir.model.r4.Encounter
-import com.google.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.Encounter
+import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.models.createFhirPatient
 import io.healthplatform.chartcam.repository.AuthRepository

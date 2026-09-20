@@ -9,17 +9,18 @@
 
 package io.healthplatform.chartcam.repository
 
-import com.google.fhir.model.r4.Binary
-import com.google.fhir.model.r4.Bundle
-import com.google.fhir.model.r4.Device
-import com.google.fhir.model.r4.DocumentReference
-import com.google.fhir.model.r4.Encounter
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.Practitioner
-import com.google.fhir.model.r4.Provenance
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.Binary
+import dev.ohs.fhir.model.r4.Bundle
+import dev.ohs.fhir.model.r4.Device
+import dev.ohs.fhir.model.r4.DocumentReference
+import dev.ohs.fhir.model.r4.Encounter
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Practitioner
+import dev.ohs.fhir.model.r4.Provenance
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.Reference
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.ConflictResolutionStrategy
@@ -33,7 +34,6 @@ import io.healthplatform.chartcam.models.mrn
 import io.healthplatform.chartcam.utils.CryptoService
 import io.healthplatform.chartcam.utils.UUID
 import io.healthplatform.chartcam.utils.runSuspendCatching
-import kotlinx.serialization.encodeToString
 import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
 
@@ -52,9 +52,6 @@ open class ExportImportService(
 ) {
     private val fhirRepo = FhirRepository(database)
     private val cryptoService = CryptoService()
-    private val fhirJson =
-        com.google.fhir.model.r4
-            .FhirR4Json()
 
     /**
      * Exports local FHIR resources and associated binaries to an encrypted JSON string.
@@ -73,55 +70,115 @@ open class ExportImportService(
             require(isValidPassword(password)) {
                 "Encryption password must not be empty or weak (minimum 6 characters)."
             }
-            val bundleBuilder = Bundle.Builder(Enumeration(value = Bundle.BundleType.Collection))
-            addBaseResources(bundleBuilder)
-            addQuestionnaires(bundleBuilder)
-            val encounters = addEncounters(bundleBuilder, exportAll, practitionerId)
-            addPatients(bundleBuilder, exportAll, practitionerId, encounters)
-            addDocumentReferences(bundleBuilder, exportAll, practitionerId, encounters)
-            addQuestionnaireResponses(bundleBuilder, exportAll, practitionerId, encounters)
-            addProvenances(bundleBuilder, exportAll, practitionerId)
+            val entries = mutableListOf<Bundle.Entry>()
+            addBaseResources(entries)
+            addQuestionnaires(entries)
+            val encounters = addEncounters(entries, exportAll, practitionerId)
+            addPatients(entries, exportAll, practitionerId, encounters)
+            addDocumentReferences(entries, exportAll, practitionerId, encounters)
+            addQuestionnaireResponses(entries, exportAll, practitionerId, encounters)
+            addProvenances(entries, exportAll, practitionerId)
+            val bundle =
+                Bundle(
+                    type = Enumeration(value = Bundle.BundleType.Collection),
+                    entry = entries,
+                )
 
-            val bundle = bundleBuilder.build()
-            val jsonData = fhirJson.encodeToString(bundle)
+            val jsonData =
+                io.healthplatform.chartcam.fhir.FhirJsonParser
+                    .encodeTypedResource(Bundle.serializer(), bundle)
+                    .getOrDefault("")
+
             cryptoService.encrypt(jsonData, password)
         }
 
     /**
      * Helper for exporting Questionnaires.
-     * @param bundleBuilder The bundleBuilder.
+     * @param entries The destination entry list.
      */
-    private suspend fun addQuestionnaires(bundleBuilder: Bundle.Builder) {
+    private suspend fun addQuestionnaires(entries: MutableList<Bundle.Entry>) {
         fhirRepo.getAllQuestionnaires().forEach { resource ->
-            bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
+            entries.add(Bundle.Entry(resource = resource))
         }
     }
 
     /**
      * Helper for exporting.
-     * @param bundleBuilder The bundleBuilder.
+     * @param entries The destination entry list.
      */
-    private suspend fun addBaseResources(bundleBuilder: Bundle.Builder) {
+    private suspend fun addBaseResources(entries: MutableList<Bundle.Entry>) {
         fhirRepo.getAllDevices().forEach { resource ->
-            bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
+            entries.add(Bundle.Entry(resource = resource))
         }
         fhirRepo.getAllPractitioners().forEach { resource ->
-            bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
+            entries.add(Bundle.Entry(resource = resource))
         }
     }
 
     /**
+     * Extracts a bare Encounter ID from an optional reference element.
+     *
+     * @param ref The reference element.
+     * @return The bare Encounter ID or an empty string.
+     */
+    private fun extractEncounterReferenceId(ref: Reference?): String {
+        val v =
+            if (ref != null) {
+                val r = ref.reference
+                if (r != null) r.value else null
+            } else {
+                null
+            }
+        return if (v != null) v.removePrefix("Encounter/") else ""
+    }
+
+    /**
+     * Extracts a bare Practitioner ID from an optional reference element.
+     *
+     * @param ref The reference element.
+     * @return The bare Practitioner ID or an empty string.
+     */
+    private fun extractPractitionerReferenceId(ref: Reference?): String {
+        val v =
+            if (ref != null) {
+                val r = ref.reference
+                if (r != null) r.value else null
+            } else {
+                null
+            }
+        return if (v != null) v.removePrefix("Practitioner/") else ""
+    }
+
+    /**
+     * Checks if managing organization reference contains the specified practitioner ID.
+     *
+     * @param orgRef The organization reference element.
+     * @param practitionerId The practitioner identifier to match.
+     * @return True if the reference matches the practitioner ID, false otherwise.
+     */
+    private fun organizationMatchesPractitioner(orgRef: Reference?, practitionerId: String): Boolean {
+        val v =
+            if (orgRef != null) {
+                val r = orgRef.reference
+                if (r != null) r.value else null
+            } else {
+                null
+            }
+        return v != null && v.contains(practitionerId)
+    }
+
+    /**
      * Helper for exporting.
-     * @param bundleBuilder The bundleBuilder.
+     * @param entries The destination entry list.
      * @param exportAll The exportAll.
      * @param practitionerId The practitionerId.
      * @param encounters The list of encounters for the practitioner.
      */
     private suspend fun addPatients(
-        bundleBuilder: Bundle.Builder,
+        entries: MutableList<Bundle.Entry>,
         exportAll: Boolean,
         practitionerId: String?,
-        encounters: List<Encounter> = emptyList(),
+        encounters: List<Encounter>,
     ) {
         val patients =
             if (exportAll || practitionerId == null) {
@@ -129,61 +186,59 @@ open class ExportImportService(
             } else {
                 val encPatientIds =
                     encounters
-                        .mapNotNull {
-                            it.subject
-                                ?.reference
-                                ?.value
-                                ?.removePrefix("Patient/")
+                        .mapNotNull { enc ->
+                            extractPatientReferenceId(enc.subject).ifEmpty { null }
                         }.toSet()
                 fhirRepo.getAllPatients().filter { p ->
-                    val pid = p.id?.removePrefix("Patient/") ?: ""
+                    val rawId = p.id
+                    val pid = if (rawId != null) rawId.removePrefix("Patient/") else ""
                     encPatientIds.contains(pid) ||
-                        p.managingOrganization
-                            ?.reference
-                            ?.value
-                            ?.contains(practitionerId) == true
+                        organizationMatchesPractitioner(p.managingOrganization, practitionerId)
                 }
             }
         patients.forEach { resource ->
-            bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
+            entries.add(Bundle.Entry(resource = resource))
         }
     }
 
     /**
      * Helper for exporting.
-     * @param bundleBuilder The bundleBuilder.
+     * @param entries The destination entry list.
      * @param exportAll The exportAll.
      * @param practitionerId The practitionerId.
      * @return The result.
      */
     private suspend fun addEncounters(
-        bundleBuilder: Bundle.Builder,
+        entries: MutableList<Bundle.Entry>,
         exportAll: Boolean,
         practitionerId: String?,
     ): List<Encounter> {
+        val cleanPrac = practitionerId?.removePrefix("Practitioner/")
         val encounters =
-            if (exportAll || practitionerId == null) {
+            if (exportAll || cleanPrac == null) {
                 fhirRepo.getAllEncounters()
             } else {
-                fhirRepo.getAllEncounters().filter {
-                    it.participant.any { p -> p.individual?.reference?.value == practitionerId }
+                fhirRepo.getAllEncounters().filter { enc ->
+                    enc.participant.any { p ->
+                        extractPractitionerReferenceId(p.individual) == cleanPrac
+                    }
                 }
             }
         encounters.forEach { resource ->
-            bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
+            entries.add(Bundle.Entry(resource = resource))
         }
         return encounters
     }
 
     /**
      * Helper for exporting.
-     * @param bundleBuilder The bundleBuilder.
+     * @param entries The destination entry list.
      * @param exportAll The exportAll.
      * @param practitionerId The practitionerId.
      * @param encounters The encounters.
      */
     private suspend fun addDocumentReferences(
-        bundleBuilder: Bundle.Builder,
+        entries: MutableList<Bundle.Entry>,
         exportAll: Boolean,
         practitionerId: String?,
         encounters: List<Encounter>,
@@ -194,36 +249,34 @@ open class ExportImportService(
             } else {
                 val encIds = encounters.mapNotNull { it.id?.removePrefix("Encounter/") }.toSet()
                 fhirRepo.getAllDocumentReferences().filter { doc ->
+                    val encList = doc.context?.encounter
                     val ref =
-                        doc.context
-                            ?.encounter
-                            ?.firstOrNull()
-                            ?.reference
-                            ?.value
-                            ?.removePrefix("Encounter/")
+                        if (!encList.isNullOrEmpty()) {
+                            extractEncounterReferenceId(encList[0]).ifEmpty { null }
+                        } else {
+                            null
+                        }
                     ref != null && encIds.contains(ref)
                 }
             }
         documentReferences.forEach { resource ->
-            bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
+            entries.add(Bundle.Entry(resource = resource))
             runCatching {
-                val filePath =
-                    resource.content
-                        .firstOrNull()
-                        ?.attachment
-                        ?.url
-                        ?.value ?: return@forEach
+                val contentList = resource.content
+                if (contentList.isEmpty()) return@forEach
+                val att = contentList[0].attachment
+                val urlObj = att.url
+                val urlVal = if (urlObj != null) urlObj.value else null
+                if (urlVal.isNullOrBlank()) return@forEach
+                val filePath = urlVal
                 val bytes = fileStorage.readImage(filePath)
                 val base64Data = bytes.toByteString().base64()
-                val mimeType =
-                    resource.content
-                        .firstOrNull()
-                        ?.attachment
-                        ?.contentType
-                        ?.value ?: "image/jpeg"
+                val ctObj = att.contentType
+                val ctVal = if (ctObj != null) ctObj.value else null
+                val mimeType = if (ctVal != null && ctVal.isNotBlank()) ctVal else "image/jpeg"
                 val fileName = filePath.substringAfterLast("/")
                 val binary = createFhirBinary(id = fileName, contentTypeStr = mimeType, base64Data = base64Data)
-                bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = binary.toBuilder() })
+                entries.add(Bundle.Entry(resource = binary))
             }.onFailure { e ->
                 println("Failed to export binary: ${e.message}")
             }
@@ -232,13 +285,13 @@ open class ExportImportService(
 
     /**
      * Helper for exporting.
-     * @param bundleBuilder The bundleBuilder.
+     * @param entries The destination entry list.
      * @param exportAll The exportAll.
      * @param practitionerId The practitionerId.
      * @param encounters The encounters.
      */
     private suspend fun addQuestionnaireResponses(
-        bundleBuilder: Bundle.Builder,
+        entries: MutableList<Bundle.Entry>,
         exportAll: Boolean,
         practitionerId: String?,
         encounters: List<Encounter>,
@@ -249,27 +302,23 @@ open class ExportImportService(
             } else {
                 val encIds = encounters.mapNotNull { it.id?.removePrefix("Encounter/") }.toSet()
                 fhirRepo.getAllQuestionnaireResponses().filter { qr ->
-                    val ref =
-                        qr.encounter
-                            ?.reference
-                            ?.value
-                            ?.removePrefix("Encounter/")
+                    val ref = extractEncounterReferenceId(qr.encounter).ifEmpty { null }
                     ref != null && encIds.contains(ref)
                 }
             }
         questionnaireResponses.forEach { resource ->
-            bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
+            entries.add(Bundle.Entry(resource = resource))
         }
     }
 
     /**
      * Helper for exporting.
-     * @param bundleBuilder The bundleBuilder.
+     * @param entries The destination entry list.
      * @param exportAll The exportAll.
      * @param practitionerId The practitionerId.
      */
     private suspend fun addProvenances(
-        bundleBuilder: Bundle.Builder,
+        entries: MutableList<Bundle.Entry>,
         exportAll: Boolean,
         practitionerId: String?,
     ) {
@@ -280,7 +329,7 @@ open class ExportImportService(
                 fhirRepo.getAllProvenances()
             }
         provenances.forEach { resource ->
-            bundleBuilder.entry.add(Bundle.Entry.Builder().apply { this.resource = resource.toBuilder() })
+            entries.add(Bundle.Entry(resource = resource))
         }
     }
 
@@ -309,31 +358,19 @@ open class ExportImportService(
         val localPatientWithMrn = if (mrn.isNotBlank()) fhirRepo.getPatientByMrn(mrn) else null
 
         val conflictType =
-            when {
-                localPatientWithId != null -> {
-                    val incomingJson = fhirJson.encodeToString(incomingPatient)
-                    val localJson = fhirJson.encodeToString(localPatientWithId)
-                    if (incomingJson == localJson) {
-                        ConflictType.EXACT_MATCH
-                    } else {
-                        ConflictType.ID_COLLISION_DIFFERENT_DATA
-                    }
+            if (localPatientWithId != null) {
+                if (incomingPatient == localPatientWithId) {
+                    ConflictType.EXACT_MATCH
+                } else {
+                    ConflictType.ID_COLLISION_DIFFERENT_DATA
                 }
-                localPatientWithMrn != null && localPatientWithMrn.id != pid -> {
-                    ConflictType.MRN_COLLISION_DIFFERENT_ID
-                }
-                else -> ConflictType.EXACT_MATCH
+            } else if (localPatientWithMrn != null) {
+                ConflictType.MRN_COLLISION_DIFFERENT_ID
+            } else {
+                ConflictType.EXACT_MATCH
             }
 
-        val encCount =
-            encounters.count { enc ->
-                val ref =
-                    enc.subject
-                        ?.reference
-                        ?.value
-                        ?.removePrefix("Patient/")
-                ref == pid
-            }
+        val encCount = encounters.count { extractPatientReferenceId(it.subject) == pid }
 
         val resolution =
             if (conflictType == ConflictType.EXACT_MATCH) {
@@ -371,7 +408,10 @@ open class ExportImportService(
             }
             val jsonData = cryptoService.decrypt(encryptedData, password)
             require(jsonData.isNotEmpty()) { "Decryption failed or data is empty." }
-            val bundle = fhirJson.decodeFromString(jsonData) as Bundle
+            val decodeResult =
+                io.healthplatform.chartcam.fhir.FhirJsonParser
+                    .decodeTypedResource(Bundle.serializer(), jsonData)
+            val bundle = decodeResult.getOrElse { return Result.failure(it) }
 
             val resources = bundle.entry.mapNotNull { it.resource }
             val patients = resources.filterIsInstance<Patient>()
@@ -400,7 +440,7 @@ open class ExportImportService(
      * @param localConflict The conflicting local patient, if any.
      * @return The canonical ID to which child resources should be mapped, or null if skipped.
      */
-    private suspend fun ingestPatient(
+    internal suspend fun ingestPatient(
         incomingPatient: Patient,
         strategy: ConflictResolutionStrategy,
         localConflict: Patient?,
@@ -423,7 +463,8 @@ open class ExportImportService(
                 if (localConflict != null) {
                     val merged = PatientMergeEngine().mergeDemographics(localConflict, incomingPatient)
                     fhirRepo.savePatient(merged, isLocalChange = false)
-                    localConflict.id ?: pid
+                    val localId = localConflict.id
+                    if (localId != null) localId else pid
                 } else {
                     fhirRepo.savePatient(incomingPatient, isLocalChange = false)
                     pid
@@ -481,6 +522,23 @@ open class ExportImportService(
     }
 
     /**
+     * Extracts a bare Patient ID from an optional reference element.
+     *
+     * @param ref The reference element.
+     * @return The bare Patient ID or an empty string.
+     */
+    private fun extractPatientReferenceId(ref: Reference?): String {
+        val v =
+            if (ref != null) {
+                val r = ref.reference
+                if (r != null) r.value else null
+            } else {
+                null
+            }
+        return if (v != null) v.removePrefix("Patient/") else ""
+    }
+
+    /**
      * Imports an encounter resource with patient re-parenting if permitted.
      *
      * @param encounter The encounter to import.
@@ -493,13 +551,10 @@ open class ExportImportService(
         patientIdMapping: Map<String, String?>,
     ) {
         if (!filterOptions.isCategoryEnabled(ImportCategory.ENCOUNTERS)) return
-        val rawRef =
-            encounter.subject
-                ?.reference
-                ?.value
-                ?.removePrefix("Patient/") ?: ""
-        if (patientIdMapping.containsKey(rawRef) && patientIdMapping[rawRef] == null) return
-        val targetPid = patientIdMapping[rawRef] ?: rawRef
+        val rawRef = extractPatientReferenceId(encounter.subject)
+        val mappedId = patientIdMapping[rawRef]
+        if (patientIdMapping.containsKey(rawRef) && mappedId == null) return
+        val targetPid = if (mappedId != null) mappedId else rawRef
         val enc =
             if (targetPid != rawRef) {
                 PatientMergeEngine().reparentEncounter(encounter, targetPid)
@@ -522,13 +577,10 @@ open class ExportImportService(
         patientIdMapping: Map<String, String?>,
     ) {
         if (!filterOptions.isCategoryEnabled(ImportCategory.BINARY_PHOTOS)) return
-        val rawRef =
-            doc.subject
-                ?.reference
-                ?.value
-                ?.removePrefix("Patient/") ?: ""
-        if (patientIdMapping.containsKey(rawRef) && patientIdMapping[rawRef] == null) return
-        val targetPid = patientIdMapping[rawRef] ?: rawRef
+        val rawRef = extractPatientReferenceId(doc.subject)
+        val mappedId = patientIdMapping[rawRef]
+        if (patientIdMapping.containsKey(rawRef) && mappedId == null) return
+        val targetPid = if (mappedId != null) mappedId else rawRef
         val toSave =
             if (targetPid != rawRef) {
                 PatientMergeEngine().reparentDocumentReference(doc, targetPid)
@@ -551,13 +603,10 @@ open class ExportImportService(
         patientIdMapping: Map<String, String?>,
     ) {
         if (!filterOptions.isCategoryEnabled(ImportCategory.CLINICAL_NOTES)) return
-        val rawRef =
-            qr.subject
-                ?.reference
-                ?.value
-                ?.removePrefix("Patient/") ?: ""
-        if (patientIdMapping.containsKey(rawRef) && patientIdMapping[rawRef] == null) return
-        val targetPid = patientIdMapping[rawRef] ?: rawRef
+        val rawRef = extractPatientReferenceId(qr.subject)
+        val mappedId = patientIdMapping[rawRef]
+        if (patientIdMapping.containsKey(rawRef) && mappedId == null) return
+        val targetPid = if (mappedId != null) mappedId else rawRef
         val toSave =
             if (targetPid != rawRef) {
                 PatientMergeEngine().reparentQuestionnaireResponse(qr, targetPid)
@@ -580,7 +629,15 @@ open class ExportImportService(
         savedImageFiles: MutableList<String>,
     ) {
         if (!filterOptions.isCategoryEnabled(ImportCategory.BINARY_PHOTOS)) return
-        val bytes = binary.data?.value?.let { it.decodeBase64()?.toByteArray() }
+        val dataObj = binary.data
+        val dataVal = if (dataObj != null) dataObj.value else null
+        val bytes =
+            if (dataVal != null) {
+                val bs = dataVal.decodeBase64()
+                if (bs != null) bs.toByteArray() else null
+            } else {
+                null
+            }
         val binaryId = binary.id
         if (bytes != null && !binaryId.isNullOrBlank()) {
             fileStorage.saveImage(binaryId, bytes)
@@ -597,7 +654,7 @@ open class ExportImportService(
      * @param savedImageFiles List tracking written image files for rollback.
      */
     private suspend fun importEntryResource(
-        resource: com.google.fhir.model.r4.Resource,
+        resource: dev.ohs.fhir.model.r4.Resource,
         filterOptions: ImportFilterOptions,
         patientIdMapping: Map<String, String?>,
         savedImageFiles: MutableList<String>,
@@ -647,7 +704,10 @@ open class ExportImportService(
             }
             val jsonData = cryptoService.decrypt(encryptedData, password)
             require(jsonData.isNotEmpty()) { "Decryption failed or data is empty." }
-            val bundle = fhirJson.decodeFromString(jsonData) as Bundle
+            val decodeResult =
+                io.healthplatform.chartcam.fhir.FhirJsonParser
+                    .decodeTypedResource(Bundle.serializer(), jsonData)
+            val bundle = decodeResult.getOrElse { return Result.failure(it) }
 
             val savedImageFiles = mutableListOf<String>()
             val importBatchResult =
@@ -667,11 +727,13 @@ open class ExportImportService(
                         }
                     }
                 }
-            if (importBatchResult.isFailure) {
+            val failureEx = importBatchResult.exceptionOrNull()
+            if (failureEx != null) {
                 for (savedFile in savedImageFiles) {
                     runCatching { fileStorage.deleteImage(savedFile) }
                 }
-                importBatchResult.getOrThrow()
+                val msg = failureEx.message
+                error(if (msg != null && msg.isNotBlank()) msg else "Batch import failed.")
             }
         }
 

@@ -35,9 +35,11 @@ private const val POLL_INTERVAL_MS = 50L
  * Desktop JVM implementation of [AudioRecorderManager] using Java Sound API.
  *
  * @param fileStorage Storage used to persist encrypted audio files.
+ * @param targetLineProvider Optional provider for custom or simulated TargetDataLine audio inputs.
  */
 class JvmAudioRecorderManager(
     private val fileStorage: FileStorage,
+    private val targetLineProvider: (() -> TargetDataLine?)? = null,
 ) : AudioRecorderManager {
     private val _isRecording = MutableStateFlow(false)
     override val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
@@ -60,42 +62,22 @@ class JvmAudioRecorderManager(
             runCatching {
                 audioBuffer.reset()
                 isPaused = false
-                val isHeadlessOrTest =
-                    System.getProperty("java.awt.headless") == "true" ||
-                        System.getenv("CI") != null ||
-                        System.getProperty("os.name")?.contains("Mac", ignoreCase = true) == true
+                val format = AudioFormat(SAMPLE_RATE_HZ, SAMPLE_SIZE_BITS, CHANNELS, true, false)
+                val line: TargetDataLine? =
+                    targetLineProvider?.invoke() ?: runCatching {
+                        val info = DataLine.Info(TargetDataLine::class.java, format)
+                        if (AudioSystem.isLineSupported(info)) {
+                            AudioSystem.getLine(info) as TargetDataLine
+                        } else {
+                            null
+                        }
+                    }.getOrNull()
 
-                if (!isHeadlessOrTest) {
-                    val format = AudioFormat(SAMPLE_RATE_HZ, SAMPLE_SIZE_BITS, CHANNELS, true, false)
-                    val info = DataLine.Info(TargetDataLine::class.java, format)
-                    if (AudioSystem.isLineSupported(info)) {
-                        val line = AudioSystem.getLine(info) as TargetDataLine
-                        line.open(format)
-                        line.start()
-                        targetLine = line
-                        recordingJob =
-                            CoroutineScope(Dispatchers.IO).launch {
-                                val buffer = ByteArray(BUFFER_SIZE)
-                                while (isActive && _isRecording.value) {
-                                    if (!isPaused) {
-                                        val available = line.available()
-                                        if (available > 0) {
-                                            val read = line.read(buffer, 0, minOf(buffer.size, available))
-                                            if (read > 0) {
-                                                audioBuffer.write(buffer, 0, read)
-                                                val raw = buffer[0].toInt().coerceIn(0, MAX_BYTE_VALUE)
-                                                val sample = raw / MAX_BYTE_FLOAT
-                                                _amplitude.value = sample
-                                            }
-                                        } else {
-                                            delay(POLL_INTERVAL_MS)
-                                        }
-                                    } else {
-                                        delay(POLL_INTERVAL_MS)
-                                    }
-                                }
-                            }
-                    }
+                if (line != null) {
+                    line.open(format)
+                    line.start()
+                    targetLine = line
+                    recordingJob = startRecordingLoop(line)
                 }
                 _isRecording.value = true
                 _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
@@ -104,6 +86,35 @@ class JvmAudioRecorderManager(
                 _isRecording.value = true
                 isPaused = false
                 _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
+            }
+        }
+
+    /**
+     * Spawns a background coroutine polling and capturing audio buffers from the open line.
+     *
+     * @param line The open and started target data line.
+     * @return The active recording [Job].
+     */
+    private fun startRecordingLoop(line: TargetDataLine): Job =
+        CoroutineScope(Dispatchers.IO).launch {
+            val buffer = ByteArray(BUFFER_SIZE)
+            while (isActive && _isRecording.value) {
+                if (!isPaused) {
+                    val available = line.available()
+                    if (available > 0) {
+                        val read = line.read(buffer, 0, minOf(buffer.size, available))
+                        if (read > 0) {
+                            audioBuffer.write(buffer, 0, read)
+                            val raw = buffer[0].toInt().coerceIn(0, MAX_BYTE_VALUE)
+                            val sample = raw / MAX_BYTE_FLOAT
+                            _amplitude.value = sample
+                        }
+                    } else {
+                        delay(POLL_INTERVAL_MS)
+                    }
+                } else {
+                    delay(POLL_INTERVAL_MS)
+                }
             }
         }
 

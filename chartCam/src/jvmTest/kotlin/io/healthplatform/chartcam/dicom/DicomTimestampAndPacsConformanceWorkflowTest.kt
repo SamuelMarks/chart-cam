@@ -9,13 +9,13 @@ package io.healthplatform.chartcam.dicom
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.FhirDate
-import com.google.fhir.model.r4.HumanName
-import com.google.fhir.model.r4.Identifier
-import com.google.fhir.model.r4.Patient
-import com.google.fhir.model.r4.Practitioner
-import com.google.fhir.model.r4.terminologies.AdministrativeGender
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.FhirDate
+import dev.ohs.fhir.model.r4.HumanName
+import dev.ohs.fhir.model.r4.Identifier
+import dev.ohs.fhir.model.r4.Patient
+import dev.ohs.fhir.model.r4.Practitioner
+import dev.ohs.fhir.model.r4.terminologies.AdministrativeGender
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.DocumentReferenceCreationParams
@@ -30,7 +30,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import com.google.fhir.model.r4.String as FhirString
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * End-to-End workflow tests verifying DICOM timestamp compliance and PACS ingestion standards.
@@ -110,7 +110,7 @@ class DicomTimestampAndPacsConformanceWorkflowTest {
                             },
                         )
                         birthDate =
-                            com.google.fhir.model.r4.Date
+                            dev.ohs.fhir.model.r4.Date
                                 .Builder()
                                 .apply {
                                     value = FhirDate.fromString("1965-05-12")

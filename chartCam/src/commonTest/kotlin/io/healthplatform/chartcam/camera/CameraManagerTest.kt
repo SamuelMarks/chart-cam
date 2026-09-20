@@ -1,76 +1,82 @@
 /**
  * @file CameraManagerTest.kt
- * Contains declarations for CameraManagerTest.kt.
+ * Unit tests for CameraManager interface defaults and extension functions.
  */
 package io.healthplatform.chartcam.camera
 
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * Tests for the [CameraManager] interface.
  */
 class CameraManagerTest {
     /**
-     * Tests that the [CameraManager] interface can be mocked.
+     * Tests that the [CameraManager] interface default methods and properties behave as expected.
      */
     @Test
-    fun testCameraManagerInterface() {
-        val manager =
-            object : CameraManager {
-                /**
-                 * Mock captureImage.
-                 * @return Always returns null for this test.
-                 */
-                override suspend fun captureImage(): ByteArray? = null
-
-                /**
-                 * Mock setFlash.
-                 * @param on Boolean state.
-                 */
-                override fun setFlash(on: Boolean): Result<Unit> = Result.success(Unit)
-
-                /** Mock toggleLens. */
-                override fun toggleLens(): Result<Unit> = Result.success(Unit)
-
-                /** Mock release. */
-                override fun release() {}
-
-                override val hasMultipleCameras: Boolean = false
-            }
-        assertNotNull(manager)
-    }
-
-    /**
-     * Tests captureImageCatching extension returning Result.
-     */
-    @Test
-    fun testCaptureImageCatching() =
-        kotlinx.coroutines.test.runTest {
-            val failingManager =
+    fun testCameraManagerInterfaceDefaults() =
+        runTest {
+            val defaultManager =
                 object : CameraManager {
                     override suspend fun captureImage(): ByteArray? = null
 
-                    override fun setFlash(on: Boolean): Result<Unit> = Result.success(Unit)
+                    override fun release() {}
+                }
 
-                    override fun toggleLens(): Result<Unit> = Result.success(Unit)
+            assertNotNull(defaultManager)
+            assertTrue(defaultManager.hasMultipleCameras)
+            assertFalse(defaultManager.isRecordingVideo)
+
+            assertTrue(defaultManager.setFlash(true).isSuccess)
+            assertTrue(defaultManager.setFlash(false).isSuccess)
+            assertTrue(defaultManager.toggleLens().isSuccess)
+
+            assertTrue(defaultManager.startVideoRecording().isSuccess)
+            val stopRes = defaultManager.stopVideoRecording()
+            assertTrue(stopRes.isSuccess)
+            assertTrue(stopRes.getOrThrow().isNotEmpty())
+
+            assertTrue(defaultManager.cancelVideoRecording().isSuccess)
+
+            val mp4Bytes = CameraManager.createMinimalMp4Container()
+            assertTrue(mp4Bytes.isNotEmpty())
+        }
+
+    /**
+     * Tests captureImageCatching extension returning Result across null, empty, and populated byte arrays.
+     */
+    @Test
+    fun testCaptureImageCatching() =
+        runTest {
+            val nullManager =
+                object : CameraManager {
+                    override suspend fun captureImage(): ByteArray? = null
 
                     override fun release() {}
                 }
-            kotlin.test.assertTrue(failingManager.captureImageCatching().isFailure)
+            assertTrue(nullManager.captureImageCatching().isFailure)
+
+            val emptyBytesManager =
+                object : CameraManager {
+                    override suspend fun captureImage(): ByteArray = byteArrayOf()
+
+                    override fun release() {}
+                }
+            assertTrue(emptyBytesManager.captureImageCatching().isFailure)
 
             val successManager =
                 object : CameraManager {
-                    override suspend fun captureImage(): ByteArray? = byteArrayOf(1, 2, 3)
-
-                    override fun setFlash(on: Boolean): Result<Unit> = Result.success(Unit)
-
-                    override fun toggleLens(): Result<Unit> = Result.success(Unit)
+                    override suspend fun captureImage(): ByteArray = byteArrayOf(1, 2, 3)
 
                     override fun release() {}
                 }
             val result = successManager.captureImageCatching()
-            kotlin.test.assertTrue(result.isSuccess)
-            kotlin.test.assertEquals(3, result.getOrNull()?.size)
+            assertTrue(result.isSuccess)
+            assertEquals(3, result.getOrThrow().size)
         }
 }

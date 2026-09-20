@@ -43,4 +43,24 @@ class AppNavigationTest {
                 AppNavigation()
             }
         }
+
+    /**
+     * Verifies that AppNavigation executes the non-null user branch when a session is active.
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testAppNavigationWithLoggedInUser() =
+        runComposeUiTest {
+            val storage =
+                io.healthplatform.chartcam.storage
+                    .JvmSecureStorage()
+            storage.save("access_token", "test_token")
+            storage.save(io.healthplatform.chartcam.repository.AuthRepository.KEY_CURRENT_USERNAME, "dr_tester")
+
+            setContent {
+                AppNavigation()
+            }
+            waitForIdle()
+            storage.clearAll()
+        }
 }

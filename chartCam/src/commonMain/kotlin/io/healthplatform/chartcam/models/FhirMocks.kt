@@ -4,11 +4,12 @@
  */
 package io.healthplatform.chartcam.models
 
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.QuestionnaireResponse
-import com.google.fhir.model.r4.String
-import com.google.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.Canonical
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * Robust mock factories for FHIR resources to simplify Compose Previews and UI testing.
@@ -22,24 +23,22 @@ object FhirMocks {
      * @return A constructed FHIR [Questionnaire] object.
      */
     fun createMockQuestionnaire(
-        idStr: kotlin.String = "mock-questionnaire-1",
-        titleStr: kotlin.String = "Mock Questionnaire",
+        idStr: String = "mock-questionnaire-1",
+        titleStr: String = "Mock Questionnaire",
     ): Questionnaire =
-        Questionnaire
-            .Builder(status = Enumeration(value = PublicationStatus.Active))
-            .apply {
-                id = idStr
-                title = String.Builder().apply { value = titleStr }
-                item.add(
-                    Questionnaire.Item
-                        .Builder(
-                            linkId = String.Builder().apply { value = "mock-item-1" },
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
-                        ).apply {
-                            text = String.Builder().apply { value = "Mock Question" }
-                        },
-                )
-            }.build()
+        Questionnaire(
+            id = idStr,
+            status = Enumeration(value = PublicationStatus.Active),
+            title = FhirString(value = titleStr),
+            item =
+                listOf(
+                    Questionnaire.Item(
+                        linkId = FhirString(value = "mock-item-1"),
+                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                        text = FhirString(value = "Mock Question"),
+                    ),
+                ),
+        )
 
     /**
      * Creates a mock FHIR QuestionnaireResponse resource for testing.
@@ -49,31 +48,27 @@ object FhirMocks {
      * @return A constructed FHIR [QuestionnaireResponse] object.
      */
     fun createMockQuestionnaireResponse(
-        idStr: kotlin.String = "mock-response-1",
-        questionnaireUrl: kotlin.String = "Questionnaire/mock-questionnaire-1",
+        idStr: String = "mock-response-1",
+        questionnaireUrl: String = "Questionnaire/mock-questionnaire-1",
     ): QuestionnaireResponse =
-        QuestionnaireResponse
-            .Builder(status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
-            .apply {
-                id = idStr
-                questionnaire =
-                    com.google.fhir.model.r4.Canonical
-                        .Builder()
-                        .apply { value = questionnaireUrl }
-                item.add(
-                    QuestionnaireResponse.Item
-                        .Builder(
-                            linkId = String.Builder().apply { value = "mock-item-1" },
-                        ).apply {
-                            text = String.Builder().apply { value = "Mock Question" }
-                            answer.add(
-                                QuestionnaireResponse.Item.Answer.Builder().apply {
+        QuestionnaireResponse(
+            id = idStr,
+            status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+            questionnaire = Canonical(value = questionnaireUrl),
+            item =
+                listOf(
+                    QuestionnaireResponse.Item(
+                        linkId = FhirString(value = "mock-item-1"),
+                        text = FhirString(value = "Mock Question"),
+                        answer =
+                            listOf(
+                                QuestionnaireResponse.Item.Answer(
                                     value =
                                         QuestionnaireResponse.Item.Answer.Value
-                                            .String(String.Builder().apply { value = "Mock Answer" }.build())
-                                },
-                            )
-                        },
-                )
-            }.build()
+                                            .String(FhirString(value = "Mock Answer")),
+                                ),
+                            ),
+                    ),
+                ),
+        )
 }

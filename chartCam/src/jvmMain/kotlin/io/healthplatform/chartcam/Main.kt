@@ -21,7 +21,7 @@ import javax.imageio.ImageIO
 fun main() {
     System.setProperty("apple.awt.application.name", "ChartCam")
     // Set the macOS dock icon when running via gradle run
-    try {
+    runCatching {
         if (System.getProperty("os.name").contains("Mac")) {
             val classLoader = Thread.currentThread().contextClassLoader
             classLoader.getResourceAsStream("icon.png")?.use { inputStream ->
@@ -30,9 +30,7 @@ fun main() {
                 taskbar.iconImage = image
             }
         }
-    } catch (e: IllegalStateException) {
-        println(e.message)
-    }
+    }.onFailure { println(it.message) }
 
     application {
         Window(

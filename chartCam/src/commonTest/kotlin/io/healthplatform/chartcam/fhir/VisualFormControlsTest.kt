@@ -6,13 +6,13 @@
  */
 package io.healthplatform.chartcam.fhir
 
-import com.google.fhir.model.r4.Code
-import com.google.fhir.model.r4.CodeableConcept
-import com.google.fhir.model.r4.Coding
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Extension
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.Code
+import dev.ohs.fhir.model.r4.CodeableConcept
+import dev.ohs.fhir.model.r4.Coding
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Extension
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
 import io.healthplatform.chartcam.models.BodyMapLocation
 import io.healthplatform.chartcam.models.FitzpatrickScaleDefaults
 import io.healthplatform.chartcam.models.FitzpatrickSkinType
@@ -28,7 +28,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import com.google.fhir.model.r4.String as FhirString
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * Unit tests for visual form controls SDC extensions, serializers, and helpers.
@@ -242,7 +242,7 @@ class VisualFormControlsTest {
                 .firstOrNull { it.linkId.value == "pain1" }
                 ?.answer
                 ?.firstOrNull()
-        val painVal = (painAnswer?.value as? com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Integer)?.value?.value
+        val painVal = (painAnswer?.value as? dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Integer)?.value?.value
         assertEquals(6, painVal)
 
         val fitzAnswer =
@@ -250,7 +250,7 @@ class VisualFormControlsTest {
                 .firstOrNull { it.linkId.value == "fitz1" }
                 ?.answer
                 ?.firstOrNull()
-        val fitzVal = (fitzAnswer?.value as? com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String)?.value?.value
+        val fitzVal = (fitzAnswer?.value as? dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String)?.value?.value
         assertEquals("Type III", fitzVal)
 
         val bodyAnswer =
@@ -258,7 +258,7 @@ class VisualFormControlsTest {
                 .firstOrNull { it.linkId.value == "body1" }
                 ?.answer
                 ?.firstOrNull()
-        val bodyVal = (bodyAnswer?.value as? com.google.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String)?.value?.value
+        val bodyVal = (bodyAnswer?.value as? dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.String)?.value?.value
         assertEquals("Chest [51185008] (50%, 32%)", bodyVal)
     }
 }

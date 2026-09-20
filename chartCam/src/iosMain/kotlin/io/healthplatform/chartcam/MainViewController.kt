@@ -17,4 +17,11 @@ import androidx.compose.ui.window.ComposeUIViewController
  *
  * @return A UIViewController containing the Compose Multiplatform application.
  */
-fun mainViewController() = ComposeUIViewController { App() }
+fun mainViewController() =
+    ComposeUIViewController(
+        configure = {
+            enforceStrictPlistSanityCheck = false
+        },
+    ) {
+        App()
+    }

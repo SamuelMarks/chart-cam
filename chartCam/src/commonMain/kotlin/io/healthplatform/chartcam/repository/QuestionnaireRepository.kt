@@ -7,14 +7,15 @@
 package io.healthplatform.chartcam.repository
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
-import com.google.fhir.model.r4.Boolean
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
 import io.healthplatform.chartcam.ui.currentLanguageState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import dev.ohs.fhir.model.r4.Boolean as FhirBoolean
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * Repository to manage Questionnaire forms available for clinical encounters.
@@ -29,51 +30,60 @@ class QuestionnaireRepository(
     private val inMemoryForms = mutableMapOf<String, Questionnaire>()
 
     /**
+     * Loads a single questionnaire template from bundled JSON resources.
+     *
+     * @param path The resource path.
+     * @param id The template ID.
+     */
+    private suspend fun loadTemplate(path: String, id: String) {
+        val bytes =
+            chartcam.chartcam.generated.resources.Res
+                .readBytes(path)
+        val q =
+            io.healthplatform.chartcam.fhir.FhirJsonParser
+                .decodeTypedResource(Questionnaire.serializer(), bytes.decodeToString())
+                .getOrDefault(Questionnaire(status = Enumeration(value = PublicationStatus.Active)))
+        inMemoryForms[id] = q
+    }
+
+    /**
+     * Loads custom questionnaires persisted in the database into memory.
+     *
+     * @param repo The FHIR repository instance.
+     */
+    private suspend fun loadDatabaseForms(repo: FhirRepository) {
+        val entities =
+            repo.database.chartCamQueries
+                .getAllResourcesByType("Questionnaire")
+                .awaitAsList()
+
+        for (entity in entities) {
+            val q =
+                io.healthplatform.chartcam.fhir.FhirJsonParser
+                    .decodeTypedResource(Questionnaire.serializer(), entity.serializedResource)
+                    .getOrNull()
+            if (q != null) {
+                val qId = q.id
+                if (qId != null) {
+                    inMemoryForms[qId] = q
+                }
+            }
+        }
+    }
+
+    /**
      * Loads the default questionnaire templates from bundled JSON resources.
      */
     suspend fun loadDefaultForms() {
-        val fhirJson =
-            com.google.fhir.model.r4
-                .FhirR4Json()
-
         if (!inMemoryForms.containsKey("std-form")) {
-            runCatching {
-                val stdBytes =
-                    chartcam.chartcam.generated.resources.Res
-                        .readBytes("files/default_templates/std-form.json")
-                val stdQ = fhirJson.decodeFromString(stdBytes.decodeToString()) as Questionnaire
-                inMemoryForms["std-form"] = stdQ
-            }.onFailure { e ->
-                println("Error: ${e.message}")
-            }
-
-            runCatching {
-                val basicBytes =
-                    chartcam.chartcam.generated.resources.Res
-                        .readBytes("files/default_templates/basic-followup.json")
-                val basicQ = fhirJson.decodeFromString(basicBytes.decodeToString()) as Questionnaire
-                inMemoryForms["basic-followup"] = basicQ
-            }.onFailure { e ->
-                println("Error: ${e.message}")
-            }
+            loadTemplate("files/default_templates/std-form.json", "std-form")
+            loadTemplate("files/default_templates/basic-followup.json", "basic-followup")
         }
 
-        kotlin
-            .runCatching {
-                fhirRepository?.let { repo ->
-                    val entities =
-                        repo.database.chartCamQueries
-                            .getAllResourcesByType("Questionnaire")
-                            .awaitAsList()
-                    for (entity in entities) {
-                        kotlin
-                            .runCatching {
-                                val q = fhirJson.decodeFromString(entity.serializedResource) as Questionnaire
-                                q.id?.let { inMemoryForms[it] = q }
-                            }.onFailure { println("Error: ${it.message}") }
-                    }
-                }
-            }.onFailure { println("Error: ${it.message}") }
+        val repo = fhirRepository
+        if (repo != null) {
+            loadDatabaseForms(repo)
+        }
     }
 
     /**
@@ -86,26 +96,18 @@ class QuestionnaireRepository(
      * @return A builder for a [Questionnaire.Item].
      */
     private fun createItem(
-        linkId: kotlin.String,
-        text: kotlin.String,
+        linkId: String,
+        text: String,
         type: Questionnaire.QuestionnaireItemType,
-        required: kotlin.Boolean,
+        required: Boolean,
     ): Questionnaire.Item.Builder =
         Questionnaire.Item
             .Builder(
-                com.google.fhir.model.r4.String
-                    .Builder()
-                    .apply { value = linkId },
+                FhirString(value = linkId).toBuilder(),
                 Enumeration(value = type),
             ).apply {
-                this.text =
-                    com.google.fhir.model.r4.String
-                        .Builder()
-                        .apply { value = text }
-                this.required =
-                    com.google.fhir.model.r4.Boolean
-                        .Builder()
-                        .apply { value = required }
+                this.text = FhirString(value = text).toBuilder()
+                this.required = FhirBoolean(value = required).toBuilder()
             }
 
     /**
@@ -117,18 +119,15 @@ class QuestionnaireRepository(
      * @return A fully constructed [Questionnaire] resource.
      */
     private fun createFhirQuestionnaire(
-        id: kotlin.String,
-        title: kotlin.String,
+        id: String,
+        title: String,
         items: List<Questionnaire.Item.Builder>,
     ): Questionnaire =
         Questionnaire
             .Builder(Enumeration(value = PublicationStatus.Active))
             .apply {
                 this.id = id
-                this.title =
-                    com.google.fhir.model.r4.String
-                        .Builder()
-                        .apply { value = title }
+                this.title = FhirString(value = title).toBuilder()
                 this.item.addAll(items)
             }.build()
 
@@ -179,10 +178,7 @@ class QuestionnaireRepository(
             .toBuilder()
             .apply {
                 if (localizedTitle != null) {
-                    this.title =
-                        com.google.fhir.model.r4.String
-                            .Builder()
-                            .apply { value = localizedTitle }
+                    this.title = FhirString(value = localizedTitle).toBuilder()
                 }
                 this.item.clear()
                 this.item.addAll(newItems)
@@ -206,10 +202,7 @@ class QuestionnaireRepository(
         val localizedText = getStandardItemTranslations(qId, linkId)[lang] ?: item.text?.value
         val builder = item.toBuilder()
         if (localizedText != null) {
-            builder.text =
-                com.google.fhir.model.r4.String
-                    .Builder()
-                    .apply { value = localizedText }
+            builder.text = FhirString(value = localizedText).toBuilder()
         }
         if (item.answerOption.isNotEmpty()) {
             val nestedOptions = item.answerOption.map { localizeAnswerOption(it, lang) }
@@ -236,28 +229,31 @@ class QuestionnaireRepository(
         lang: String,
     ): Questionnaire.Item.AnswerOption.Builder {
         val builder = option.toBuilder()
-        val codingValue = option.value.asCoding()
-        val strValue = option.value.asString()
-        if (codingValue != null) {
-            val raw = codingValue.value.display?.value ?: codingValue.value.code?.value ?: ""
+        val optVal = option.value
+        if (optVal is Questionnaire.Item.AnswerOption.Value.Coding) {
+            val coding = optVal.value
+            val display = coding.display?.value
+            val code = coding.code?.value
+            val raw =
+                if (display != null) {
+                    display
+                } else if (code != null) {
+                    code
+                } else {
+                    ""
+                }
             val translated = getStandardOptionTranslations(raw)[lang] ?: raw
-            val codingBuilder = codingValue.value.toBuilder()
-            codingBuilder.display =
-                com.google.fhir.model.r4.String
-                    .Builder()
-                    .apply { value = translated }
+            val codingBuilder = coding.toBuilder()
+            codingBuilder.display = FhirString(value = translated).toBuilder()
             builder.value =
                 Questionnaire.Item.AnswerOption.Value
                     .Coding(codingBuilder.build())
-        } else if (strValue != null) {
-            val raw = strValue.value.value ?: ""
+        } else if (optVal is Questionnaire.Item.AnswerOption.Value.String) {
+            val raw = optVal.value.value ?: ""
             val translated = getStandardOptionTranslations(raw)[lang] ?: raw
             builder.value =
                 Questionnaire.Item.AnswerOption.Value.String(
-                    com.google.fhir.model.r4.String
-                        .Builder()
-                        .apply { value = translated }
-                        .build(),
+                    FhirString(value = translated),
                 )
         }
         return builder
@@ -496,7 +492,12 @@ class QuestionnaireRepository(
             )
         val parsedLabels = labels.split(",").map { it.trim() }.filter { it.isNotEmpty() }
         for (i in 1..photos) {
-            val labelStr = parsedLabels.getOrNull(i - 1) ?: (i - 1).toString()
+            val labelStr =
+                if (i - 1 < parsedLabels.size) {
+                    parsedLabels[i - 1]
+                } else {
+                    (i - 1).toString()
+                }
             items.add(
                 createItem(
                     "photo_$i",

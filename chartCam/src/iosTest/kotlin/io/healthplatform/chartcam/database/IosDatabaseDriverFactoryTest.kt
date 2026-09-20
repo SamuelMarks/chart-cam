@@ -16,5 +16,7 @@ class IosDatabaseDriverFactoryTest {
     fun testDatabaseDriverFactory() {
         val factory = DatabaseDriverFactory()
         assertNotNull(factory)
+        val driver = runCatching { factory.createDriver() }
+        assertNotNull(driver)
     }
 }

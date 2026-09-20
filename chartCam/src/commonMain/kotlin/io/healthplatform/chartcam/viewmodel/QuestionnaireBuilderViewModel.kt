@@ -5,21 +5,20 @@
 package io.healthplatform.chartcam.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.google.fhir.model.r4.Boolean
-import com.google.fhir.model.r4.Decimal
-import com.google.fhir.model.r4.Enumeration
-import com.google.fhir.model.r4.Integer
-import com.google.fhir.model.r4.Questionnaire
-import com.google.fhir.model.r4.String
-import com.google.fhir.model.r4.Uri
-import com.google.fhir.model.r4.terminologies.PublicationStatus
-import com.ionspin.kotlin.bignum.decimal.BigDecimal
+import dev.ohs.fhir.model.r4.Decimal
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Integer
+import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.Uri
+import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
 import io.healthplatform.chartcam.fhir.getItemControl
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import dev.ohs.fhir.model.r4.Boolean as FhirBoolean
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * Defines the state of the Questionnaire Builder.
@@ -30,10 +29,10 @@ import kotlinx.coroutines.flow.update
  * @param isDuplicateNameError Whether there is an error due to a duplicate item name.
  */
 data class QuestionnaireBuilderState(
-    val title: kotlin.String = "",
+    val title: String = "",
     val items: List<BuilderItem> = emptyList(),
-    val isPreviewMode: kotlin.Boolean = false,
-    val isDuplicateNameError: kotlin.Boolean = false,
+    val isPreviewMode: Boolean = false,
+    val isDuplicateNameError: Boolean = false,
 )
 
 /**
@@ -172,101 +171,14 @@ class QuestionnaireBuilderViewModel(
 
     init {
         if (duplicateFromId != null) {
-            repository.getQuestionnaire(duplicateFromId)?.let { source ->
-                val sourceTitle = source.title?.value ?: unknownTitleResolver()
+            val source = repository.getQuestionnaire(duplicateFromId)
+            if (source != null) {
+                val tObj = source.title
+                val sourceTitle = if (tObj != null && tObj.value != null) tObj.value!! else unknownTitleResolver()
                 _state.update {
                     it.copy(
                         title = copyTitleResolver(sourceTitle),
-                        items =
-                            source.item.map { fhirItem ->
-                                val widgetType =
-                                    when (fhirItem.getItemControl()) {
-                                        "photo" -> WidgetType.PHOTO_CAMERA
-                                        "video" -> WidgetType.VIDEO_CAMERA
-                                        "switch" -> WidgetType.SWITCH
-                                        "slider" -> WidgetType.RANGE
-                                        "pain-vas", "wong-baker" -> WidgetType.PAIN_SCALE
-                                        "palette", "color-palette", "fitzpatrick" -> WidgetType.FITZPATRICK_PALETTE
-                                        "body-map" -> WidgetType.BODY_MAP
-                                        "segmented-control", "choice-cards" -> WidgetType.SEGMENTED_TILES
-                                        "check-box" ->
-                                            if (fhirItem.repeats?.value ==
-                                                true
-                                            ) {
-                                                WidgetType.MULTI_SELECT
-                                            } else {
-                                                WidgetType.SINGLE_SELECT
-                                            }
-                                        else ->
-                                            when (fhirItem.type.value) {
-                                                Questionnaire.QuestionnaireItemType.Attachment ->
-                                                    WidgetType.PHOTO_CAMERA
-                                                Questionnaire.QuestionnaireItemType.Boolean ->
-                                                    WidgetType.SWITCH
-                                                Questionnaire.QuestionnaireItemType.Choice ->
-                                                    if (fhirItem.repeats?.value ==
-                                                        true
-                                                    ) {
-                                                        WidgetType.MULTI_SELECT
-                                                    } else {
-                                                        WidgetType.SINGLE_SELECT
-                                                    }
-                                                Questionnaire.QuestionnaireItemType.String ->
-                                                    WidgetType.SINGLE_LINE_TEXT
-                                                Questionnaire.QuestionnaireItemType.Text ->
-                                                    WidgetType.MULTI_LINE_TEXT
-                                                Questionnaire.QuestionnaireItemType.Date ->
-                                                    WidgetType.DATE
-                                                Questionnaire.QuestionnaireItemType.DateTime ->
-                                                    WidgetType.DATETIME
-                                                Questionnaire.QuestionnaireItemType.Decimal ->
-                                                    WidgetType.NUMERIC
-                                                Questionnaire.QuestionnaireItemType.Integer ->
-                                                    WidgetType.RANGE
-                                                Questionnaire.QuestionnaireItemType.Group ->
-                                                    WidgetType.GROUP
-                                                else ->
-                                                    WidgetType.SINGLE_LINE_TEXT
-                                            }
-                                    }
-
-                                val options: List<kotlin.String> =
-                                    fhirItem.answerOption.mapNotNull { opt ->
-                                        val codingValue = opt.value as? Questionnaire.Item.AnswerOption.Value.Coding
-                                        codingValue?.value?.display?.value
-                                    }
-
-                                val builderEnableWhen =
-                                    fhirItem.enableWhen.mapNotNull { ew ->
-                                        val q = ew.question.value ?: return@mapNotNull null
-                                        val op = ew.operator.value ?: Questionnaire.QuestionnaireItemOperator.EqualTo
-                                        val ans = ew.answer
-                                        BuilderEnableWhen(
-                                            question = q,
-                                            operator = op,
-                                            answerString = ans.asString()?.value?.value,
-                                            answerBoolean = ans.asBoolean()?.value?.value,
-                                            answerInteger = ans.asInteger()?.value?.value,
-                                            answerDecimal =
-                                                ans
-                                                    .asDecimal()
-                                                    ?.value
-                                                    ?.value
-                                                    ?.toString()
-                                                    ?.toDoubleOrNull(),
-                                        )
-                                    }
-
-                                BuilderItem(
-                                    linkId = fhirItem.linkId.value ?: "item_${nextItemId++}",
-                                    label = fhirItem.text?.value ?: defaultItemLabelResolver(),
-                                    widgetType = widgetType,
-                                    options = options,
-                                    isError = false,
-                                    enableWhen = builderEnableWhen,
-                                    enableBehavior = fhirItem.enableBehavior?.value,
-                                )
-                            },
+                        items = source.item.map { fhirItem -> parseFhirItemToBuilderItem(fhirItem) },
                     )
                 }
                 nextItemId = (
@@ -276,6 +188,136 @@ class QuestionnaireBuilderViewModel(
                 ) + 1
             }
         }
+    }
+
+    /**
+     * Resolves the [WidgetType] for an imported FHIR Questionnaire item based on itemControl or type.
+     *
+     * @param fhirItem The source FHIR item.
+     * @return The corresponding [WidgetType].
+     */
+    private fun resolveWidgetTypeFromFhir(fhirItem: Questionnaire.Item): WidgetType {
+        val rep = fhirItem.repeats
+        val isRepeats = rep != null && rep.value == true
+        return when (fhirItem.getItemControl()) {
+            "photo" -> WidgetType.PHOTO_CAMERA
+            "video" -> WidgetType.VIDEO_CAMERA
+            "switch" -> WidgetType.SWITCH
+            "slider" -> WidgetType.RANGE
+            "pain-vas", "wong-baker" -> WidgetType.PAIN_SCALE
+            "palette", "color-palette", "fitzpatrick" -> WidgetType.FITZPATRICK_PALETTE
+            "body-map" -> WidgetType.BODY_MAP
+            "segmented-control", "choice-cards" -> WidgetType.SEGMENTED_TILES
+            "check-box" -> if (isRepeats) WidgetType.MULTI_SELECT else WidgetType.SINGLE_SELECT
+            else -> {
+                val typeVal = fhirItem.type.value
+                val fhirType = if (typeVal != null) typeVal else Questionnaire.QuestionnaireItemType.String
+                resolveWidgetTypeFallback(fhirType, isRepeats)
+            }
+        }
+    }
+
+    /**
+     * Fallback resolution of [WidgetType] based on standard FHIR item types.
+     *
+     * @param type The FHIR item type.
+     * @param isRepeats Whether the item repeats.
+     * @return The corresponding [WidgetType].
+     */
+    private fun resolveWidgetTypeFallback(
+        type: Questionnaire.QuestionnaireItemType,
+        isRepeats: Boolean,
+    ): WidgetType =
+        when (type) {
+            Questionnaire.QuestionnaireItemType.Attachment -> WidgetType.PHOTO_CAMERA
+            Questionnaire.QuestionnaireItemType.Boolean -> WidgetType.SWITCH
+            Questionnaire.QuestionnaireItemType.Choice ->
+                if (isRepeats) WidgetType.MULTI_SELECT else WidgetType.SINGLE_SELECT
+            Questionnaire.QuestionnaireItemType.String -> WidgetType.SINGLE_LINE_TEXT
+            Questionnaire.QuestionnaireItemType.Text -> WidgetType.MULTI_LINE_TEXT
+            Questionnaire.QuestionnaireItemType.Date -> WidgetType.DATE
+            Questionnaire.QuestionnaireItemType.DateTime -> WidgetType.DATETIME
+            Questionnaire.QuestionnaireItemType.Decimal -> WidgetType.NUMERIC
+            Questionnaire.QuestionnaireItemType.Integer -> WidgetType.RANGE
+            Questionnaire.QuestionnaireItemType.Group -> WidgetType.GROUP
+            else -> WidgetType.SINGLE_LINE_TEXT
+        }
+
+    /**
+     * Parses FHIR EnableWhen conditions into builder representations.
+     *
+     * @param enableWhen The list of FHIR enableWhen items.
+     * @return The parsed [BuilderEnableWhen] rules.
+     */
+    private fun parseEnableWhenList(
+        enableWhen: List<Questionnaire.Item.EnableWhen>,
+    ): List<BuilderEnableWhen> =
+        enableWhen.mapNotNull { ew ->
+            val q = ew.question.value
+            if (q == null) return@mapNotNull null
+            val op = ew.operator.value ?: Questionnaire.QuestionnaireItemOperator.EqualTo
+            val ans = ew.answer
+            val strAns = ans.asString()
+            val strVal = if (strAns != null) strAns.value.value else null
+            val boolAns = ans.asBoolean()
+            val boolVal = if (boolAns != null) boolAns.value.value else null
+            val intAns = ans.asInteger()
+            val intVal = if (intAns != null) intAns.value.value else null
+            val decAns = ans.asDecimal()
+            val decVal =
+                if (decAns != null) {
+                    val raw = decAns.value.value
+                    if (raw != null) raw.toString().toDoubleOrNull() else null
+                } else {
+                    null
+                }
+            BuilderEnableWhen(
+                question = q,
+                operator = op,
+                answerString = strVal,
+                answerBoolean = boolVal,
+                answerInteger = intVal,
+                answerDecimal = decVal,
+            )
+        }
+
+    /**
+     * Parses a FHIR Questionnaire.Item into a UI BuilderItem.
+     *
+     * @param fhirItem The source FHIR questionnaire item.
+     * @return The populated BuilderItem instance.
+     */
+    private fun parseFhirItemToBuilderItem(fhirItem: Questionnaire.Item): BuilderItem {
+        val widgetType = resolveWidgetTypeFromFhir(fhirItem)
+        val options: List<kotlin.String> =
+            fhirItem.answerOption.mapNotNull { opt ->
+                val codingValue = opt.value as? Questionnaire.Item.AnswerOption.Value.Coding
+                val c = if (codingValue != null) codingValue.value else null
+                val disp = if (c != null) c.display else null
+                if (disp != null) disp.value else null
+            }
+
+        val builderEnableWhen = parseEnableWhenList(fhirItem.enableWhen)
+        val lId = fhirItem.linkId.value
+        val linkId = if (lId != null) lId else "item_${nextItemId++}"
+        val txt = fhirItem.text
+        val txtVal = if (txt != null) txt.value else null
+        val label = if (txtVal != null) txtVal else defaultItemLabelResolver()
+        val eb = fhirItem.enableBehavior
+        val behavior = if (eb != null) eb.value else null
+        val rep = fhirItem.repeats
+        val isRepeats = rep != null && rep.value == true
+
+        return BuilderItem(
+            linkId = linkId,
+            label = label,
+            widgetType = widgetType,
+            options = options,
+            isError = false,
+            enableWhen = builderEnableWhen,
+            enableBehavior = behavior,
+            repeats = isRepeats,
+        )
     }
 
     /**
@@ -399,11 +441,7 @@ class QuestionnaireBuilderViewModel(
         val validationResult =
             io.healthplatform.chartcam.validation.FhirValidator
                 .validate(questionnaire)
-        return if (validationResult.isSuccess) {
-            Result.success(questionnaire)
-        } else {
-            Result.failure(validationResult.exceptionOrNull() ?: IllegalStateException("Validation failed"))
-        }
+        return validationResult.map { questionnaire }
     }
 
     /**
@@ -490,8 +528,8 @@ class QuestionnaireBuilderViewModel(
             .Builder(Enumeration(value = PublicationStatus.Active))
             .apply {
                 this.id = id
-                this.url = Uri.Builder().apply { value = "http://healthplatform.io/fhir/Questionnaire/$id" }
-                this.title = String.Builder().apply { value = currentState.title }
+                this.url = Uri(value = "http://healthplatform.io/fhir/Questionnaire/$id").toBuilder()
+                this.title = FhirString(value = currentState.title).toBuilder()
                 this.item.addAll(fhirItems)
             }.build()
     }
@@ -506,13 +544,13 @@ class QuestionnaireBuilderViewModel(
         val itemBuilder =
             Questionnaire.Item
                 .Builder(
-                    String.Builder().apply { value = builderItem.linkId },
+                    FhirString(value = builderItem.linkId).toBuilder(),
                     Enumeration(value = fhirType),
                 ).apply {
-                    text = String.Builder().apply { value = builderItem.label }
-                    required = Boolean.Builder().apply { value = false }
+                    text = FhirString(value = builderItem.label).toBuilder()
+                    required = FhirBoolean(value = false).toBuilder()
                     if (builderItem.repeats) {
-                        repeats = Boolean.Builder().apply { value = true }
+                        repeats = FhirBoolean(value = true).toBuilder()
                     }
                 }
         applyChoiceOptions(itemBuilder, builderItem, fhirType)
@@ -531,27 +569,27 @@ class QuestionnaireBuilderViewModel(
         when {
             ew.answerBoolean != null ->
                 Questionnaire.Item.EnableWhen.Answer.Boolean(
-                    Boolean.Builder().apply { value = ew.answerBoolean }.build(),
+                    FhirBoolean(value = ew.answerBoolean),
                 )
             ew.answerInteger != null ->
                 Questionnaire.Item.EnableWhen.Answer.Integer(
-                    Integer.Builder().apply { value = ew.answerInteger }.build(),
+                    Integer(value = ew.answerInteger),
                 )
             ew.answerDecimal != null ->
                 Questionnaire.Item.EnableWhen.Answer.Decimal(
-                    Decimal
-                        .Builder()
-                        .apply {
-                            value = BigDecimal.parseString(ew.answerDecimal.toString())
-                        }.build(),
+                    Decimal(
+                        value =
+                            dev.ohs.fhir.model.r4.FhirDecimal
+                                .fromString(ew.answerDecimal.toString()),
+                    ),
                 )
             ew.answerString != null ->
                 Questionnaire.Item.EnableWhen.Answer.String(
-                    String.Builder().apply { value = ew.answerString }.build(),
+                    FhirString(value = ew.answerString),
                 )
             else ->
                 Questionnaire.Item.EnableWhen.Answer.Boolean(
-                    Boolean.Builder().apply { value = true }.build(),
+                    FhirBoolean(value = true),
                 )
         }
 
@@ -573,7 +611,7 @@ class QuestionnaireBuilderViewModel(
                     Questionnaire.Item.EnableWhen.Builder(
                         answer = createEnableWhenAnswer(ew),
                         operator = Enumeration(value = ew.operator),
-                        question = String.Builder().apply { value = ew.question },
+                        question = FhirString(value = ew.question).toBuilder(),
                     ),
                 )
             }
@@ -594,7 +632,7 @@ class QuestionnaireBuilderViewModel(
         if (fhirType == Questionnaire.QuestionnaireItemType.Choice) {
             /** MULTI_SELECT */
             if (builderItem.widgetType == WidgetType.MULTI_SELECT) {
-                itemBuilder.repeats = Boolean.Builder().apply { value = true }
+                itemBuilder.repeats = FhirBoolean(value = true).toBuilder()
             }
             val effectiveOptions =
                 if (builderItem.options.isEmpty() && builderItem.widgetType == WidgetType.FITZPATRICK_PALETTE) {
@@ -606,19 +644,15 @@ class QuestionnaireBuilderViewModel(
                 itemBuilder.answerOption.add(
                     Questionnaire.Item.AnswerOption.Builder(
                         Questionnaire.Item.AnswerOption.Value.Coding(
-                            com.google.fhir.model.r4.Coding
-                                .Builder()
-                                .apply {
-                                    system =
-                                        com.google.fhir.model.r4.Uri
-                                            .Builder()
-                                            .apply { value = "http://chartcam.local/custom-options" }
-                                    code =
-                                        com.google.fhir.model.r4.Code
-                                            .Builder()
-                                            .apply { value = "opt-$index" }
-                                    display = String.Builder().apply { value = optionValue }
-                                }.build(),
+                            dev.ohs.fhir.model.r4.Coding(
+                                system =
+                                    dev.ohs.fhir.model.r4
+                                        .Uri(value = "http://chartcam.local/custom-options"),
+                                code =
+                                    dev.ohs.fhir.model.r4
+                                        .Code(value = "opt-$index"),
+                                display = FhirString(value = optionValue),
+                            ),
                         ),
                     ),
                 )
@@ -632,7 +666,7 @@ class QuestionnaireBuilderViewModel(
      * @param widgetType The widget type.
      * @return The item control code string or null.
      */
-    private fun resolveItemControlCode(widgetType: WidgetType): kotlin.String? =
+    private fun resolveItemControlCode(widgetType: WidgetType): String? =
         when (widgetType) {
             WidgetType.VIDEO_CAMERA -> "video"
             WidgetType.PHOTO_CAMERA -> "photo"
@@ -653,22 +687,16 @@ class QuestionnaireBuilderViewModel(
      */
     private fun applyPainScaleCode(itemBuilder: Questionnaire.Item.Builder) {
         itemBuilder.code.add(
-            com.google.fhir.model.r4.Coding
-                .Builder()
-                .apply {
+            dev.ohs.fhir.model.r4
+                .Coding(
                     system =
-                        com.google.fhir.model.r4.Uri
-                            .Builder()
-                            .apply { value = "http://loinc.org" }
+                        dev.ohs.fhir.model.r4
+                            .Uri(value = "http://loinc.org"),
                     code =
-                        com.google.fhir.model.r4.Code
-                            .Builder()
-                            .apply { value = "72514-3" }
-                    display =
-                        com.google.fhir.model.r4.String.Builder().apply {
-                            value = "Pain severity - 0-10 verbal numeric rating"
-                        }
-                },
+                        dev.ohs.fhir.model.r4
+                            .Code(value = "72514-3"),
+                    display = FhirString(value = "Pain severity - 0-10 verbal numeric rating"),
+                ).toBuilder(),
         )
     }
 
@@ -685,24 +713,22 @@ class QuestionnaireBuilderViewModel(
         val itemControlCode = resolveItemControlCode(builderItem.widgetType)
         if (itemControlCode != null) {
             itemBuilder.extension.add(
-                com.google.fhir.model.r4.Extension
+                dev.ohs.fhir.model.r4.Extension
                     .Builder(
                         url = "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
                     ).apply {
                         value =
-                            com.google.fhir.model.r4.Extension.Value.CodeableConcept(
-                                com.google.fhir.model.r4.CodeableConcept
-                                    .Builder()
-                                    .apply {
-                                        coding.add(
-                                            com.google.fhir.model.r4.Coding.Builder().apply {
+                            dev.ohs.fhir.model.r4.Extension.Value.CodeableConcept(
+                                dev.ohs.fhir.model.r4.CodeableConcept(
+                                    coding =
+                                        listOf(
+                                            dev.ohs.fhir.model.r4.Coding(
                                                 code =
-                                                    com.google.fhir.model.r4.Code
-                                                        .Builder()
-                                                        .apply { value = itemControlCode }
-                                            },
-                                        )
-                                    }.build(),
+                                                    dev.ohs.fhir.model.r4
+                                                        .Code(value = itemControlCode),
+                                            ),
+                                        ),
+                                ),
                             )
                     },
             )
@@ -751,15 +777,13 @@ class QuestionnaireBuilderViewModel(
 
         validate().onSuccess { questionnaire ->
             val currentId = questionnaire.id
-
-            // Ensure uniqueness
-            val existing = currentId?.let { repository.getQuestionnaire(it) }
+            val existing = repository.getAvailableQuestionnaires().firstOrNull { it.id == currentId }
 
             if (existing != null) {
                 _state.update { it.copy(isDuplicateNameError = true) }
             } else {
                 repository.saveQuestionnaire(questionnaire)
-                finalId = questionnaire.id ?: ""
+                finalId = currentId
             }
         }
 

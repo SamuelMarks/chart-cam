@@ -6,7 +6,7 @@ package io.healthplatform.chartcam.workflow
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.google.fhir.model.r4.Reference
+import dev.ohs.fhir.model.r4.Reference
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.models.FhirMocks
 import io.healthplatform.chartcam.models.createFhirEncounter
@@ -25,7 +25,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import com.google.fhir.model.r4.String as FhirString
+import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * Validates resilience of historical QuestionnaireResponse records when form schemas are updated.
