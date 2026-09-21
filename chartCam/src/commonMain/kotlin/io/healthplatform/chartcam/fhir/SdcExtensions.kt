@@ -70,6 +70,41 @@ object SdcExtensions {
     /** SDC observation extract extension URL. */
     const val OBSERVATION_EXTRACT =
         "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-observationExtract"
+
+    /** SDC camera silhouette extension URL. */
+    const val CAMERA_SILHOUETTE = "http://healthplatform.io/fhir/StructureDefinition/camera-silhouette"
+
+    /** Item control code for 3-angle facial and cornea profile series. */
+    const val ITEM_CONTROL_FACIAL_PROFILE_SERIES = "facial-profile-series"
+}
+
+/**
+ * Checks if the Questionnaire Item is configured as a 3-angle facial and cornea profile series.
+ *
+ * @return True if itemControl is facial-profile-series.
+ */
+fun Questionnaire.Item.isFacialProfileSeries(): Boolean {
+    val control = getItemControl()
+    return control == SdcExtensions.ITEM_CONTROL_FACIAL_PROFILE_SERIES
+}
+
+/**
+ * Resolves the configured [io.healthplatform.chartcam.camera.SilhouetteType] for this questionnaire item.
+ *
+ * @return A [Result] containing the resolved [io.healthplatform.chartcam.camera.SilhouetteType].
+ */
+fun Questionnaire.Item.getSilhouetteType(): Result<io.healthplatform.chartcam.camera.SilhouetteType> {
+    val ext =
+        this.extension.firstOrNull { it.url == SdcExtensions.CAMERA_SILHOUETTE }
+            ?: return Result.success(io.healthplatform.chartcam.camera.SilhouetteType.NONE)
+    val codeStr =
+        when (val v = ext.value) {
+            is Extension.Value.Code -> v.value.value
+            is Extension.Value.String -> v.value.value
+            else -> null
+        }
+    return io.healthplatform.chartcam.camera.SilhouetteType
+        .fromCode(codeStr)
 }
 
 /**

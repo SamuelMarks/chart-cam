@@ -47,6 +47,9 @@ class CaptureViewModel(
     /** The current index in the stepsSequence. */
     private var currentStepIndex = 0
 
+    /** Cached bytes from first profile shot for contralateral ghost overlay. */
+    private var firstProfileBytes: ByteArray? = null
+
     /**
      * Initializes the sequence of photos to be taken for this capture session.
      * Must be called before starting capture.
@@ -60,20 +63,29 @@ class CaptureViewModel(
                 currentStepIndex = filePaths.size
                 val nextStep = if (currentStepIndex < steps.size) steps[currentStepIndex] else null
                 val isDone = currentStepIndex >= steps.size
+                val silhouette =
+                    if (nextStep != null) {
+                        nextStep.silhouette
+                    } else {
+                        io.healthplatform.chartcam.camera.SilhouetteType.NONE
+                    }
                 _uiState.update {
                     it.copy(
                         currentStep = nextStep,
                         totalSteps = steps.size,
                         capturedCount = filePaths.size,
                         isFinished = isDone,
+                        silhouetteType = silhouette,
                     )
                 }
             } else {
                 currentStepIndex = 0
+                val firstStep = steps.first()
                 _uiState.update {
                     it.copy(
-                        currentStep = steps.first(),
+                        currentStep = firstStep,
                         totalSteps = steps.size,
+                        silhouetteType = firstStep.silhouette,
                     )
                 }
             }
@@ -134,10 +146,18 @@ class CaptureViewModel(
             .saveImageCatching(fileName, bytes)
             .onSuccess { path ->
                 filePaths[currentStep] = path
+                val isProfileLeft =
+                    currentStep.silhouette == io.healthplatform.chartcam.camera.SilhouetteType.PROFILE_CORNEA_NOSE_LEFT
+                if (isProfileLeft) {
+                    firstProfileBytes = bytes
+                }
 
                 // 2. Calculate Next Step
                 currentStepIndex++
                 val nextStep = if (currentStepIndex < stepsSequence.size) stepsSequence[currentStepIndex] else null
+                val isContralateral =
+                    nextStep?.silhouette == io.healthplatform.chartcam.camera.SilhouetteType.PROFILE_CORNEA_NOSE_RIGHT
+                val ghostBytes = if (isContralateral) firstProfileBytes else null
 
                 if (nextStep != null) {
                     _uiState.update {
@@ -145,6 +165,8 @@ class CaptureViewModel(
                             currentStep = nextStep,
                             reviewImageBytes = null,
                             capturedCount = filePaths.size,
+                            silhouetteType = nextStep.silhouette,
+                            ghostImageBytes = ghostBytes,
                             error = null,
                             errorMessage = null,
                             errorMessageResource = null,
@@ -156,6 +178,8 @@ class CaptureViewModel(
                             reviewImageBytes = null,
                             isFinished = true,
                             capturedCount = filePaths.size,
+                            silhouetteType = io.healthplatform.chartcam.camera.SilhouetteType.NONE,
+                            ghostImageBytes = null,
                             error = null,
                             errorMessage = null,
                             errorMessageResource = null,

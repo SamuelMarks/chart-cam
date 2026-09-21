@@ -1,0 +1,86 @@
+{
+    "resourceType": "Questionnaire",
+    "id": "facial-cornea-profile",
+    "title": "Facial Profile & Cornea Examination",
+    "status": "active",
+    "item": [
+        {
+            "linkId": "clinical_notes",
+            "text": "Clinical Observations & Notes",
+            "type": "text",
+            "required": false
+        },
+        {
+            "linkId": "profile_left",
+            "text": "Left Profile (Cornea & Nose)",
+            "type": "attachment",
+            "required": true,
+            "extension": [
+                {
+                    "url": "http://healthplatform.io/fhir/StructureDefinition/camera-silhouette",
+                    "valueCode": "profile-cornea-left"
+                }
+            ],
+            "code": [
+                {
+                    "system": "http://loinc.org",
+                    "code": "72170-4",
+                    "display": "Photographic image"
+                },
+                {
+                    "system": "http://snomed.info/sct",
+                    "code": "272480006",
+                    "display": "Left lateral"
+                }
+            ]
+        },
+        {
+            "linkId": "front_view",
+            "text": "Front View",
+            "type": "attachment",
+            "required": true,
+            "extension": [
+                {
+                    "url": "http://healthplatform.io/fhir/StructureDefinition/camera-silhouette",
+                    "valueCode": "frontal-face"
+                }
+            ],
+            "code": [
+                {
+                    "system": "http://loinc.org",
+                    "code": "72170-4",
+                    "display": "Photographic image"
+                },
+                {
+                    "system": "http://snomed.info/sct",
+                    "code": "272483008",
+                    "display": "Anterior"
+                }
+            ]
+        },
+        {
+            "linkId": "profile_right",
+            "text": "Right Profile (Cornea & Nose)",
+            "type": "attachment",
+            "required": true,
+            "extension": [
+                {
+                    "url": "http://healthplatform.io/fhir/StructureDefinition/camera-silhouette",
+                    "valueCode": "profile-cornea-right"
+                }
+            ],
+            "code": [
+                {
+                    "system": "http://loinc.org",
+                    "code": "72170-4",
+                    "display": "Photographic image"
+                },
+                {
+                    "system": "http://snomed.info/sct",
+                    "code": "272481005",
+                    "display": "Right lateral"
+                }
+            ]
+        }
+    ]
+}

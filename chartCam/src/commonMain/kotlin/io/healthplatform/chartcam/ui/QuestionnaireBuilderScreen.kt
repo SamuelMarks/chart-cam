@@ -152,6 +152,7 @@ import chartcam.chartcam.generated.resources.widget_body_map
 import chartcam.chartcam.generated.resources.widget_checkbox
 import chartcam.chartcam.generated.resources.widget_date
 import chartcam.chartcam.generated.resources.widget_datetime
+import chartcam.chartcam.generated.resources.widget_facial_profile_series
 import chartcam.chartcam.generated.resources.widget_fitzpatrick
 import chartcam.chartcam.generated.resources.widget_multi_line_text
 import chartcam.chartcam.generated.resources.widget_multi_select
@@ -192,6 +193,7 @@ private val WIDGET_NAME_MAP: Map<WidgetType, StringResource> =
         WidgetType.FITZPATRICK_PALETTE to Res.string.widget_fitzpatrick,
         WidgetType.BODY_MAP to Res.string.widget_body_map,
         WidgetType.SEGMENTED_TILES to Res.string.widget_segmented_tiles,
+        WidgetType.FACIAL_PROFILE_SERIES to Res.string.widget_facial_profile_series,
         WidgetType.GROUP to Res.string.cd_unnamed_group,
     )
 
@@ -231,6 +233,7 @@ private val WIDGET_ICON_MAP: Map<WidgetType, ImageVector> =
         WidgetType.FITZPATRICK_PALETTE to Icons.Default.Palette,
         WidgetType.BODY_MAP to Icons.Default.Accessibility,
         WidgetType.SEGMENTED_TILES to Icons.Default.ViewModule,
+        WidgetType.FACIAL_PROFILE_SERIES to Icons.Default.PhotoCamera,
         WidgetType.GROUP to Icons.Default.Checklist,
     )
 

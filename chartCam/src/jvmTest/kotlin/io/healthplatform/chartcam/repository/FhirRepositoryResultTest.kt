@@ -82,6 +82,17 @@ class FhirRepositoryResultTest {
             val afterDelete = repository.getPatientCatching("p-res-1")
             assertTrue(afterDelete.isSuccess)
             assertEquals(null, afterDelete.getOrNull())
+
+            // Test deletePatient failure percolation with failing repo
+            val failingRepo =
+                object : FhirRepository(database) {
+                    override suspend fun getEncountersForPatientCatching(
+                        patientId: String,
+                    ): Result<List<dev.ohs.fhir.model.r4.Encounter>> =
+                        Result.failure(IllegalStateException("Encounter lookup error"))
+                }
+            val failingDeleteRes = failingRepo.deletePatient("p-fail")
+            assertTrue(failingDeleteRes.isFailure)
         }
 
     /**

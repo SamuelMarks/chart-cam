@@ -1,4 +1,4 @@
-@file:Suppress("TooGenericExceptionCaught")
+@file:Suppress("TooGenericExceptionCaught", "LargeClass", "ReturnCount")
 /**
  * @file ExportImportService.kt
  * Contains declarations for ExportImportService.kt.
@@ -401,29 +401,37 @@ open class ExportImportService(
     open suspend fun inspectArchive(
         encryptedData: String,
         password: String,
-    ): Result<ImportPreviewSummary> =
-        runSuspendCatching {
-            if (!isValidPassword(password)) {
-                error("Decryption password must not be empty or weak (minimum 6 characters).")
-            }
-            val jsonData = cryptoService.decryptCatching(encryptedData, password).getOrThrow()
-            if (jsonData.isEmpty()) {
-                error("Decryption failed or data is empty.")
-            }
-            val decodeResult =
-                io.healthplatform.chartcam.fhir.FhirJsonParser
-                    .decodeTypedResource(Bundle.serializer(), jsonData)
-            val bundle = decodeResult.getOrThrow()
+    ): Result<ImportPreviewSummary> {
+        if (!isValidPassword(password)) {
+            return Result.failure(
+                IllegalArgumentException("Decryption password must not be empty or weak (minimum 6 characters)."),
+            )
+        }
+        val decryptResult = cryptoService.decryptCatching(encryptedData, password)
+        val jsonData =
+            decryptResult.fold(
+                onSuccess = { it },
+                onFailure = { return Result.failure(it) },
+            )
+        val decodeResult =
+            io.healthplatform.chartcam.fhir.FhirJsonParser
+                .decodeTypedResource(Bundle.serializer(), jsonData)
+        val bundle =
+            decodeResult.fold(
+                onSuccess = { it },
+                onFailure = { return Result.failure(it) },
+            )
 
-            val resources = bundle.entry.mapNotNull { it.resource }
-            val patients = resources.filterIsInstance<Patient>()
-            val encounters = resources.filterIsInstance<Encounter>()
-            val docs = resources.filterIsInstance<DocumentReference>()
-            val questionnaires = resources.filterIsInstance<Questionnaire>()
+        val resources = bundle.entry.mapNotNull { it.resource }
+        val patients = resources.filterIsInstance<Patient>()
+        val encounters = resources.filterIsInstance<Encounter>()
+        val docs = resources.filterIsInstance<DocumentReference>()
+        val questionnaires = resources.filterIsInstance<Questionnaire>()
 
-            val stagedPatients = patients.map { buildStagingItem(it, encounters) }
-            val hasConflicts = stagedPatients.any { it.conflictType != ConflictType.EXACT_MATCH }
+        val stagedPatients = patients.map { buildStagingItem(it, encounters) }
+        val hasConflicts = stagedPatients.any { it.conflictType != ConflictType.EXACT_MATCH }
 
+        return Result.success(
             ImportPreviewSummary(
                 totalResources = resources.size,
                 stagedPatients = stagedPatients,
@@ -431,8 +439,9 @@ open class ExportImportService(
                 stagedPhotoCount = docs.size,
                 stagedFormCount = questionnaires.size,
                 hasConflicts = hasConflicts,
-            )
-        }
+            ),
+        )
+    }
 
     /**
      * Ingests a single patient according to chosen conflict resolution strategy.
@@ -699,46 +708,55 @@ open class ExportImportService(
         filterOptions: ImportFilterOptions = ImportFilterOptions.all(),
         selectedPatientIds: Set<String>? = null,
         resolutionMap: Map<String, ConflictResolutionStrategy> = emptyMap(),
-    ): Result<Unit> =
-        runSuspendCatching {
-            if (!isValidPassword(password)) {
-                error("Decryption password must not be empty or weak (minimum 6 characters).")
-            }
-            val jsonData = cryptoService.decryptCatching(encryptedData, password).getOrThrow()
-            if (jsonData.isEmpty()) {
-                error("Decryption failed or data is empty.")
-            }
-            val decodeResult =
-                io.healthplatform.chartcam.fhir.FhirJsonParser
-                    .decodeTypedResource(Bundle.serializer(), jsonData)
-            val bundle = decodeResult.getOrThrow()
+    ): Result<Unit> {
+        if (!isValidPassword(password)) {
+            return Result.failure(
+                IllegalArgumentException("Decryption password must not be empty or weak (minimum 6 characters)."),
+            )
+        }
+        val decryptResult = cryptoService.decryptCatching(encryptedData, password)
+        val jsonData =
+            decryptResult.fold(
+                onSuccess = { it },
+                onFailure = { return Result.failure(it) },
+            )
+        val decodeResult =
+            io.healthplatform.chartcam.fhir.FhirJsonParser
+                .decodeTypedResource(Bundle.serializer(), jsonData)
+        val bundle =
+            decodeResult.fold(
+                onSuccess = { it },
+                onFailure = { return Result.failure(it) },
+            )
 
-            val savedImageFiles = mutableListOf<String>()
-            val importBatchResult =
-                runSuspendCatching {
-                    val patientMapping =
-                        if (filterOptions.isCategoryEnabled(ImportCategory.PATIENTS)) {
-                            val patients = bundle.entry.mapNotNull { it.resource as? Patient }
-                            processPatientBatch(patients, selectedPatientIds, resolutionMap)
-                        } else {
-                            emptyMap()
-                        }
+        val savedImageFiles = mutableListOf<String>()
+        val importBatchResult =
+            runSuspendCatching {
+                val patientMapping =
+                    if (filterOptions.isCategoryEnabled(ImportCategory.PATIENTS)) {
+                        val patients = bundle.entry.mapNotNull { it.resource as? Patient }
+                        processPatientBatch(patients, selectedPatientIds, resolutionMap)
+                    } else {
+                        emptyMap()
+                    }
 
-                    for (entry in bundle.entry) {
-                        val res = entry.resource ?: continue
-                        if (res !is Patient) {
-                            importEntryResource(res, filterOptions, patientMapping, savedImageFiles)
-                        }
+                for (entry in bundle.entry) {
+                    val res = entry.resource ?: continue
+                    if (res !is Patient) {
+                        importEntryResource(res, filterOptions, patientMapping, savedImageFiles)
                     }
                 }
-            val failureEx = importBatchResult.exceptionOrNull()
-            if (failureEx != null) {
-                for (savedFile in savedImageFiles) {
-                    runCatching { fileStorage.deleteImage(savedFile) }
-                }
-                error(failureEx.message ?: "Batch import failed.")
             }
+        val failureEx = importBatchResult.exceptionOrNull()
+        return if (failureEx != null) {
+            for (savedFile in savedImageFiles) {
+                runCatching { fileStorage.deleteImage(savedFile) }
+            }
+            Result.failure(failureEx)
+        } else {
+            Result.success(Unit)
         }
+    }
 
     /**
      * Decrypts the provided JSON string and imports the contained FHIR Bundle into the local database.

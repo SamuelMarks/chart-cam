@@ -1096,7 +1096,12 @@ open class FhirRepository(
         fileStorage: io.healthplatform.chartcam.files.FileStorage?,
     ): Result<Unit> {
         val cleanId = id.removePrefix("Patient/")
-        for (enc in getEncountersForPatientCatching(cleanId).getOrDefault(emptyList())) {
+        val encounters =
+            getEncountersForPatientCatching(cleanId).fold(
+                onSuccess = { it },
+                onFailure = { return Result.failure(it) },
+            )
+        for (enc in encounters) {
             val encId = enc.id
             if (encId != null) {
                 deleteEncounter(encId, fileStorage)

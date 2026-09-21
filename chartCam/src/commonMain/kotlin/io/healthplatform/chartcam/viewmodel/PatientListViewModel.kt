@@ -483,12 +483,20 @@ class PatientListViewModel(
 
                 // Delete all encounters associated with this practitioner,
                 // and delete patients solely if no other practitioner holds encounters on that patient
+                val allPatientsRes = repository.getAllPatientsCatching(showAll = false, practitionerId = id)
                 val allPatients =
-                    repository.getAllPatientsCatching(showAll = false, practitionerId = id).getOrDefault(emptyList())
+                    allPatientsRes.fold(
+                        onSuccess = { it },
+                        onFailure = { emptyList() },
+                    )
                 allPatients.forEach { patient ->
                     val pid = patient.id ?: return@forEach
+                    val encountersRes = repository.getEncountersForPatientCatching(pid)
                     val encounters =
-                        repository.getEncountersForPatientCatching(pid).getOrDefault(emptyList())
+                        encountersRes.fold(
+                            onSuccess = { it },
+                            onFailure = { emptyList() },
+                        )
                     val otherPractitionerEncounters =
                         encounters.filter { enc ->
                             enc.participant.any { p ->

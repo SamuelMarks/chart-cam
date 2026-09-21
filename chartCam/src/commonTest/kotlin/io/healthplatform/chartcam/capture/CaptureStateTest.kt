@@ -108,6 +108,18 @@ class CaptureStateTest {
         assertNotEquals(CaptureUiState(isCapturing = true), CaptureUiState(isCapturing = false))
         assertNotEquals(CaptureUiState(capturedCount = 1), CaptureUiState(capturedCount = 2))
         assertNotEquals(CaptureUiState(isFinished = true), CaptureUiState(isFinished = false))
+        assertNotEquals(
+            CaptureUiState(silhouetteType = io.healthplatform.chartcam.camera.SilhouetteType.FRONTAL_FACE),
+            CaptureUiState(silhouetteType = io.healthplatform.chartcam.camera.SilhouetteType.NONE),
+        )
+        assertNotEquals(
+            CaptureUiState(ghostImageBytes = byteArrayOf(1, 2)),
+            CaptureUiState(ghostImageBytes = byteArrayOf(3, 4)),
+        )
+        assertNotEquals(
+            CaptureUiState(ghostImageBytes = byteArrayOf(1, 2)),
+            CaptureUiState(ghostImageBytes = null),
+        )
 
         // Coverage for error and payload fields
         val stateErr1 = CaptureUiState(error = CaptureError.EmptyImage)
@@ -140,6 +152,8 @@ class CaptureStateTest {
                 error = CaptureError.SaveFailed,
                 errorMessage = "Failed",
                 errorMessageResource = Res.string.photo_step_front,
+                silhouetteType = io.healthplatform.chartcam.camera.SilhouetteType.FRONTAL_FACE,
+                ghostImageBytes = byteArrayOf(9, 8, 7),
             )
         assertNotNull(fullState.hashCode())
 
@@ -157,6 +171,8 @@ class CaptureStateTest {
         assertEquals(fullState.error, fullState.component7())
         assertEquals(fullState.errorMessage, fullState.component8())
         assertEquals(fullState.errorMessageResource, fullState.component9())
+        assertEquals(fullState.silhouetteType, fullState.component10())
+        assertEquals(fullState.ghostImageBytes, fullState.component11())
 
         // Copy method
         val copied = fullState.copy(isFinished = true)

@@ -674,6 +674,12 @@ class PatientListViewModelTest {
             mockAuthRepository.currentUserFlow.value = pracNullFamilyValue
             viewModel.deleteAccount {}
             testDispatcher.scheduler.advanceUntilIdle()
+
+            // Delete account when getAllPatientsCatching returns failure
+            mockFhirRepository.shouldThrow = true
+            viewModel.deleteAccount {}
+            testDispatcher.scheduler.advanceUntilIdle()
+            mockFhirRepository.shouldThrow = false
         }
 
     /** Tests exportData when currentUser is null. */

@@ -631,8 +631,10 @@ class ExportImportServiceExhaustiveTest {
             assertTrue(service.inspectArchive(encrypted, "123").isFailure)
             assertTrue(service.importDataSelective(encrypted, "123").isFailure)
             assertTrue(service.inspectArchive(encrypted, "wrongPassword").isFailure)
+            assertTrue(service.importDataSelective(encrypted, "wrongPassword").isFailure)
             val malformedEncrypted = cryptoService.encrypt("not a bundle json", "password123")
             assertTrue(service.inspectArchive(malformedEncrypted, "password123").isFailure)
+            assertTrue(service.importDataSelective(malformedEncrypted, "password123").isFailure)
         }
 
     /**

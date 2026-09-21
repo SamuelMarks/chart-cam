@@ -87,6 +87,7 @@ import io.healthplatform.chartcam.fhir.getLocalizedText
 import io.healthplatform.chartcam.fhir.getMaxValue
 import io.healthplatform.chartcam.fhir.getMinValue
 import io.healthplatform.chartcam.fhir.isBodyMap
+import io.healthplatform.chartcam.fhir.isFacialProfileSeries
 import io.healthplatform.chartcam.fhir.isFitzpatrickPalette
 import io.healthplatform.chartcam.fhir.isHidden
 import io.healthplatform.chartcam.fhir.isSegmentedControl
@@ -98,6 +99,7 @@ import io.healthplatform.chartcam.ui.components.FormBuilderNumericInput
 import io.healthplatform.chartcam.ui.components.FormBuilderRangeSlider
 import io.healthplatform.chartcam.ui.components.FormBuilderTextArea
 import io.healthplatform.chartcam.ui.components.tabFocusNext
+import io.healthplatform.chartcam.ui.sdc.controls.FacialSeriesCardControl
 import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.utils.formatLocalizedDate
 import io.healthplatform.chartcam.utils.formatLocalizedDateTime
@@ -370,7 +372,17 @@ private fun isMissingRequired(
  */
 @Composable
 private fun RenderGroupItem(ctx: RenderContext) {
-    if (ctx.item.repeats?.value == true) {
+    if (ctx.item.isFacialProfileSeries()) {
+        FacialSeriesCardControl(
+            title = ctx.displayLabel,
+            items = ctx.item.item,
+            answers = ctx.state.answers,
+            existingAttachments = ctx.state.config.attachments,
+            readOnly = ctx.state.config.readOnly || ctx.item.readOnly?.value == true,
+            onCaptureSeries = { ctx.onTakePhotoRequested(ctx.linkId) },
+            onCaptureSingle = { slotLinkId -> ctx.onTakePhotoRequested(slotLinkId) },
+        )
+    } else if (ctx.item.repeats?.value == true) {
         RenderRepeatingGroupItem(ctx)
     } else {
         androidx.compose.material3.ElevatedCard(

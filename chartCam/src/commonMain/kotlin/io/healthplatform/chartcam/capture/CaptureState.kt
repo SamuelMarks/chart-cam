@@ -44,11 +44,18 @@ sealed interface CaptureError {
  * @property id Unique identifier for this step.
  * @property title Human readable name displayed in the UI.
  * @property titleRes Optional localized string resource for standard steps.
+ * @property silhouette The on-screen silhouette guide type for this step.
+ * @property ghostImagePath Optional path of a previously captured photo to overlay as a ghost image.
+ * @property targetLandmarks Key anatomical landmarks required in this capture angle.
  */
 data class PhotoStep(
     val id: String,
     val title: String,
     val titleRes: StringResource? = null,
+    val silhouette: io.healthplatform.chartcam.camera.SilhouetteType =
+        io.healthplatform.chartcam.camera.SilhouetteType.NONE,
+    val ghostImagePath: String? = null,
+    val targetLandmarks: List<String> = emptyList(),
 ) {
     /**
      * Companion object holding predefined constant sequences.
@@ -93,6 +100,11 @@ data class CaptureUiState(
     val errorMessage: String? = null,
     /** Localized error resource to display to the user if capture or disk operations fail. */
     val errorMessageResource: StringResource? = null,
+    /** The on-screen silhouette type for guiding the current step. */
+    val silhouetteType: io.healthplatform.chartcam.camera.SilhouetteType =
+        io.healthplatform.chartcam.camera.SilhouetteType.NONE,
+    /** Ghost image bytes to display for symmetry or distance comparison. */
+    val ghostImageBytes: ByteArray? = null,
 ) {
     /**
      * Compares this CaptureUiState instance to another object for equality.
@@ -118,7 +130,8 @@ data class CaptureUiState(
             totalSteps == other.totalSteps &&
             isCapturing == other.isCapturing &&
             capturedCount == other.capturedCount &&
-            isFinished == other.isFinished
+            isFinished == other.isFinished &&
+            silhouetteType == other.silhouetteType
 
     /**
      * Checks if payload and error fields of two states match.
@@ -130,7 +143,8 @@ data class CaptureUiState(
         error == other.error &&
             errorMessage == other.errorMessage &&
             errorMessageResource == other.errorMessageResource &&
-            reviewImageBytes.contentEquals(other.reviewImageBytes)
+            reviewImageBytes.contentEquals(other.reviewImageBytes) &&
+            ghostImageBytes.contentEquals(other.ghostImageBytes)
 
     /**
      * Generates a hash code for this CaptureUiState instance.
@@ -148,6 +162,8 @@ data class CaptureUiState(
         result = 31 * result + (error?.hashCode() ?: 0)
         result = 31 * result + (errorMessage?.hashCode() ?: 0)
         result = 31 * result + (errorMessageResource?.hashCode() ?: 0)
+        result = 31 * result + silhouetteType.hashCode()
+        result = 31 * result + (ghostImageBytes?.contentHashCode() ?: 0)
         return result
     }
 }

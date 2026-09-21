@@ -36,14 +36,167 @@ class QuestionnaireRepository(
      * @param id The template ID.
      */
     internal suspend fun loadTemplate(path: String, id: String) {
-        val bytes =
-            chartcam.chartcam.generated.resources.Res
-                .readBytes(path)
         val q =
-            io.healthplatform.chartcam.fhir.FhirJsonParser
-                .decodeTypedResource(Questionnaire.serializer(), bytes.decodeToString())
-                .getOrDefault(Questionnaire(status = Enumeration(value = PublicationStatus.Active)))
+            runCatching {
+                val bytes =
+                    chartcam.chartcam.generated.resources.Res
+                        .readBytes(path)
+                io.healthplatform.chartcam.fhir.FhirJsonParser
+                    .decodeTypedResource(Questionnaire.serializer(), bytes.decodeToString())
+                    .getOrNull()
+            }.getOrNull() ?: createDefaultFallbackQuestionnaire(id)
+                ?: Questionnaire(status = Enumeration(value = PublicationStatus.Active))
+
         inMemoryForms[id] = q
+    }
+
+    /**
+     * Creates a fallback Questionnaire when bundled JSON file cannot be read from resources.
+     *
+     * @param id The template ID.
+     * @return A constructed fallback [Questionnaire], or null if unrecognized ID.
+     */
+    private fun createDefaultFallbackQuestionnaire(id: String): Questionnaire? =
+        when (id) {
+            "facial-cornea-profile" -> createFacialCorneaProfileFallback(id)
+            "std-form" -> createStdFormFallback(id)
+            "basic-followup" -> createBasicFollowupFallback(id)
+            else -> null
+        }
+
+    /**
+     * Constructs the fallback questionnaire for facial profile and cornea examination.
+     *
+     * @param id The questionnaire identifier.
+     * @return Fully constructed fallback [Questionnaire].
+     */
+    private fun createFacialCorneaProfileFallback(id: String): Questionnaire {
+        val notes =
+            createItem(
+                "clinical_notes",
+                "Clinical Observations & Notes",
+                Questionnaire.QuestionnaireItemType.Text,
+                required = false,
+            )
+        val left =
+            createGuidedPhotoItem(
+                "profile_left",
+                "Left Profile (Cornea & Nose)",
+                "profile-cornea-left",
+                "272480006",
+                "Left lateral",
+            )
+        val front =
+            createGuidedPhotoItem(
+                "front_view",
+                "Front View",
+                "frontal-face",
+                "272483008",
+                "Anterior",
+            )
+        val right =
+            createGuidedPhotoItem(
+                "profile_right",
+                "Right Profile (Cornea & Nose)",
+                "profile-cornea-right",
+                "272481005",
+                "Right lateral",
+            )
+        return createFhirQuestionnaire(
+            id = id,
+            title = "Facial Profile & Cornea Examination",
+            items = listOf(notes, left, front, right),
+        )
+    }
+
+    /**
+     * Helper to create a single guided photo item with silhouette extension and orientation coding.
+     *
+     * @param linkId Item linkId.
+     * @param text Item prompt text.
+     * @param silhouetteCode Preset silhouette code.
+     * @param snomedCode Orientation SNOMED code.
+     * @param snomedDisplay Orientation display label.
+     * @return Populated [Questionnaire.Item.Builder].
+     */
+    private fun createGuidedPhotoItem(
+        linkId: String,
+        text: String,
+        silhouetteCode: String,
+        snomedCode: String,
+        snomedDisplay: String,
+    ): Questionnaire.Item.Builder =
+        createItem(linkId, text, Questionnaire.QuestionnaireItemType.Attachment, required = true).apply {
+            extension.add(
+                dev.ohs.fhir.model.r4.Extension
+                    .Builder(
+                        url = "http://healthplatform.io/fhir/StructureDefinition/camera-silhouette",
+                    ).apply {
+                        value =
+                            dev.ohs.fhir.model.r4.Extension.Value.Code(
+                                dev.ohs.fhir.model.r4
+                                    .Code(value = silhouetteCode),
+                            )
+                    },
+            )
+            code.add(
+                dev.ohs.fhir.model.r4
+                    .Coding(
+                        system =
+                            dev.ohs.fhir.model.r4
+                                .Uri(value = "http://loinc.org"),
+                        code =
+                            dev.ohs.fhir.model.r4
+                                .Code(value = "72170-4"),
+                        display = FhirString(value = "Photographic image"),
+                    ).toBuilder(),
+            )
+            code.add(
+                dev.ohs.fhir.model.r4
+                    .Coding(
+                        system =
+                            dev.ohs.fhir.model.r4
+                                .Uri(value = "http://snomed.info/sct"),
+                        code =
+                            dev.ohs.fhir.model.r4
+                                .Code(value = snomedCode),
+                        display = FhirString(value = snomedDisplay),
+                    ).toBuilder(),
+            )
+        }
+
+    /**
+     * Constructs fallback questionnaire for std-form.
+     *
+     * @param id The questionnaire ID.
+     * @return Constructed fallback [Questionnaire].
+     */
+    private fun createStdFormFallback(id: String): Questionnaire {
+        val items =
+            listOf(
+                createItem("notes", "Clinical Notes", Questionnaire.QuestionnaireItemType.String, required = false),
+                createItem("front", "Front", Questionnaire.QuestionnaireItemType.Attachment, required = true),
+                createItem("front_ruler", "Front + Ruler", Questionnaire.QuestionnaireItemType.Attachment, true),
+                createItem("right", "Right Side", Questionnaire.QuestionnaireItemType.Attachment, required = true),
+                createItem("right_ruler", "Right Side + Ruler", Questionnaire.QuestionnaireItemType.Attachment, true),
+            )
+        return createFhirQuestionnaire(id, "Standard Clinical Photo", items)
+    }
+
+    /**
+     * Constructs fallback questionnaire for basic-followup.
+     *
+     * @param id The questionnaire ID.
+     * @return Constructed fallback [Questionnaire].
+     */
+    private fun createBasicFollowupFallback(id: String): Questionnaire {
+        val items =
+            listOf(
+                createItem("notes", "Follow-up Notes", Questionnaire.QuestionnaireItemType.String, required = false),
+                createItem("front", "Front View", Questionnaire.QuestionnaireItemType.Attachment, required = true),
+                createItem("right", "Right View", Questionnaire.QuestionnaireItemType.Attachment, required = true),
+            )
+        return createFhirQuestionnaire(id, "Basic Follow-up", items)
     }
 
     /**
@@ -78,6 +231,7 @@ class QuestionnaireRepository(
         if (!inMemoryForms.containsKey("std-form")) {
             loadTemplate("files/default_templates/std-form.json", "std-form")
             loadTemplate("files/default_templates/basic-followup.json", "basic-followup")
+            loadTemplate("files/default_templates/facial-cornea-profile.json", "facial-cornea-profile")
         }
 
         val repo = fhirRepository
@@ -306,6 +460,13 @@ class QuestionnaireRepository(
                     "he" to "מעקב בסיסי",
                     "zh" to "基本追蹤",
                 )
+            "facial-cornea-profile" ->
+                mapOf(
+                    "es" to "Examen de perfil facial y córnea",
+                    "ja" to "顔貌側面および角膜検査",
+                    "he" to "בדיקת פרופיל פנים וקרנית",
+                    "zh" to "面部側臉與角膜檢查",
+                )
             else -> emptyMap()
         }
 
@@ -323,6 +484,46 @@ class QuestionnaireRepository(
         when (qId) {
             "std-form" -> getStdFormItemTranslations(linkId)
             "basic-followup" -> getBasicFollowupItemTranslations(linkId)
+            "facial-cornea-profile" -> getFacialCorneaProfileItemTranslations(linkId)
+            else -> emptyMap()
+        }
+
+    /**
+     * Item translations for the facial profile and cornea examination template.
+     *
+     * @param linkId The item linkId.
+     * @return Map of language code to translated text.
+     */
+    private fun getFacialCorneaProfileItemTranslations(linkId: String): Map<String, String> =
+        when (linkId) {
+            "clinical_notes" ->
+                mapOf(
+                    "es" to "Observaciones clínicas y notas",
+                    "ja" to "臨床所見およびメモ",
+                    "he" to "תצפיות קליניות והערות",
+                    "zh" to "臨床觀察與備註",
+                )
+            "profile_left" ->
+                mapOf(
+                    "es" to "Perfil izquierdo (córnea y nariz)",
+                    "ja" to "左側面プロファイル（角膜・鼻）",
+                    "he" to "פרופיל שמאל (קרנית ואף)",
+                    "zh" to "左側臉（角膜與鼻子）",
+                )
+            "front_view" ->
+                mapOf(
+                    "es" to "Vista frontal",
+                    "ja" to "正面視",
+                    "he" to "מבט חזיתי",
+                    "zh" to "正臉視角",
+                )
+            "profile_right" ->
+                mapOf(
+                    "es" to "Perfil derecho (córnea y nariz)",
+                    "ja" to "右側面プロファイル（角膜・鼻）",
+                    "he" to "פרופיל ימין (קרנית ואף)",
+                    "zh" to "右側臉（角膜與鼻子）",
+                )
             else -> emptyMap()
         }
 

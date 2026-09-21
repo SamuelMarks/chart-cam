@@ -102,11 +102,13 @@ import io.healthplatform.chartcam.capture.CaptureUiState
 import io.healthplatform.chartcam.capture.CaptureViewModel
 import io.healthplatform.chartcam.capture.PhotoStep
 import io.healthplatform.chartcam.fhir.getLocalizedText
+import io.healthplatform.chartcam.fhir.getSilhouetteType
 import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.sensors.SensorManager
 import io.healthplatform.chartcam.sensors.rememberSensorManager
 import io.healthplatform.chartcam.ui.components.LevelerOverlay
+import io.healthplatform.chartcam.ui.components.SilhouetteOverlay
 import io.healthplatform.chartcam.ui.theme.AppSpacing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -129,7 +131,17 @@ internal fun extractSteps(
     val result = mutableListOf<PhotoStep>()
     for (item in items) {
         if (item.type.value == Questionnaire.QuestionnaireItemType.Attachment) {
-            result.add(PhotoStep(item.linkId.value ?: "", item.getLocalizedText(language)))
+            val silhouette =
+                item.getSilhouetteType().getOrDefault(
+                    io.healthplatform.chartcam.camera.SilhouetteType.NONE,
+                )
+            result.add(
+                PhotoStep(
+                    id = item.linkId.value ?: "",
+                    title = item.getLocalizedText(language),
+                    silhouette = silhouette,
+                ),
+            )
         }
         if (item.item.isNotEmpty()) {
             result.addAll(extractSteps(item.item, language))
@@ -317,7 +329,21 @@ private fun CaptureScreenContent(
         focusRequester.requestFocus()
         val q = questionnaireRepository.getQuestionnaire(questionnaireId)
         val allSteps = q?.item?.let { extractSteps(it, currentLang) } ?: emptyList()
-        val steps = if (linkId != null) allSteps.filter { it.id == linkId } else allSteps
+        val steps =
+            if (linkId != null) {
+                val exact = allSteps.filter { it.id == linkId }
+                if (exact.isNotEmpty()) {
+                    exact
+                } else {
+                    val prefixMatches =
+                        allSteps.filter {
+                            it.id.startsWith("${linkId}_") || it.id.startsWith("$linkId#")
+                        }
+                    if (prefixMatches.isNotEmpty()) prefixMatches else allSteps
+                }
+            } else {
+                allSteps
+            }
         viewModel.initSteps(steps)
     }
 
@@ -482,6 +508,12 @@ private fun CaptureBox(
         CameraPreview(
             modifier = Modifier.fillMaxSize().semantics { contentDescription = cdCameraPreview },
             cameraManager = cameraManager,
+        )
+
+        SilhouetteOverlay(
+            silhouetteType = state.silhouetteType,
+            sensorManager = sensorManager,
+            ghostImageBytes = state.ghostImageBytes,
         )
 
         LevelerOverlay(sensorManager)

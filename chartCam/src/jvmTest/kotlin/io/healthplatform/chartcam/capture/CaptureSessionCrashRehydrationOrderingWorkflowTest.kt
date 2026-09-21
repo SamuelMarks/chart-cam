@@ -119,5 +119,6 @@ class CaptureSessionCrashRehydrationOrderingWorkflowTest {
             assertTrue(vm.uiState.value.isFinished, "Fully captured session should immediately be finished")
             assertNull(vm.uiState.value.currentStep)
             assertEquals(2, vm.uiState.value.capturedCount)
+            assertEquals(io.healthplatform.chartcam.camera.SilhouetteType.NONE, vm.uiState.value.silhouetteType)
         }
 }

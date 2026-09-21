@@ -55,6 +55,9 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.v2.runDesktopComposeUiTest
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.Questionnaire
+import io.healthplatform.chartcam.camera.SilhouetteType
 import io.healthplatform.chartcam.database.DatabaseDriverFactory
 import io.healthplatform.chartcam.dicom.DicomDataset
 import io.healthplatform.chartcam.files.createFileStorage
@@ -85,8 +88,10 @@ import io.healthplatform.chartcam.ui.TriageScreen
 import io.healthplatform.chartcam.ui.components.CreatePatientDialog
 import io.healthplatform.chartcam.ui.components.DicomViewerComponent
 import io.healthplatform.chartcam.ui.components.LevelerOverlay
+import io.healthplatform.chartcam.ui.components.SilhouetteOverlay
 import io.healthplatform.chartcam.ui.currentLanguageState
 import io.healthplatform.chartcam.ui.sdc.controls.BodyMapPinDropControl
+import io.healthplatform.chartcam.ui.sdc.controls.FacialSeriesCardControl
 import io.healthplatform.chartcam.ui.sdc.controls.FitzpatrickPaletteControl
 import io.healthplatform.chartcam.ui.sdc.controls.VisualPainScaleControl
 import io.healthplatform.chartcam.ui.theme.AppSpacing
@@ -122,6 +127,14 @@ data class ScreenshotTestDependencies(
  */
 @OptIn(ExperimentalTestApi::class, ExperimentalMaterial3Api::class)
 class ScreenshotGeneratorE2E {
+    companion object {
+        /** Viewport width in pixels for compact phone screenshot generation. */
+        private const val DEVICE_WIDTH = 360
+
+        /** Viewport height in pixels for compact phone screenshot generation. */
+        private const val DEVICE_HEIGHT = 640
+    }
+
     /**
      * Captures the root UI node and saves it as an image file.
      *
@@ -233,7 +246,7 @@ class ScreenshotGeneratorE2E {
         val patientListActs = PatientListActions({}, {}, {})
 
         // 00: Authentication Gateway
-        runDesktopComposeUiTest(width = 1080, height = 1920) {
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
             setContent {
                 AppTheme(darkTheme = false) {
                     Surface(modifier = Modifier.fillMaxSize()) {
@@ -250,7 +263,7 @@ class ScreenshotGeneratorE2E {
         }
 
         // 01: Primary Viewfinder with Leveler Overlay
-        runDesktopComposeUiTest(width = 1080, height = 1920) {
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
             setContent {
                 AppTheme(darkTheme = true) {
                     Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
@@ -287,7 +300,7 @@ class ScreenshotGeneratorE2E {
         }
 
         // 02: Media Attribution & Triage
-        runDesktopComposeUiTest(width = 1080, height = 1920) {
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
             setContent {
                 AppTheme(darkTheme = false) {
                     Surface(modifier = Modifier.fillMaxSize()) {
@@ -309,7 +322,7 @@ class ScreenshotGeneratorE2E {
         }
 
         // 03: Patient Provisioning Dialog
-        runDesktopComposeUiTest(width = 1080, height = 1920) {
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
             setContent {
                 AppTheme(darkTheme = false) {
                     Surface(modifier = Modifier.fillMaxSize()) {
@@ -336,7 +349,7 @@ class ScreenshotGeneratorE2E {
         }
 
         // 04: Patient Directory & Dashboard
-        runDesktopComposeUiTest(width = 1080, height = 1920) {
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
             setContent {
                 AppTheme(darkTheme = false) {
                     Surface(modifier = Modifier.fillMaxSize()) {
@@ -352,7 +365,7 @@ class ScreenshotGeneratorE2E {
         }
 
         // Burger dropdown menu from patient list screen
-        runDesktopComposeUiTest(width = 1080, height = 1920) {
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
             setContent {
                 AppTheme(darkTheme = false) {
                     Surface(modifier = Modifier.fillMaxSize()) {
@@ -370,7 +383,7 @@ class ScreenshotGeneratorE2E {
         }
 
         // 05: SDC Form Builder
-        runDesktopComposeUiTest(width = 1080, height = 1920) {
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
             setContent {
                 AppTheme(darkTheme = false) {
                     Surface(modifier = Modifier.fillMaxSize()) {
@@ -390,7 +403,7 @@ class ScreenshotGeneratorE2E {
         }
 
         // 06: Specialized Clinical Controls (Body Map, FACES Pain, Fitzpatrick)
-        runDesktopComposeUiTest(width = 1080, height = 1920) {
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
             setContent {
                 AppTheme(darkTheme = false) {
                     Scaffold(
@@ -456,7 +469,7 @@ class ScreenshotGeneratorE2E {
         }
 
         // 07: Longitudinal Encounters History
-        runDesktopComposeUiTest(width = 1080, height = 1920) {
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
             setContent {
                 AppTheme(darkTheme = false) {
                     Surface(modifier = Modifier.fillMaxSize()) {
@@ -475,7 +488,7 @@ class ScreenshotGeneratorE2E {
         }
 
         // 08: Encounter & Questionnaire Response Detail
-        runDesktopComposeUiTest(width = 1080, height = 1920) {
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
             setContent {
                 AppTheme(darkTheme = false) {
                     Surface(modifier = Modifier.fillMaxSize()) {
@@ -507,7 +520,7 @@ class ScreenshotGeneratorE2E {
         runBlocking {
             deps.questionnaireRepository.createQuestionnaire("Burn Assessment Protocol", 2, "Left Arm, Right Arm")
         }
-        runDesktopComposeUiTest(width = 1080, height = 1920) {
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
             setContent {
                 AppTheme(darkTheme = false) {
                     Surface(modifier = Modifier.fillMaxSize()) {
@@ -528,7 +541,7 @@ class ScreenshotGeneratorE2E {
         }
 
         // 10: Encrypted Dataset Export (Argon2id + AES-256)
-        runDesktopComposeUiTest(width = 1080, height = 1920) {
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
             setContent {
                 AppTheme(darkTheme = false) {
                     Surface(modifier = Modifier.fillMaxSize()) {
@@ -550,7 +563,7 @@ class ScreenshotGeneratorE2E {
         }
 
         // 11: DICOM Part 10 Inspector & PACS Viewer
-        runDesktopComposeUiTest(width = 1080, height = 1920) {
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
             setContent {
                 AppTheme(darkTheme = false) {
                     Scaffold(
@@ -591,7 +604,7 @@ class ScreenshotGeneratorE2E {
         }
 
         // 12: Hardware Security Shield & Lockout
-        runDesktopComposeUiTest(width = 1080, height = 1920) {
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
             setContent {
                 AppTheme(darkTheme = false) {
                     Surface(
@@ -641,7 +654,7 @@ class ScreenshotGeneratorE2E {
 
         // 13: Global Localization (Hebrew RTL)
         currentLanguageState.value = "he"
-        runDesktopComposeUiTest(width = 1080, height = 1920) {
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
             setContent {
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                     AppTheme(darkTheme = false) {
@@ -658,5 +671,143 @@ class ScreenshotGeneratorE2E {
             captureAndroidAndIphone(this, "android-13-i18n-rtl")
         }
         currentLanguageState.value = "en"
+
+        // 14: Guided Craniofacial & Cornea/Nose Silhouette Viewfinder
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
+            setContent {
+                AppTheme(darkTheme = true) {
+                    Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                val w = size.width
+                                val h = size.height
+                                val gridColor = Color.White.copy(alpha = 0.08f)
+                                drawLine(gridColor, Offset(w / 3, 0f), Offset(w / 3, h), strokeWidth = 1.5f)
+                                drawLine(gridColor, Offset(2 * w / 3, 0f), Offset(2 * w / 3, h), strokeWidth = 1.5f)
+                                drawLine(gridColor, Offset(0f, h / 3), Offset(w, h / 3), strokeWidth = 1.5f)
+                                drawLine(gridColor, Offset(0f, 2 * h / 3), Offset(w, 2 * h / 3), strokeWidth = 1.5f)
+                            }
+                            SilhouetteOverlay(
+                                silhouetteType = SilhouetteType.PROFILE_CORNEA_NOSE_LEFT,
+                                isVisible = true,
+                            )
+                            LevelerOverlay(pitch = 0.5f, roll = -0.2f)
+                            ControlsLayer(
+                                state =
+                                    ControlsState(
+                                        stepName = "Step 1 of 3: Left Profile (Cornea & Nose)",
+                                        count = 1,
+                                        total = 3,
+                                        isCapturing = false,
+                                        hasMultipleCameras = true,
+                                    ),
+                                onCapture = {},
+                                onToggleLens = {},
+                                onCancel = {},
+                            )
+                        }
+                    }
+                }
+            }
+            waitForIdle()
+            captureAndroidAndIphone(this, "android-14-silhouette-capture", "iphone-10-silhouette-capture")
+        }
+
+        // 15: 3-Angle Facial & Cornea Series SDC Protocol Widget
+        runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
+            val items =
+                listOf(
+                    Questionnaire.Item
+                        .Builder(
+                            linkId =
+                                dev.ohs.fhir.model.r4.String
+                                    .Builder()
+                                    .apply { value = "profile_left" },
+                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        ).apply {
+                            text =
+                                dev.ohs.fhir.model.r4.String
+                                    .Builder()
+                                    .apply { value = "Left Profile (Cornea & Nose)" }
+                        }.build(),
+                    Questionnaire.Item
+                        .Builder(
+                            linkId =
+                                dev.ohs.fhir.model.r4.String
+                                    .Builder()
+                                    .apply { value = "front_view" },
+                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        ).apply {
+                            text =
+                                dev.ohs.fhir.model.r4.String
+                                    .Builder()
+                                    .apply { value = "Front View" }
+                        }.build(),
+                    Questionnaire.Item
+                        .Builder(
+                            linkId =
+                                dev.ohs.fhir.model.r4.String
+                                    .Builder()
+                                    .apply { value = "profile_right" },
+                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        ).apply {
+                            text =
+                                dev.ohs.fhir.model.r4.String
+                                    .Builder()
+                                    .apply { value = "Right Profile (Cornea & Nose)" }
+                        }.build(),
+                )
+
+            setContent {
+                AppTheme(darkTheme = false) {
+                    Scaffold(
+                        topBar = {
+                            TopAppBar(
+                                title = { Text("Facial Examination") },
+                                navigationIcon = {
+                                    IconButton(onClick = {}) {
+                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                                    }
+                                },
+                            )
+                        },
+                    ) { padding ->
+                        Column(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .padding(padding)
+                                    .padding(horizontal = 16.dp)
+                                    .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Standard Craniofacial & Ophthalmic Series",
+                                style = MaterialTheme.typography.titleLarge,
+                            )
+                            Text(
+                                text =
+                                    "Standardized multi-angle photographic protocol capturing corneal curvature, nasal projection, " +
+                                        "and frontal symmetry.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            FacialSeriesCardControl(
+                                title = "3-Angle Facial & Cornea Series",
+                                items = items,
+                                answers = mapOf("profile_left" to "mock_left.jpg"),
+                                existingAttachments = emptyList(),
+                                readOnly = false,
+                                onCaptureSeries = {},
+                                onCaptureSingle = {},
+                            )
+                        }
+                    }
+                }
+            }
+            waitForIdle()
+            captureAndroidAndIphone(this, "android-15-facial-series", "iphone-11-facial-series")
+        }
     }
 }

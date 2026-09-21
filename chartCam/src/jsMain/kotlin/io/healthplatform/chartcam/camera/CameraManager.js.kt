@@ -103,6 +103,7 @@ class JsCameraManager : CameraManager {
                 videoElement.srcObject = stream
                 null
             }.catch { err ->
+                // allow-exception
                 consoleError("Error accessing camera: ", err)
                 null
             }

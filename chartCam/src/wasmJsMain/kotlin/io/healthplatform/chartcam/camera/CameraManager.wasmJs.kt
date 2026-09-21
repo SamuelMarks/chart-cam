@@ -134,6 +134,7 @@ class JsCameraManager : CameraManager {
                 videoElement.play()
                 null
             }.catch { err ->
+                // allow-exception
                 consoleError("Error accessing camera: ", err)
                 null
             }

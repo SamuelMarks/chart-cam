@@ -590,6 +590,27 @@ class FhirBundleOrchestratorTest {
             repository.savePatient(patient)
             val res2 = FhirBundleOrchestrator.createEncounterBundle(repository, "non-existent-enc", "p-only")
             assertTrue(res2.isFailure)
+
+            // Test when getPatientCatching returns failure Result
+            val failingPatientRepo =
+                object : FhirRepository(db) {
+                    override suspend fun getPatientCatching(id: String): Result<Patient?> =
+                        Result.failure(IllegalStateException("Simulated patient fetch failure"))
+                }
+            val resFailingPatient = FhirBundleOrchestrator.createEncounterBundle(failingPatientRepo, "enc-1", "p-1")
+            assertTrue(resFailingPatient.isFailure)
+
+            // Test when getEncounterCatching returns failure Result
+            val failingEncounterRepo =
+                object : FhirRepository(db) {
+                    override suspend fun getPatientCatching(id: String): Result<Patient?> =
+                        Result.success(patient)
+
+                    override suspend fun getEncounterCatching(id: String): Result<Encounter?> =
+                        Result.failure(IllegalStateException("Simulated encounter fetch failure"))
+                }
+            val resFailingEncounter = FhirBundleOrchestrator.createEncounterBundle(failingEncounterRepo, "enc-1", "p-only")
+            assertTrue(resFailingEncounter.isFailure)
         }
 
     /**

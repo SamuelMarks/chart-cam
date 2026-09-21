@@ -129,6 +129,9 @@ enum class WidgetType {
     /** SEGMENTED_TILES */
     SEGMENTED_TILES,
 
+    /** FACIAL_PROFILE_SERIES */
+    FACIAL_PROFILE_SERIES,
+
     /** GROUP */
     GROUP,
 }
@@ -199,7 +202,26 @@ class QuestionnaireBuilderViewModel(
     private fun resolveWidgetTypeFromFhir(fhirItem: Questionnaire.Item): WidgetType {
         val rep = fhirItem.repeats
         val isRepeats = rep != null && rep.value == true
-        return when (fhirItem.getItemControl()) {
+        val control = fhirItem.getItemControl()
+        val specialized = resolveSpecializedControl(control)
+        val typeVal = fhirItem.type.value
+        val fhirType = if (typeVal != null) typeVal else Questionnaire.QuestionnaireItemType.String
+
+        return when {
+            specialized != null -> specialized
+            control == "check-box" -> if (isRepeats) WidgetType.MULTI_SELECT else WidgetType.SINGLE_SELECT
+            else -> resolveWidgetTypeFallback(fhirType, isRepeats)
+        }
+    }
+
+    /**
+     * Resolves specialized clinical widget types based on the SDC itemControl code.
+     *
+     * @param control The SDC itemControl code string.
+     * @return The corresponding [WidgetType], or null if not a specialized control.
+     */
+    private fun resolveSpecializedControl(control: String?): WidgetType? =
+        when (control) {
             "photo" -> WidgetType.PHOTO_CAMERA
             "video" -> WidgetType.VIDEO_CAMERA
             "switch" -> WidgetType.SWITCH
@@ -208,14 +230,9 @@ class QuestionnaireBuilderViewModel(
             "palette", "color-palette", "fitzpatrick" -> WidgetType.FITZPATRICK_PALETTE
             "body-map" -> WidgetType.BODY_MAP
             "segmented-control", "choice-cards" -> WidgetType.SEGMENTED_TILES
-            "check-box" -> if (isRepeats) WidgetType.MULTI_SELECT else WidgetType.SINGLE_SELECT
-            else -> {
-                val typeVal = fhirItem.type.value
-                val fhirType = if (typeVal != null) typeVal else Questionnaire.QuestionnaireItemType.String
-                resolveWidgetTypeFallback(fhirType, isRepeats)
-            }
+            "facial-profile-series" -> WidgetType.FACIAL_PROFILE_SERIES
+            else -> null
         }
-    }
 
     /**
      * Fallback resolution of [WidgetType] based on standard FHIR item types.
@@ -556,6 +573,9 @@ class QuestionnaireBuilderViewModel(
         applyChoiceOptions(itemBuilder, builderItem, fhirType)
         applyItemControl(itemBuilder, builderItem)
         applyEnableWhen(itemBuilder, builderItem)
+        if (builderItem.widgetType == WidgetType.FACIAL_PROFILE_SERIES) {
+            applyFacialSeriesItems(itemBuilder, builderItem.linkId)
+        }
         return itemBuilder
     }
 
@@ -676,6 +696,7 @@ class QuestionnaireBuilderViewModel(
             WidgetType.FITZPATRICK_PALETTE -> "palette"
             WidgetType.BODY_MAP -> "body-map"
             WidgetType.SEGMENTED_TILES -> "segmented-control"
+            WidgetType.FACIAL_PROFILE_SERIES -> "facial-profile-series"
             WidgetType.SINGLE_SELECT, WidgetType.MULTI_SELECT -> "check-box"
             else -> null
         }
@@ -765,7 +786,9 @@ class QuestionnaireBuilderViewModel(
             WidgetType.RANGE,
             WidgetType.PAIN_SCALE,
             -> Questionnaire.QuestionnaireItemType.Integer
-            WidgetType.GROUP -> Questionnaire.QuestionnaireItemType.Group
+            WidgetType.GROUP,
+            WidgetType.FACIAL_PROFILE_SERIES,
+            -> Questionnaire.QuestionnaireItemType.Group
         }
 
     /**
