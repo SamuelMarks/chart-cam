@@ -96,9 +96,11 @@ suspend fun CryptoService.decryptCatching(
     password: String,
 ): Result<String> =
     runSuspendCatching {
-        val decrypted = decrypt(base64Data, password)
+        decrypt(base64Data, password)
+    }.flatMap { decrypted ->
         if (decrypted.isEmpty() && base64Data.isNotEmpty()) {
-            error("Decryption failed: payload could not be authenticated")
+            Result.failure(IllegalStateException("Decryption failed: payload could not be authenticated"))
+        } else {
+            Result.success(decrypted)
         }
-        decrypted
     }

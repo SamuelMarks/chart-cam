@@ -25,6 +25,7 @@ object AirGappedBundleTransferService {
     private const val PREFIX = "CHARTCAM_PART:"
     private const val PROTO_PREFIX = "CHARTCAM_PROTO_PART:"
     private const val CHUNK_PARTS_COUNT = 4
+    private const val CHUNK_DATA_INDEX = 3
 
     /**
      * Serializes a FHIR [Bundle] to binary Protobuf, encodes to Base64, and splits into QR chunks.
@@ -53,50 +54,115 @@ object AirGappedBundleTransferService {
         }
 
     /**
+     * Parses a single chunk string into [ChunkMeta].
+     *
+     * @param chunk The raw chunk string.
+     * @param prefix Expected protocol prefix.
+     * @return A [Result] enclosing [ChunkMeta] or failure on invalid formatting.
+     */
+    private fun parseSingleChunk(
+        chunk: String,
+        prefix: String,
+    ): Result<ChunkMeta> {
+        if (!chunk.startsWith(prefix)) {
+            return Result.failure(IllegalArgumentException("Invalid chunk prefix: $chunk"))
+        }
+        val parts = chunk.removePrefix(prefix).split(":", limit = CHUNK_PARTS_COUNT)
+        val idx = if (parts.size == CHUNK_PARTS_COUNT) parts[0].toIntOrNull() else null
+        val tot = if (parts.size == CHUNK_PARTS_COUNT) parts[1].toIntOrNull() else null
+        val chk = if (parts.size == CHUNK_PARTS_COUNT) parts[2].toLongOrNull() else null
+        return if (idx != null && tot != null && chk != null) {
+            Result.success(ChunkMeta(idx, tot, chk, parts[CHUNK_DATA_INDEX]))
+        } else {
+            val msg =
+                if (parts.size != CHUNK_PARTS_COUNT) {
+                    "Malformed chunk structure: $chunk"
+                } else {
+                    val invalidField =
+                        if (idx == null) {
+                            "index: ${parts[0]}"
+                        } else if (tot == null) {
+                            "total: ${parts[1]}"
+                        } else {
+                            "checksum: ${parts[2]}"
+                        }
+                    "Invalid $invalidField"
+                }
+            Result.failure(IllegalArgumentException(msg))
+        }
+    }
+
+    /**
+     * Validates total count, missing indices, and checksum integrity of parsed chunks.
+     *
+     * @param parsed The list of parsed chunk metadata items.
+     * @return A [Result] enclosing the joined payload or failure on integrity check.
+     */
+    private fun validateParsedChunks(parsed: List<ChunkMeta>): Result<String> {
+        val total = parsed.first().total
+        val checksum = parsed.first().checksum
+        val sorted = parsed.distinctBy { it.index }.sortedBy { it.index }
+        val reassembled = sorted.joinToString("") { it.data }
+        val reassembledChecksum = calculateSimpleChecksum(reassembled)
+
+        val integrityError =
+            when {
+                parsed.size < total ->
+                    "Incomplete chunk set: received ${parsed.size} of $total"
+                sorted.size != total ->
+                    "Missing chunks: expected $total unique indices, found ${sorted.size}"
+                reassembledChecksum != checksum ->
+                    "Checksum mismatch: expected $checksum but calculated $reassembledChecksum"
+                else -> null
+            }
+        return if (integrityError != null) {
+            Result.failure(IllegalStateException(integrityError))
+        } else {
+            Result.success(reassembled)
+        }
+    }
+
+    /**
+     * Helper to parse, validate, sort, and reconstruct QR chunk payloads without throwing exceptions.
+     *
+     * @param chunks The received chunk strings.
+     * @param expectedPrefix The expected protocol prefix.
+     * @return A [Result] enclosing the reassembled payload string.
+     */
+    private fun parseAndValidateChunks(
+        chunks: List<String>,
+        expectedPrefix: String,
+    ): Result<String> {
+        val parsed = mutableListOf<ChunkMeta>()
+        var firstErr: Throwable? = null
+        for (chunk in chunks) {
+            val res = parseSingleChunk(chunk, expectedPrefix)
+            val err = res.exceptionOrNull()
+            if (err != null) {
+                if (firstErr == null) firstErr = err
+            } else {
+                parsed.add(res.getOrThrow())
+            }
+        }
+        return when {
+            chunks.isEmpty() -> Result.failure(IllegalArgumentException("Chunk list cannot be empty"))
+            firstErr != null -> Result.failure(firstErr)
+            else -> validateParsedChunks(parsed)
+        }
+    }
+
+    /**
      * Assembles a collection of scanned Protobuf QR chunk strings into the original [Bundle].
      *
      * @param chunks The received chunk strings (order does not matter).
      * @return A [Result] enclosing the reassembled and decoded [Bundle].
      */
     fun assembleQrProtobufChunks(chunks: List<String>): Result<Bundle> =
-        runCatching {
-            if (chunks.isEmpty()) error("Chunk list cannot be empty")
-            val parsed =
-                chunks.map { chunk ->
-                    if (!chunk.startsWith(PROTO_PREFIX)) error("Invalid chunk prefix: $chunk")
-                    val body = chunk.removePrefix(PROTO_PREFIX)
-                    val parts = body.split(":", limit = CHUNK_PARTS_COUNT)
-                    if (parts.size != CHUNK_PARTS_COUNT) error("Malformed chunk structure: $chunk")
-                    val index = parts[0].toIntOrNull() ?: error("Invalid index: ${parts[0]}")
-                    val total = parts[1].toIntOrNull() ?: error("Invalid total: ${parts[1]}")
-                    val checksum = parts[2].toLongOrNull() ?: error("Invalid checksum: ${parts[2]}")
-                    val data = parts[3]
-                    ChunkMeta(index, total, checksum, data)
-                }
-
-            val total = parsed.first().total
-            val checksum = parsed.first().checksum
-            if (parsed.size < total) {
-                error("Incomplete chunk set: received ${parsed.size} of $total")
-            }
-
-            val sorted = parsed.distinctBy { it.index }.sortedBy { it.index }
-            if (sorted.size != total) {
-                error("Missing chunks: expected $total unique indices, found ${sorted.size}")
-            }
-
-            val reassembled = sorted.joinToString("") { it.data }
-            val reassembledChecksum = calculateSimpleChecksum(reassembled)
-            if (reassembledChecksum != checksum) {
-                error("Checksum mismatch: expected $checksum but calculated $reassembledChecksum")
-            }
-
+        parseAndValidateChunks(chunks, PROTO_PREFIX).flatMap { reassembled ->
             val decodedBase64 =
                 reassembled.decodeBase64()
-                    ?: error("Failed to decode base64 protobuf payload")
-            decodedBase64.toByteArray()
-        }.flatMap { rawBytes ->
-            FhirProtobufParser.decodeFromProtobuf<Bundle>(rawBytes)
+                    ?: return@flatMap Result.failure(IllegalStateException("Failed to decode base64 protobuf payload"))
+            FhirProtobufParser.decodeFromProtobuf<Bundle>(decodedBase64.toByteArray())
         }
 
     /**
@@ -127,20 +193,23 @@ object AirGappedBundleTransferService {
     fun chunkBundleForQr(
         bundleJson: String,
         maxChunkSize: Int = 800,
-    ): Result<List<String>> =
-        runCatching {
-            if (bundleJson.isBlank()) error("Bundle payload cannot be blank")
-            val totalLength = bundleJson.length
-            val numChunks = (totalLength + maxChunkSize - 1) / maxChunkSize
-            val checksum = calculateSimpleChecksum(bundleJson)
+    ): Result<List<String>> {
+        if (bundleJson.isBlank()) {
+            return Result.failure(IllegalArgumentException("Bundle payload cannot be blank"))
+        }
+        val totalLength = bundleJson.length
+        val numChunks = (totalLength + maxChunkSize - 1) / maxChunkSize
+        val checksum = calculateSimpleChecksum(bundleJson)
 
+        val list =
             (0 until numChunks).map { index ->
                 val start = index * maxChunkSize
                 val end = minOf(start + maxChunkSize, totalLength)
                 val partData = bundleJson.substring(start, end)
                 "$PREFIX$index:$numChunks:$checksum:$partData"
             }
-        }
+        return Result.success(list)
+    }
 
     /**
      * Assembles a collection of scanned QR chunk strings into the original serialized bundle JSON.
@@ -148,41 +217,7 @@ object AirGappedBundleTransferService {
      * @param chunks The received chunk strings (order does not matter).
      * @return A [Result] enclosing the reassembled JSON string.
      */
-    fun assembleQrChunks(chunks: List<String>): Result<String> =
-        runCatching {
-            if (chunks.isEmpty()) error("Chunk list cannot be empty")
-            val parsed =
-                chunks.map { chunk ->
-                    if (!chunk.startsWith(PREFIX)) error("Invalid chunk prefix: $chunk")
-                    val body = chunk.removePrefix(PREFIX)
-                    val parts = body.split(":", limit = CHUNK_PARTS_COUNT)
-                    if (parts.size != CHUNK_PARTS_COUNT) error("Malformed chunk structure: $chunk")
-                    val index = parts[0].toIntOrNull() ?: error("Invalid index: ${parts[0]}")
-                    val total = parts[1].toIntOrNull() ?: error("Invalid total: ${parts[1]}")
-                    val checksum = parts[2].toLongOrNull() ?: error("Invalid checksum: ${parts[2]}")
-                    val data = parts[3]
-                    ChunkMeta(index, total, checksum, data)
-                }
-
-            val total = parsed.first().total
-            val checksum = parsed.first().checksum
-            if (parsed.size < total) {
-                error("Incomplete chunk set: received ${parsed.size} of $total")
-            }
-
-            val sorted = parsed.distinctBy { it.index }.sortedBy { it.index }
-            if (sorted.size != total) {
-                error("Missing chunks: expected $total unique indices, found ${sorted.size}")
-            }
-
-            val reassembled = sorted.joinToString("") { it.data }
-            val reassembledChecksum = calculateSimpleChecksum(reassembled)
-            if (reassembledChecksum != checksum) {
-                error("Checksum mismatch: expected $checksum but calculated $reassembledChecksum")
-            }
-
-            reassembled
-        }
+    fun assembleQrChunks(chunks: List<String>): Result<String> = parseAndValidateChunks(chunks, PREFIX)
 
     /**
      * Ingests a serialized bundle payload directly into the local repository offline.

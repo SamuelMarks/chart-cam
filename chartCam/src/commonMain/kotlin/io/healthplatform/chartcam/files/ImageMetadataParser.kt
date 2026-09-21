@@ -113,7 +113,7 @@ object ImageMetadataParser {
 
     /**
      * Parses metadata from raw image bytes.
-     * Guarantees never to throw unhandled exceptions on corrupted or truncated inputs.
+     * Guarantees never to fail unexpectedly on corrupted or truncated inputs.
      *
      * @param bytes The raw image byte array.
      * @return The parsed [ImageMetadata], marked as corrupted if the format is invalid.

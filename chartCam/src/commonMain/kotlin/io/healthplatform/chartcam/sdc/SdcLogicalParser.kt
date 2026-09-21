@@ -17,17 +17,28 @@ internal class SdcLogicalParser(
     private var pos: Int = 0
 
     /**
-     * Parses the logical expression into a boolean result.
+     * Parses the logical expression into a boolean result wrapped in a [Result].
      *
-     * @return The evaluated boolean result.
+     * @return The evaluated boolean result enclosed in a [Result].
      */
-    fun parse(): Boolean {
-        val result = parseOr()
-        skipWhitespace()
-        require(pos >= input.length) {
-            "Unexpected character at position $pos in expression: $input"
+    fun parse(): Result<Boolean> {
+        val parsed = parseOr()
+        val error =
+            if (parsed.isFailure) {
+                parsed.exceptionOrNull()
+            } else {
+                skipWhitespace()
+                if (pos < input.length) {
+                    IllegalArgumentException("Unexpected character at position $pos in expression: $input")
+                } else {
+                    null
+                }
+            }
+        return if (error != null) {
+            Result.failure(error)
+        } else {
+            parsed
         }
-        return result
     }
 
     /**
@@ -58,44 +69,55 @@ internal class SdcLogicalParser(
     /**
      * Parses logical OR expressions (||).
      *
-     * @return The evaluated boolean result.
+     * @return The evaluated boolean result enclosed in a [Result].
      */
-    private fun parseOr(): Boolean {
-        var left = parseAnd()
-        while (match("||")) {
-            val right = parseAnd()
-            left = left || right
+    private fun parseOr(): Result<Boolean> {
+        var res = parseAnd()
+        while (res.isSuccess && match("||")) {
+            val left = res.getOrThrow()
+            res = parseAnd().map { left || it }
         }
-        return left
+        return res
     }
 
     /**
      * Parses logical AND expressions (&&).
      *
-     * @return The evaluated boolean result.
+     * @return The evaluated boolean result enclosed in a [Result].
      */
-    private fun parseAnd(): Boolean {
-        var left = parseFactor()
-        while (match("&&")) {
-            val right = parseFactor()
-            left = left && right
+    private fun parseAnd(): Result<Boolean> {
+        var res = parseFactor()
+        while (res.isSuccess && match("&&")) {
+            val left = res.getOrThrow()
+            res = parseFactor().map { left && it }
         }
-        return left
+        return res
     }
 
     /**
      * Parses a factor (either a parenthesized expression or an atomic comparison).
      *
-     * @return The evaluated boolean result.
+     * @return The evaluated boolean result enclosed in a [Result].
      */
-    private fun parseFactor(): Boolean {
+    private fun parseFactor(): Result<Boolean> {
         skipWhitespace()
         return when {
-            match("!") -> !parseFactor()
+            match("!") -> parseFactor().map { !it }
             match("(") -> {
                 val res = parseOr()
-                require(match(")")) { "Missing closing parenthesis in expression: $input" }
-                res
+                val error =
+                    if (res.isFailure) {
+                        res.exceptionOrNull()
+                    } else if (!match(")")) {
+                        IllegalArgumentException("Missing closing parenthesis in expression: $input")
+                    } else {
+                        null
+                    }
+                if (error != null) {
+                    Result.failure(error)
+                } else {
+                    res
+                }
             }
             else -> parseComparison()
         }
@@ -116,9 +138,9 @@ internal class SdcLogicalParser(
     /**
      * Parses an atomic comparison expression or boolean literal.
      *
-     * @return The evaluated boolean outcome.
+     * @return The evaluated boolean outcome enclosed in a [Result].
      */
-    private fun parseComparison(): Boolean {
+    private fun parseComparison(): Result<Boolean> {
         skipWhitespace()
         val start = pos
         var inQuotes = false
@@ -138,16 +160,22 @@ internal class SdcLogicalParser(
             pos++
         }
         val token = input.substring(start, pos).trim()
-        require(token.isNotEmpty()) { "Empty comparison token in expression: $input" }
+        if (token.isEmpty()) {
+            return Result.failure(
+                IllegalArgumentException("Empty comparison token in expression: $input"),
+            )
+        }
 
-        val found = findOperatorOutsideQuotes(token) ?: return evaluateBooleanToken(token)
-        val foundOp = found.first
-        val opIndex = found.second
-        val lhs = token.substring(0, opIndex).trim()
-        val rhs = token.substring(opIndex + foundOp.length).trim()
-
-        val numRes = compareNumeric(lhs, foundOp, rhs)
-        return numRes ?: compareStrings(lhs, foundOp, rhs)
+        val found = findOperatorOutsideQuotes(token)
+        return if (found == null) {
+            evaluateBooleanToken(token)
+        } else {
+            val (foundOp, opIndex) = found
+            val lhs = token.substring(0, opIndex).trim()
+            val rhs = token.substring(opIndex + foundOp.length).trim()
+            val numRes = compareNumeric(lhs, foundOp, rhs)
+            Result.success(numRes ?: compareStrings(lhs, foundOp, rhs))
+        }
     }
 
     /**
@@ -256,24 +284,28 @@ internal class SdcLogicalParser(
      * Evaluates a single token as a boolean literal or variable.
      *
      * @param token The token string.
-     * @return Evaluated boolean value.
+     * @return Evaluated boolean value enclosed in a [Result].
      */
-    private fun evaluateBooleanToken(token: String): Boolean =
+    private fun evaluateBooleanToken(token: String): Result<Boolean> =
         when (token.lowercase()) {
-            "true" -> true
-            "false" -> false
+            "true" -> Result.success(true)
+            "false" -> Result.success(false)
             else -> {
                 if (token.startsWith("%")) {
                     val varName = token.removePrefix("%")
                     val v = answers[varName]
-                    when (v) {
-                        is Boolean -> v
-                        is String -> v.lowercase() == "true"
-                        is Number -> v.toDouble() != 0.0
-                        else -> v != null
-                    }
+                    val b =
+                        when (v) {
+                            is Boolean -> v
+                            is String -> v.lowercase() == "true"
+                            is Number -> v.toDouble() != 0.0
+                            else -> v != null
+                        }
+                    Result.success(b)
                 } else {
-                    error("Invalid boolean literal or unresolved variable: $token")
+                    Result.failure(
+                        IllegalStateException("Invalid boolean literal or unresolved variable: $token"),
+                    )
                 }
             }
         }

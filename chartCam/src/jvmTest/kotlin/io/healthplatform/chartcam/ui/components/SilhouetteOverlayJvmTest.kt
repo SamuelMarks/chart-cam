@@ -16,6 +16,40 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlin.test.Test
 
+private val minimalBmp =
+    byteArrayOf(
+        0x42,
+        0x4D,
+        0x1E,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x1A,
+        0x00,
+        0x00,
+        0x00,
+        0x0C,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x00,
+        0x01,
+        0x00,
+        0x01,
+        0x00,
+        0x18,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+    )
+
 /** Mock sensor manager for testing silhouette overlay. */
 private class MockSilhouetteSensor(
     initialPitch: Double = 0.0,
@@ -23,6 +57,10 @@ private class MockSilhouetteSensor(
 ) : SensorManager {
     private val _orientation = MutableStateFlow(OrientationData(initialPitch, initialRoll))
     override val orientation = _orientation.asStateFlow()
+
+    fun update(pitch: Double, roll: Double) {
+        _orientation.value = OrientationData(pitch, roll)
+    }
 
     override fun startListening() {}
 
@@ -79,13 +117,59 @@ class SilhouetteOverlayJvmTest {
                 SilhouetteOverlay(
                     silhouetteType = SilhouetteType.PROFILE_CORNEA_NOSE_RIGHT,
                     sensorManager = sensor,
-                    ghostImageBytes = ByteArray(10),
+                    ghostImageBytes = minimalBmp,
                 )
             }
             waitForIdle()
             onNodeWithContentDescription(
                 "On-screen patient positioning silhouette: Position side profile: align corneal apex in the arc and nasal tip in the box. Camera is level",
             ).assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun testSilhouetteOverlayWithNullSensor() {
+        setAppLanguage("en")
+        runComposeUiTest {
+            setContent {
+                SilhouetteOverlay(
+                    silhouetteType = SilhouetteType.PROFILE_CORNEA_NOSE_LEFT,
+                    sensorManager = null,
+                )
+            }
+            waitForIdle()
+            onNodeWithContentDescription(
+                "On-screen patient positioning silhouette: Position side profile: align corneal apex in the arc and nasal tip in the box. Camera is level",
+            ).assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun testSilhouetteOverlaySensorTransition() {
+        setAppLanguage("en")
+        val sensor = MockSilhouetteSensor(10.0, 10.0)
+        runComposeUiTest {
+            setContent {
+                SilhouetteOverlay(
+                    silhouetteType = SilhouetteType.PROFILE_CORNEA_NOSE_LEFT,
+                    sensorManager = sensor,
+                )
+            }
+            waitForIdle()
+            onNodeWithContentDescription(
+                "On-screen patient positioning silhouette: Position side profile: align corneal apex in the arc and nasal tip in the box. Camera is tilted",
+            ).assertIsDisplayed()
+
+            // Transition sensor orientation to level
+            sensor.update(0.0, 0.0)
+            waitForIdle()
+            onNodeWithContentDescription(
+                "On-screen patient positioning silhouette: Position side profile: align corneal apex in the arc and nasal tip in the box. Camera is level",
+            ).assertIsDisplayed()
+
+            // Keep sensor level (verifies lastLevelAnnounced idempotence)
+            sensor.update(1.0, 1.0)
+            waitForIdle()
         }
     }
 
@@ -99,6 +183,34 @@ class SilhouetteOverlayJvmTest {
                 SilhouetteOverlay(
                     silhouetteType = SilhouetteType.PROFILE_CORNEA_NOSE_LEFT,
                     isVisible = false,
+                )
+            }
+            waitForIdle()
+        }
+    }
+
+    @Test
+    fun testSilhouetteOverlayContentPermutations() {
+        runComposeUiTest {
+            setContent {
+                // Test all direct content combinations
+                SilhouetteOverlayContent(
+                    silhouetteType = SilhouetteType.PROFILE_CORNEA_NOSE_LEFT,
+                    isLevel = false,
+                    ghostImageBytes = ByteArray(10), // Invalid bytes branch
+                )
+                SilhouetteOverlayContent(
+                    silhouetteType = SilhouetteType.PROFILE_CORNEA_NOSE_RIGHT,
+                    isLevel = false,
+                )
+                SilhouetteOverlayContent(
+                    silhouetteType = SilhouetteType.FRONTAL_FACE,
+                    isLevel = true,
+                    ghostImageBytes = minimalBmp, // Valid image render branch
+                )
+                SilhouetteOverlayContent(
+                    silhouetteType = SilhouetteType.NONE,
+                    isLevel = true,
                 )
             }
             waitForIdle()

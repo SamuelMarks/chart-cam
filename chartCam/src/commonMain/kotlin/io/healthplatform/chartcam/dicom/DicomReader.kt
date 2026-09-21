@@ -67,16 +67,20 @@ object DicomReader {
      * @param bytes Raw DICOM Part 10 byte array.
      * @return A [Result] enclosing the decoded [DicomDataset], or failure if invalid.
      */
-    fun read(bytes: ByteArray): Result<DicomDataset> =
-        runCatching {
-            if (bytes.size < PREAMBLE_LEN + MAGIC_LEN) {
-                error("Byte stream too short for DICOM Part 10 file")
+    fun read(bytes: ByteArray): Result<DicomDataset> {
+        val validationError =
+            when {
+                bytes.size < PREAMBLE_LEN + MAGIC_LEN ->
+                    "Byte stream too short for DICOM Part 10 file"
+                bytes.decodeToString(PREAMBLE_LEN, PREAMBLE_LEN + MAGIC_LEN) != MAGIC_DICM ->
+                    "Missing DICM prefix at byte 128: found '${bytes.decodeToString(PREAMBLE_LEN, PREAMBLE_LEN + MAGIC_LEN)}'"
+                else -> null
             }
-            val magic = bytes.decodeToString(PREAMBLE_LEN, PREAMBLE_LEN + MAGIC_LEN)
-            if (magic != MAGIC_DICM) {
-                error("Missing DICM prefix at byte 128: found '$magic'")
-            }
+        if (validationError != null) {
+            return Result.failure(IllegalArgumentException(validationError))
+        }
 
+        return runCatching {
             val offset = PREAMBLE_LEN + MAGIC_LEN
             val buffer = Buffer()
             buffer.write(bytes, offset, bytes.size - offset)
@@ -84,6 +88,7 @@ object DicomReader {
             val elements = parseAllElements(buffer)
             buildDataset(elements)
         }
+    }
 
     /**
      * Parses all DICOM elements from the payload buffer until exhausted.

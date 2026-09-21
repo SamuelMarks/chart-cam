@@ -11,7 +11,6 @@ import dev.ohs.fhir.model.r4.Practitioner
 import io.healthplatform.chartcam.models.TokenResponse
 import io.healthplatform.chartcam.models.createFhirPractitioner
 import io.healthplatform.chartcam.storage.SecureStorage
-import io.healthplatform.chartcam.utils.runSuspendCatching
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +23,7 @@ import kotlin.time.Clock
 /**
  * Repository responsible for user authentication and session management.
  * Authentication flows rely on locally hashed credentials and managed session tokens.
- * Functions may throw illegal state exceptions if operations are performed without valid session state.
+ * Functions return Result failure if operations are performed without valid session state.
  * Contains logic for local credential verification and storing the Practitioner context.
  *
  * @param storage The SecureStorage implementation used to store sensitive tokens and credentials.
@@ -135,45 +134,50 @@ open class AuthRepository(
     open suspend fun login(
         username: kotlin.String,
         password: kotlin.String,
-    ): Result<Practitioner> =
-        runSuspendCatching {
-            val hashKey = "hash_$username"
-            val storedHash = storage.getString(hashKey)
-            val inputHash = hashString(password, username)
+    ): Result<Practitioner> {
+        val hashKey = "hash_$username"
+        val storedHash = storage.getString(hashKey)
+        val inputHash = hashString(password, username)
 
-            if (storedHash != null) {
-                if (!constantTimeEquals(storedHash, inputHash)) {
-                    require(false) { "incorrect password" }
+        val failureError =
+            when {
+                storedHash != null && !constantTimeEquals(storedHash, inputHash) ->
+                    IllegalArgumentException("incorrect password")
+                password == "error" ->
+                    IllegalArgumentException("Invalid Credentials")
+                else -> {
+                    if (storedHash == null) storage.save(hashKey, inputHash)
+                    null
                 }
-            } else {
-                storage.save(hashKey, inputHash)
             }
 
-            if (password == "error") require(false) { "Invalid Credentials" }
-
-            val tokenResponse =
-                TokenResponse(
-                    accessToken = generateRandomToken("access_${username.hashCode()}"),
-                    refreshToken = generateRandomToken("refresh"),
-                    expiresIn = 3600,
-                    tokenType = "Bearer",
-                )
-
-            storage.save(KEY_ACCESS_TOKEN, tokenResponse.accessToken)
-            storage.save(KEY_REFRESH_TOKEN, tokenResponse.refreshToken)
-            storage.save(KEY_CURRENT_USERNAME, username)
-
-            val practitioner =
-                createFhirPractitioner(
-                    id = "prac_${username.hashCode()}",
-                    lastName = username,
-                    firstName = "Dr.",
-                    isActive = true,
-                )
-
-            _currentUser.value = practitioner
-            practitioner
+        if (failureError != null) {
+            return Result.failure(failureError)
         }
+
+        val tokenResponse =
+            TokenResponse(
+                accessToken = generateRandomToken("access_${username.hashCode()}"),
+                refreshToken = generateRandomToken("refresh"),
+                expiresIn = 3600,
+                tokenType = "Bearer",
+            )
+
+        storage.save(KEY_ACCESS_TOKEN, tokenResponse.accessToken)
+        storage.save(KEY_REFRESH_TOKEN, tokenResponse.refreshToken)
+        storage.save(KEY_CURRENT_USERNAME, username)
+
+        val practitioner =
+            createFhirPractitioner(
+                id = "prac_${username.hashCode()}",
+                lastName = username,
+                firstName = "Dr.",
+                isActive = true,
+            )
+
+        _currentUser.value = practitioner
+        return Result.success(practitioner)
+    }
 
     /**
      * Authenticates a pre-configured synthetic demo practitioner without requiring credential entry.

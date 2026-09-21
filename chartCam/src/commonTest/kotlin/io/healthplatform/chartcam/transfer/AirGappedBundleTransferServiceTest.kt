@@ -176,6 +176,7 @@ class AirGappedBundleTransferServiceTest {
         assertTrue(AirGappedBundleTransferService.chunkBundleForQr("").isFailure)
         assertTrue(AirGappedBundleTransferService.assembleQrChunks(emptyList()).isFailure)
         assertTrue(AirGappedBundleTransferService.assembleQrChunks(listOf("INVALID_CHUNK")).isFailure)
+        assertTrue(AirGappedBundleTransferService.assembleQrChunks(listOf("INVALID1", "INVALID2")).isFailure)
         assertTrue(AirGappedBundleTransferService.assembleQrChunks(listOf("CHARTCAM_PART:0:2:123")).isFailure)
         assertTrue(AirGappedBundleTransferService.assembleQrChunks(listOf("CHARTCAM_PART:abc:2:123:data")).isFailure)
         assertTrue(AirGappedBundleTransferService.assembleQrChunks(listOf("CHARTCAM_PART:0:abc:123:data")).isFailure)

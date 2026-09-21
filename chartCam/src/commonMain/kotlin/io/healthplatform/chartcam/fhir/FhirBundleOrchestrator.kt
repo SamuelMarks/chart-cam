@@ -31,18 +31,24 @@ object FhirBundleOrchestrator {
         encounterId: String,
         patientId: String,
         bundleType: Bundle.BundleType = Bundle.BundleType.Collection,
-    ): Result<Bundle> =
-        runSuspendCatching {
-            val cleanPatientId = patientId.removePrefix("Patient/")
-            val cleanEncounterId = encounterId.removePrefix("Encounter/")
+    ): Result<Bundle> {
+        val cleanPatientId = patientId.removePrefix("Patient/")
+        val cleanEncounterId = encounterId.removePrefix("Encounter/")
 
-            val patient =
-                repository.getPatientCatching(cleanPatientId).getOrNull()
-                    ?: error("Patient not found for ID: $cleanPatientId")
-            val encounter =
-                repository.getEncounterCatching(cleanEncounterId).getOrNull()
-                    ?: error("Encounter not found for ID: $cleanEncounterId")
+        val patient = repository.getPatientCatching(cleanPatientId).getOrNull()
+        val encounter = repository.getEncounterCatching(cleanEncounterId).getOrNull()
 
+        if (patient == null || encounter == null) {
+            val missing =
+                if (patient == null) {
+                    "Patient not found for ID: $cleanPatientId"
+                } else {
+                    "Encounter not found for ID: $cleanEncounterId"
+                }
+            return Result.failure(IllegalStateException(missing))
+        }
+
+        return runSuspendCatching {
             val observations = repository.getObservationsForEncounter(cleanEncounterId)
             val photos = repository.getPhotosForEncounter(cleanEncounterId)
             val responses = repository.getQuestionnaireResponsesForEncounter(cleanEncounterId)
@@ -67,6 +73,7 @@ object FhirBundleOrchestrator {
                 entry = entries,
             )
         }
+    }
 
     /**
      * Unpacks a FHIR [Bundle] into a flat list of constituent resources, validating bundle structure.

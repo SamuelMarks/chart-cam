@@ -24,17 +24,18 @@ import dev.ohs.fhir.model.r4.String as FhirString
  * @param tag The language code tag (e.g., "en", "es", "he", "zh", or a custom dialect).
  * @return A [Result] enclosing the parsed [ExtensibleEnumeration].
  */
-fun parseExtensibleLanguage(tag: String): Result<ExtensibleEnumeration<CommonLanguages>> =
-    runCatching {
-        val trimmed = tag.trim()
-        require(trimmed.isNotEmpty()) { "Language tag cannot be empty" }
-        val predefined = runCatching { CommonLanguages.fromCode(trimmed.lowercase()) }.getOrNull()
-        if (predefined != null) {
-            ExtensibleEnumeration.of(predefined)
-        } else {
-            ExtensibleEnumeration.of(trimmed)
-        }
+fun parseExtensibleLanguage(tag: String): Result<ExtensibleEnumeration<CommonLanguages>> {
+    val trimmed = tag.trim()
+    if (trimmed.isEmpty()) {
+        return Result.failure(IllegalArgumentException("Language tag cannot be empty"))
     }
+    val predefined = runCatching { CommonLanguages.fromCode(trimmed.lowercase()) }.getOrNull()
+    return if (predefined != null) {
+        Result.success(ExtensibleEnumeration.of(predefined))
+    } else {
+        Result.success(ExtensibleEnumeration.of(trimmed))
+    }
+}
 
 /**
  * Helper function for document reference content construction using immutable data classes.

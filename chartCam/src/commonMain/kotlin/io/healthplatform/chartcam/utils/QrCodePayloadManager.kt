@@ -131,48 +131,76 @@ class QrChunkReassembler {
     private var expectedTotal: Int? = null
 
     /**
+     * Parses and validates the "index/total" header from a raw chunk string.
+     *
+     * @param rawChunk The raw chunk string.
+     * @return A [Result] enclosing (index, total) pair or failure.
+     */
+    private fun parseChunkHeader(rawChunk: String): Result<Pair<Int, Int>> {
+        val colonIndex = rawChunk.indexOf(':')
+        if (colonIndex <= 0) {
+            return Result.failure(IllegalArgumentException("Invalid QR chunk header: missing colon separator"))
+        }
+        val header = rawChunk.substring(0, colonIndex)
+        val parts = header.split('/')
+        return when (parts.size) {
+            2 -> {
+                val idx = parts[0].toIntOrNull()
+                val tot = parts[1].toIntOrNull()
+                when {
+                    idx == null -> Result.failure(IllegalArgumentException("Invalid chunk index: ${parts[0]}"))
+                    tot == null -> Result.failure(IllegalArgumentException("Invalid chunk total: ${parts[1]}"))
+                    idx < 1 || tot < 1 || idx > tot ->
+                        Result.failure(IllegalArgumentException("Chunk index out of bounds: $idx of $tot"))
+                    else -> Result.success(Pair(idx, tot))
+                }
+            }
+            else -> Result.failure(IllegalArgumentException("Invalid QR chunk header format: expected index/total"))
+        }
+    }
+
+    /**
      * Ingests a raw QR chunk and attempts reconstruction.
      *
      * @param rawChunk The chunk string formatted as "index/total:content".
      * @return A [Result] enclosing the full reconstructed payload if complete, null if awaiting more chunks,
      *         or a failure if the chunk format is invalid.
      */
-    fun processChunk(rawChunk: String): Result<String?> =
-        runCatching {
-            val colonIndex = rawChunk.indexOf(':')
-            if (colonIndex <= 0) {
-                error("Invalid QR chunk header: missing colon separator")
-            }
-            val header = rawChunk.substring(0, colonIndex)
-            val content = rawChunk.substring(colonIndex + 1)
-
-            val parts = header.split('/')
-            if (parts.size != 2) {
-                error("Invalid QR chunk header format: expected index/total")
-            }
-
-            val index = parts[0].toIntOrNull() ?: error("Invalid chunk index: ${parts[0]}")
-            val total = parts[1].toIntOrNull() ?: error("Invalid chunk total: ${parts[1]}")
-
-            if (index < 1 || total < 1 || index > total) {
-                error("Chunk index out of bounds: $index of $total")
+    fun processChunk(rawChunk: String): Result<String?> {
+        val parsed = parseChunkHeader(rawChunk)
+        val failure =
+            if (parsed.isFailure) {
+                parsed.exceptionOrNull()
+            } else {
+                val (_, total) = parsed.getOrThrow()
+                val currentTotal = expectedTotal
+                if (currentTotal != null && currentTotal != total) {
+                    IllegalStateException("Chunk total mismatch: expected $currentTotal but received $total")
+                } else {
+                    null
+                }
             }
 
-            val currentTotal = expectedTotal
-            if (currentTotal != null && currentTotal != total) {
-                error("Chunk total mismatch: expected $currentTotal but received $total")
-            }
-            expectedTotal = total
-            receivedChunks[index] = content
+        if (failure != null) {
+            return Result.failure(failure)
+        }
 
+        val (index, total) = parsed.getOrThrow()
+        val colonIndex = rawChunk.indexOf(':')
+        val content = rawChunk.substring(colonIndex + 1)
+        expectedTotal = total
+        receivedChunks[index] = content
+
+        val reconstructed =
             if (receivedChunks.size == total) {
-                val reconstructed = (1..total).joinToString("") { receivedChunks.getValue(it) }
+                val full = (1..total).joinToString("") { receivedChunks.getValue(it) }
                 reset()
-                reconstructed
+                full
             } else {
                 null
             }
-        }
+        return Result.success(reconstructed)
+    }
 
     /**
      * Returns the current progress as a pair of (receivedChunksCount, totalChunksExpected).

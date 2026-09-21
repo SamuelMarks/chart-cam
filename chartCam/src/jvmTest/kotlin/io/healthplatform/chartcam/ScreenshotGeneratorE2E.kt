@@ -430,11 +430,11 @@ class ScreenshotGeneratorE2E {
                             var bodyLocation by remember {
                                 mutableStateOf<BodyMapLocation?>(
                                     BodyMapLocation(
-                                        regionId = "left_arm",
-                                        displayName = "Left Arm (Forearm Lesion)",
-                                        snomedCode = "368208006",
-                                        xPercent = 28f,
-                                        yPercent = 42f,
+                                        regionId = "anterior",
+                                        displayName = "Abdomen",
+                                        snomedCode = "818987002",
+                                        xPercent = 50f,
+                                        yPercent = 45f,
                                     ),
                                 )
                             }

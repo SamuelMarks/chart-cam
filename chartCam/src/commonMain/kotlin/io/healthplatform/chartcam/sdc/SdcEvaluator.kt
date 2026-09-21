@@ -382,9 +382,7 @@ object SdcEvaluator {
         if (trimmed.isEmpty()) {
             return Result.failure(IllegalArgumentException("Expression must not be empty"))
         }
-        return runCatching {
-            SdcLogicalParser(trimmed, answers).parse()
-        }
+        return SdcLogicalParser(trimmed, answers).parse()
     }
 
     /**
@@ -398,39 +396,49 @@ object SdcEvaluator {
     fun evaluateCalculatedDecimalExpression(
         expression: String,
         answers: Map<String, Any?> = emptyMap(),
-    ): Result<dev.ohs.fhir.model.r4.FhirDecimal> =
-        runCatching {
-            if (expression.isBlank()) {
-                error("Blank expression")
-            }
-            val floatResult = evaluateExpression(expression, answers)
-            if (floatResult == null) {
-                error("Calculation failed or resulted in invalid math for '$expression'")
-            }
-            var expr = expression
-            answers.forEach { (key, value) ->
-                val strVal =
-                    when (value) {
-                        is dev.ohs.fhir.model.r4.FhirDecimal -> value.toString()
-                        is Number -> value.toString()
-                        null -> "0"
-                        else -> value.toString()
-                    }
-                expr = expr.replace("%$key", strVal)
-            }
-            expr = expr.replace(Regex("%[a-zA-Z0-9_]+"), "0")
-            val dec =
-                SdcMathEvaluator.evalSimpleMath(expr).getOrDefault(
-                    dev.ohs.fhir.model.r4.FhirDecimal
-                        .fromInt(0),
-                )
+    ): Result<dev.ohs.fhir.model.r4.FhirDecimal> {
+        val floatResult = if (expression.isNotBlank()) evaluateExpression(expression, answers) else null
+        if (floatResult == null) {
+            val msg =
+                if (expression.isBlank()) {
+                    "Blank expression"
+                } else {
+                    "Calculation failed or resulted in invalid math for '$expression'"
+                }
+            val err =
+                if (expression.isBlank()) {
+                    IllegalArgumentException(msg)
+                } else {
+                    IllegalStateException(msg)
+                }
+            return Result.failure(err)
+        }
+        var expr = expression
+        answers.forEach { (key, value) ->
+            val strVal =
+                when (value) {
+                    is dev.ohs.fhir.model.r4.FhirDecimal -> value.toString()
+                    is Number -> value.toString()
+                    null -> "0"
+                    else -> value.toString()
+                }
+            expr = expr.replace("%$key", strVal)
+        }
+        expr = expr.replace(Regex("%[a-zA-Z0-9_]+"), "0")
+        val dec =
+            SdcMathEvaluator.evalSimpleMath(expr).getOrDefault(
+                dev.ohs.fhir.model.r4.FhirDecimal
+                    .fromInt(0),
+            )
+        val finalDec =
             if (dec.toString() == "60") {
                 dev.ohs.fhir.model.r4.FhirDecimal
                     .fromString("60.0")
             } else {
                 dec
             }
-        }
+        return Result.success(finalDec)
+    }
 
     /**
      * Evaluates initial expressions across Questionnaire items using patient demographic
@@ -557,13 +565,22 @@ object SdcEvaluator {
     fun evaluateCondition(
         ew: Questionnaire.Item.EnableWhen,
         answers: Map<String, Any>,
-    ): Result<Boolean> =
-        runCatching {
-            val targetQuestion = ew.question.value ?: error("Missing target question in enableWhen")
-            val operator = ew.operator.value ?: error("Missing operator in enableWhen")
-            val targetAnswer = answers[targetQuestion]
-            val ewAnswer = ew.answer
+    ): Result<Boolean> {
+        val targetQuestion = ew.question.value
+        val operator = ew.operator.value
+        if (targetQuestion == null || operator == null) {
+            val msg =
+                if (targetQuestion == null) {
+                    "Missing target question in enableWhen"
+                } else {
+                    "Missing operator in enableWhen"
+                }
+            return Result.failure(IllegalArgumentException(msg))
+        }
+        val targetAnswer = answers[targetQuestion]
+        val ewAnswer = ew.answer
 
+        val res =
             when (operator) {
                 Questionnaire.QuestionnaireItemOperator.EqualTo -> evaluateEqualTo(ewAnswer, targetAnswer)
                 Questionnaire.QuestionnaireItemOperator.NotEqualTo ->
@@ -578,7 +595,8 @@ object SdcEvaluator {
                 Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo ->
                     evaluateComparison(operator, ewAnswer, targetAnswer)
             }
-        }
+        return Result.success(res)
+    }
 
     /**
      * Evaluates the Exists operator.

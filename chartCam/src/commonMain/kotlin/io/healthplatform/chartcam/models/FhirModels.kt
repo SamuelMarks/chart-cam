@@ -72,19 +72,27 @@ private fun mapAdministrativeGender(gender: String): AdministrativeGender =
  * Resolves the typed [Encounter.EncounterStatus] wrapped in a [Result].
  */
 val Encounter.typedStatus: Result<Encounter.EncounterStatus>
-    get() =
-        runCatching {
-            status.value ?: error("Encounter.status is missing or invalid")
+    get() {
+        val s = status.value
+        return if (s != null) {
+            Result.success(s)
+        } else {
+            Result.failure(IllegalStateException("Encounter.status is missing or invalid"))
         }
+    }
 
 /**
  * Resolves the typed [DocumentReferenceStatus] wrapped in a [Result].
  */
 val DocumentReference.typedStatus: Result<DocumentReferenceStatus>
-    get() =
-        runCatching {
-            status.value ?: error("DocumentReference.status is missing or invalid")
+    get() {
+        val s = status.value
+        return if (s != null) {
+            Result.success(s)
+        } else {
+            Result.failure(IllegalStateException("DocumentReference.status is missing or invalid"))
         }
+    }
 
 /**
  * Builds a FHIR HumanName.
@@ -131,11 +139,12 @@ internal fun buildMrnIdentifierDirect(mrnValue: String): Identifier =
  * @param mrnValue The Medical Record Number value.
  * @return A [Result] enclosing the [Identifier] configured for MRN.
  */
-fun buildMrnIdentifier(mrnValue: String): Result<Identifier> =
-    runCatching {
-        require(mrnValue.isNotBlank()) { "MRN value cannot be blank" }
-        buildMrnIdentifierDirect(mrnValue)
+fun buildMrnIdentifier(mrnValue: String): Result<Identifier> {
+    if (mrnValue.isBlank()) {
+        return Result.failure(IllegalArgumentException("MRN value cannot be blank"))
     }
+    return Result.success(buildMrnIdentifierDirect(mrnValue))
+}
 
 /**
  * Safely creates a FHIR Patient resource wrapped in a [Result].
@@ -157,17 +166,19 @@ fun createFhirPatientCatching(
     mrnValue: String,
     organizationId: String? = null,
     gender: String = "unknown",
-): Result<Patient> =
-    runCatching {
-        require(id.isNotBlank()) { "Patient id cannot be blank" }
-        require(mrnValue.isNotBlank()) { "Patient mrnValue cannot be blank" }
-        val managingOrg =
-            organizationId?.let {
-                Reference(reference = FhirString(value = it))
-            }
+): Result<Patient> {
+    if (id.isBlank() || mrnValue.isBlank()) {
+        val msg = if (id.isBlank()) "Patient id cannot be blank" else "Patient mrnValue cannot be blank"
+        return Result.failure(IllegalArgumentException(msg))
+    }
+    val managingOrg =
+        organizationId?.let {
+            Reference(reference = FhirString(value = it))
+        }
 
-        val mrnId = buildMrnIdentifierDirect(mrnValue)
+    val mrnId = buildMrnIdentifierDirect(mrnValue)
 
+    val patient =
         Patient(
             id = id,
             gender = Enumeration(value = mapAdministrativeGender(gender)),
@@ -176,7 +187,8 @@ fun createFhirPatientCatching(
             identifier = listOf(mrnId),
             managingOrganization = managingOrg,
         )
-    }
+    return Result.success(patient)
+}
 
 /**
  * Creates a FHIR Patient resource.

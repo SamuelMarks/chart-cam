@@ -115,13 +115,13 @@ private fun resolveUpperTorsoRegion(
     isPosterior: Boolean,
 ): Pair<StringResource, String> =
     when {
-        xPercent < 30f ->
+        xPercent < 35f ->
             if (isPosterior) {
                 Res.string.body_site_left_arm to "368208006"
             } else {
                 Res.string.body_site_right_arm to "368209003"
             }
-        xPercent > 70f ->
+        xPercent > 65f ->
             if (isPosterior) {
                 Res.string.body_site_right_arm to "368209003"
             } else {
@@ -145,13 +145,13 @@ private fun resolveLowerTorsoRegion(
     isPosterior: Boolean,
 ): Pair<StringResource, String> =
     when {
-        xPercent < 25f ->
+        xPercent < 35f ->
             if (isPosterior) {
                 Res.string.body_site_left_arm to "368208006"
             } else {
                 Res.string.body_site_right_arm to "368209003"
             }
-        xPercent > 75f ->
+        xPercent > 65f ->
             if (isPosterior) {
                 Res.string.body_site_right_arm to "368209003"
             } else {
@@ -286,21 +286,21 @@ fun BodyMapPinDropControl(
                     AccessibleBodySite(headText, "69536005", 50f, 10f),
                     AccessibleBodySite(upperBackText, "181533004", 50f, 30f),
                     AccessibleBodySite(lowerBackText, "181534005", 50f, 48f),
-                    AccessibleBodySite(leftArmText, "368208006", 20f, 35f),
-                    AccessibleBodySite(rightArmText, "368209003", 80f, 35f),
-                    AccessibleBodySite(leftLegText, "368214008", 40f, 75f),
-                    AccessibleBodySite(rightLegText, "368215009", 60f, 75f),
+                    AccessibleBodySite(leftArmText, "368208006", 28.5f, 38f),
+                    AccessibleBodySite(rightArmText, "368209003", 71.5f, 38f),
+                    AccessibleBodySite(leftLegText, "368214008", 43.5f, 75f),
+                    AccessibleBodySite(rightLegText, "368215009", 56.5f, 75f),
                 )
             } else {
                 listOf(
                     AccessibleBodySite(headText, "69536005", 50f, 10f),
                     AccessibleBodySite(chestText, "51185008", 50f, 30f),
                     AccessibleBodySite(abdomenText, "818987002", 50f, 45f),
-                    AccessibleBodySite(pelvisText, "12921003", 50f, 55f),
-                    AccessibleBodySite(rightArmText, "368209003", 20f, 35f),
-                    AccessibleBodySite(leftArmText, "368208006", 80f, 35f),
-                    AccessibleBodySite(rightLegText, "368215009", 40f, 75f),
-                    AccessibleBodySite(leftLegText, "368214008", 60f, 75f),
+                    AccessibleBodySite(pelvisText, "12921003", 50f, 52f),
+                    AccessibleBodySite(rightArmText, "368209003", 28.5f, 38f),
+                    AccessibleBodySite(leftArmText, "368208006", 71.5f, 38f),
+                    AccessibleBodySite(rightLegText, "368215009", 43.5f, 75f),
+                    AccessibleBodySite(leftLegText, "368214008", 56.5f, 75f),
                 )
             }
         }

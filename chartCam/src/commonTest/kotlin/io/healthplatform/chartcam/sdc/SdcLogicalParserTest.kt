@@ -6,7 +6,6 @@
 package io.healthplatform.chartcam.sdc
 
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -19,17 +18,16 @@ class SdcLogicalParserTest {
      */
     @Test
     fun testBooleanLiteralsAndUnexpectedCharacters() {
-        assertTrue(SdcLogicalParser("true", emptyMap()).parse())
-        assertFalse(SdcLogicalParser("false", emptyMap()).parse())
-        assertTrue(SdcLogicalParser("  true  ", emptyMap()).parse())
-        assertFalse(SdcLogicalParser("  false  ", emptyMap()).parse())
+        assertTrue(SdcLogicalParser("true", emptyMap()).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("false", emptyMap()).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("  true  ", emptyMap()).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("  false  ", emptyMap()).parse().getOrThrow())
 
         // Trailing character after a complete logical factor
-        val ex =
-            assertFailsWith<IllegalArgumentException> {
-                SdcLogicalParser("(true) &", emptyMap()).parse()
-            }
-        assertTrue(ex.message!!.contains("Unexpected character at position"))
+        val res = SdcLogicalParser("(true) &", emptyMap()).parse()
+        assertTrue(res.isFailure)
+        assertTrue(res.exceptionOrNull() is IllegalArgumentException)
+        assertTrue(res.exceptionOrNull()?.message?.contains("Unexpected character at position") == true)
     }
 
     /**
@@ -37,16 +35,15 @@ class SdcLogicalParserTest {
      */
     @Test
     fun testNegationAndParentheses() {
-        assertFalse(SdcLogicalParser("!true", emptyMap()).parse())
-        assertTrue(SdcLogicalParser("!false", emptyMap()).parse())
-        assertTrue(SdcLogicalParser("!(false)", emptyMap()).parse())
-        assertTrue(SdcLogicalParser("!(!true)", emptyMap()).parse())
+        assertFalse(SdcLogicalParser("!true", emptyMap()).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("!false", emptyMap()).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("!(false)", emptyMap()).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("!(!true)", emptyMap()).parse().getOrThrow())
 
-        val ex =
-            assertFailsWith<IllegalArgumentException> {
-                SdcLogicalParser("(true", emptyMap()).parse()
-            }
-        assertTrue(ex.message!!.contains("Missing closing parenthesis"))
+        val res = SdcLogicalParser("(true", emptyMap()).parse()
+        assertTrue(res.isFailure)
+        assertTrue(res.exceptionOrNull() is IllegalArgumentException)
+        assertTrue(res.exceptionOrNull()?.message?.contains("Missing closing parenthesis") == true)
     }
 
     /**
@@ -54,19 +51,19 @@ class SdcLogicalParserTest {
      */
     @Test
     fun testAndOrLogic() {
-        assertTrue(SdcLogicalParser("true && true", emptyMap()).parse())
-        assertFalse(SdcLogicalParser("true && false", emptyMap()).parse())
-        assertFalse(SdcLogicalParser("false && true", emptyMap()).parse())
-        assertFalse(SdcLogicalParser("false && false", emptyMap()).parse())
+        assertTrue(SdcLogicalParser("true && true", emptyMap()).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("true && false", emptyMap()).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("false && true", emptyMap()).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("false && false", emptyMap()).parse().getOrThrow())
 
-        assertTrue(SdcLogicalParser("true || false", emptyMap()).parse())
-        assertTrue(SdcLogicalParser("false || true", emptyMap()).parse())
-        assertTrue(SdcLogicalParser("true || true", emptyMap()).parse())
-        assertFalse(SdcLogicalParser("false || false", emptyMap()).parse())
+        assertTrue(SdcLogicalParser("true || false", emptyMap()).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("false || true", emptyMap()).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("true || true", emptyMap()).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("false || false", emptyMap()).parse().getOrThrow())
 
         // Multiple chained
-        assertTrue(SdcLogicalParser("false || false || true", emptyMap()).parse())
-        assertFalse(SdcLogicalParser("true && true && false", emptyMap()).parse())
+        assertTrue(SdcLogicalParser("false || false || true", emptyMap()).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("true && true && false", emptyMap()).parse().getOrThrow())
     }
 
     /**
@@ -83,37 +80,37 @@ class SdcLogicalParserTest {
             )
 
         // Greater than or equal
-        assertTrue(SdcLogicalParser("%num1 >= 10", answers).parse())
-        assertTrue(SdcLogicalParser("%num2 >= 10", answers).parse())
-        assertFalse(SdcLogicalParser("%num1 >= 11", answers).parse())
+        assertTrue(SdcLogicalParser("%num1 >= 10", answers).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("%num2 >= 10", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%num1 >= 11", answers).parse().getOrThrow())
 
         // Less than or equal
-        assertTrue(SdcLogicalParser("%num1 <= 10", answers).parse())
-        assertTrue(SdcLogicalParser("%num1 <= 20", answers).parse())
-        assertFalse(SdcLogicalParser("%num2 <= 10", answers).parse())
+        assertTrue(SdcLogicalParser("%num1 <= 10", answers).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("%num1 <= 20", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%num2 <= 10", answers).parse().getOrThrow())
 
         // Equal
-        assertTrue(SdcLogicalParser("%num1 == 10", answers).parse())
-        assertTrue(SdcLogicalParser("%num1 == %num3", answers).parse())
-        assertFalse(SdcLogicalParser("%num1 == 20", answers).parse())
+        assertTrue(SdcLogicalParser("%num1 == 10", answers).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("%num1 == %num3", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%num1 == 20", answers).parse().getOrThrow())
 
         // Not equal
-        assertTrue(SdcLogicalParser("%num1 != 20", answers).parse())
-        assertFalse(SdcLogicalParser("%num1 != 10", answers).parse())
+        assertTrue(SdcLogicalParser("%num1 != 20", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%num1 != 10", answers).parse().getOrThrow())
 
         // Greater than
-        assertTrue(SdcLogicalParser("%num2 > 15", answers).parse())
-        assertFalse(SdcLogicalParser("%num1 > 10", answers).parse())
-        assertFalse(SdcLogicalParser("%num1 > 20", answers).parse())
+        assertTrue(SdcLogicalParser("%num2 > 15", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%num1 > 10", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%num1 > 20", answers).parse().getOrThrow())
 
         // Less than
-        assertTrue(SdcLogicalParser("%num1 < 15", answers).parse())
-        assertFalse(SdcLogicalParser("%num1 < 10", answers).parse())
-        assertFalse(SdcLogicalParser("%num2 < 10", answers).parse())
+        assertTrue(SdcLogicalParser("%num1 < 15", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%num1 < 10", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%num2 < 10", answers).parse().getOrThrow())
 
         // String converted to float
-        assertTrue(SdcLogicalParser("%strNum > 15", answers).parse())
-        assertTrue(SdcLogicalParser("%strNum < 16", answers).parse())
+        assertTrue(SdcLogicalParser("%strNum > 15", answers).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("%strNum < 16", answers).parse().getOrThrow())
     }
 
     /**
@@ -129,30 +126,30 @@ class SdcLogicalParserTest {
             )
 
         // String equality and inequality
-        assertTrue(SdcLogicalParser("%name == \"Alice\"", answers).parse())
-        assertFalse(SdcLogicalParser("%name == 'Bob'", answers).parse())
-        assertTrue(SdcLogicalParser("%name != 'Bob'", answers).parse())
-        assertFalse(SdcLogicalParser("%name != 'Alice'", answers).parse())
+        assertTrue(SdcLogicalParser("%name == \"Alice\"", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%name == 'Bob'", answers).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("%name != 'Bob'", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%name != 'Alice'", answers).parse().getOrThrow())
 
         // String relational comparisons
-        assertTrue(SdcLogicalParser("'b' > 'a'", emptyMap()).parse())
-        assertFalse(SdcLogicalParser("'a' > 'b'", emptyMap()).parse())
-        assertTrue(SdcLogicalParser("'a' < 'b'", emptyMap()).parse())
-        assertFalse(SdcLogicalParser("'b' < 'a'", emptyMap()).parse())
-        assertTrue(SdcLogicalParser("'b' >= 'b'", emptyMap()).parse())
-        assertTrue(SdcLogicalParser("'b' >= 'a'", emptyMap()).parse())
-        assertFalse(SdcLogicalParser("'a' >= 'b'", emptyMap()).parse())
-        assertTrue(SdcLogicalParser("'a' <= 'a'", emptyMap()).parse())
-        assertTrue(SdcLogicalParser("'a' <= 'b'", emptyMap()).parse())
-        assertFalse(SdcLogicalParser("'b' <= 'a'", emptyMap()).parse())
+        assertTrue(SdcLogicalParser("'b' > 'a'", emptyMap()).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("'a' > 'b'", emptyMap()).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("'a' < 'b'", emptyMap()).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("'b' < 'a'", emptyMap()).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("'b' >= 'b'", emptyMap()).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("'b' >= 'a'", emptyMap()).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("'a' >= 'b'", emptyMap()).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("'a' <= 'a'", emptyMap()).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("'a' <= 'b'", emptyMap()).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("'b' <= 'a'", emptyMap()).parse().getOrThrow())
 
         // Variable to variable string comparison
-        assertTrue(SdcLogicalParser("%name != %role", answers).parse())
-        assertFalse(SdcLogicalParser("%name == %role", answers).parse())
+        assertTrue(SdcLogicalParser("%name != %role", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%name == %role", answers).parse().getOrThrow())
 
         // Missing variable defaults to empty string
-        assertTrue(SdcLogicalParser("%missing == ''", answers).parse())
-        assertFalse(SdcLogicalParser("%missing == 'something'", answers).parse())
+        assertTrue(SdcLogicalParser("%missing == ''", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%missing == 'something'", answers).parse().getOrThrow())
     }
 
     /**
@@ -172,14 +169,14 @@ class SdcLogicalParserTest {
                 "objNull" to null,
             )
 
-        assertTrue(SdcLogicalParser("%boolTrue", answers).parse())
-        assertFalse(SdcLogicalParser("%boolFalse", answers).parse())
-        assertTrue(SdcLogicalParser("%strTrue", answers).parse())
-        assertFalse(SdcLogicalParser("%strFalse", answers).parse())
-        assertTrue(SdcLogicalParser("%numNonZero", answers).parse())
-        assertFalse(SdcLogicalParser("%numZero", answers).parse())
-        assertTrue(SdcLogicalParser("%objNonNull", answers).parse())
-        assertFalse(SdcLogicalParser("%objNull", answers).parse())
+        assertTrue(SdcLogicalParser("%boolTrue", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%boolFalse", answers).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("%strTrue", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%strFalse", answers).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("%numNonZero", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%numZero", answers).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("%objNonNull", answers).parse().getOrThrow())
+        assertFalse(SdcLogicalParser("%objNull", answers).parse().getOrThrow())
     }
 
     /**
@@ -188,17 +185,22 @@ class SdcLogicalParserTest {
     @Test
     fun testErrorHandling() {
         // Invalid boolean literal
-        assertFailsWith<IllegalStateException> {
-            SdcLogicalParser("invalid_literal", emptyMap()).parse()
-        }
+        val invalidRes = SdcLogicalParser("invalid_literal", emptyMap()).parse()
+        assertTrue(invalidRes.isFailure)
+        assertTrue(invalidRes.exceptionOrNull() is IllegalStateException)
 
         // Empty comparison token inside parentheses
-        assertFailsWith<IllegalArgumentException> {
-            SdcLogicalParser("()", emptyMap()).parse()
-        }
+        val emptyTokenRes = SdcLogicalParser("()", emptyMap()).parse()
+        assertTrue(emptyTokenRes.isFailure)
+        assertTrue(emptyTokenRes.exceptionOrNull() is IllegalArgumentException)
 
         // Malformed comparison: no left hand side
-        assertFalse(SdcLogicalParser("== 5", emptyMap()).parse())
+        assertFalse(SdcLogicalParser("== 5", emptyMap()).parse().getOrElse { false })
+
+        // Error propagation across logical operators
+        assertTrue(SdcLogicalParser("true || invalid_token", emptyMap()).parse().isFailure)
+        assertTrue(SdcLogicalParser("true && invalid_token", emptyMap()).parse().isFailure)
+        assertTrue(SdcLogicalParser("!invalid_token", emptyMap()).parse().isFailure)
     }
 
     /**
@@ -207,8 +209,8 @@ class SdcLogicalParserTest {
     @Test
     fun testOperatorInsideQuotes() {
         val answers = mapOf("text" to "a >= b")
-        assertTrue(SdcLogicalParser("%text == 'a >= b'", answers).parse())
-        assertTrue(SdcLogicalParser("%text == \"a >= b\"", answers).parse())
+        assertTrue(SdcLogicalParser("%text == 'a >= b'", answers).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("%text == \"a >= b\"", answers).parse().getOrThrow())
     }
 
     /**
@@ -227,27 +229,37 @@ class SdcLogicalParserTest {
             )
 
         // Left numeric, right non-numeric
-        assertFalse(SdcLogicalParser("10 == %nonNum", answers).parse())
+        assertFalse(SdcLogicalParser("10 == %nonNum", answers).parse().getOrThrow())
         // Left non-numeric, right numeric
-        assertFalse(SdcLogicalParser("%nonNum == 10", answers).parse())
+        assertFalse(SdcLogicalParser("%nonNum == 10", answers).parse().getOrThrow())
         // Null variable numeric comparison
-        assertFalse(SdcLogicalParser("%nullVal > 10", answers).parse())
+        assertFalse(SdcLogicalParser("%nullVal > 10", answers).parse().getOrThrow())
 
         // Mixed quote characters
-        assertTrue(SdcLogicalParser("%mixedSingle == \"single 'quote' text\"", answers).parse())
-        assertTrue(SdcLogicalParser("%mixedDouble == 'double \"quote\" text'", answers).parse())
+        assertTrue(SdcLogicalParser("%mixedSingle == \"single 'quote' text\"", answers).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("%mixedDouble == 'double \"quote\" text'", answers).parse().getOrThrow())
 
         // Quoted strings on LHS with operator inside quotes
-        assertTrue(SdcLogicalParser("'a >= b' == %text", answers).parse())
-        assertTrue(SdcLogicalParser("\"a >= b\" == %text", answers).parse())
-        assertTrue(SdcLogicalParser("\"a 'nested' >= b\" == %text", answers + ("text" to "a 'nested' >= b")).parse())
-        assertTrue(SdcLogicalParser("'a \"nested\" >= b' == %text", answers + ("text" to "a \"nested\" >= b")).parse())
+        assertTrue(SdcLogicalParser("'a >= b' == %text", answers).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("\"a >= b\" == %text", answers).parse().getOrThrow())
+        assertTrue(
+            SdcLogicalParser(
+                "\"a 'nested' >= b\" == %text",
+                answers + ("text" to "a 'nested' >= b"),
+            ).parse().getOrThrow(),
+        )
+        assertTrue(
+            SdcLogicalParser(
+                "'a \"nested\" >= b' == %text",
+                answers + ("text" to "a \"nested\" >= b"),
+            ).parse().getOrThrow(),
+        )
 
         // Missing variable on RHS
-        assertTrue(SdcLogicalParser("'' == %missing", answers).parse())
-        assertTrue(SdcLogicalParser("%missing == %missing", answers).parse())
+        assertTrue(SdcLogicalParser("'' == %missing", answers).parse().getOrThrow())
+        assertTrue(SdcLogicalParser("%missing == %missing", answers).parse().getOrThrow())
 
         // Nested parentheses around comparison
-        assertTrue(SdcLogicalParser("((%intNum == 42))", answers).parse())
+        assertTrue(SdcLogicalParser("((%intNum == 42))", answers).parse().getOrThrow())
     }
 }

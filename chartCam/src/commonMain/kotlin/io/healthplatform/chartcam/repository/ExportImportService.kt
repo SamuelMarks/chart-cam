@@ -66,11 +66,13 @@ open class ExportImportService(
         password: String,
         exportAll: Boolean = true,
         practitionerId: String? = null,
-    ): Result<String> =
-        runSuspendCatching {
-            if (!isValidPassword(password)) {
-                error("Encryption password must not be empty or weak (minimum 6 characters).")
-            }
+    ): Result<String> {
+        if (!isValidPassword(password)) {
+            return Result.failure(
+                IllegalArgumentException("Encryption password must not be empty or weak (minimum 6 characters)."),
+            )
+        }
+        return runSuspendCatching {
             val entries = mutableListOf<Bundle.Entry>()
             addBaseResources(entries)
             addQuestionnaires(entries)
@@ -91,6 +93,7 @@ open class ExportImportService(
 
             cryptoService.encrypt(jsonData, password)
         }
+    }
 
     /**
      * Helper for exporting Questionnaires.

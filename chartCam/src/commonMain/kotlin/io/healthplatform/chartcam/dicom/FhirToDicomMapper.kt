@@ -368,11 +368,11 @@ object FhirToDicomMapper {
         encounter: Encounter? = null,
         practitioner: Practitioner? = null,
         anonymize: Boolean = false,
-    ): Result<ByteArray> =
-        runCatching {
-            if (imageBytes.isEmpty()) {
-                error("Image bytes must not be empty")
-            }
+    ): Result<ByteArray> {
+        if (imageBytes.isEmpty()) {
+            return Result.failure(IllegalArgumentException("Image bytes must not be empty"))
+        }
+        return runCatching {
             val elements = buildCommonElements(patient, encounter, practitioner, anonymize)
 
             val encId = encounter?.id ?: "ENC_DEFAULT"
@@ -436,4 +436,5 @@ object FhirToDicomMapper {
 
             DicomWriter.write(elements, DicomTag.UID_SOP_CLASS_VL_PHOTOGRAPHIC_IMAGE, sopInstanceUid)
         }
+    }
 }

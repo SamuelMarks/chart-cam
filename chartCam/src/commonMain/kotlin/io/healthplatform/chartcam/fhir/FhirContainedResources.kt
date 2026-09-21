@@ -75,15 +75,19 @@ fun createLocalReference(child: Resource): Reference {
 fun <T : DomainResource> addContainedResource(
     parent: T,
     child: Resource,
-): Result<T> =
-    runCatching {
-        val updatedContained = parent.contained + child
-        val updated =
-            copyClinicalResource(parent, updatedContained)
-                ?: copyAdministrativeResource(parent, updatedContained)
-                ?: error("Unsupported DomainResource type for containment: ${parent::class.simpleName}")
-        updated as T
-    }
+): Result<T> {
+    val updatedContained = parent.contained + child
+    val updated =
+        copyClinicalResource(parent, updatedContained)
+            ?: copyAdministrativeResource(parent, updatedContained)
+            ?: return Result.failure(
+                IllegalArgumentException(
+                    "Unsupported DomainResource type for containment: ${parent::class.simpleName}",
+                ),
+            )
+    @Suppress("UNCHECKED_CAST")
+    return Result.success(updated as T)
+}
 
 /**
  * Creates an updated copy of clinical domain resources with new contained items.

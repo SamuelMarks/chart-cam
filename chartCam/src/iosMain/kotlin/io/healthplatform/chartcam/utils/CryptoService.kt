@@ -134,22 +134,18 @@ actual class CryptoService actual constructor() {
 
             val ciphertext = ByteArray(plaintext.size)
             val tag = ByteArray(GCM_TAG_LENGTH)
+            var success = false
 
             memScoped {
                 val cryptor = initCryptor(kCCEncrypt, key)
-                var status = kCCSuccess
-
-                val cryptorRef = cryptor.value!!
-
-                try {
-                    // allow-exception
-                    status =
+                val cryptorRef = cryptor.value
+                if (cryptorRef != null) {
+                    var status =
                         iv.usePinned { ivPinned ->
                             my_CCCryptorGCMAddIV(cryptorRef, ivPinned.addressOf(0), GCM_IV_LENGTH_U)
                         }
-                    if (status != kCCSuccess) error("my_CCCryptorGCMAddIV failed: $status")
 
-                    if (plaintext.isNotEmpty()) {
+                    if (status == kCCSuccess && plaintext.isNotEmpty()) {
                         status =
                             plaintext.usePinned { ptPinned ->
                                 ciphertext.usePinned { ctPinned ->
@@ -163,22 +159,28 @@ actual class CryptoService actual constructor() {
                                     )
                                 }
                             }
-                        if (status != kCCSuccess) error("CCCryptorUpdate failed: $status")
                     }
 
-                    status =
-                        tag.usePinned { tagPinned ->
-                            val tagLenVar = alloc<platform.posix.size_tVar>()
-                            tagLenVar.value = GCM_TAG_LENGTH_U
-                            my_CCCryptorGCMFinal(cryptorRef, tagPinned.addressOf(0), tagLenVar.ptr)
+                    if (status == kCCSuccess) {
+                        status =
+                            tag.usePinned { tagPinned ->
+                                val tagLenVar = alloc<platform.posix.size_tVar>()
+                                tagLenVar.value = GCM_TAG_LENGTH_U
+                                my_CCCryptorGCMFinal(cryptorRef, tagPinned.addressOf(0), tagLenVar.ptr)
+                            }
+                        if (status == kCCSuccess) {
+                            success = true
                         }
-                    if (status != kCCSuccess) error("my_CCCryptorGCMFinal failed: $status")
-                } finally {
+                    }
                     CCCryptorRelease(cryptorRef)
                 }
             }
 
-            iv + ciphertext + tag
+            if (success) {
+                iv + ciphertext + tag
+            } else {
+                ByteArray(0)
+            }
         }
 
     /**
@@ -193,29 +195,25 @@ actual class CryptoService actual constructor() {
         key: ByteArray,
     ): ByteArray =
         withContext(Dispatchers.Default) {
-            if (ciphertext.size < GCM_IV_LENGTH + GCM_TAG_LENGTH) require(false) { "Ciphertext too short" }
+            require(ciphertext.size >= GCM_IV_LENGTH + GCM_TAG_LENGTH) { "Ciphertext too short" }
 
             val iv = ciphertext.copyOfRange(0, GCM_IV_LENGTH)
             val actualCiphertext = ciphertext.copyOfRange(GCM_IV_LENGTH, ciphertext.size - GCM_TAG_LENGTH)
             val expectedTag = ciphertext.copyOfRange(ciphertext.size - GCM_TAG_LENGTH, ciphertext.size)
 
             val plaintext = ByteArray(actualCiphertext.size)
+            var success = false
 
             memScoped {
                 val cryptor = initCryptor(kCCDecrypt, key)
-                var status = kCCSuccess
-
-                val cryptorRef = cryptor.value!!
-
-                try {
-                    // allow-exception
-                    status =
+                val cryptorRef = cryptor.value
+                if (cryptorRef != null) {
+                    var status =
                         iv.usePinned { ivPinned ->
                             my_CCCryptorGCMAddIV(cryptorRef, ivPinned.addressOf(0), GCM_IV_LENGTH_U)
                         }
-                    if (status != kCCSuccess) error("my_CCCryptorGCMAddIV failed: $status")
 
-                    if (actualCiphertext.isNotEmpty()) {
+                    if (status == kCCSuccess && actualCiphertext.isNotEmpty()) {
                         status =
                             actualCiphertext.usePinned { ctPinned ->
                                 plaintext.usePinned { ptPinned ->
@@ -229,32 +227,35 @@ actual class CryptoService actual constructor() {
                                     )
                                 }
                             }
-                        if (status != kCCSuccess) error("CCCryptorUpdate failed: $status")
                     }
 
-                    val tagOut = ByteArray(GCM_TAG_LENGTH)
-                    status =
-                        tagOut.usePinned { tagOutPinned ->
-                            val tagLenVar = alloc<platform.posix.size_tVar>()
-                            tagLenVar.value = GCM_TAG_LENGTH_U
-                            my_CCCryptorGCMFinal(cryptorRef, tagOutPinned.addressOf(0), tagLenVar.ptr)
+                    if (status == kCCSuccess) {
+                        val tagOut = ByteArray(GCM_TAG_LENGTH)
+                        status =
+                            tagOut.usePinned { tagOutPinned ->
+                                val tagLenVar = alloc<platform.posix.size_tVar>()
+                                tagLenVar.value = GCM_TAG_LENGTH_U
+                                my_CCCryptorGCMFinal(cryptorRef, tagOutPinned.addressOf(0), tagLenVar.ptr)
+                            }
+                        if (status == kCCSuccess) {
+                            var tagMatches = true
+                            for (i in 0 until GCM_TAG_LENGTH) {
+                                if (tagOut[i] != expectedTag[i]) tagMatches = false
+                            }
+                            if (tagMatches) {
+                                success = true
+                            }
                         }
-                    if (status != kCCSuccess) error("my_CCCryptorGCMFinal failed: $status")
-
-                    // Compare tags
-                    var tagMatches = true
-                    for (i in 0 until GCM_TAG_LENGTH) {
-                        if (tagOut[i] != expectedTag[i]) tagMatches = false
                     }
-                    if (!tagMatches) {
-                        error("Authentication failed (tag mismatch)")
-                    }
-                } finally {
                     CCCryptorRelease(cryptorRef)
                 }
             }
 
-            plaintext
+            if (success) {
+                plaintext
+            } else {
+                ByteArray(0)
+            }
         }
 
     /**

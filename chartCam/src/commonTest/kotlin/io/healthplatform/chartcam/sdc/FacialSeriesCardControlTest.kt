@@ -29,15 +29,50 @@ class FacialSeriesCardControlTest {
 
     @Test
     fun testFacialSlotInfo() {
-        val slot =
+        val slot1 =
             FacialSlotInfo(
                 linkId = "slot_1",
                 title = "Left Profile",
                 isCaptured = true,
             )
-        assertEquals("slot_1", slot.linkId)
-        assertEquals("Left Profile", slot.title)
-        assertTrue(slot.isCaptured)
+        val slot2 =
+            FacialSlotInfo(
+                linkId = "slot_1",
+                title = "Left Profile",
+                isCaptured = true,
+            )
+        val slotDiff =
+            FacialSlotInfo(
+                linkId = "slot_2",
+                title = "Right Profile",
+                isCaptured = false,
+            )
+
+        assertEquals("slot_1", slot1.linkId)
+        assertEquals("Left Profile", slot1.title)
+        assertTrue(slot1.isCaptured)
+
+        // Test equality and hashCode
+        assertEquals(slot1, slot2)
+        assertEquals(slot1.hashCode(), slot2.hashCode())
+        assertFalse(slot1 == slotDiff)
+        assertFalse(slot1.equals("other"))
+
+        // Test copy
+        val slotCopied = slot1.copy(isCaptured = false)
+        assertEquals("slot_1", slotCopied.linkId)
+        assertEquals("Left Profile", slotCopied.title)
+        assertFalse(slotCopied.isCaptured)
+
+        // Test destructuring components
+        val (id, title, captured) = slot1
+        assertEquals("slot_1", id)
+        assertEquals("Left Profile", title)
+        assertTrue(captured)
+
+        // Test toString
+        assertTrue(slot1.toString().contains("slot_1"))
+        assertTrue(slot1.toString().contains("Left Profile"))
     }
 
     @Test

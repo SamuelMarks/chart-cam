@@ -47,7 +47,7 @@ class JvmCameraManager : CameraManager {
     /**
      * Initializes the webcam instance securely off the main thread.
      * We catch `Throwable` rather than just `Exception` because the native JNA driver
-     * can throw fatal errors (like `java.lang.Error` or `java.lang.UnsatisfiedLinkError`)
+     * can produce fatal errors (like `java.lang.Error` or `java.lang.UnsatisfiedLinkError`)
      * on macOS ARM64 when camera permissions (FaceTime HD) are denied or missing.
      *
      * @return The initialized [Webcam] instance, or null if no webcam could be found or permitted.

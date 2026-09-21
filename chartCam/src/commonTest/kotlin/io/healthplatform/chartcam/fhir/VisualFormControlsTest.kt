@@ -159,8 +159,23 @@ class VisualFormControlsTest {
         val (backRes, backCode) = resolveAnatomicalRegion(50f, 30f, true)
         assertEquals("181533004", backCode)
 
+        val (abdomenRes, abdomenCode) = resolveAnatomicalRegion(50f, 45f, false)
+        assertEquals("818987002", abdomenCode)
+
+        val (lowerBackRes, lowerBackCode) = resolveAnatomicalRegion(50f, 48f, true)
+        assertEquals("181534005", lowerBackCode)
+
+        val (pelvisRes, pelvisCode) = resolveAnatomicalRegion(50f, 55f, false)
+        assertEquals("12921003", pelvisCode)
+
         val (armRes, armCode) = resolveAnatomicalRegion(15f, 35f, false)
         assertEquals("368209003", armCode)
+
+        val (lowerRightArmRes, lowerRightArmCode) = resolveAnatomicalRegion(28f, 42f, false)
+        assertEquals("368209003", lowerRightArmCode)
+
+        val (lowerLeftArmRes, lowerLeftArmCode) = resolveAnatomicalRegion(72f, 42f, false)
+        assertEquals("368208006", lowerLeftArmCode)
 
         val (legRes, legCode) = resolveAnatomicalRegion(70f, 80f, false)
         assertEquals("368214008", legCode)
@@ -169,8 +184,14 @@ class VisualFormControlsTest {
         val (postLeftArmRes, postLeftArmCode) = resolveAnatomicalRegion(15f, 35f, true)
         assertEquals("368208006", postLeftArmCode)
 
+        val (postLowerLeftArmRes, postLowerLeftArmCode) = resolveAnatomicalRegion(28f, 42f, true)
+        assertEquals("368208006", postLowerLeftArmCode)
+
         val (postRightArmRes, postRightArmCode) = resolveAnatomicalRegion(85f, 35f, true)
         assertEquals("368209003", postRightArmCode)
+
+        val (postLowerRightArmRes, postLowerRightArmCode) = resolveAnatomicalRegion(72f, 42f, true)
+        assertEquals("368209003", postLowerRightArmCode)
 
         val (postLeftLegRes, postLeftLegCode) = resolveAnatomicalRegion(35f, 80f, true)
         assertEquals("368214008", postLeftLegCode)

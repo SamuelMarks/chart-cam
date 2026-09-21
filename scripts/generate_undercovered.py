@@ -270,6 +270,11 @@ def main():
         "chartCam/src/commonMain/kotlin/io/healthplatform/chartcam/ui/components/ImportPreviewDialog.kt",
         "chartCam/src/commonMain/kotlin/io/healthplatform/chartcam/ui/components/LanguageMenu.kt",
         "chartCam/src/commonMain/kotlin/io/healthplatform/chartcam/ui/components/LevelerOverlay.kt",
+        "chartCam/src/commonMain/kotlin/io/healthplatform/chartcam/ui/components/FrontalSilhouettePath.kt",
+        "chartCam/src/commonMain/kotlin/io/healthplatform/chartcam/ui/components/ProfileSilhouettePath.kt",
+        "chartCam/src/commonMain/kotlin/io/healthplatform/chartcam/ui/components/SilhouetteOverlay.kt",
+        "chartCam/src/commonMain/kotlin/io/healthplatform/chartcam/ui/sdc/controls/FacialSeriesCardControl.kt",
+        "chartCam/src/commonMain/kotlin/io/healthplatform/chartcam/ui/sdc/controls/FacialSlotInfo.kt",
     }
 
     for full_path in tracked_files:
@@ -355,11 +360,9 @@ def main():
 
     items_by_path = {item["path"]: item for item in covered_items + undercovered_items}
 
-    # If checklist_paths exists, use those for the checklist; otherwise use all undercovered
-    target_paths = (
-        checklist_paths
-        if checklist_paths
-        else [item["path"] for item in undercovered_items]
+    # Aggregate existing checklist items with all currently undercovered items
+    target_paths = list(
+        dict.fromkeys(checklist_paths + [item["path"] for item in undercovered_items])
     )
 
     categories = defaultdict(list)
