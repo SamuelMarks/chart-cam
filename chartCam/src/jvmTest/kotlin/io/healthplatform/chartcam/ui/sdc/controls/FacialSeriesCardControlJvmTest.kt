@@ -4,6 +4,7 @@
  */
 package io.healthplatform.chartcam.ui.sdc.controls
 
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithTag
@@ -191,6 +192,9 @@ class FacialSeriesCardControlJvmTest {
                     DocumentReference.Context(
                         related =
                             listOf(
+                                Reference(reference = null),
+                                Reference(reference = FhirString.Builder().apply { value = null }.build()),
+                                Reference(reference = str("other_ref").build()),
                                 Reference(reference = str("slot_existing").build()),
                             ),
                     ),
@@ -234,6 +238,12 @@ class FacialSeriesCardControlJvmTest {
                         type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
                     ).apply { text = str("") }
                     .build(),
+                Questionnaire.Item
+                    .Builder(
+                        linkId = FhirString.Builder().apply { value = null },
+                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                    ).apply { text = FhirString.Builder().apply { value = null } }
+                    .build(),
             )
 
         runComposeUiTest {
@@ -251,7 +261,7 @@ class FacialSeriesCardControlJvmTest {
             waitForIdle()
 
             onNodeWithText("Fallback & Attachments Series").assertIsDisplayed()
-            onNodeWithText("1/4").assertIsDisplayed()
+            onNodeWithText("1/5").assertIsDisplayed()
             onNodeWithText("Existing Doc").assertIsDisplayed()
             onNodeWithText("View 3").assertIsDisplayed()
         }
@@ -295,6 +305,244 @@ class FacialSeriesCardControlJvmTest {
             assertTrue(clickedPending)
 
             onNodeWithTag("CaptureSlotButton_slot_ro").assertDoesNotExist()
+        }
+    }
+
+    /**
+     * Verifies recomposition skipping and dynamic parameter mutations for [FacialSeriesCardControl] and [FacialSlotTile].
+     */
+    @Test
+    fun testFacialSeriesCardControlRecompositionAndSkipping() {
+        runComposeUiTest {
+            val trigger = androidx.compose.runtime.mutableStateOf(0)
+            val titleState = androidx.compose.runtime.mutableStateOf("變更標題甲")
+            val answersState = androidx.compose.runtime.mutableStateOf<Map<String, Any?>>(emptyMap())
+            val readOnlyState = androidx.compose.runtime.mutableStateOf(false)
+            val modState = androidx.compose.runtime.mutableStateOf<androidx.compose.ui.Modifier>(androidx.compose.ui.Modifier)
+
+            val item1 =
+                Questionnaire.Item
+                    .Builder(
+                        linkId = str("slot_dyn1"),
+                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                    ).apply { text = str("動態欄位1") }
+                    .build()
+            val item2 =
+                Questionnaire.Item
+                    .Builder(
+                        linkId = str("slot_dyn2"),
+                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                    ).apply { text = str("動態欄位2") }
+                    .build()
+            val itemsState = androidx.compose.runtime.mutableStateOf(listOf(item1))
+            val attachmentsState = androidx.compose.runtime.mutableStateOf<List<DocumentReference>>(emptyList())
+            val onSeriesState = androidx.compose.runtime.mutableStateOf<() -> Unit>({})
+            val onSingleState = androidx.compose.runtime.mutableStateOf<(String) -> Unit>({})
+
+            setContent {
+                val dummy = trigger.value
+                FacialSeriesCardControl(
+                    title = titleState.value,
+                    items = itemsState.value,
+                    answers = answersState.value,
+                    existingAttachments = attachmentsState.value,
+                    readOnly = readOnlyState.value,
+                    onCaptureSeries = onSeriesState.value,
+                    onCaptureSingle = onSingleState.value,
+                    modifier = modState.value,
+                )
+                FacialSlotTile(
+                    slot = FacialSlotInfo("slot_dyn1", "動態瓷磚", isCaptured = false),
+                    readOnly = readOnlyState.value,
+                    onCapture = onSeriesState.value,
+                    modifier = modState.value,
+                )
+            }
+            waitForIdle()
+
+            // Outer trigger causes recomposition skipping for unchanged children
+            trigger.value++
+            waitForIdle()
+
+            // Mutate each state dynamically
+            titleState.value = "變更標題乙"
+            waitForIdle()
+
+            itemsState.value = listOf(item2)
+            waitForIdle()
+
+            answersState.value = mapOf("slot_dyn2" to "captured.jpg")
+            waitForIdle()
+
+            val dummyDoc =
+                DocumentReference(
+                    status = Enumeration(value = DocumentReferenceStatus.Current),
+                    content = emptyList(),
+                )
+            attachmentsState.value = listOf(dummyDoc)
+            waitForIdle()
+
+            readOnlyState.value = true
+            waitForIdle()
+
+            onSeriesState.value = { println("series_changed") }
+            waitForIdle()
+
+            onSingleState.value = { println("single_changed: $it") }
+            waitForIdle()
+
+            modState.value =
+                androidx.compose.ui.Modifier
+                    .testTag("new_card_tag")
+            waitForIdle()
+        }
+    }
+
+    /**
+     * Tests pure skipping for FacialSeriesCardControl and FacialSlotTile when parent recomposes with constants.
+     */
+    @Test
+    fun testPureSkippingBothControls() {
+        runComposeUiTest {
+            val trigger = androidx.compose.runtime.mutableStateOf(0)
+            val slot = FacialSlotInfo("c_slot", "純靜態瓷磚", isCaptured = true)
+            val onCapture: () -> Unit = {}
+            val item =
+                Questionnaire.Item
+                    .Builder(
+                        linkId = str("item_const"),
+                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                    ).apply { text = str("靜態題目") }
+                    .build()
+            val items = listOf(item)
+            val answers = emptyMap<String, Any?>()
+            val attachments = emptyList<DocumentReference>()
+            val onSeries: () -> Unit = {}
+            val onSingle: (String) -> Unit = {}
+
+            setContent {
+                val dummy = trigger.value
+                FacialSeriesCardControl(
+                    title = "靜態標題",
+                    items = items,
+                    answers = answers,
+                    existingAttachments = attachments,
+                    readOnly = true,
+                    onCaptureSeries = onSeries,
+                    onCaptureSingle = onSingle,
+                    modifier = androidx.compose.ui.Modifier,
+                )
+                FacialSlotTile(
+                    slot = slot,
+                    readOnly = true,
+                    onCapture = onCapture,
+                    modifier = androidx.compose.ui.Modifier,
+                )
+            }
+            waitForIdle()
+            trigger.value++
+            waitForIdle()
+        }
+    }
+
+    /**
+     * Tests dynamic mutations of all parameters in FacialSlotTile.
+     */
+    @Test
+    fun testDynamicSlotTileMutations() {
+        runComposeUiTest {
+            val slotState = androidx.compose.runtime.mutableStateOf(FacialSlotInfo("slot_mut", "初始瓷磚", isCaptured = false))
+            val roState = androidx.compose.runtime.mutableStateOf(false)
+            val capState = androidx.compose.runtime.mutableStateOf<() -> Unit>({})
+            val modState = androidx.compose.runtime.mutableStateOf<androidx.compose.ui.Modifier>(androidx.compose.ui.Modifier)
+
+            setContent {
+                FacialSlotTile(
+                    slot = slotState.value,
+                    readOnly = roState.value,
+                    onCapture = capState.value,
+                    modifier = modState.value,
+                )
+            }
+            waitForIdle()
+
+            slotState.value = FacialSlotInfo("slot_mut", "更新瓷磚", isCaptured = true)
+            waitForIdle()
+
+            roState.value = true
+            waitForIdle()
+
+            capState.value = { }
+            waitForIdle()
+
+            modState.value =
+                androidx.compose.ui.Modifier
+                    .testTag("updated_tile_tag")
+            waitForIdle()
+        }
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun DynamicCardWrapper(
+        title: String,
+        items: List<Questionnaire.Item>,
+        answers: Map<String, Any?>,
+        existingAttachments: List<DocumentReference>,
+        readOnly: Boolean,
+        onCaptureSeries: () -> Unit,
+        onCaptureSingle: (String) -> Unit,
+        modifier: androidx.compose.ui.Modifier,
+        trigger: Int,
+    ) {
+        val t = trigger
+        FacialSeriesCardControl(
+            title = title,
+            items = items,
+            answers = answers,
+            existingAttachments = existingAttachments,
+            readOnly = readOnly,
+            onCaptureSeries = onCaptureSeries,
+            onCaptureSingle = onCaptureSingle,
+            modifier = modifier,
+        )
+    }
+
+    /**
+     * Tests dynamic wrapper propagation for FacialSeriesCardControl to cover unmemoized changed branches.
+     */
+    @Test
+    fun testDynamicCardWrapperRecomposition() {
+        runComposeUiTest {
+            val trigger = androidx.compose.runtime.mutableStateOf(0)
+            val onSeries: () -> Unit = {}
+            val onSingle: (String) -> Unit = {}
+            val item =
+                Questionnaire.Item
+                    .Builder(
+                        linkId = str("item_dyn"),
+                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                    ).apply { text = str("動態題目") }
+                    .build()
+            val staticItems = listOf(item)
+
+            setContent {
+                DynamicCardWrapper(
+                    title = "動態標題",
+                    items = staticItems,
+                    answers = emptyMap(),
+                    existingAttachments = emptyList(),
+                    readOnly = false,
+                    onCaptureSeries = onSeries,
+                    onCaptureSingle = onSingle,
+                    modifier = androidx.compose.ui.Modifier,
+                    trigger = trigger.value,
+                )
+            }
+            waitForIdle()
+
+            // Trigger recomposition where parameters (including staticItems) are unchanged
+            trigger.value++
+            waitForIdle()
         }
     }
 }

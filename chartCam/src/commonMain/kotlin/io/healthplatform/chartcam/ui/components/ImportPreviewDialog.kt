@@ -41,14 +41,12 @@ import chartcam.chartcam.generated.resources.label_resolution_strategy
 import chartcam.chartcam.generated.resources.patient_import_conflict_format
 import chartcam.chartcam.generated.resources.patients_to_ingest_count_format
 import chartcam.chartcam.generated.resources.title_import_review_merge
-import chartcam.chartcam.generated.resources.unknown_patient
 import io.healthplatform.chartcam.models.ConflictResolutionStrategy
 import io.healthplatform.chartcam.models.ConflictType
 import io.healthplatform.chartcam.models.ImportCategory
 import io.healthplatform.chartcam.models.ImportFilterOptions
 import io.healthplatform.chartcam.models.ImportPreviewSummary
-import io.healthplatform.chartcam.models.familyName
-import io.healthplatform.chartcam.models.givenName
+import io.healthplatform.chartcam.models.fullName
 import io.healthplatform.chartcam.models.mrn
 import io.healthplatform.chartcam.ui.theme.AppSpacing
 import org.jetbrains.compose.resources.stringResource
@@ -100,7 +98,7 @@ fun ImportPreviewDialog(
         },
         text = {
             LazyColumn(
-                modifier = Modifier.fillMaxWidth().heightIn(max = 480.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp),
                 verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
             ) {
                 item {
@@ -126,7 +124,7 @@ fun ImportPreviewDialog(
                         ) {
                             Checkbox(
                                 checked = isChecked,
-                                onCheckedChange = { onToggleCategory(category, it) },
+                                onCheckedChange = null,
                             )
                             Text(
                                 text = categoryName,
@@ -170,11 +168,7 @@ fun ImportPreviewDialog(
                 items(preview.stagedPatients) { stagingItem ->
                     val pid = stagingItem.incomingPatient.id ?: ""
                     val isSelected = selectedPatientIds.contains(pid)
-                    val unknownText = stringResource(Res.string.unknown_patient)
-                    val patientName =
-                        stagingItem.incomingPatient.name.firstOrNull()?.let {
-                            "${it.givenName} ${it.familyName}".trim()
-                        } ?: unknownText
+                    val patientName = stagingItem.incomingPatient.fullName
                     val currentResolution = conflictResolutions[pid] ?: stagingItem.resolutionStrategy
 
                     Column(
@@ -196,7 +190,7 @@ fun ImportPreviewDialog(
                         ) {
                             Checkbox(
                                 checked = isSelected,
-                                onCheckedChange = { onTogglePatient(pid, it) },
+                                onCheckedChange = null,
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
@@ -243,7 +237,7 @@ fun ImportPreviewDialog(
                                     ) {
                                         RadioButton(
                                             selected = currentResolution == strategy,
-                                            onClick = { onSetResolution(pid, strategy) },
+                                            onClick = null,
                                         )
                                         Text(
                                             text = strategyName,

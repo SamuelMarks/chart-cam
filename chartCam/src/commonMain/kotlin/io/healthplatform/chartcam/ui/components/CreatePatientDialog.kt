@@ -21,6 +21,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DatePickerState
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -44,11 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.error
@@ -156,22 +153,37 @@ private fun parsePartsToDate(
         if (parts[0].length == FOUR_DIGIT_YEAR_LENGTH) {
             LocalDate(nums[0], nums[1], nums[2])
         } else if (pattern == DatePattern.YEAR_FIRST) {
-            val year = resolveYear(parts[0], nums[0])
-            if (year != null) {
-                LocalDate(year, nums[1], nums[2])
-            } else {
-                null
-            }
+            val year = resolveYear(parts[0], nums[0]) ?: return@runCatching null
+            LocalDate(year, nums[1], nums[2])
         } else {
-            val year = resolveYear(parts[2], nums[2])
-            if (year != null) {
-                val isDayFirst = pattern == DatePattern.DAY_FIRST
-                tryConstructDate(year, nums[0], nums[1], tryFirstAsMonth = !isDayFirst)
-            } else {
-                null
-            }
+            val year = resolveYear(parts[2], nums[2]) ?: return@runCatching null
+            val isDayFirst = pattern == DatePattern.DAY_FIRST
+            tryConstructDate(year, nums[0], nums[1], tryFirstAsMonth = !isDayFirst)
         }
     }.getOrNull()
+
+/**
+ * Resolves the selected date from [DatePickerState] and formats it according to [currentLang].
+ *
+ * @param datePickerState The date picker state.
+ * @param currentLang The current application language.
+ * @return Formatted date string for input display.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+internal fun onDatePickerConfirm(
+    datePickerState: DatePickerState,
+    currentLang: String,
+): String {
+    val millis =
+        datePickerState.selectedDateMillis
+            ?: kotlin.time.Clock.System
+                .now()
+                .toEpochMilliseconds()
+    val instant = kotlin.time.Instant.fromEpochMilliseconds(millis)
+    val date = instant.toLocalDateTime(TimeZone.UTC).date
+    val pattern = resolveDatePattern(currentLang)
+    return formatDateForPattern(date, pattern)
+}
 
 /**
  * Attempts to parse a user-entered date string in either ISO-8601 (YYYY-MM-DD)
@@ -200,6 +212,18 @@ fun parseFlexibleDate(
 }
 
 /**
+ * Action callbacks for [CreatePatientDialog].
+ *
+ * @property onDismissRequest Callback invoked when the user dismisses the dialog without saving.
+ * @property onConfirm Callback invoked when the user successfully saves the new patient data.
+ */
+@androidx.compose.runtime.Immutable
+data class CreatePatientDialogActions(
+    val onDismissRequest: () -> Unit,
+    val onConfirm: (String, String, String, LocalDate, String) -> Unit,
+)
+
+/**
  * Dialog for creating a new Patient.
  * Collects first name, last name, MRN, Date of Birth, and gender.
  * Provides validation for all fields and date format.
@@ -212,12 +236,40 @@ fun parseFlexibleDate(
  * @param onDismissRequest Callback invoked when the user dismisses the dialog without saving.
  * @param onConfirm Callback invoked when the user successfully saves the new patient data.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreatePatientDialog(
     onDismissRequest: () -> Unit,
     onConfirm: (String, String, String, LocalDate, String) -> Unit,
 ) {
+    CreatePatientDialog(
+        actions =
+            CreatePatientDialogActions(
+                onDismissRequest = onDismissRequest,
+                onConfirm = onConfirm,
+            ),
+    )
+}
+
+/**
+ * Dialog for creating a new Patient.
+ * Collects first name, last name, MRN, Date of Birth, and gender.
+ * Provides validation for all fields and date format.
+ *
+ * **State & Side Effects:**
+ * Maintains internal form state (firstName, lastName, mrn, dob, gender, and errors).
+ * Validates date parsing directly in the dialog logic.
+ * No explicit Modifier is exposed as this represents a top-level Dialog.
+ *
+ * @param actions Action callbacks for the dialog.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreatePatientDialog(
+    actions: CreatePatientDialogActions,
+) {
+    val onDismissRequest = actions.onDismissRequest
+    val onConfirm = actions.onConfirm
+
     /**
      * Stores the user's input for the patient's first name.
      */
@@ -258,6 +310,10 @@ fun CreatePatientDialog(
      */
     val datePickerState =
         rememberDatePickerState(
+            initialSelectedDateMillis =
+                kotlin.time.Clock.System
+                    .now()
+                    .toEpochMilliseconds(),
             selectableDates =
                 object : SelectableDates {
                     /**
@@ -317,9 +373,10 @@ fun CreatePatientDialog(
     val isDobError = error != null && (dobString.isBlank() || error == errorInvalidDate)
     val dobValidationMessage = if (dobString.isBlank()) errorAllFields else errorInvalidDate
     val isEastAsianLocale =
-        when (currentLang.lowercase().split("-", "_").first()) {
-            "zh", "ja" -> true
-            else -> false
+        if (currentLang.startsWith("zh", ignoreCase = true)) {
+            true
+        } else {
+            currentLang.startsWith("ja", ignoreCase = true)
         }
 
     key(currentLang) {
@@ -339,48 +396,68 @@ fun CreatePatientDialog(
                             .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
                 ) {
+                    val firstNameField = @Composable {
+                        OutlinedTextField(
+                            value = firstName,
+                            onValueChange = {
+                                firstName = it
+                                if (isFirstNameError) error = null
+                            },
+                            label = { Text(stringResource(Res.string.first_name)) },
+                            isError = isFirstNameError,
+                            supportingText = {
+                                if (isFirstNameError) {
+                                    Text(errorAllFields)
+                                }
+                            },
+                            singleLine = true,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .semantics {
+                                        if (isFirstNameError) {
+                                            error(errorAllFields)
+                                        }
+                                    }.tabFocusNext(focusManager),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
+                        )
+                    }
+
+                    val lastNameField = @Composable {
+                        OutlinedTextField(
+                            value = lastName,
+                            onValueChange = {
+                                lastName = it
+                                if (isLastNameError) error = null
+                            },
+                            label = { Text(stringResource(Res.string.last_name)) },
+                            isError = isLastNameError,
+                            supportingText = {
+                                if (isLastNameError) {
+                                    Text(errorAllFields)
+                                }
+                            },
+                            singleLine = true,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .semantics {
+                                        if (isLastNameError) {
+                                            error(errorAllFields)
+                                        }
+                                    }.tabFocusNext(focusManager),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
+                        )
+                    }
+
                     if (isEastAsianLocale) {
-                        PatientLastNameField(
-                            lastName = lastName,
-                            onLastNameChange = {
-                                lastName = it
-                                if (isLastNameError) error = null
-                            },
-                            isError = isLastNameError,
-                            errorMessage = errorAllFields,
-                            focusManager = focusManager,
-                        )
-                        PatientFirstNameField(
-                            firstName = firstName,
-                            onFirstNameChange = {
-                                firstName = it
-                                if (isFirstNameError) error = null
-                            },
-                            isError = isFirstNameError,
-                            errorMessage = errorAllFields,
-                            focusManager = focusManager,
-                        )
+                        lastNameField()
+                        firstNameField()
                     } else {
-                        PatientFirstNameField(
-                            firstName = firstName,
-                            onFirstNameChange = {
-                                firstName = it
-                                if (isFirstNameError) error = null
-                            },
-                            isError = isFirstNameError,
-                            errorMessage = errorAllFields,
-                            focusManager = focusManager,
-                        )
-                        PatientLastNameField(
-                            lastName = lastName,
-                            onLastNameChange = {
-                                lastName = it
-                                if (isLastNameError) error = null
-                            },
-                            isError = isLastNameError,
-                            errorMessage = errorAllFields,
-                            focusManager = focusManager,
-                        )
+                        firstNameField()
+                        lastNameField()
                     }
                     OutlinedTextField(
                         value = mrn,
@@ -403,17 +480,7 @@ fun CreatePatientDialog(
                                     if (isMrnError) {
                                         error(errorAllFields)
                                     }
-                                }.tabFocusNext(focusManager)
-                                .onPreviewKeyEvent {
-                                    if (it.key == Key.Enter &&
-                                        it.type == KeyEventType.KeyUp
-                                    ) {
-                                        focusManager.moveFocus(FocusDirection.Next)
-                                        true
-                                    } else {
-                                        false
-                                    }
-                                },
+                                }.tabFocusNext(focusManager),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
                     )
@@ -440,17 +507,7 @@ fun CreatePatientDialog(
                                     if (isDobError) {
                                         error(dobValidationMessage)
                                     }
-                                }.tabFocusNext(focusManager)
-                                .onPreviewKeyEvent {
-                                    if (it.key == Key.Enter &&
-                                        it.type == KeyEventType.KeyUp
-                                    ) {
-                                        showDatePicker = true
-                                        true
-                                    } else {
-                                        false
-                                    }
-                                },
+                                }.tabFocusNext(focusManager),
                         placeholder = { Text(sampleDate) },
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
@@ -470,12 +527,7 @@ fun CreatePatientDialog(
                             confirmButton = {
                                 TextButton(onClick = {
                                     showDatePicker = false
-                                    datePickerState.selectedDateMillis?.let { millis ->
-                                        val instant = kotlin.time.Instant.fromEpochMilliseconds(millis)
-                                        val date = instant.toLocalDateTime(TimeZone.UTC).date
-                                        val pattern = resolveDatePattern(currentLang)
-                                        dobString = formatDateForPattern(date, pattern)
-                                    }
+                                    dobString = onDatePickerConfirm(datePickerState, currentLang)
                                 }) {
                                     Text(stringResource(Res.string.ok))
                                 }
@@ -541,15 +593,16 @@ fun CreatePatientDialog(
                         }
                     }
 
-                    if (error != null) {
+                    val currentError = error
+                    if (currentError != null) {
                         Text(
-                            text = error!!,
+                            text = currentError,
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                             modifier =
                                 Modifier.semantics {
                                     liveRegion = LiveRegionMode.Polite
-                                    this.error(error!!)
+                                    this.error(currentError)
                                 },
                         )
                     }
@@ -581,106 +634,4 @@ fun CreatePatientDialog(
             },
         )
     }
-}
-
-/**
- * Internal helper for patient first name input.
- *
- * @param firstName The current first name value.
- * @param onFirstNameChange Callback for first name change.
- * @param isError True if there is an error.
- * @param errorMessage The error message to display.
- * @param focusManager Focus manager for keyboard navigation.
- */
-@Composable
-private fun PatientFirstNameField(
-    firstName: String,
-    onFirstNameChange: (String) -> Unit,
-    isError: Boolean,
-    errorMessage: String,
-    focusManager: androidx.compose.ui.focus.FocusManager,
-) {
-    OutlinedTextField(
-        value = firstName,
-        onValueChange = onFirstNameChange,
-        label = { Text(stringResource(Res.string.first_name)) },
-        isError = isError,
-        supportingText = {
-            if (isError) {
-                Text(errorMessage)
-            }
-        },
-        singleLine = true,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .semantics {
-                    if (isError) {
-                        error(errorMessage)
-                    }
-                }.tabFocusNext(focusManager)
-                .onPreviewKeyEvent {
-                    if (it.key == Key.Enter &&
-                        it.type == KeyEventType.KeyUp
-                    ) {
-                        focusManager.moveFocus(FocusDirection.Next)
-                        true
-                    } else {
-                        false
-                    }
-                },
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
-    )
-}
-
-/**
- * Internal helper for patient last name input.
- *
- * @param lastName The current last name value.
- * @param onLastNameChange Callback for last name change.
- * @param isError True if there is an error.
- * @param errorMessage The error message to display.
- * @param focusManager Focus manager for keyboard navigation.
- */
-@Composable
-private fun PatientLastNameField(
-    lastName: String,
-    onLastNameChange: (String) -> Unit,
-    isError: Boolean,
-    errorMessage: String,
-    focusManager: androidx.compose.ui.focus.FocusManager,
-) {
-    OutlinedTextField(
-        value = lastName,
-        onValueChange = onLastNameChange,
-        label = { Text(stringResource(Res.string.last_name)) },
-        isError = isError,
-        supportingText = {
-            if (isError) {
-                Text(errorMessage)
-            }
-        },
-        singleLine = true,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .semantics {
-                    if (isError) {
-                        error(errorMessage)
-                    }
-                }.tabFocusNext(focusManager)
-                .onPreviewKeyEvent {
-                    if (it.key == Key.Enter &&
-                        it.type == KeyEventType.KeyUp
-                    ) {
-                        focusManager.moveFocus(FocusDirection.Next)
-                        true
-                    } else {
-                        false
-                    }
-                },
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
-    )
 }

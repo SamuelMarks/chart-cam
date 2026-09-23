@@ -125,10 +125,10 @@ fun FitzpatrickPaletteControl(
     selectedType: FitzpatrickSkinType?,
     onTypeSelected: (FitzpatrickSkinType) -> Unit,
     label: String,
-    isRequired: Boolean = false,
-    isError: Boolean = false,
-    errorMessage: String? = null,
-    readOnly: Boolean = false,
+    isRequired: Boolean,
+    isError: Boolean,
+    errorMessage: String?,
+    readOnly: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -290,4 +290,33 @@ fun FitzpatrickPaletteControl(
             )
         }
     }
+}
+
+/**
+ * Convenience overload for [FitzpatrickPaletteControl] defaulting validation and error states.
+ *
+ * @param selectedType The currently selected [FitzpatrickSkinType], or null.
+ * @param onTypeSelected Callback invoked when a phototype is selected.
+ * @param label The localized title/label for the questionnaire item.
+ * @param readOnly Whether the control is rendered in read-only / review mode.
+ * @param modifier The modifier to apply to the root layout.
+ */
+@Composable
+fun FitzpatrickPaletteControl(
+    selectedType: FitzpatrickSkinType?,
+    onTypeSelected: (FitzpatrickSkinType) -> Unit,
+    label: String,
+    readOnly: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
+    FitzpatrickPaletteControl(
+        selectedType = selectedType,
+        onTypeSelected = onTypeSelected,
+        label = label,
+        isRequired = false,
+        isError = false,
+        errorMessage = null,
+        readOnly = readOnly,
+        modifier = modifier,
+    )
 }

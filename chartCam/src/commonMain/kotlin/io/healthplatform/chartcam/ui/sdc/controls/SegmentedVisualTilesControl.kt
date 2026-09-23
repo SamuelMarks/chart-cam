@@ -68,11 +68,11 @@ fun SegmentedVisualTilesControl(
     options: List<String>,
     onOptionToggled: (String) -> Unit,
     label: String,
-    isMultiSelect: Boolean = false,
-    isRequired: Boolean = false,
-    isError: Boolean = false,
-    errorMessage: String? = null,
-    readOnly: Boolean = false,
+    isMultiSelect: Boolean,
+    isRequired: Boolean,
+    isError: Boolean,
+    errorMessage: String?,
+    readOnly: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -214,4 +214,39 @@ fun SegmentedVisualTilesControl(
             )
         }
     }
+}
+
+/**
+ * Convenience overload for [SegmentedVisualTilesControl] defaulting validation and error states.
+ *
+ * @param selectedOptions The subset of currently selected option keys/labels.
+ * @param options The full collection of available option labels.
+ * @param onOptionToggled Callback invoked with the toggled option label.
+ * @param label The localized title/label for the questionnaire item.
+ * @param isMultiSelect Whether multiple selections are permitted.
+ * @param readOnly Whether the control is rendered in read-only / review mode.
+ * @param modifier The modifier to apply to the root layout.
+ */
+@Composable
+fun SegmentedVisualTilesControl(
+    selectedOptions: List<String>,
+    options: List<String>,
+    onOptionToggled: (String) -> Unit,
+    label: String,
+    isMultiSelect: Boolean = false,
+    readOnly: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
+    SegmentedVisualTilesControl(
+        selectedOptions = selectedOptions,
+        options = options,
+        onOptionToggled = onOptionToggled,
+        label = label,
+        isMultiSelect = isMultiSelect,
+        isRequired = false,
+        isError = false,
+        errorMessage = null,
+        readOnly = readOnly,
+        modifier = modifier,
+    )
 }

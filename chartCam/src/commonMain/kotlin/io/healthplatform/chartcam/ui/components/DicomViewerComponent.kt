@@ -201,7 +201,7 @@ private fun DicomMetadataSummary(dataset: DicomDataset) {
  * @param onSharePdf Optional callback to trigger sharing.
  */
 @Composable
-private fun EncapsulatedPdfSection(
+internal fun EncapsulatedPdfSection(
     pdfData: ByteArray,
     onSharePdf: ((ByteArray) -> Unit)?,
 ) {

@@ -105,20 +105,20 @@ class JvmAudioRecorderManagerTest {
             assertTrue(isLineStarted)
 
             // Allow the background recording job to poll and read from the simulated line
-            kotlinx.coroutines.delay(120)
+            Thread.sleep(100)
             assertTrue(manager.amplitude.value > 0f)
 
             // Pause while line is active to cover the paused delay branch
             manager.pauseRecording()
-            kotlinx.coroutines.delay(100)
+            Thread.sleep(80)
 
             // Resume and delay to cover empty available branch
             manager.resumeRecording()
-            kotlinx.coroutines.delay(100)
+            Thread.sleep(80)
 
             // Pause and delay
             manager.pauseRecording()
-            kotlinx.coroutines.delay(60)
+            Thread.sleep(60)
 
             // Resume
             manager.resumeRecording()
@@ -134,6 +134,50 @@ class JvmAudioRecorderManagerTest {
             manager2.startRecording()
             manager2.cancelRecording()
             assertFalse(manager2.isRecording.value)
+        }
+
+    /**
+     * Verifies starting recording with null targetLineProvider and unsupported audio line.
+     */
+    @Test
+    fun testStartRecordingWithNullTargetLineProviderAndUnsupportedLine() =
+        runTest {
+            val storage = createFileStorage()
+            val manager = JvmAudioRecorderManager(storage, targetLineProvider = null, lineSupportedChecker = { false })
+            val startRes = manager.startRecording()
+            assertTrue(startRes.isSuccess)
+            manager.cancelRecording()
+        }
+
+    /**
+     * Verifies starting recording when targetLineProvider returns null directly.
+     */
+    @Test
+    fun testStartRecordingWithNullLine() =
+        runTest {
+            val storage = createFileStorage()
+            val manager = JvmAudioRecorderManager(storage, targetLineProvider = { null })
+            val startRes = manager.startRecording()
+            assertTrue(startRes.isSuccess)
+            manager.cancelRecording()
+        }
+
+    /**
+     * Verifies starting recording when line discovery throws.
+     */
+    @Test
+    fun testStartRecordingWhenLineDiscoveryThrows() =
+        runTest {
+            val storage = createFileStorage()
+            val manager =
+                JvmAudioRecorderManager(
+                    storage,
+                    targetLineProvider = null,
+                    lineSupportedChecker = { throw IllegalStateException("AudioSystem failure") }, // allow-exception
+                )
+            val startRes = manager.startRecording()
+            assertTrue(startRes.isSuccess)
+            manager.cancelRecording()
         }
 
     /**
@@ -220,5 +264,68 @@ class JvmAudioRecorderManagerTest {
             val res = manager.startRecording()
             assertTrue(res.isSuccess)
             assertTrue(manager.isRecording.value)
+        }
+
+    /**
+     * Verifies lineSupportedChecker returning false branch.
+     */
+    @Test
+    fun testJvmAudioRecorderLineUnsupported() =
+        runTest {
+            val storage = createFileStorage()
+            val manager = JvmAudioRecorderManager(storage, lineSupportedChecker = { false })
+            val res = manager.startRecording()
+            assertTrue(res.isSuccess)
+            manager.cancelRecording()
+        }
+
+    /**
+     * Verifies cancelRecording and stopRecording when not actively recording.
+     */
+    @Test
+    fun testCancelAndStopWhenNotRecording() =
+        runTest {
+            val storage = createFileStorage()
+            val manager = JvmAudioRecorderManager(storage)
+
+            val cancelRes = manager.cancelRecording()
+            assertTrue(cancelRes.isSuccess)
+
+            val stopRes = manager.stopRecording("not_recording.wav")
+            assertTrue(stopRes.isSuccess)
+        }
+
+    /**
+     * Verifies stopping recording with non-empty audio buffer.
+     */
+    @Test
+    fun testStopRecordingWithNonEmptyBuffer() =
+        runTest {
+            val storage = createFileStorage()
+            var readCount = 0
+            val fakeLine =
+                java.lang.reflect.Proxy.newProxyInstance(
+                    javax.sound.sampled.TargetDataLine::class.java.classLoader,
+                    arrayOf(javax.sound.sampled.TargetDataLine::class.java),
+                ) { _, method, args ->
+                    when (method.name) {
+                        "open", "start", "stop", "close" -> null
+                        "available" -> if (readCount < 2) 512 else 0
+                        "read" -> {
+                            val buffer = args[0] as ByteArray
+                            val length = args[2] as Int
+                            readCount++
+                            buffer[0] = 50
+                            minOf(buffer.size, length)
+                        }
+                        else -> null
+                    }
+                } as javax.sound.sampled.TargetDataLine
+
+            val manager = JvmAudioRecorderManager(storage, targetLineProvider = { fakeLine })
+            manager.startRecording()
+            Thread.sleep(80)
+            val stopRes = manager.stopRecording("non_empty.wav")
+            assertTrue(stopRes.isSuccess, "Failed with: ${stopRes.exceptionOrNull()}")
         }
 }

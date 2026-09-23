@@ -86,12 +86,15 @@ fun FacialSeriesCardControl(
     val slots =
         items.mapIndexed { index, item ->
             val linkId = item.linkId.value ?: ""
-            val defaultTitle = defaultTitles.getOrElse(index) { "View $index" }
-            val itemText = item.text?.value?.takeIf { it.isNotBlank() } ?: defaultTitle
+            val defaultTitle = if (index < defaultTitles.size) defaultTitles[index] else "View $index"
+            val rawText = item.text?.value
+            val itemText = if (rawText != null && rawText.isNotBlank()) rawText else defaultTitle
             val hasAnswer = answers[linkId] != null
             val hasExisting =
                 existingAttachments.any { doc ->
-                    doc.context?.related?.any { it.reference?.value == linkId } == true
+                    val ctx = doc.context
+                    val rel = if (ctx != null) ctx.related else null
+                    rel != null && rel.any { ref -> ref.reference?.value == linkId }
                 }
             FacialSlotInfo(
                 linkId = linkId,
@@ -201,12 +204,15 @@ fun FacialSlotTile(
     onCapture: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val statusDesc = if (slot.isCaptured) "Captured" else "Pending"
+    val slotDesc = "${slot.title}: $statusDesc"
+
     OutlinedCard(
         modifier =
             modifier
                 .testTag("FacialSlotTile_${slot.linkId}")
                 .semantics {
-                    contentDescription = "${slot.title}: ${if (slot.isCaptured) "Captured" else "Pending"}"
+                    contentDescription = slotDesc
                 },
         border =
             BorderStroke(

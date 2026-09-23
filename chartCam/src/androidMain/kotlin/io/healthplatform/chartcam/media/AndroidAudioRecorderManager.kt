@@ -23,10 +23,41 @@ private const val DEFAULT_SILENT_AUDIO_BYTES = 1600
  * Android native implementation of [AudioRecorderManager] using [MediaRecorder].
  *
  * @param fileStorage Storage used to persist encrypted audio files.
+ * @param contextProvider Function resolving the application [android.content.Context], or null.
+ * @param mediaRecorderFactory Function creating [MediaRecorder] instances.
+ * @param sdkInt Current Android SDK level.
  */
 class AndroidAudioRecorderManager(
     private val fileStorage: FileStorage,
+    internal val contextProvider: () -> android.content.Context? = {
+        runCatching { AndroidAppInit.getContext() }.getOrNull()
+    },
+    internal val mediaRecorderFactory: (android.content.Context) -> MediaRecorder = { ctx ->
+        createDefaultMediaRecorder(ctx)
+    },
+    private val sdkInt: Int = Build.VERSION.SDK_INT,
 ) : AudioRecorderManager {
+    /** Companion object providing MediaRecorder factory */
+    companion object {
+        /**
+         * Creates a [MediaRecorder] instance appropriate for the current platform SDK level.
+         *
+         * @param ctx The Android [android.content.Context].
+         * @param sdkInt The platform SDK level.
+         * @return A configured [MediaRecorder].
+         */
+        internal fun createDefaultMediaRecorder(
+            ctx: android.content.Context,
+            sdkInt: Int = Build.VERSION.SDK_INT,
+        ): MediaRecorder =
+            if (sdkInt >= Build.VERSION_CODES.S) {
+                MediaRecorder(ctx)
+            } else {
+                @Suppress("DEPRECATION")
+                MediaRecorder()
+            }
+    }
+
     private val _isRecording = MutableStateFlow(false)
     override val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
 
@@ -44,12 +75,17 @@ class AndroidAudioRecorderManager(
      */
     override suspend fun startRecording(): Result<Unit> =
         withContext(Dispatchers.IO) {
-            val context = runCatching { AndroidAppInit.getContext() }.getOrNull()
+            val ctx =
+                contextProvider.invoke() ?: return@withContext run {
+                    _isRecording.value = true
+                    isPaused = false
+                    _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
+                    Result.success(Unit)
+                }
+
             val hasPerm =
-                context?.let {
-                    it.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
-                        PackageManager.PERMISSION_GRANTED
-                } ?: false
+                ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
+                    PackageManager.PERMISSION_GRANTED
 
             if (!hasPerm) {
                 _isRecording.value = true
@@ -59,17 +95,12 @@ class AndroidAudioRecorderManager(
             }
 
             runCatching {
-                val cacheDir = context.cacheDir ?: File(System.getProperty("java.io.tmpdir") ?: ".")
+                val fallbackTmp = System.getProperty("java.io.tmpdir") ?: "."
+                val cacheDir = ctx.cacheDir ?: File(fallbackTmp)
                 val targetFile = File(cacheDir, "audio_record_${System.currentTimeMillis()}.m4a")
                 tempFile = targetFile
 
-                @Suppress("DEPRECATION")
-                val recorder =
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        MediaRecorder(context)
-                    } else {
-                        MediaRecorder()
-                    }
+                val recorder = mediaRecorderFactory.invoke(ctx)
 
                 recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
                 recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
@@ -98,7 +129,7 @@ class AndroidAudioRecorderManager(
         runCatching {
             isPaused = true
             _amplitude.value = 0f
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            if (sdkInt >= Build.VERSION_CODES.N) {
                 runCatching { mediaRecorder?.pause() }
             }
         }
@@ -112,7 +143,7 @@ class AndroidAudioRecorderManager(
         runCatching {
             isPaused = false
             _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            if (sdkInt >= Build.VERSION_CODES.N) {
                 runCatching { mediaRecorder?.resume() }
             }
         }
@@ -131,8 +162,11 @@ class AndroidAudioRecorderManager(
                 _amplitude.value = 0f
 
                 runCatching {
-                    mediaRecorder?.stop()
-                    mediaRecorder?.release()
+                    val recorder = mediaRecorder
+                    if (recorder != null) {
+                        recorder.stop()
+                        recorder.release()
+                    }
                 }
                 mediaRecorder = null
 
@@ -143,7 +177,11 @@ class AndroidAudioRecorderManager(
                     } else {
                         DefaultAudioRecorderManager(fileStorage).createWavPayload(ByteArray(DEFAULT_SILENT_AUDIO_BYTES))
                     }
-                runCatching { f?.delete() }
+                runCatching {
+                    if (f != null) {
+                        f.delete()
+                    }
+                }
                 tempFile = null
 
                 fileStorage.saveImage(fileName, bytes)
@@ -162,12 +200,20 @@ class AndroidAudioRecorderManager(
             _amplitude.value = 0f
 
             runCatching {
-                mediaRecorder?.stop()
-                mediaRecorder?.release()
+                val recorder = mediaRecorder
+                if (recorder != null) {
+                    recorder.stop()
+                    recorder.release()
+                }
             }
             mediaRecorder = null
 
-            runCatching { tempFile?.delete() }
+            runCatching {
+                val f = tempFile
+                if (f != null) {
+                    f.delete()
+                }
+            }
             tempFile = null
         }
 }

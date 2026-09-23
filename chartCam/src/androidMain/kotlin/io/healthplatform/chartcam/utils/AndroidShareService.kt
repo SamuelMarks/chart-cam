@@ -17,9 +17,13 @@ import java.io.File
  * Utilizes [FileProvider] to grant external apps secure access to files.
  *
  * @param context The application [Context] used to generate URIs and launch intents.
+ * @param uriProvider Provider function resolving a content [android.net.Uri] for a given file.
  */
 class AndroidShareService(
     private val context: Context,
+    private val uriProvider: (Context, String, File) -> android.net.Uri = { ctx, auth, file ->
+        FileProvider.getUriForFile(ctx, auth, file)
+    },
 ) : ShareService {
     /**
      * Resolves the target file on disk, attempting direct resolution followed by
@@ -53,7 +57,7 @@ class AndroidShareService(
 
         return runCatching {
             val uri =
-                FileProvider.getUriForFile(
+                uriProvider.invoke(
                     context,
                     "${context.packageName}.fileprovider",
                     file,

@@ -48,4 +48,76 @@ class CryptoHelperAndroidTest {
             )
         kotlin.test.assertTrue(invalidDataResult.isFailure)
     }
+
+    /**
+     * Verifies KeyStore key creation and retrieval branches in non-robolectric environment.
+     */
+    @Test
+    fun testKeyStoreCreationAndRetrievalBranches() {
+        val keyGen = javax.crypto.KeyGenerator.getInstance("AES")
+        keyGen.init(128)
+        val generatedSecretKey = keyGen.generateKey()
+
+        val mockKeyStore = org.mockito.Mockito.mock(java.security.KeyStore::class.java)
+        val mockKeyGen = org.mockito.Mockito.mock(javax.crypto.KeyGenerator::class.java)
+        org.mockito.Mockito
+            .`when`(mockKeyGen.generateKey())
+            .thenReturn(generatedSecretKey)
+
+        // First call: keyStore.getKey returns null, triggers keyGenerator.generateKey()
+        org.mockito.Mockito
+            .`when`(mockKeyStore.getKey("ChartCamKeyAlias", null))
+            .thenReturn(null)
+
+        val oldFp = CryptoHelper.buildFingerprintProvider
+        val oldKs = CryptoHelper.keyStoreProvider
+        val oldKg = CryptoHelper.keyGeneratorProvider
+
+        // allow-exception
+        try {
+            CryptoHelper.buildFingerprintProvider = { "pixel_device" }
+            CryptoHelper.keyStoreProvider = { mockKeyStore }
+            CryptoHelper.keyGeneratorProvider = { _, _ -> mockKeyGen }
+
+            val original = "KeyStore Test Data".encodeToByteArray()
+            val encrypted = CryptoHelper.encrypt(original)
+            kotlin.test.assertNotNull(encrypted)
+
+            // Second call: keyStore.getKey returns existing SecretKey
+            org.mockito.Mockito
+                .`when`(mockKeyStore.getKey("ChartCamKeyAlias", null))
+                .thenReturn(generatedSecretKey)
+            val decrypted = CryptoHelper.decrypt(encrypted)
+            assertContentEquals(original, decrypted)
+
+            // Third call: keyStore.getKey returns a non-SecretKey (e.g. PrivateKey), exercising the (as? SecretKey) null branch
+            val mockNonSecretKey = org.mockito.Mockito.mock(java.security.PrivateKey::class.java)
+            org.mockito.Mockito
+                .`when`(mockKeyStore.getKey("ChartCamKeyAlias", null))
+                .thenReturn(mockNonSecretKey)
+            val encryptedWithNonSecretKeyReturn = CryptoHelper.encrypt(original)
+            kotlin.test.assertNotNull(encryptedWithNonSecretKeyReturn)
+        } finally {
+            CryptoHelper.buildFingerprintProvider = oldFp
+            CryptoHelper.keyStoreProvider = oldKs
+            CryptoHelper.keyGeneratorProvider = oldKg
+        }
+
+        // Exercise default keyGeneratorProvider lambda
+        runCatching {
+            CryptoHelper.keyGeneratorProvider.invoke("AES", "BC")
+        }
+    }
+
+    /**
+     * Verifies cached robolectric key branch.
+     */
+    @Test
+    fun testCachedRobolectricKey() {
+        val original = "Cached key test".encodeToByteArray()
+        val enc1 = CryptoHelper.encrypt(original)
+        val enc2 = CryptoHelper.encrypt(original)
+        kotlin.test.assertNotNull(enc1)
+        kotlin.test.assertNotNull(enc2)
+    }
 }

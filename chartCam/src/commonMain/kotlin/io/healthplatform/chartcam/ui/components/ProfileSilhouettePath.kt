@@ -230,9 +230,11 @@ fun buildFrankfortLinePath(
     val endX = mapNormX(0.20f, width, isMirrored)
     val step = (endX - startX) / 12f
 
-    for (i in 0 until 12 step 2) {
+    var i = 0
+    while (i < 12) {
         path.moveTo(startX + (i * step), y)
         path.lineTo(startX + ((i + 1) * step), y)
+        i += 2
     }
 
     return path

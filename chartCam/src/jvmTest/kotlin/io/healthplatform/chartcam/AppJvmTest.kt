@@ -72,5 +72,73 @@ class AppJvmTest {
             waitForIdle()
 
             assertFalse(currentAppPrivacyManager.isLocked.value)
+
+            // Move to background while already locked
+            currentAppPrivacyManager.onAppMovedToBackground(now + 100_000L)
+            waitForIdle()
+            onNodeWithText("ChartCam Security Shield", useUnmergedTree = true).assertIsDisplayed()
+            currentAppPrivacyManager.unlock()
+            waitForIdle()
         }
+
+    /**
+     * Tests darkTheme parameter variations, recomposition, and skipping for [App].
+     */
+    @Test
+    fun testAppDarkThemeAndRecomposition() =
+        runComposeUiTest {
+            setAppLanguage("en")
+            val outerTrigger = androidx.compose.runtime.mutableStateOf(0)
+            val darkThemeState = androidx.compose.runtime.mutableStateOf(false)
+
+            setContent {
+                val dummy = outerTrigger.value
+                App(darkTheme = darkThemeState.value)
+            }
+            waitForIdle()
+
+            // Skipping
+            outerTrigger.value++
+            waitForIdle()
+
+            // Recomposition with darkTheme = true
+            darkThemeState.value = true
+            waitForIdle()
+
+            // Recomposition with darkTheme = false
+            darkThemeState.value = false
+            waitForIdle()
+        }
+
+    /**
+     * Tests defaults recomposition and static true/false parameter calls for [App].
+     */
+    @Test
+    fun testAppDefaultsRecomposition() =
+        runComposeUiTest {
+            setAppLanguage("en")
+            val outerTrigger = androidx.compose.runtime.mutableStateOf(0)
+
+            setContent {
+                val dummy = outerTrigger.value
+                App()
+                App(darkTheme = true)
+                App(darkTheme = false)
+            }
+            waitForIdle()
+
+            outerTrigger.value++
+            waitForIdle()
+        }
+
+    /**
+     * Verifies shouldShowPrivacyShield truth table logic directly.
+     */
+    @Test
+    fun testShouldShowPrivacyShieldLogic() {
+        assertTrue(shouldShowPrivacyShield(io.healthplatform.chartcam.ui.AppPrivacyState.BACKGROUND_OBSCURED, false))
+        assertTrue(shouldShowPrivacyShield(io.healthplatform.chartcam.ui.AppPrivacyState.BACKGROUND_OBSCURED, true))
+        assertTrue(shouldShowPrivacyShield(io.healthplatform.chartcam.ui.AppPrivacyState.FOREGROUND_VISIBLE, true))
+        assertFalse(shouldShowPrivacyShield(io.healthplatform.chartcam.ui.AppPrivacyState.FOREGROUND_VISIBLE, false))
+    }
 }

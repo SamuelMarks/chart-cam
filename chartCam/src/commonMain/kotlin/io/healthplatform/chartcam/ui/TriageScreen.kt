@@ -8,6 +8,7 @@
 package io.healthplatform.chartcam.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,9 +16,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -43,7 +43,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -73,11 +72,9 @@ import chartcam.chartcam.generated.resources.search_placeholder
 import chartcam.chartcam.generated.resources.selected_photos_ready
 import chartcam.chartcam.generated.resources.triage_select_patient
 import io.healthplatform.chartcam.files.FileStorage
-import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.models.customBirthDate
 import io.healthplatform.chartcam.models.getFullName
 import io.healthplatform.chartcam.models.mrn
-import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.ui.components.CreatePatientDialog
 import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.viewmodel.TriageViewModel
@@ -92,9 +89,7 @@ import org.jetbrains.compose.resources.stringResource
  * **State & Side Effects:**
  * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
- * @param capturedPhotoPaths Map of step name to photo file path. These paths are carried forward
- *        to the encounter creation phase.
- * @param fhirRepository Repository used to search or create patients.
+ * @param viewModel ViewModel managing triage state, search, and patient selection.
  * @param onProceedToEncounter Callback invoked with the selected patient ID and the `capturedPhotoPaths`
  *        map to initiate or append to a clinical encounter.
  * @param onBack Callback invoked when navigation back is requested.
@@ -103,22 +98,12 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TriageScreen(
-    capturedPhotoPaths: Map<String, String>,
-    fhirRepository: FhirRepository,
+    viewModel: TriageViewModel,
     onProceedToEncounter: (String, Map<String, String>) -> Unit,
-    onBack: () -> Unit = {},
-    fileStorage: io.healthplatform.chartcam.files.FileStorage =
-        io.healthplatform.chartcam.files
-            .createFileStorage(),
+    onBack: () -> Unit,
+    fileStorage: io.healthplatform.chartcam.files.FileStorage,
 ) {
-    val viewModel =
-        androidx.lifecycle.viewmodel.compose
-            .viewModel { TriageViewModel(fhirRepository) }
     val state by viewModel.uiState.collectAsState()
-
-    LaunchedEffect(capturedPhotoPaths) {
-        viewModel.setPaths(capturedPhotoPaths)
-    }
 
     val currentLang by currentLanguageState.collectAsState()
 
@@ -148,10 +133,7 @@ fun TriageScreen(
                     TriagePhotoBatchBar(
                         photoPaths = state.capturedPhotoPaths,
                         selectedKeys = state.selectedPhotoKeys,
-                        onToggleSelect = viewModel::togglePhotoSelection,
-                        onSelectAll = viewModel::selectAllPhotos,
-                        onClearSelection = viewModel::clearSelection,
-                        onDeleteSelected = { viewModel.deleteSelectedPhotos(fileStorage) },
+                        actions = buildTriagePhotoBatchActions(viewModel, fileStorage),
                     )
                 }
 
@@ -176,8 +158,13 @@ fun TriageScreen(
                     onCreatePatientClick = { viewModel.showCreatePatient(true) },
                 )
 
-                LazyColumn {
-                    items(state.searchResults) { patient ->
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                ) {
+                    state.searchResults.forEach { patient ->
                         ListItem(
                             headlineContent = {
                                 Text(
@@ -210,20 +197,18 @@ fun TriageScreen(
                     }
 
                     if (state.searchResults.isEmpty() && state.searchQuery.isNotBlank()) {
-                        item {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(AppSpacing.xl)
-                                        .semantics { liveRegion = LiveRegionMode.Polite },
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    stringResource(Res.string.no_patients_found),
-                                    color = MaterialTheme.colorScheme.secondary,
-                                )
-                            }
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(AppSpacing.xl)
+                                    .semantics { liveRegion = LiveRegionMode.Polite },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                stringResource(Res.string.no_patients_found),
+                                color = MaterialTheme.colorScheme.secondary,
+                            )
                         }
                     }
                 }
@@ -232,14 +217,66 @@ fun TriageScreen(
 
         if (state.isCreatingPatient) {
             CreatePatientDialog(
-                onDismissRequest = { viewModel.showCreatePatient(false) },
-                onConfirm = { f, l, mrn, dob, g ->
-                    viewModel.createPatient(f, l, mrn, dob, g)
-                },
+                onDismissRequest = handleDismissCreatePatient(viewModel),
+                onConfirm = handleConfirmCreatePatient(viewModel),
             )
         }
     }
 }
+
+/**
+ * Callbacks for [TriagePhotoBatchBar] actions.
+ *
+ * @property onToggleSelect Callback when a photo chip is toggled.
+ * @property onSelectAll Callback to select all photos.
+ * @property onClearSelection Callback to clear selection.
+ * @property onDeleteSelected Callback to delete selected photos.
+ */
+@androidx.compose.runtime.Immutable
+data class TriagePhotoBatchActions(
+    val onToggleSelect: (String) -> Unit,
+    val onSelectAll: () -> Unit,
+    val onClearSelection: () -> Unit,
+    val onDeleteSelected: () -> Unit,
+)
+
+/**
+ * Builds action callbacks for [TriagePhotoBatchBar].
+ *
+ * @param viewModel ViewModel handling triage operations.
+ * @param fileStorage File storage used to delete rejected photos from disk.
+ * @return Configured [TriagePhotoBatchActions].
+ */
+internal fun buildTriagePhotoBatchActions(
+    viewModel: TriageViewModel,
+    fileStorage: FileStorage,
+): TriagePhotoBatchActions =
+    TriagePhotoBatchActions(
+        onToggleSelect = viewModel::togglePhotoSelection,
+        onSelectAll = viewModel::selectAllPhotos,
+        onClearSelection = viewModel::clearSelection,
+        onDeleteSelected = { viewModel.deleteSelectedPhotos(fileStorage) },
+    )
+
+/**
+ * Produces dismissal callback for patient creation dialog.
+ *
+ * @param viewModel The triage ViewModel.
+ * @return Callback to dismiss the create patient dialog.
+ */
+internal fun handleDismissCreatePatient(viewModel: TriageViewModel): () -> Unit =
+    { viewModel.showCreatePatient(false) }
+
+/**
+ * Produces confirmation callback for patient creation dialog.
+ *
+ * @param viewModel The triage ViewModel.
+ * @return Callback accepting patient registration details.
+ */
+internal fun handleConfirmCreatePatient(
+    viewModel: TriageViewModel,
+): (String, String, String, kotlinx.datetime.LocalDate, String?) -> Unit =
+    { f, l, mrn, dob, g -> viewModel.createPatient(f, l, mrn, dob, g ?: "unknown") }
 
 /**
  * Header displaying the currently selected patient.
@@ -300,7 +337,7 @@ internal fun TriagePatientSelectionHeader(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TriageSearchBar(
+internal fun TriageSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onCreatePatientClick: () -> Unit,
@@ -363,19 +400,13 @@ private fun TriageSearchBar(
  *
  * @param photoPaths Map of photo identifiers to file paths.
  * @param selectedKeys Set of currently selected photo keys.
- * @param onToggleSelect Callback when a photo chip is toggled.
- * @param onSelectAll Callback to select all photos.
- * @param onClearSelection Callback to clear selection.
- * @param onDeleteSelected Callback to delete selected photos.
+ * @param actions The actions supported by the batch bar.
  */
 @Composable
-private fun TriagePhotoBatchBar(
+internal fun TriagePhotoBatchBar(
     photoPaths: Map<String, String>,
     selectedKeys: Set<String>,
-    onToggleSelect: (String) -> Unit,
-    onSelectAll: () -> Unit,
-    onClearSelection: () -> Unit,
-    onDeleteSelected: () -> Unit,
+    actions: TriagePhotoBatchActions,
 ) {
     Card(
         modifier =
@@ -399,14 +430,14 @@ private fun TriagePhotoBatchBar(
                     modifier = Modifier.semantics { heading() },
                 )
                 Row {
-                    TextButton(onClick = onSelectAll) {
+                    TextButton(onClick = actions.onSelectAll) {
                         Text(stringResource(Res.string.action_select_all))
                     }
                     if (selectedKeys.isNotEmpty()) {
-                        TextButton(onClick = onClearSelection) {
+                        TextButton(onClick = actions.onClearSelection) {
                             Text(stringResource(Res.string.action_clear_selection))
                         }
-                        IconButton(onClick = onDeleteSelected) {
+                        IconButton(onClick = actions.onDeleteSelected) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
                                 contentDescription = stringResource(Res.string.cd_delete_selected_photos),
@@ -416,24 +447,30 @@ private fun TriagePhotoBatchBar(
                     }
                 }
             }
-            LazyRow(
+            Row(
                 horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs),
-                modifier = Modifier.padding(top = AppSpacing.xs),
+                modifier =
+                    Modifier
+                        .padding(top = AppSpacing.xs)
+                        .horizontalScroll(rememberScrollState()),
             ) {
-                items(photoPaths.keys.toList()) { key ->
+                photoPaths.keys.forEach { key ->
                     val isSelected = selectedKeys.contains(key)
                     FilterChip(
                         selected = isSelected,
-                        onClick = { onToggleSelect(key) },
+                        onClick = { actions.onToggleSelect(key) },
                         label = { Text(key) },
-                        leadingIcon = {
+                        leadingIcon =
                             if (isSelected) {
-                                Icon(
-                                    Icons.Default.Check,
-                                    contentDescription = null,
-                                )
-                            }
-                        },
+                                {
+                                    Icon(
+                                        Icons.Default.Check,
+                                        contentDescription = null,
+                                    )
+                                }
+                            } else {
+                                null
+                            },
                     )
                 }
             }

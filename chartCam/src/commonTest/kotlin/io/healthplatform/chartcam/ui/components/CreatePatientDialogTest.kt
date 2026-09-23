@@ -8,6 +8,7 @@ import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * Common test for [CreatePatientDialog] and flexible date parsing.
@@ -81,11 +82,65 @@ class CreatePatientDialogTest {
     }
 
     /**
-     * Verifies that [parseFlexibleDate] falls back gracefully when month exceeds 12 in US format.
+     * Verifies that [parseFlexibleDate] parses Day-first patterns and falls back correctly.
      */
     @Test
-    fun testParseFlexibleDateFallbackOnInvalidMonth() {
-        val parsed = parseFlexibleDate("25/01/1985", "en-US")
-        assertEquals(LocalDate(1985, 1, 25), parsed)
+    fun testParseFlexibleDateDayFirstFallback() {
+        // In es (Day First), "05/25/1985" has 25 as second param, should fallback to month=5, day=25
+        val parsedEs = parseFlexibleDate("05/25/1985", "es")
+        assertEquals(LocalDate(1985, 5, 25), parsedEs)
+
+        // In en (Month First), "25/05/1985" has 25 as first param, should fallback to month=5, day=25
+        val parsedEn = parseFlexibleDate("25/05/1985", "en")
+        assertEquals(LocalDate(1985, 5, 25), parsedEn)
+
+        // Invalid year in year-first pattern
+        val parsedInvalidYearZh = parseFlexibleDate("999/05/25", "zh")
+        assertNull(parsedInvalidYearZh)
+    }
+
+    /**
+     * Verifies [onDatePickerConfirm] with both a selected date and null fallback.
+     */
+    @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+    @Test
+    fun testOnDatePickerConfirm() {
+        val state =
+            androidx.compose.material3.DatePickerState(
+                initialSelectedDateMillis = 1700000000000L,
+                locale = androidx.compose.material3.CalendarLocale("en"),
+            )
+        val formatted = onDatePickerConfirm(state, "en")
+        assertTrue(formatted.isNotBlank())
+
+        val nullState =
+            androidx.compose.material3.DatePickerState(
+                initialSelectedDateMillis = null,
+                locale = androidx.compose.material3.CalendarLocale("en"),
+            )
+        val fallbackFormatted = onDatePickerConfirm(nullState, "zh")
+        assertTrue(fallbackFormatted.isNotBlank())
+    }
+
+    /**
+     * Verifies that [parseFlexibleDate] parses 2-digit years correctly (adding century base 2000).
+     */
+    @Test
+    fun testParseFlexibleDateTwoDigitYear() {
+        val parsedEn = parseFlexibleDate("05/15/85", "en")
+        assertEquals(LocalDate(2085, 5, 15), parsedEn)
+
+        val parsedZh2 = parseFlexibleDate("85/05/15", "zh")
+        assertEquals(LocalDate(2085, 5, 15), parsedZh2)
+
+        val parsedZh4 = parseFlexibleDate("1985/05/15", "zh")
+        assertEquals(LocalDate(1985, 5, 15), parsedZh4)
+
+        // 3-digit year should fail
+        val parsed3Digit = parseFlexibleDate("05/15/985", "en")
+        assertNull(parsed3Digit)
+
+        val parsed3DigitEnd = parseFlexibleDate("15/05/985", "es")
+        assertNull(parsed3DigitEnd)
     }
 }

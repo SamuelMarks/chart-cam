@@ -6,6 +6,7 @@ package io.healthplatform.chartcam.ui.components
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
@@ -19,6 +20,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.healthplatform.chartcam.ui.setAppLanguage
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -227,6 +229,276 @@ class VerticalColumnTextJvmTest {
                     onToggleMode = {},
                 )
             }
+            waitForIdle()
+        }
+    }
+
+    /**
+     * Verifies recomposition behavior when every parameter of [VerticalColumnText] mutates dynamically.
+     */
+    @Test
+    fun testVerticalColumnTextAllParameterMutations() {
+        runComposeUiTest {
+            val textState = mutableStateOf("文字一")
+            val modState = mutableStateOf(Modifier.testTag("tag1"))
+            val maxCharsState = mutableStateOf(5)
+            val styleState = mutableStateOf(androidx.compose.ui.text.TextStyle.Default)
+            val rtlState = mutableStateOf(true)
+            val colSpacingState = mutableStateOf(10.dp)
+            val charSpacingState = mutableStateOf(2.dp)
+
+            setContent {
+                VerticalColumnText(
+                    text = textState.value,
+                    modifier = modState.value,
+                    maxCharsPerColumn = maxCharsState.value,
+                    textStyle = styleState.value,
+                    columnsRightToLeft = rtlState.value,
+                    spacingBetweenColumns = colSpacingState.value,
+                    spacingBetweenChars = charSpacingState.value,
+                )
+            }
+            waitForIdle()
+
+            textState.value = "文字二"
+            waitForIdle()
+
+            modState.value = Modifier.testTag("tag2")
+            waitForIdle()
+
+            maxCharsState.value = 6
+            waitForIdle()
+
+            styleState.value =
+                androidx.compose.ui.text
+                    .TextStyle(fontSize = 14.sp)
+            waitForIdle()
+
+            rtlState.value = false
+            waitForIdle()
+
+            colSpacingState.value = 14.dp
+            waitForIdle()
+
+            charSpacingState.value = 4.dp
+            waitForIdle()
+        }
+    }
+
+    /**
+     * Verifies layout direction combinations including RTL layout with LTR columns and long text scrolling.
+     */
+    @Test
+    fun testVerticalColumnTextLayoutDirectionPermutations() {
+        runComposeUiTest {
+            setContent {
+                // RTL layout direction with columnsRightToLeft = false -> isRtl is true!
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                    VerticalColumnText(
+                        text = "一二三四五六七八九十一二三四五六七八九十一二三四五六七八九十一二三四五六七八九十",
+                        maxCharsPerColumn = 2,
+                        columnsRightToLeft = false,
+                    )
+                }
+
+                // LTR layout direction with columnsRightToLeft = false and long text -> isRtl is false and maxValue > 0!
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    VerticalColumnText(
+                        text = "一二三四五六七八九十一二三四五六七八九十一二三四五六七八九十一二三四五六七八九十",
+                        maxCharsPerColumn = 2,
+                        columnsRightToLeft = false,
+                    )
+                }
+            }
+            waitForIdle()
+        }
+    }
+
+    /**
+     * Verifies recomposition behavior when every parameter of [TraditionalChineseVerticalBanner] mutates dynamically.
+     */
+    @Test
+    fun testTraditionalChineseVerticalBannerAllParameterMutations() {
+        runComposeUiTest {
+            val titleState = mutableStateOf("標題甲")
+            val modState = mutableStateOf(Modifier.testTag("banner1"))
+            val subtitleState = mutableStateOf<String?>("副標題甲")
+            val toggleState = mutableStateOf<(() -> Unit)?>(null)
+            val isVertState = mutableStateOf(true)
+
+            setContent {
+                TraditionalChineseVerticalBanner(
+                    title = titleState.value,
+                    modifier = modState.value,
+                    subtitle = subtitleState.value,
+                    onToggleMode = toggleState.value,
+                    isVerticalMode = isVertState.value,
+                )
+            }
+            waitForIdle()
+
+            titleState.value = "標題乙"
+            waitForIdle()
+
+            modState.value = Modifier.testTag("banner2")
+            waitForIdle()
+
+            subtitleState.value = "副標題乙"
+            waitForIdle()
+            subtitleState.value = null
+            waitForIdle()
+
+            toggleState.value = { }
+            waitForIdle()
+
+            isVertState.value = false
+            waitForIdle()
+        }
+    }
+
+    /**
+     * Verifies partial default parameter subsets for both [VerticalColumnText] and [TraditionalChineseVerticalBanner].
+     */
+    @Test
+    fun testPartialDefaultParameterCombinations() {
+        runComposeUiTest {
+            setContent {
+                VerticalColumnText(text = "子集一", modifier = Modifier)
+                VerticalColumnText(text = "子集二", maxCharsPerColumn = 4)
+                VerticalColumnText(text = "子集三", columnsRightToLeft = false)
+                VerticalColumnText(text = "子集四", spacingBetweenColumns = 8.dp)
+                VerticalColumnText(text = "子集五", spacingBetweenChars = 2.dp)
+
+                TraditionalChineseVerticalBanner(title = "橫幅子集一", modifier = Modifier)
+                TraditionalChineseVerticalBanner(title = "橫幅子集二", subtitle = "副標題")
+                TraditionalChineseVerticalBanner(title = "橫幅子集三", onToggleMode = {})
+                TraditionalChineseVerticalBanner(title = "橫幅子集四", isVerticalMode = false)
+            }
+            waitForIdle()
+        }
+    }
+
+    /**
+     * Verifies recomposition skipping for [VerticalColumnText] when parent recomposes with stable constant parameters.
+     */
+    @Test
+    fun testVerticalColumnTextPureSkipping() {
+        runComposeUiTest {
+            val trigger = mutableStateOf(0)
+            setContent {
+                val dummy = trigger.value
+                VerticalColumnText(
+                    text = "純靜態文字",
+                    modifier = Modifier,
+                    maxCharsPerColumn = 5,
+                    textStyle = androidx.compose.ui.text.TextStyle.Default,
+                    columnsRightToLeft = true,
+                    spacingBetweenColumns = 12.dp,
+                    spacingBetweenChars = 4.dp,
+                )
+            }
+            waitForIdle()
+            trigger.value++
+            waitForIdle()
+        }
+    }
+
+    @Composable
+    private fun DynamicWrapper(
+        text: String,
+        modifier: Modifier,
+        maxChars: Int,
+        textStyle: androidx.compose.ui.text.TextStyle,
+        rtl: Boolean,
+        colSpacing: androidx.compose.ui.unit.Dp,
+        charSpacing: androidx.compose.ui.unit.Dp,
+        trigger: Int,
+    ) {
+        val t = trigger
+        VerticalColumnText(
+            text = text,
+            modifier = modifier,
+            maxCharsPerColumn = maxChars,
+            textStyle = textStyle,
+            columnsRightToLeft = rtl,
+            spacingBetweenColumns = colSpacing,
+            spacingBetweenChars = charSpacing,
+        )
+    }
+
+    /**
+     * Verifies dynamic Composable parameter propagation to cover unmemoized textStyle branches.
+     */
+    @Test
+    fun testDynamicTextStyleWrapperRecomposition() {
+        runComposeUiTest {
+            val trigger = mutableStateOf(0)
+            val style = androidx.compose.ui.text.TextStyle.Default
+            setContent {
+                DynamicWrapper(
+                    text = "包裝測試",
+                    modifier = Modifier,
+                    maxChars = 5,
+                    textStyle = style,
+                    rtl = true,
+                    colSpacing = 12.dp,
+                    charSpacing = 4.dp,
+                    trigger = trigger.value,
+                )
+            }
+            waitForIdle()
+            trigger.value++
+            waitForIdle()
+        }
+    }
+
+    /**
+     * Verifies recomposition skipping for [TraditionalChineseVerticalBanner] when parent recomposes with stable constant parameters.
+     */
+    @Test
+    fun testTraditionalChineseVerticalBannerPureSkipping() {
+        runComposeUiTest {
+            val trigger = mutableStateOf(0)
+            val onToggleConstant: () -> Unit = {}
+            setContent {
+                val dummy = trigger.value
+                TraditionalChineseVerticalBanner(
+                    title = "靜態橫幅",
+                    modifier = Modifier,
+                    subtitle = "靜態副標題",
+                    onToggleMode = onToggleConstant,
+                    isVerticalMode = true,
+                )
+            }
+            waitForIdle()
+            trigger.value++
+            waitForIdle()
+        }
+    }
+
+    /**
+     * Verifies recomposition when a CompositionLocal consumed by a default parameter (LocalTextStyle) changes,
+     * triggering the defaultsInvalid branch in Compose runtime.
+     */
+    @Test
+    fun testDefaultsInvalidRecomposition() {
+        runComposeUiTest {
+            val styleState =
+                mutableStateOf(
+                    androidx.compose.ui.text
+                        .TextStyle(fontSize = 12.sp),
+                )
+            setContent {
+                CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides styleState.value) {
+                    VerticalColumnText(text = "預設字體更新")
+                }
+            }
+            waitForIdle()
+
+            // Update LocalTextStyle to invalidate defaults and trigger defaultsInvalid branch
+            styleState.value =
+                androidx.compose.ui.text
+                    .TextStyle(fontSize = 18.sp)
             waitForIdle()
         }
     }

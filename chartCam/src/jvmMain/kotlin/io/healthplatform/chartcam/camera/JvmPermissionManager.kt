@@ -12,12 +12,22 @@ import com.github.sarxos.webcam.Webcam
  * Checks for connected webcam hardware and provides OS settings navigation.
  */
 class JvmPermissionManager : PermissionManager {
+    /**
+     * Companion object providing configuration overrides for [JvmPermissionManager].
+     */
+    companion object {
+        /**
+         * Optional provider override for detected webcams during unit tests.
+         */
+        var defaultWebcamSupplier: (() -> List<Webcam>?)? = null
+    }
+
     private val webcamSupplier: () -> List<Webcam>?
 
     /**
      * Default constructor using standard Sarxos Webcam detection.
      */
-    constructor() : this({ Webcam.getWebcams() })
+    constructor() : this(defaultWebcamSupplier ?: { JvmCameraManager.createDefaultWebcams() })
 
     /**
      * Testing constructor allowing custom webcam detection provider.

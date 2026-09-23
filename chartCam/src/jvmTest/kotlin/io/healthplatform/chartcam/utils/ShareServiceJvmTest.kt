@@ -69,4 +69,103 @@ class ShareServiceJvmTest {
             assertTrue(result)
         }
     }
+
+    /**
+     * Tests sharing file when desktop operations are unsupported.
+     */
+    @Test
+    fun testJvmShareServiceUnsupportedDesktop() {
+        val temp = File.createTempFile("test_unsupported", ".txt")
+        // allow-exception
+        try {
+            val service = JvmShareService(isDesktopSupportedProvider = { false })
+            val result = service.shareFile(temp.absolutePath)
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is PlatformShareException)
+        } finally {
+            temp.delete()
+        }
+    }
+
+    /**
+     * Tests dialog presentation branches when not running in test mode.
+     */
+    @Test
+    fun testJvmShareServiceDialogAndNonTestingBranches() {
+        val temp = File.createTempFile("test_dialog", ".txt")
+        val dialogMessages = mutableListOf<String>()
+        // allow-exception
+        try {
+            val service =
+                JvmShareService(
+                    isTestingProvider = { false },
+                    showDialogAction = { msg -> dialogMessages.add(msg) },
+                    openFileAction = { },
+                    copyTextAction = { },
+                )
+            val fileRes = service.shareFile(temp.absolutePath)
+            assertTrue(fileRes.isSuccess)
+            assertTrue(dialogMessages.any { it.contains("File saved to:") })
+
+            val textRes = service.shareText("Sample text")
+            assertTrue(textRes.isSuccess)
+            assertTrue(dialogMessages.any { it.contains("Text copied to clipboard") })
+        } finally {
+            temp.delete()
+        }
+    }
+
+    /**
+     * Tests failure handling when openFileAction throws.
+     */
+    @Test
+    fun testJvmShareServiceOpenFileFailure() {
+        val temp = File.createTempFile("test_fail", ".txt")
+        // allow-exception
+        try {
+            val service =
+                JvmShareService(
+                    openFileAction = { throw java.io.IOException("Cannot open directory") }, // allow-exception
+                )
+            val result = service.shareFile(temp.absolutePath)
+            assertTrue(result.isFailure)
+        } finally {
+            temp.delete()
+        }
+    }
+
+    /**
+     * Tests failure handling when copyTextAction throws.
+     */
+    @Test
+    fun testJvmShareServiceCopyTextFailure() {
+        val service =
+            JvmShareService(
+                copyTextAction = { throw IllegalStateException("Clipboard locked") }, // allow-exception
+            )
+        val result = service.shareText("fails")
+        assertTrue(result.isFailure)
+    }
+
+    /**
+     * Tests file path with null parent directory fallback.
+     */
+    @Test
+    fun testJvmShareServiceFileWithNullParent() {
+        var openedFile: File? = null
+        val service =
+            JvmShareService(
+                openFileAction = { file -> openedFile = file },
+            )
+        val localFile = File("local_share_test.txt")
+        localFile.writeText("data")
+        // allow-exception
+        try {
+            val result = service.shareFile("local_share_test.txt")
+            assertTrue(result.isSuccess)
+            assertNotNull(openedFile)
+        } finally {
+            localFile.delete()
+        }
+    }
 }

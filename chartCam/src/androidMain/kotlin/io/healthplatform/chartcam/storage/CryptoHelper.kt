@@ -25,6 +25,27 @@ internal object CryptoHelper {
 
     private var robolectricKey: SecretKey? = null
 
+    internal var buildFingerprintProvider: () -> String = { android.os.Build.FINGERPRINT }
+    internal var keyStoreProvider: (String) -> KeyStore = { KeyStore.getInstance(it) }
+    internal var keyGeneratorProvider: (String, String) -> KeyGenerator = { algo, provider ->
+        KeyGenerator.getInstance(algo, provider)
+    }
+
+    /**
+     * Obtains or generates a mock symmetric key for Robolectric testing environments.
+     *
+     * @return An AES [SecretKey] created for unit tests.
+     */
+    private fun getRobolectricKey(): SecretKey {
+        val cached = robolectricKey
+        if (cached != null) return cached
+        val keyGenerator = KeyGenerator.getInstance("AES")
+        keyGenerator.init(KEY_SIZE)
+        val generated = keyGenerator.generateKey()
+        robolectricKey = generated
+        return generated
+    }
+
     /**
      * Retrieves the AES secret key from the Android KeyStore, creating it if it does not exist.
      * Provides a fallback key for Robolectric environments.
@@ -32,19 +53,14 @@ internal object CryptoHelper {
      * @return The symmetric AES [SecretKey].
      */
     private fun getSecretKey(): SecretKey {
-        if (android.os.Build.FINGERPRINT == "robolectric") {
-            if (robolectricKey == null) {
-                val keyGenerator = KeyGenerator.getInstance("AES")
-                keyGenerator.init(KEY_SIZE)
-                robolectricKey = keyGenerator.generateKey()
-            }
-            return robolectricKey ?: error("Failed to initialize robolectricKey")
+        if (buildFingerprintProvider.invoke() == "robolectric") {
+            return getRobolectricKey()
         }
-        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
+        val keyStore = keyStoreProvider.invoke(ANDROID_KEYSTORE)
         keyStore.load(null)
 
         return (keyStore.getKey(ALIAS, null) as? SecretKey) ?: run {
-            val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
+            val keyGenerator = keyGeneratorProvider.invoke(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
             val spec =
                 KeyGenParameterSpec
                     .Builder(

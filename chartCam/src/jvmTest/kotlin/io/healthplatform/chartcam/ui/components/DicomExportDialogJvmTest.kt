@@ -83,4 +83,69 @@ class DicomExportDialogJvmTest {
             assertTrue(dismissed)
         }
     }
+
+    /**
+     * Tests recomposition of DicomExportDialog with updated parameters.
+     */
+    @Test
+    fun testDicomExportDialogRecomposition() {
+        runComposeUiTest {
+            val patientIdState = androidx.compose.runtime.mutableStateOf("PATIENT-1")
+            val modalityState = androidx.compose.runtime.mutableStateOf("XC")
+            val sopClassState = androidx.compose.runtime.mutableStateOf("1.2.3")
+            var dismissCounter = 0
+            val onDismissState = androidx.compose.runtime.mutableStateOf<() -> Unit>({ dismissCounter = 1 })
+            val onConfirmState = androidx.compose.runtime.mutableStateOf<(Boolean) -> Unit>({ _ -> })
+
+            setContent {
+                DicomExportDialog(
+                    patientId = patientIdState.value,
+                    modality = modalityState.value,
+                    sopClass = sopClassState.value,
+                    onDismiss = onDismissState.value,
+                    onConfirm = onConfirmState.value,
+                )
+            }
+            waitForIdle()
+
+            patientIdState.value = "PATIENT-2"
+            waitForIdle()
+
+            modalityState.value = "DOC"
+            waitForIdle()
+
+            sopClassState.value = "4.5.6"
+            waitForIdle()
+
+            onDismissState.value = { dismissCounter = 2 }
+            waitForIdle()
+
+            onConfirmState.value = { _ -> println("changed") }
+            waitForIdle()
+        }
+    }
+
+    /**
+     * Tests skipping recomposition of DicomExportDialog when parent recomposes with unchanged inputs.
+     */
+    @Test
+    fun testDicomExportDialogRecompositionSkipping() {
+        runComposeUiTest {
+            val outerTrigger = androidx.compose.runtime.mutableStateOf(0)
+
+            setContent {
+                val dummy = outerTrigger.value
+                DicomExportDialog(
+                    patientId = "PATIENT-CONST",
+                    modality = "XC",
+                    sopClass = "1.2.3",
+                    onDismiss = {},
+                    onConfirm = {},
+                )
+            }
+            waitForIdle()
+            outerTrigger.value++
+            waitForIdle()
+        }
+    }
 }

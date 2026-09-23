@@ -26,7 +26,183 @@ import chartcam.chartcam.generated.resources.severity_severe
 import chartcam.chartcam.generated.resources.unknown
 import chartcam.chartcam.generated.resources.unknown_copy
 import io.healthplatform.chartcam.ui.QuestionnaireListScreen
+import io.healthplatform.chartcam.ui.getWidgetNameResource
+import io.healthplatform.chartcam.viewmodel.QuestionnaireBuilderViewModel
+import io.healthplatform.chartcam.viewmodel.WidgetType
 import org.jetbrains.compose.resources.stringResource
+
+/**
+ * Callbacks for questionnaire builder destination actions.
+ *
+ * @property onBack Callback when user navigates back.
+ * @property onSaved Callback when a questionnaire is saved.
+ */
+data class QuestionnaireBuilderNavActions(
+    val onBack: () -> Unit,
+    val onSaved: (String) -> Unit,
+)
+
+/**
+ * Builds the actions for the questionnaire builder destination.
+ *
+ * @param navController The navigation controller.
+ * @return QuestionnaireBuilderNavActions configured for the builder destination.
+ */
+fun buildQuestionnaireBuilderActions(
+    navController: NavHostController,
+): QuestionnaireBuilderNavActions =
+    QuestionnaireBuilderNavActions(
+        onBack = { navController.popBackStack() },
+        onSaved = { savedId ->
+            navController.previousBackStackEntry?.let { entry ->
+                entry.savedStateHandle.set("createdQuestionnaireId", savedId)
+            }
+            navController.popBackStack()
+        },
+    )
+
+/**
+ * Callbacks for questionnaire list destination actions.
+ *
+ * @property onBack Callback when user navigates back.
+ * @property onNavigateToBuilder Callback when navigating to questionnaire builder.
+ */
+data class QuestionnaireListNavActions(
+    val onBack: () -> Unit,
+    val onNavigateToBuilder: (String?) -> Unit,
+)
+
+/**
+ * Builds the actions for the questionnaire list destination.
+ *
+ * @param navController The navigation controller.
+ * @return QuestionnaireListNavActions configured for the list destination.
+ */
+fun buildQuestionnaireListActions(
+    navController: NavHostController,
+): QuestionnaireListNavActions =
+    QuestionnaireListNavActions(
+        onBack = { navController.popBackStack() },
+        onNavigateToBuilder = { duplicateId ->
+            navController.navigate(
+                QuestionnaireBuilderRoute(duplicateFromId = duplicateId),
+            )
+        },
+    )
+
+/**
+ * Resolves the copy title for a duplicated questionnaire using template strings.
+ *
+ * @param copyTemplate The primary copy format template.
+ * @param copyFallbackTemplate The fallback copy format template.
+ * @param title The original title being copied.
+ * @return The formatted copy title string.
+ */
+fun resolveCopyTitle(
+    copyTemplate: String,
+    copyFallbackTemplate: String,
+    title: String,
+): String =
+    if (copyTemplate.contains("%1\$s") || copyTemplate.contains("%s")) {
+        copyTemplate.replace("%1\$s", title).replace("%s", title)
+    } else {
+        copyFallbackTemplate.replace("%1\$s", title).replace("%s", title)
+    }
+
+/**
+ * Resolves the display label for a new item of a specific widget type.
+ *
+ * @param newWidgetTemplate The primary new widget format template.
+ * @param newWidgetFallbackTemplate The fallback new widget format template.
+ * @param newItemLabel The label for a generic new item.
+ * @param widgetNames Mapping of widget types to localized names.
+ * @param widgetType The widget type of the item being added.
+ * @return The formatted new widget label string.
+ */
+fun resolveWidgetItemLabel(
+    newWidgetTemplate: String,
+    newWidgetFallbackTemplate: String,
+    newItemLabel: String,
+    widgetNames: Map<WidgetType, String>,
+    widgetType: WidgetType,
+): String {
+    val widgetName = widgetNames[widgetType] ?: widgetType.name
+    return if (newWidgetTemplate.contains("%1\$s") || newWidgetTemplate.contains("%s")) {
+        newWidgetTemplate.replace("%1\$s", widgetName).replace("%s", widgetName)
+    } else {
+        newWidgetFallbackTemplate.replace("%1\$s", widgetName).replace("%2\$s", newItemLabel)
+    }
+}
+
+/**
+ * Resolves default option choices for supported widget types.
+ *
+ * @param fitzpatrickTypes Pre-localized Fitzpatrick skin phototype descriptions.
+ * @param defaultSeverityOptions Pre-localized clinical severity options.
+ * @param widgetType The widget type to retrieve default options for.
+ * @return List of option strings for the given widget type.
+ */
+fun resolveDefaultOptions(
+    fitzpatrickTypes: List<String>,
+    defaultSeverityOptions: List<String>,
+    widgetType: WidgetType,
+): List<String> =
+    when (widgetType) {
+        WidgetType.FITZPATRICK_PALETTE -> fitzpatrickTypes
+        WidgetType.SEGMENTED_TILES -> defaultSeverityOptions
+        else -> emptyList()
+    }
+
+/**
+ * Factory function creating a [QuestionnaireBuilderViewModel] for the builder route.
+ *
+ * @param repository The questionnaire repository.
+ * @param duplicateFromId The optional ID of questionnaire to duplicate.
+ * @param copyTemplate The primary copy format template.
+ * @param copyFallbackTemplate The fallback copy format template.
+ * @param newItemLabel The default label for new items.
+ * @param newWidgetTemplate The primary new widget format template.
+ * @param newWidgetFallbackTemplate The fallback new widget format template.
+ * @param unknownLabel The fallback unknown label.
+ * @param widgetNames Mapping of widget types to localized names.
+ * @param fitzpatrickTypes Pre-localized Fitzpatrick skin phototypes.
+ * @param defaultSeverityOptions Pre-localized clinical severity options.
+ * @return The configured QuestionnaireBuilderViewModel.
+ */
+fun createQuestionnaireBuilderViewModel(
+    repository: io.healthplatform.chartcam.repository.QuestionnaireRepository,
+    duplicateFromId: String?,
+    copyTemplate: String,
+    copyFallbackTemplate: String,
+    newItemLabel: String,
+    newWidgetTemplate: String,
+    newWidgetFallbackTemplate: String,
+    unknownLabel: String,
+    widgetNames: Map<WidgetType, String>,
+    fitzpatrickTypes: List<String>,
+    defaultSeverityOptions: List<String>,
+): QuestionnaireBuilderViewModel =
+    QuestionnaireBuilderViewModel(
+        repository = repository,
+        duplicateFromId = duplicateFromId,
+        copyTitleResolver = { title ->
+            resolveCopyTitle(copyTemplate, copyFallbackTemplate, title)
+        },
+        defaultItemLabelResolver = { newItemLabel },
+        widgetItemLabelResolver = { widgetType ->
+            resolveWidgetItemLabel(
+                newWidgetTemplate,
+                newWidgetFallbackTemplate,
+                newItemLabel,
+                widgetNames,
+                widgetType,
+            )
+        },
+        unknownTitleResolver = { unknownLabel },
+        defaultOptionsResolver = { widgetType ->
+            resolveDefaultOptions(fitzpatrickTypes, defaultSeverityOptions, widgetType)
+        },
+    )
 
 /**
  * Registers the questionnaire builder destination to the navigation graph.
@@ -42,15 +218,13 @@ fun NavGraphBuilder.questionnaireBuilderDestination(
 ) {
     composable<QuestionnaireBuilderRoute> { backStackEntry ->
         val route = backStackEntry.toRoute<QuestionnaireBuilderRoute>()
+        val actions = buildQuestionnaireBuilderActions(navController)
         QuestionnaireBuilderRouteScreen(
             route = route,
             deps = deps,
             currentLang = currentLang,
-            onBack = { navController.popBackStack() },
-            onSaved = { savedId ->
-                navController.previousBackStackEntry?.savedStateHandle?.set("createdQuestionnaireId", savedId)
-                navController.popBackStack()
-            },
+            onBack = actions.onBack,
+            onSaved = actions.onSaved,
         )
     }
 }
@@ -65,7 +239,7 @@ fun NavGraphBuilder.questionnaireBuilderDestination(
  * @param onSaved Callback when a questionnaire is successfully saved.
  */
 @Composable
-private fun QuestionnaireBuilderRouteScreen(
+fun QuestionnaireBuilderRouteScreen(
     route: QuestionnaireBuilderRoute,
     deps: AppDependencies,
     currentLang: String,
@@ -79,10 +253,9 @@ private fun QuestionnaireBuilderRouteScreen(
     val newWidgetFallbackTemplate = stringResource(Res.string.new_widget_item_fallback_format)
     val unknownLabel = stringResource(Res.string.unknown)
     val widgetNames =
-        io.healthplatform.chartcam.viewmodel.WidgetType.entries.associateWith {
+        WidgetType.entries.associateWith {
             stringResource(
-                io.healthplatform.chartcam.ui
-                    .getWidgetNameResource(it),
+                getWidgetNameResource(it),
             )
         }
     val fitzpatrickTypes =
@@ -102,33 +275,18 @@ private fun QuestionnaireBuilderRouteScreen(
         )
     val viewModel =
         androidx.lifecycle.viewmodel.compose.viewModel(key = route.duplicateFromId ?: "new") {
-            io.healthplatform.chartcam.viewmodel.QuestionnaireBuilderViewModel(
+            createQuestionnaireBuilderViewModel(
                 repository = deps.questionnaireRepository,
                 duplicateFromId = route.duplicateFromId,
-                copyTitleResolver = { title ->
-                    if (copyTemplate.contains("%1\$s") || copyTemplate.contains("%s")) {
-                        copyTemplate.replace("%1\$s", title).replace("%s", title)
-                    } else {
-                        copyFallbackTemplate.replace("%1\$s", title).replace("%s", title)
-                    }
-                },
-                defaultItemLabelResolver = { newItemLabel },
-                widgetItemLabelResolver = { widgetType ->
-                    val widgetName = widgetNames[widgetType] ?: widgetType.name
-                    if (newWidgetTemplate.contains("%1\$s") || newWidgetTemplate.contains("%s")) {
-                        newWidgetTemplate.replace("%1\$s", widgetName).replace("%s", widgetName)
-                    } else {
-                        newWidgetFallbackTemplate.replace("%1\$s", widgetName).replace("%2\$s", newItemLabel)
-                    }
-                },
-                unknownTitleResolver = { unknownLabel },
-                defaultOptionsResolver = { widgetType ->
-                    when (widgetType) {
-                        io.healthplatform.chartcam.viewmodel.WidgetType.FITZPATRICK_PALETTE -> fitzpatrickTypes
-                        io.healthplatform.chartcam.viewmodel.WidgetType.SEGMENTED_TILES -> defaultSeverityOptions
-                        else -> emptyList()
-                    }
-                },
+                copyTemplate = copyTemplate,
+                copyFallbackTemplate = copyFallbackTemplate,
+                newItemLabel = newItemLabel,
+                newWidgetTemplate = newWidgetTemplate,
+                newWidgetFallbackTemplate = newWidgetFallbackTemplate,
+                unknownLabel = unknownLabel,
+                widgetNames = widgetNames,
+                fitzpatrickTypes = fitzpatrickTypes,
+                defaultSeverityOptions = defaultSeverityOptions,
             )
         }
     androidx.compose.runtime.key(currentLang) {
@@ -153,15 +311,12 @@ fun NavGraphBuilder.questionnaireListDestination(
     currentLang: String,
 ) {
     composable(Routes.QUESTIONNAIRE_LIST) {
+        val actions = buildQuestionnaireListActions(navController)
         androidx.compose.runtime.key(currentLang) {
             QuestionnaireListScreen(
                 questionnaireRepository = deps.questionnaireRepository,
-                onBack = { navController.popBackStack() },
-                onNavigateToBuilder = { duplicateId ->
-                    navController.navigate(
-                        QuestionnaireBuilderRoute(duplicateFromId = duplicateId),
-                    )
-                },
+                onBack = actions.onBack,
+                onNavigateToBuilder = actions.onNavigateToBuilder,
             )
         }
     }

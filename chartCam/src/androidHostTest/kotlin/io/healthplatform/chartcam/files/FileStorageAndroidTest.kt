@@ -176,4 +176,106 @@ class FileStorageAndroidTest {
         // Verify promoted to filesDir
         assertTrue(java.io.File(context.filesDir, fileName).exists())
     }
+
+    /**
+     * Test deleting an existing image.
+     */
+    @Test
+    fun testDeleteExistingImage() {
+        val fileName = "delete_target.jpg"
+        val path = fileStorage.saveImage(fileName, byteArrayOf(1, 2, 3))
+        val result = fileStorage.deleteImage(path)
+        assertTrue(result.isSuccess)
+        assertEquals(0, fileStorage.readImage(path).size)
+    }
+
+    /**
+     * Test deleting a non-existent image returns failure.
+     */
+    @Test
+    fun testDeleteNonExistentImage() {
+        val result = fileStorage.deleteImage("non_existent_file_path.jpg")
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is java.io.FileNotFoundException)
+    }
+
+    /**
+     * Test deleteImage failure when file.delete returns false.
+     */
+    @Test
+    fun testDeleteImageFailure() {
+        val context = RuntimeEnvironment.getApplication()
+        val lockedDir = java.io.File(context.filesDir, "locked_image.jpg")
+        lockedDir.mkdir()
+        val child = java.io.File(lockedDir, "child.txt")
+        child.writeText("cannot delete non-empty directory")
+        // allow-exception
+        try {
+            val result = fileStorage.deleteImage("locked_image.jpg")
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is java.io.IOException)
+        } finally {
+            child.delete()
+            lockedDir.delete()
+        }
+    }
+
+    /**
+     * Test tryPromoteCacheFile failure branch when copy fails.
+     */
+    @Test
+    fun testTryPromoteCacheFileFailure() {
+        val method =
+            AndroidFileStorage::class.java.getDeclaredMethod(
+                "tryPromoteCacheFile",
+                java.io.File::class.java,
+                String::class.java,
+            )
+        method.isAccessible = true
+        val nonExistentSource = java.io.File("/invalid_path/source.jpg")
+        val result = method.invoke(fileStorage, nonExistentSource, "dest.jpg") as java.io.File
+        assertEquals(nonExistentSource, result)
+    }
+
+    /**
+     * Test clearCache when cache directory contains a subdirectory.
+     */
+    @Test
+    fun testClearCacheWithSubdirectory() {
+        val context = RuntimeEnvironment.getApplication()
+        val subDir = java.io.File(context.cacheDir, "test_sub_dir")
+        subDir.mkdir()
+        // allow-exception
+        try {
+            fileStorage.clearCache()
+            assertTrue(subDir.exists())
+        } finally {
+            subDir.delete()
+        }
+    }
+
+    /**
+     * Test clearCache when filesDir and cacheDir listFiles return null.
+     */
+    @Test
+    fun testClearCacheWhenListFilesReturnsNull() {
+        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockFilesDir = org.mockito.Mockito.mock(java.io.File::class.java)
+        val mockCacheDir = org.mockito.Mockito.mock(java.io.File::class.java)
+        org.mockito.Mockito
+            .`when`(mockFilesDir.listFiles())
+            .thenReturn(null)
+        org.mockito.Mockito
+            .`when`(mockCacheDir.listFiles())
+            .thenReturn(null)
+        org.mockito.Mockito
+            .`when`(mockContext.filesDir)
+            .thenReturn(mockFilesDir)
+        org.mockito.Mockito
+            .`when`(mockContext.cacheDir)
+            .thenReturn(mockCacheDir)
+
+        val storage = AndroidFileStorage(mockContext)
+        storage.clearCache()
+    }
 }

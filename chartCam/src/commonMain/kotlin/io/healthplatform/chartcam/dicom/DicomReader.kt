@@ -4,6 +4,7 @@
  */
 package io.healthplatform.chartcam.dicom
 
+import androidx.compose.runtime.Immutable
 import okio.Buffer
 
 private const val PREAMBLE_LEN = 128
@@ -43,6 +44,7 @@ private const val JPEG_SOI_1 = 0xD8.toByte()
  * @property width Image width in columns, if present.
  * @property height Image height in rows, if present.
  */
+@Immutable
 data class DicomDataset(
     val elements: Map<Int, DicomElement>,
     val patientName: String? = null,

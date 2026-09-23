@@ -301,18 +301,27 @@ class ScreenshotGeneratorE2E {
 
         // 02: Media Attribution & Triage
         runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
+            val triageVm =
+                io.healthplatform.chartcam.viewmodel
+                    .TriageViewModel(deps.fhirRepository)
+                    .apply {
+                        setPaths(
+                            mapOf(
+                                "Left Eye" to "mock_left_eye.jpg",
+                                "Right Eye" to "mock_right_eye.jpg",
+                            ),
+                        )
+                    }
             setContent {
                 AppTheme(darkTheme = false) {
                     Surface(modifier = Modifier.fillMaxSize()) {
                         TriageScreen(
-                            capturedPhotoPaths =
-                                mapOf(
-                                    "Left Eye" to "mock_left_eye.jpg",
-                                    "Right Eye" to "mock_right_eye.jpg",
-                                ),
-                            fhirRepository = deps.fhirRepository,
+                            viewModel = triageVm,
                             onProceedToEncounter = { _, _ -> },
                             onBack = {},
+                            fileStorage =
+                                io.healthplatform.chartcam.files
+                                    .createFileStorage(),
                         )
                     }
                 }
@@ -470,12 +479,20 @@ class ScreenshotGeneratorE2E {
 
         // 07: Longitudinal Encounters History
         runDesktopComposeUiTest(width = DEVICE_WIDTH, height = DEVICE_HEIGHT) {
+            val patientDetailVm =
+                io.healthplatform.chartcam.viewmodel
+                    .PatientDetailViewModel(
+                        deps.fhirRepository,
+                        io.healthplatform.chartcam.files
+                            .createFileStorage(),
+                    ).apply {
+                        loadPatientData(DemoDataSeeder.DEMO_PATIENT_ADULT_ID)
+                    }
             setContent {
                 AppTheme(darkTheme = false) {
                     Surface(modifier = Modifier.fillMaxSize()) {
                         PatientDetailScreen(
-                            patientId = DemoDataSeeder.DEMO_PATIENT_ADULT_ID,
-                            fhirRepository = deps.fhirRepository,
+                            viewModel = patientDetailVm,
                             onBack = {},
                             onNewVisit = {},
                             onVisitSelected = {},

@@ -57,12 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -106,6 +101,7 @@ import chartcam.chartcam.generated.resources.unlock_with_biometrics
 import chartcam.chartcam.generated.resources.username
 import io.healthplatform.chartcam.ui.components.LanguageMenu
 import io.healthplatform.chartcam.ui.components.TraditionalChineseVerticalBanner
+import io.healthplatform.chartcam.ui.components.tabFocusNext
 import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.viewmodel.LoginViewModel
 import org.jetbrains.compose.resources.painterResource
@@ -143,9 +139,10 @@ fun LoginScreen(
 
     key(currentLang) {
         if (state.isTutorialVisible) {
+            val dismissTutorial = handleTutorialDismissal(viewModel)
             OnboardingTutorialScreen(
-                onDismiss = { viewModel.showTutorial(false) },
-                onComplete = { viewModel.showTutorial(false) },
+                onDismiss = dismissTutorial,
+                onComplete = dismissTutorial,
             )
         } else {
             Scaffold(
@@ -181,10 +178,13 @@ fun LoginScreen(
                         isDemoLoading = state.isDemoLoading,
                         isBiometricAvailable = state.isBiometricAvailable,
                         stateErrorMessage = stateErrorMessageStr,
-                        onLogin = { username, password -> viewModel.login(username, password) },
-                        onDemoLogin = { viewModel.onDemoLoginClicked() },
-                        onBiometricLogin = { viewModel.authenticateWithBiometrics(onSuccess = onLoginSuccess) },
-                        onOpenTour = { viewModel.showTutorial(true) },
+                        actions =
+                            LoginCardActions(
+                                onLogin = { username, password -> viewModel.login(username, password) },
+                                onDemoLogin = { viewModel.onDemoLoginClicked() },
+                                onBiometricLogin = { viewModel.authenticateWithBiometrics(onSuccess = onLoginSuccess) },
+                                onOpenTour = { viewModel.showTutorial(true) },
+                            ),
                     )
 
                     Spacer(modifier = Modifier.height(AppSpacing.minTouchTarget))
@@ -235,26 +235,45 @@ private fun LoginHeader() {
 }
 
 /**
+ * Action callbacks for [LoginCard].
+ *
+ * @property onLogin Callback triggered to submit credentials.
+ * @property onDemoLogin Callback to trigger demo authentication.
+ * @property onBiometricLogin Callback to trigger biometric authentication.
+ * @property onOpenTour Callback to open onboarding tutorial.
+ */
+@androidx.compose.runtime.Immutable
+data class LoginCardActions(
+    val onLogin: (String, String) -> Unit,
+    val onDemoLogin: () -> Unit,
+    val onBiometricLogin: () -> Unit,
+    val onOpenTour: () -> Unit,
+)
+
+/**
+ * Produces dismissal callback for the onboarding workflow tutorial.
+ *
+ * @param viewModel The login ViewModel.
+ * @return Callback to dismiss the tutorial.
+ */
+internal fun handleTutorialDismissal(viewModel: LoginViewModel): () -> Unit =
+    { viewModel.showTutorial(false) }
+
+/**
  * Internal helper.
  * @param isLoading The isLoading.
  * @param isDemoLoading The isDemoLoading.
  * @param isBiometricAvailable Whether biometric authentication is available on device.
  * @param stateErrorMessage The stateErrorMessage.
- * @param onLogin The onLogin.
- * @param onDemoLogin Callback to trigger demo authentication.
- * @param onBiometricLogin Callback to trigger biometric authentication.
- * @param onOpenTour Callback to open onboarding tutorial.
+ * @param actions Action callbacks for the login card.
  */
 @Composable
-private fun LoginCard(
+internal fun LoginCard(
     isLoading: Boolean,
-    isDemoLoading: Boolean = false,
-    isBiometricAvailable: Boolean = false,
+    isDemoLoading: Boolean,
+    isBiometricAvailable: Boolean,
     stateErrorMessage: String?,
-    onLogin: (String, String) -> Unit,
-    onDemoLogin: () -> Unit = {},
-    onBiometricLogin: () -> Unit = {},
-    onOpenTour: () -> Unit = {},
+    actions: LoginCardActions,
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -266,7 +285,7 @@ private fun LoginCard(
     val attemptLogin = {
         focusManager.clearFocus()
         if (username.isNotBlank() && password.isNotBlank()) {
-            onLogin(username, password)
+            actions.onLogin(username, password)
         } else {
             formError = allFieldsRequiredMsg
         }
@@ -282,27 +301,84 @@ private fun LoginCard(
             modifier = Modifier.padding(AppSpacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            UsernameField(
-                username = username,
-                onUsernameChange = {
+            OutlinedTextField(
+                value = username,
+                onValueChange = {
                     username = it
                     formError = null
                 },
-                isLoading = isLoading,
+                label = { Text(stringResource(Res.string.username)) },
+                supportingText = {
+                    val err = formError
+                    if (err != null) {
+                        Text(err)
+                    }
+                },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = AppSpacing.md)
+                        .semantics {
+                            val err = formError
+                            if (err != null) {
+                                error(err)
+                            }
+                        }.tabFocusNext(focusManager),
+                singleLine = true,
+                enabled = !isLoading,
                 isError = formError != null,
-                errorMessage = formError,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
             )
 
-            PasswordField(
-                password = password,
-                onPasswordChange = {
+            var passwordVisible by remember { mutableStateOf(false) }
+            OutlinedTextField(
+                value = password,
+                onValueChange = {
                     password = it
                     formError = null
                 },
-                isLoading = isLoading,
+                label = { Text(stringResource(Res.string.password)) },
+                trailingIcon = {
+                    val icon = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
+                    val iconCd = if (passwordVisible) Res.string.cd_hide_password else Res.string.cd_show_password
+                    IconButton(
+                        onClick = { passwordVisible = !passwordVisible },
+                        modifier = Modifier.minimumInteractiveComponentSize(),
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = stringResource(iconCd),
+                        )
+                    }
+                },
+                supportingText = {
+                    val err = formError
+                    if (err != null) {
+                        Text(err)
+                    }
+                },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = AppSpacing.lg)
+                        .semantics {
+                            val err = formError
+                            if (err != null) {
+                                error(err)
+                            }
+                        }.tabFocusNext(focusManager),
+                singleLine = true,
+                visualTransformation =
+                    if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 isError = formError != null,
-                onLogin = attemptLogin,
-                errorMessage = formError,
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+                keyboardActions = KeyboardActions(onDone = { attemptLogin() }),
+                enabled = !isLoading,
             )
 
             OfflineModeSwitch()
@@ -330,19 +406,19 @@ private fun LoginCard(
             Spacer(modifier = Modifier.height(AppSpacing.moderate))
             DemoLoginButton(
                 isDemoLoading = isDemoLoading,
-                onClick = onDemoLogin,
+                onClick = actions.onDemoLogin,
             )
 
             if (isBiometricAvailable) {
                 Spacer(modifier = Modifier.height(AppSpacing.moderate))
                 BiometricLoginButton(
-                    onClick = onBiometricLogin,
+                    onClick = actions.onBiometricLogin,
                     enabled = !isLoading && !isDemoLoading,
                 )
             }
 
             Spacer(modifier = Modifier.height(AppSpacing.sm))
-            AppTourButton(onClick = onOpenTour)
+            AppTourButton(onClick = actions.onOpenTour)
 
             Spacer(modifier = Modifier.height(AppSpacing.md))
             LegalDisclaimer()
@@ -464,136 +540,6 @@ private fun LegalDisclaimer() {
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center,
-    )
-}
-
-/**
- * Internal helper.
- * @param username The username.
- * @param onUsernameChange The onUsernameChange.
- * @param isLoading The isLoading.
- * @param isError The isError.
- * @param errorMessage The errorMessage.
- */
-@Composable
-private fun UsernameField(
-    username: String,
-    onUsernameChange: (String) -> Unit,
-    isLoading: Boolean,
-    isError: Boolean,
-    errorMessage: String? = null,
-) {
-    val focusManager = LocalFocusManager.current
-    OutlinedTextField(
-        value = username,
-        onValueChange = onUsernameChange,
-        label = { Text(stringResource(Res.string.username)) },
-        supportingText = {
-            if (isError && errorMessage != null) {
-                Text(errorMessage)
-            }
-        },
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(bottom = AppSpacing.md)
-                .semantics {
-                    if (isError && errorMessage != null) {
-                        error(errorMessage)
-                    }
-                }.onKeyEvent {
-                    if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                        val dir = if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next
-                        focusManager.moveFocus(dir)
-                        true
-                    } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                        focusManager.moveFocus(FocusDirection.Next)
-                        true
-                    } else {
-                        false
-                    }
-                },
-        singleLine = true,
-        enabled = !isLoading,
-        isError = isError,
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
-    )
-}
-
-/**
- * Internal helper.
- * @param password The password.
- * @param onPasswordChange The onPasswordChange.
- * @param isLoading The isLoading.
- * @param isError The isError.
- * @param onLogin The onLogin.
- * @param errorMessage The errorMessage.
- */
-@Composable
-private fun PasswordField(
-    password: String,
-    onPasswordChange: (String) -> Unit,
-    isLoading: Boolean,
-    isError: Boolean,
-    onLogin: () -> Unit,
-    errorMessage: String? = null,
-) {
-    val focusManager = LocalFocusManager.current
-    var passwordVisible by remember { mutableStateOf(false) }
-    OutlinedTextField(
-        value = password,
-        onValueChange = onPasswordChange,
-        label = { Text(stringResource(Res.string.password)) },
-        trailingIcon = {
-            val icon = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
-            val iconCd = if (passwordVisible) Res.string.cd_hide_password else Res.string.cd_show_password
-            IconButton(
-                onClick = { passwordVisible = !passwordVisible },
-                modifier = Modifier.minimumInteractiveComponentSize(),
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = stringResource(iconCd),
-                )
-            }
-        },
-        supportingText = {
-            if (isError && errorMessage != null) {
-                Text(errorMessage)
-            }
-        },
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(bottom = AppSpacing.lg)
-                .semantics {
-                    if (isError && errorMessage != null) {
-                        error(errorMessage)
-                    }
-                }.onKeyEvent {
-                    if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                        val dir = if (it.isShiftPressed) FocusDirection.Previous else FocusDirection.Next
-                        focusManager.moveFocus(dir)
-                        true
-                    } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                        onLogin()
-                        true
-                    } else {
-                        false
-                    }
-                },
-        singleLine = true,
-        visualTransformation =
-            if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-        isError = isError,
-        keyboardOptions =
-            KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done,
-            ),
-        keyboardActions = KeyboardActions(onDone = { onLogin() }),
-        enabled = !isLoading,
     )
 }
 

@@ -12,9 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -66,7 +66,47 @@ import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.viewmodel.BuilderEnableWhen
 import io.healthplatform.chartcam.viewmodel.BuilderItem
 import io.healthplatform.chartcam.viewmodel.WidgetType
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+
+/**
+ * Creates an updated [BuilderEnableWhen] with the new answer string.
+ *
+ * @param condition The current condition rule.
+ * @param newAnswer The new answer text.
+ * @return A new [BuilderEnableWhen] instance with the updated answer string.
+ */
+fun updateConditionAnswer(
+    condition: BuilderEnableWhen,
+    newAnswer: String,
+): BuilderEnableWhen =
+    BuilderEnableWhen(
+        question = condition.question,
+        operator = condition.operator,
+        answerString = newAnswer,
+        answerBoolean = condition.answerBoolean,
+        answerDecimal = condition.answerDecimal,
+        answerInteger = condition.answerInteger,
+    )
+
+/**
+ * Resolves the localized string resource corresponding to the given [Questionnaire.QuestionnaireItemOperator].
+ *
+ * @param operator The questionnaire item operator.
+ * @return The corresponding [StringResource].
+ */
+fun getOperatorStringResource(operator: Questionnaire.QuestionnaireItemOperator): StringResource =
+    when (operator) {
+        Questionnaire.QuestionnaireItemOperator.EqualTo -> Res.string.enable_when_operator_equal
+        Questionnaire.QuestionnaireItemOperator.NotEqualTo -> Res.string.enable_when_operator_not_equal
+        Questionnaire.QuestionnaireItemOperator.GreaterThan -> Res.string.enable_when_operator_greater_than
+        Questionnaire.QuestionnaireItemOperator.LessThan -> Res.string.enable_when_operator_less_than
+        Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo ->
+            Res.string.enable_when_operator_greater_or_equal
+        Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo ->
+            Res.string.enable_when_operator_less_or_equal
+        Questionnaire.QuestionnaireItemOperator.Exists -> Res.string.enable_when_operator_exists
+    }
 
 /**
  * Dialog for configuring enableWhen conditional display rules in the questionnaire form builder.
@@ -88,19 +128,6 @@ fun EnableWhenEditorDialog(
     var behavior by remember {
         mutableStateOf(currentItem.enableBehavior ?: Questionnaire.EnableWhenBehavior.All)
     }
-
-    val operators =
-        listOf(
-            Questionnaire.QuestionnaireItemOperator.EqualTo to Res.string.enable_when_operator_equal,
-            Questionnaire.QuestionnaireItemOperator.NotEqualTo to Res.string.enable_when_operator_not_equal,
-            Questionnaire.QuestionnaireItemOperator.GreaterThan to Res.string.enable_when_operator_greater_than,
-            Questionnaire.QuestionnaireItemOperator.LessThan to Res.string.enable_when_operator_less_than,
-            Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo to
-                Res.string.enable_when_operator_greater_or_equal,
-            Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo to
-                Res.string.enable_when_operator_less_or_equal,
-            Questionnaire.QuestionnaireItemOperator.Exists to Res.string.enable_when_operator_exists,
-        )
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -162,20 +189,29 @@ fun EnableWhenEditorDialog(
                     )
                 }
 
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp),
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 320.dp)
+                            .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
                 ) {
-                    itemsIndexed(conditions) { index, cond ->
+                    conditions.forEachIndexed { index, cond ->
                         ConditionRow(
                             condition = cond,
                             candidateQuestions = candidateQuestions,
-                            operators = operators,
                             onUpdate = { updated ->
                                 conditions = conditions.toMutableList().apply { set(index, updated) }
                             },
                             onDelete = {
                                 conditions = conditions.toMutableList().apply { removeAt(index) }
+                            },
+                            onAnswerChange = { newAnswer ->
+                                conditions =
+                                    conditions.toMutableList().apply {
+                                        set(index, updateConditionAnswer(cond, newAnswer))
+                                    }
                             },
                         )
                     }
@@ -189,6 +225,9 @@ fun EnableWhenEditorDialog(
                                 question = candidateQuestions.first().linkId,
                                 operator = Questionnaire.QuestionnaireItemOperator.EqualTo,
                                 answerString = "",
+                                answerBoolean = null,
+                                answerDecimal = null,
+                                answerInteger = null,
                             )
                     },
                     modifier = Modifier.fillMaxWidth().minimumInteractiveComponentSize(),
@@ -227,18 +266,18 @@ fun EnableWhenEditorDialog(
  *
  * @param condition The condition to display.
  * @param candidateQuestions Prior questions that can be selected as target.
- * @param operators List of operators paired with localized string resources.
  * @param onUpdate Callback with updated condition.
  * @param onDelete Callback requesting deletion of this condition.
+ * @param onAnswerChange Callback with updated expected answer string.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ConditionRow(
+internal fun ConditionRow(
     condition: BuilderEnableWhen,
     candidateQuestions: List<BuilderItem>,
-    operators: List<Pair<Questionnaire.QuestionnaireItemOperator, org.jetbrains.compose.resources.StringResource>>,
     onUpdate: (BuilderEnableWhen) -> Unit,
     onDelete: () -> Unit,
+    onAnswerChange: (String) -> Unit,
 ) {
     var questionExpanded by remember { mutableStateOf(false) }
     var operatorExpanded by remember { mutableStateOf(false) }
@@ -247,8 +286,13 @@ private fun ConditionRow(
         modifier = Modifier.fillMaxWidth().padding(vertical = AppSpacing.xs),
         verticalArrangement = Arrangement.spacedBy(AppSpacing.xs),
     ) {
+        val matchedCandidate = candidateQuestions.firstOrNull { it.linkId == condition.question }
         val currentTargetLabel =
-            candidateQuestions.firstOrNull { it.linkId == condition.question }?.label ?: condition.question
+            if (matchedCandidate != null) {
+                matchedCandidate.label
+            } else {
+                condition.question
+            }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -277,7 +321,16 @@ private fun ConditionRow(
                         DropdownMenuItem(
                             text = { Text(candidate.label) },
                             onClick = {
-                                onUpdate(condition.copy(question = candidate.linkId))
+                                onUpdate(
+                                    BuilderEnableWhen(
+                                        question = candidate.linkId,
+                                        operator = condition.operator,
+                                        answerString = condition.answerString,
+                                        answerBoolean = condition.answerBoolean,
+                                        answerDecimal = condition.answerDecimal,
+                                        answerInteger = condition.answerInteger,
+                                    ),
+                                )
                                 questionExpanded = false
                             },
                         )
@@ -307,9 +360,7 @@ private fun ConditionRow(
                 onExpandedChange = { operatorExpanded = it },
                 modifier = Modifier.weight(1f),
             ) {
-                val currentOpRes =
-                    operators.firstOrNull { it.first == condition.operator }?.second
-                        ?: Res.string.enable_when_operator_equal
+                val currentOpRes = getOperatorStringResource(condition.operator)
                 OutlinedTextField(
                     value = stringResource(currentOpRes),
                     onValueChange = {},
@@ -322,11 +373,20 @@ private fun ConditionRow(
                     expanded = operatorExpanded,
                     onDismissRequest = { operatorExpanded = false },
                 ) {
-                    operators.forEach { (op, res) ->
+                    Questionnaire.QuestionnaireItemOperator.entries.forEach { op ->
                         DropdownMenuItem(
-                            text = { Text(stringResource(res)) },
+                            text = { Text(stringResource(getOperatorStringResource(op))) },
                             onClick = {
-                                onUpdate(condition.copy(operator = op))
+                                onUpdate(
+                                    BuilderEnableWhen(
+                                        question = condition.question,
+                                        operator = op,
+                                        answerString = condition.answerString,
+                                        answerBoolean = condition.answerBoolean,
+                                        answerDecimal = condition.answerDecimal,
+                                        answerInteger = condition.answerInteger,
+                                    ),
+                                )
                                 operatorExpanded = false
                             },
                         )
@@ -344,7 +404,7 @@ private fun ConditionRow(
                     }
                 OutlinedTextField(
                     value = condition.answerString ?: "",
-                    onValueChange = { onUpdate(condition.copy(answerString = it)) },
+                    onValueChange = onAnswerChange,
                     label = { Text(stringResource(Res.string.enable_when_expected_answer)) },
                     keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
                     modifier = Modifier.weight(1f),

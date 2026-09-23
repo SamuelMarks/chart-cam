@@ -58,7 +58,6 @@ import chartcam.chartcam.generated.resources.title_clinical_voice_memo
 import io.healthplatform.chartcam.media.AudioRecorderManager
 import io.healthplatform.chartcam.ui.theme.AppSpacing
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Clock
@@ -91,7 +90,7 @@ fun AudioMemoControl(
     LaunchedEffect(isRecording) {
         if (isRecording) {
             durationSeconds = 0
-            while (isActive && isRecording) {
+            while (true) {
                 delay(1000L)
                 durationSeconds++
             }

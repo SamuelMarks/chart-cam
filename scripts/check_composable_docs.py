@@ -46,7 +46,7 @@ def check_composable_docs(source_dirs):
                         lines = f.readlines()
 
                     for i, line in enumerate(lines):
-                        if "@Composable" in line:
+                        if line.strip().startswith("@") and "@Composable" in line:
                             # Look ahead for fun
                             k = i + 1
                             while k < len(lines) and not func_pattern.match(lines[k]):

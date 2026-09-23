@@ -6,9 +6,11 @@
  */
 package io.healthplatform.chartcam.ui
 
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -134,7 +136,7 @@ class OnboardingTutorialScreenJvmTest {
     }
 
     /**
-     * Verifies that page indicators exist and are displayed.
+     * Verifies that page indicators exist, are displayed, and can be clicked to navigate directly.
      */
     @OptIn(ExperimentalTestApi::class)
     @Test
@@ -144,11 +146,63 @@ class OnboardingTutorialScreenJvmTest {
                 OnboardingTutorialScreen(
                     onDismiss = {},
                     onComplete = {},
+                    modifier = androidx.compose.ui.Modifier,
+                    slides = OnboardingTutorialDefaults.DEFAULT_SLIDES,
                 )
             }
             waitForIdle()
 
             onNodeWithTag(OnboardingTutorialDefaults.TAG_TUTORIAL_INDICATORS).assertIsDisplayed()
+
+            // Click the indicator for slide 3 (page 3)
+            onNodeWithContentDescription("Go to page 3", useUnmergedTree = true)
+                .performClick()
+            waitForIdle()
+
+            onNodeWithText("Standardized Clinical Capture").assertIsDisplayed()
+        }
+    }
+
+    /**
+     * Verifies recomposition and skipping in [OnboardingTutorialScreen].
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testOnboardingTutorialRecompositionAndSkipping() {
+        runComposeUiTest {
+            val outerTrigger = androidx.compose.runtime.mutableStateOf(0)
+            val onDismissState = androidx.compose.runtime.mutableStateOf<() -> Unit>({})
+            val onCompleteState = androidx.compose.runtime.mutableStateOf<() -> Unit>({})
+            val modifierState = androidx.compose.runtime.mutableStateOf<androidx.compose.ui.Modifier>(androidx.compose.ui.Modifier)
+            val slidesState = androidx.compose.runtime.mutableStateOf(OnboardingTutorialDefaults.DEFAULT_SLIDES)
+
+            setContent {
+                val dummy = outerTrigger.value
+                OnboardingTutorialScreen(
+                    onDismiss = onDismissState.value,
+                    onComplete = onCompleteState.value,
+                    modifier = modifierState.value,
+                    slides = slidesState.value,
+                )
+            }
+            waitForIdle()
+
+            outerTrigger.value++
+            waitForIdle()
+
+            onDismissState.value = { println("dismissed") }
+            waitForIdle()
+
+            onCompleteState.value = { println("completed") }
+            waitForIdle()
+
+            modifierState.value =
+                androidx.compose.ui.Modifier
+                    .semantics { }
+            waitForIdle()
+
+            slidesState.value = OnboardingTutorialDefaults.DEFAULT_SLIDES.take(2)
+            waitForIdle()
         }
     }
 }

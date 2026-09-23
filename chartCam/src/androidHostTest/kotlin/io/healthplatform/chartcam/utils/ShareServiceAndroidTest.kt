@@ -93,4 +93,62 @@ class ShareServiceAndroidTest {
         filesDirFile.delete()
         cacheDirFile.delete()
     }
+
+    /**
+     * Tests successful file sharing through mock URI provider.
+     */
+    @Test
+    fun testShareFileSuccessWithMockUri() {
+        val filesDirFile = File(context.filesDir, "share_success.enc")
+        filesDirFile.writeText("payload")
+        // allow-exception
+        try {
+            val service =
+                AndroidShareService(
+                    context = context,
+                    uriProvider = { _, _, f -> android.net.Uri.parse("content://test.fileprovider/${f.name}") },
+                )
+            val result = service.shareFile(filesDirFile.absolutePath)
+            assertTrue(result.isSuccess)
+        } finally {
+            filesDirFile.delete()
+        }
+    }
+
+    /**
+     * Tests file sharing failure when uri provider throws.
+     */
+    @Test
+    fun testShareFileFailureWhenUriProviderThrows() {
+        val filesDirFile = File(context.filesDir, "share_error.enc")
+        filesDirFile.writeText("payload")
+        // allow-exception
+        try {
+            val service =
+                AndroidShareService(
+                    context = context,
+                    uriProvider = { _, _, _ -> throw IllegalArgumentException("Failed to find provider") }, // allow-exception
+                )
+            val result = service.shareFile(filesDirFile.absolutePath)
+            assertTrue(result.isFailure)
+        } finally {
+            filesDirFile.delete()
+        }
+    }
+
+    /**
+     * Tests text sharing failure when startActivity throws.
+     */
+    @Test
+    fun testShareTextFailureWhenStartActivityThrows() {
+        val failingContext =
+            object : android.content.ContextWrapper(context) {
+                override fun startActivity(
+                    intent: android.content.Intent?,
+                ): Unit = throw android.content.ActivityNotFoundException("No handler for send intent") // allow-exception
+            }
+        val service = AndroidShareService(context = failingContext)
+        val result = service.shareText("test payload")
+        assertTrue(result.isFailure)
+    }
 }

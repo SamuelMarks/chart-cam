@@ -131,6 +131,7 @@ data class NewVisitRoute(
  *
  * @param duplicateFromId Optional ID of an existing questionnaire to use as a starting point.
  */
+@androidx.compose.runtime.Immutable
 @Serializable
 @SerialName("/questionnaires/build")
 data class QuestionnaireBuilderRoute(

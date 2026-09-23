@@ -6,9 +6,11 @@
  */
 package io.healthplatform.chartcam.navigation
 
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
@@ -47,6 +49,23 @@ private class TestDicomFileStorage(
     override fun saveImage(fileName: String, bytes: ByteArray): String = fileName
 
     override fun readImage(path: String): ByteArray = bytesToReturn
+
+    override fun deleteImage(path: String): Result<Unit> = Result.success(Unit)
+
+    override fun clearCache() {}
+}
+
+private class BlockingDicomFileStorage(
+    private val bytesToReturn: ByteArray,
+) : FileStorage {
+    val proceed = java.util.concurrent.CountDownLatch(1)
+
+    override fun saveImage(fileName: String, bytes: ByteArray): String = fileName
+
+    override fun readImage(path: String): ByteArray {
+        proceed.await()
+        return bytesToReturn
+    }
 
     override fun deleteImage(path: String): Result<Unit> = Result.success(Unit)
 
@@ -135,5 +154,218 @@ class DicomDestinationsJvmTest {
             onNodeWithContentDescription("Back", useUnmergedTree = true).performClick()
             waitForIdle()
             assertTrue(backClicked)
+        }
+
+    /**
+     * Tests successful DICOM dataset rendering and back stack pop navigation.
+     */
+    @Test
+    fun testDicomViewerDestinationSuccessAndPop() =
+        runComposeUiTest {
+            setAppLanguage("en")
+            val jpegBytes = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xD9.toByte())
+            val dcmBytes =
+                io.healthplatform.chartcam.dicom.FhirToDicomMapper
+                    .createVisibleLightImageDicom(jpegBytes)
+                    .getOrThrow()
+            val fakeStorage = TestDicomFileStorage(dcmBytes)
+            val deps = createTestDependencies(fakeStorage)
+
+            setContent {
+                val navController = rememberNavController()
+                NavHost(
+                    navController = navController,
+                    startDestination = DicomViewerRoute("sample.dcm"),
+                ) {
+                    dicomViewerDestination(navController, deps)
+                }
+            }
+
+            waitForIdle()
+
+            // Verify TopAppBar heading title
+            onNodeWithText("DICOM Inspector", useUnmergedTree = true).assertIsDisplayed()
+
+            // Verify back button is displayed
+            onNodeWithContentDescription("Back", useUnmergedTree = true).assertIsDisplayed()
+        }
+
+    /**
+     * Tests null fileStorage fallback branch in DicomViewerScreen.
+     */
+    @Test
+    fun testDicomViewerScreenNullFileStorageFallback() =
+        runComposeUiTest {
+            setAppLanguage("en")
+            val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+            ChartCamDatabase.Schema.synchronous().create(driver)
+            val database = ChartCamDatabase(driver)
+            val secureStorage = MemorySecureStorage()
+            val authRepo = AuthRepository(secureStorage)
+            val fhirRepo = FhirRepository(driver)
+            val qRepo = QuestionnaireRepository(fhirRepo)
+            val eiService =
+                ExportImportService(
+                    database,
+                    io.healthplatform.chartcam.files
+                        .createFileStorage(),
+                )
+            val photoMgr = PhotoSessionManager()
+
+            val depsWithoutStorage =
+                AppDependencies(
+                    authRepository = authRepo,
+                    fhirRepository = fhirRepo,
+                    questionnaireRepository = qRepo,
+                    exportImportService = eiService,
+                    photoSessionManager = photoMgr,
+                    fileStorage = null,
+                )
+
+            setContent {
+                DicomViewerScreen(
+                    filePath = "nonexistent.dcm",
+                    deps = depsWithoutStorage,
+                    onBack = {},
+                )
+            }
+
+            waitForIdle()
+            onNodeWithText("DICOM Inspector", useUnmergedTree = true).assertIsDisplayed()
+        }
+
+    /**
+     * Tests recomposition of DicomViewerScreen with updated parameters.
+     */
+    @Test
+    fun testDicomViewerScreenRecomposition() =
+        runComposeUiTest {
+            setAppLanguage("en")
+            val fakeStorage = TestDicomFileStorage(byteArrayOf(1, 2, 3))
+            val deps1 = createTestDependencies(fakeStorage)
+            val deps2 = createTestDependencies(fakeStorage)
+
+            val filePathState = androidx.compose.runtime.mutableStateOf("file1.dcm")
+            val depsState = androidx.compose.runtime.mutableStateOf(deps1)
+            val onBackState = androidx.compose.runtime.mutableStateOf<() -> Unit>({})
+            val modifierState = androidx.compose.runtime.mutableStateOf<androidx.compose.ui.Modifier>(androidx.compose.ui.Modifier)
+
+            setContent {
+                DicomViewerScreen(
+                    filePath = filePathState.value,
+                    deps = depsState.value,
+                    onBack = onBackState.value,
+                    modifier = modifierState.value,
+                )
+            }
+            waitForIdle()
+
+            filePathState.value = "file2.dcm"
+            waitForIdle()
+
+            depsState.value = deps2
+            waitForIdle()
+
+            onBackState.value = { println("back") }
+            waitForIdle()
+
+            modifierState.value =
+                androidx.compose.ui.Modifier
+                    .semantics { }
+            waitForIdle()
+        }
+
+    /**
+     * Tests skipping recomposition of DicomViewerScreen when parent recomposes with unchanged inputs.
+     */
+    @Test
+    fun testDicomViewerScreenRecompositionSkipping() =
+        runComposeUiTest {
+            setAppLanguage("en")
+            val fakeStorage = TestDicomFileStorage(byteArrayOf(1, 2, 3))
+            val deps1 = createTestDependencies(fakeStorage)
+            val outerTrigger = androidx.compose.runtime.mutableStateOf(0)
+
+            setContent {
+                val dummy = outerTrigger.value
+                DicomViewerScreen(
+                    filePath = "file1.dcm",
+                    deps = deps1,
+                    onBack = {},
+                )
+            }
+            waitForIdle()
+
+            outerTrigger.value++
+            waitForIdle()
+        }
+
+    /**
+     * Tests recomposition of DicomViewerScreen when invoked with default modifier.
+     */
+    @Test
+    fun testDicomViewerScreenDefaultParameterRecomposition() =
+        runComposeUiTest {
+            setAppLanguage("en")
+            val fakeStorage = TestDicomFileStorage(byteArrayOf(1, 2, 3))
+            val deps1 = createTestDependencies(fakeStorage)
+            val deps2 = createTestDependencies(fakeStorage)
+
+            val filePathState = androidx.compose.runtime.mutableStateOf("file1.dcm")
+            val depsState = androidx.compose.runtime.mutableStateOf(deps1)
+            val onBackState = androidx.compose.runtime.mutableStateOf<() -> Unit>({})
+
+            setContent {
+                DicomViewerScreen(
+                    filePath = filePathState.value,
+                    deps = depsState.value,
+                    onBack = onBackState.value,
+                )
+            }
+            waitForIdle()
+
+            filePathState.value = "file2.dcm"
+            waitForIdle()
+
+            depsState.value = deps2
+            waitForIdle()
+
+            onBackState.value = { println("back") }
+            waitForIdle()
+        }
+
+    /**
+     * Tests rendering of loading indicator in DicomViewerScreen before data loads.
+     */
+    @Test
+    fun testDicomViewerScreenLoadingIndicator() =
+        runComposeUiTest {
+            setAppLanguage("en")
+            val blockingStorage = BlockingDicomFileStorage(byteArrayOf(1, 2, 3))
+            val deps = createTestDependencies(blockingStorage)
+
+            setContent {
+                DicomViewerScreen(
+                    filePath = "loading.dcm",
+                    deps = deps,
+                    onBack = {},
+                )
+            }
+
+            // Verify loading indicator is displayed while blocking storage has not completed
+            onNodeWithTag("DicomLoadingIndicator", useUnmergedTree = true).assertIsDisplayed()
+
+            // Unblock storage
+            blockingStorage.proceed.countDown()
+            waitUntil(timeoutMillis = 5000L) {
+                runCatching {
+                    onNodeWithText("Failed to parse DICOM file: loading.dcm", substring = true, useUnmergedTree = true)
+                        .assertExists()
+                }.isSuccess
+            }
+
+            // Verify error message for invalid DICOM after unblocking
+            onNodeWithText("Failed to parse DICOM file: loading.dcm", substring = true, useUnmergedTree = true)
+                .assertIsDisplayed()
         }
 }

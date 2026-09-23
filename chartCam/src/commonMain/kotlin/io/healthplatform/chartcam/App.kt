@@ -51,6 +51,32 @@ import io.healthplatform.chartcam.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 
 /**
+ * Determines whether the privacy security shield should be displayed over the application content.
+ *
+ * @param privacyState The active visual privacy state.
+ * @param isLocked Whether the user session is locked due to inactivity.
+ * @return True if the sensitive UI should be obscured, false otherwise.
+ */
+fun shouldShowPrivacyShield(
+    privacyState: AppPrivacyState,
+    isLocked: Boolean,
+): Boolean =
+    if (privacyState == AppPrivacyState.BACKGROUND_OBSCURED) {
+        true
+    } else {
+        isLocked
+    }
+
+/**
+ * Root Composable entry point defaulting to the system dark theme setting.
+ */
+@Composable
+@Preview
+fun App() {
+    App(darkTheme = isSystemInDarkTheme())
+}
+
+/**
  * The Root Composable Configurator.
  * Applies the AppTheme for Material Design 3 styling and sets up the primary
  * surface which fills the entire screen, serving as the container for the
@@ -59,11 +85,10 @@ import org.jetbrains.compose.resources.stringResource
  * **State & Side Effects:**
  * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
- * @param darkTheme Whether to render the application UI in dark theme. Defaults to system setting.
+ * @param darkTheme Whether to render the application UI in dark theme.
  */
 @Composable
-@Preview
-fun App(darkTheme: Boolean = isSystemInDarkTheme()) {
+fun App(darkTheme: Boolean) {
     SetupPlatformPrivacy()
     val currentLang by currentLanguageState.collectAsState()
     val layoutDirection = getLayoutDirectionForLanguage(currentLang)
@@ -79,7 +104,7 @@ fun App(darkTheme: Boolean = isSystemInDarkTheme()) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     AppNavigation()
 
-                    if (privacyState == AppPrivacyState.BACKGROUND_OBSCURED || isLocked) {
+                    if (shouldShowPrivacyShield(privacyState, isLocked)) {
                         Surface(
                             modifier =
                                 Modifier

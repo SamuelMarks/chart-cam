@@ -100,4 +100,27 @@ class AndroidKeystoreHardwareProviderAndroidTest {
                 )
             assertTrue(noKmProvider.promptBiometrics("T", "S").isSuccess)
         }
+
+    /**
+     * Verifies prompt biometrics fallback when AndroidAppInit context is uninitialized.
+     */
+    @Test
+    fun testPromptBiometricsWhenAndroidAppInitThrows() =
+        runTest {
+            val field = AndroidAppInit::class.java.getDeclaredField("context")
+            field.isAccessible = true
+            val oldCtx = field.get(null)
+            field.set(null, null)
+            // allow-exception
+            try {
+                val provider =
+                    AndroidKeystoreHardwareProvider(
+                        sdkInt = Build.VERSION_CODES.M,
+                        contextProvider = null,
+                    )
+                assertTrue(provider.promptBiometrics("Title", "Subtitle").isSuccess)
+            } finally {
+                field.set(null, oldCtx)
+            }
+        }
 }

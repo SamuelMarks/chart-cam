@@ -91,7 +91,7 @@ fun getPainScoreResource(score: Int): StringResource =
  */
 fun getPainScoreColor(
     score: Int,
-    isDarkTheme: Boolean = false,
+    isDarkTheme: Boolean,
 ): Color =
     io.healthplatform.chartcam.ui.theme
         .resolvePainScoreColor(score, isDarkTheme)
@@ -121,10 +121,10 @@ fun VisualPainScaleControl(
     value: Int?,
     onValueChange: (Int) -> Unit,
     label: String,
-    isRequired: Boolean = false,
-    isError: Boolean = false,
-    errorMessage: String? = null,
-    readOnly: Boolean = false,
+    isRequired: Boolean,
+    isError: Boolean,
+    errorMessage: String?,
+    readOnly: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val currentScore = (value ?: 0).coerceIn(0, 10)
@@ -281,6 +281,35 @@ fun VisualPainScaleControl(
             )
         }
     }
+}
+
+/**
+ * Convenience overload for [VisualPainScaleControl] defaulting validation and error states.
+ *
+ * @param value The currently selected integer pain rating (0 to 10), or null.
+ * @param onValueChange Callback invoked when the user selects or adjusts the pain score.
+ * @param label The localized title/label for the questionnaire item.
+ * @param readOnly Whether the control is rendered in read-only / review mode.
+ * @param modifier The modifier to apply to the root layout.
+ */
+@Composable
+fun VisualPainScaleControl(
+    value: Int?,
+    onValueChange: (Int) -> Unit,
+    label: String,
+    readOnly: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
+    VisualPainScaleControl(
+        value = value,
+        onValueChange = onValueChange,
+        label = label,
+        isRequired = false,
+        isError = false,
+        errorMessage = null,
+        readOnly = readOnly,
+        modifier = modifier,
+    )
 }
 
 /**

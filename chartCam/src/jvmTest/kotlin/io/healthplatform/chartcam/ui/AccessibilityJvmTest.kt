@@ -147,10 +147,19 @@ class AccessibilityJvmTest {
             ChartCamDatabase.Schema.synchronous().create(driver)
             val fhirRepository = FhirRepository(ChartCamDatabase(driver))
 
+            val vm =
+                io.healthplatform.chartcam.viewmodel
+                    .PatientDetailViewModel(
+                        fhirRepository,
+                        io.healthplatform.chartcam.files
+                            .createFileStorage(),
+                    ).apply {
+                        loadPatientData("pat-1")
+                    }
+
             setContent {
                 PatientDetailScreen(
-                    patientId = "pat-1",
-                    fhirRepository = fhirRepository,
+                    viewModel = vm,
                     onBack = {},
                     onNewVisit = {},
                     onVisitSelected = {},

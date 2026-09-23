@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -41,7 +41,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -70,12 +69,10 @@ import chartcam.chartcam.generated.resources.no_notes
 import chartcam.chartcam.generated.resources.no_visits_found
 import chartcam.chartcam.generated.resources.patient_detail
 import chartcam.chartcam.generated.resources.visit_history
-import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.customBirthDate
 import io.healthplatform.chartcam.models.encounterDate
 import io.healthplatform.chartcam.models.getFullName
 import io.healthplatform.chartcam.models.mrn
-import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.viewmodel.PatientDetailViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -86,9 +83,7 @@ import org.jetbrains.compose.resources.stringResource
  * **State & Side Effects:**
  * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
- * @param patientId The unique identifier of the patient to display.
- * @param fhirRepository Repository used to load patient and encounter data.
- * @param fileStorage Optional storage to delete associated image files from disk upon deletion.
+ * @param viewModel ViewModel handling patient details and encounter history.
  * @param onBack Callback invoked when the user requests to navigate back.
  * @param onNewVisit Callback invoked when the user requests to create a new visit (encounter) for the patient.
  * @param onVisitSelected Callback invoked when the user selects a specific past visit. Provides the visit ID.
@@ -96,24 +91,13 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PatientDetailScreen(
-    patientId: String,
-    fhirRepository: FhirRepository,
-    fileStorage: FileStorage? = null,
+    viewModel: PatientDetailViewModel,
     onBack: () -> Unit,
     onNewVisit: () -> Unit,
     onVisitSelected: (String) -> Unit,
 ) {
-    /** The view model handling the business logic and data fetching for the PatientDetailScreen. */
-    val viewModel =
-        androidx.lifecycle.viewmodel.compose
-            .viewModel { PatientDetailViewModel(fhirRepository, fileStorage) }
-
     /** State representing the current UI data for the patient details. */
     val state by viewModel.uiState.collectAsState()
-
-    LaunchedEffect(Unit) {
-        viewModel.loadPatientData(patientId)
-    }
 
     val currentLang by currentLanguageState.collectAsState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -142,13 +126,14 @@ fun PatientDetailScreen(
 }
 
 /**
- * Internal helper.
- * @param padding The padding.
- * @param state The state.
- * @param onVisitSelected The onVisitSelected.
+ * Internal helper for patient detail content.
+ *
+ * @param padding Padding values provided by Scaffold.
+ * @param state Current UI state for patient details.
+ * @param onVisitSelected Callback when a visit is selected.
  */
 @Composable
-private fun PatientDetailContent(
+internal fun PatientDetailContent(
     padding: androidx.compose.foundation.layout.PaddingValues,
     state: io.healthplatform.chartcam.viewmodel.PatientDetailUiState,
     onVisitSelected: (String) -> Unit,
@@ -168,8 +153,14 @@ private fun PatientDetailContent(
                     .semantics { heading() },
         )
 
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(state.encounters) { encounter ->
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+        ) {
+            state.encounters.forEach { encounter ->
+                val visitId = encounter.id ?: ""
                 ListItem(
                     headlineContent = {
                         Text(
@@ -178,11 +169,13 @@ private fun PatientDetailContent(
                         )
                     },
                     supportingContent = {
-                        Text(
-                            io.healthplatform.chartcam.utils.QuestionnaireUtils.stripNarrativeDiv(
-                                encounter.text?.div?.value,
-                            ) ?: stringResource(Res.string.no_notes),
-                        )
+                        val notes =
+                            encounter.text?.let { narrative ->
+                                io.healthplatform.chartcam.utils.QuestionnaireUtils.stripNarrativeDiv(
+                                    narrative.div.value,
+                                )
+                            } ?: stringResource(Res.string.no_notes)
+                        Text(notes)
                     },
                     modifier =
                         Modifier
@@ -191,26 +184,24 @@ private fun PatientDetailContent(
                             .clickable(
                                 role = Role.Button,
                                 onClickLabel = stringResource(Res.string.cd_action_view_encounter),
-                            ) { onVisitSelected(encounter.id ?: "") },
+                            ) { onVisitSelected(visitId) },
                 )
                 HorizontalDivider()
             }
 
             if (state.encounters.isEmpty()) {
-                item {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(AppSpacing.xl)
-                                .semantics { liveRegion = LiveRegionMode.Polite },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            stringResource(Res.string.no_visits_found),
-                            color = MaterialTheme.colorScheme.secondary,
-                        )
-                    }
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(AppSpacing.xl)
+                            .semantics { liveRegion = LiveRegionMode.Polite },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        stringResource(Res.string.no_visits_found),
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
                 }
             }
         }
@@ -220,16 +211,16 @@ private fun PatientDetailContent(
 /**
  * Internal helper for patient detail top app bar.
  *
- * @param onBack The onBack callback.
- * @param onDeletePatient The onDeletePatient callback.
+ * @param onBack Callback when back navigation is requested.
+ * @param onDeletePatient Callback when patient deletion is confirmed.
  * @param scrollBehavior TopAppBar scroll behavior.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PatientDetailTopBar(
+internal fun PatientDetailTopBar(
     onBack: () -> Unit,
     onDeletePatient: () -> Unit,
-    scrollBehavior: TopAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(),
+    scrollBehavior: TopAppBarScrollBehavior,
 ) {
     TopAppBar(
         scrollBehavior = scrollBehavior,
@@ -284,7 +275,7 @@ private fun PatientDetailTopBar(
             }
 
             if (showDeleteConfirm) {
-                DeleteConfirmDialog(
+                PatientDeleteConfirmDialog(
                     onDismiss = { showDeleteConfirm = false },
                     onDeletePatient = onDeletePatient,
                 )
@@ -294,11 +285,12 @@ private fun PatientDetailTopBar(
 }
 
 /**
- * Internal helper.
- * @param patient The patient.
+ * Internal helper for patient information header.
+ *
+ * @param patient The FHIR Patient resource.
  */
 @Composable
-private fun PatientInfo(patient: dev.ohs.fhir.model.r4.Patient) {
+internal fun PatientInfo(patient: dev.ohs.fhir.model.r4.Patient) {
     val currentLang by currentLanguageState.collectAsState()
     Column(modifier = Modifier.fillMaxWidth().padding(AppSpacing.md)) {
         Text(
@@ -322,12 +314,13 @@ private fun PatientInfo(patient: dev.ohs.fhir.model.r4.Patient) {
 }
 
 /**
- * Internal helper.
- * @param onDismiss The onDismiss.
- * @param onDeletePatient The onDeletePatient.
+ * Confirmation dialog for patient deletion.
+ *
+ * @param onDismiss Callback when dismissal is requested.
+ * @param onDeletePatient Callback when deletion is confirmed.
  */
 @Composable
-private fun DeleteConfirmDialog(
+internal fun PatientDeleteConfirmDialog(
     onDismiss: () -> Unit,
     onDeletePatient: () -> Unit,
 ) {

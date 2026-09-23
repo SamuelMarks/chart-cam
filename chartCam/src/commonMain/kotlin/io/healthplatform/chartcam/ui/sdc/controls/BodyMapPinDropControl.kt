@@ -217,10 +217,10 @@ fun BodyMapPinDropControl(
     location: BodyMapLocation?,
     onLocationChanged: (BodyMapLocation?) -> Unit,
     label: String,
-    isRequired: Boolean = false,
-    isError: Boolean = false,
-    errorMessage: String? = null,
-    readOnly: Boolean = false,
+    isRequired: Boolean,
+    isError: Boolean,
+    errorMessage: String?,
+    readOnly: Boolean,
     modifier: Modifier = Modifier,
 ) {
     var isPosterior by remember { mutableStateOf(false) }
@@ -353,12 +353,19 @@ fun BodyMapPinDropControl(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
             ) {
                 val currentDisplayName =
-                    location?.let {
-                        val (res, _) = resolveAnatomicalRegion(it.xPercent, it.yPercent, it.regionId == "posterior")
-                        val site = regionNameMap[res] ?: it.displayName
-                        val viewStr = if (it.regionId == "posterior") posteriorText else anteriorText
+                    if (location != null) {
+                        val (res, _) =
+                            resolveAnatomicalRegion(
+                                location.xPercent,
+                                location.yPercent,
+                                location.regionId == "posterior",
+                            )
+                        val site = regionNameMap.getValue(res)
+                        val viewStr = if (location.regionId == "posterior") posteriorText else anteriorText
                         formatSiteView(siteViewFormat, site, viewStr)
-                    } ?: ""
+                    } else {
+                        ""
+                    }
 
                 OutlinedTextField(
                     value = currentDisplayName,
@@ -436,6 +443,7 @@ fun BodyMapPinDropControl(
                 Modifier
                     .fillMaxWidth()
                     .height(BODY_MAP_CANVAS_HEIGHT.dp)
+                    .testTag("BodyMapCard")
                     .semantics {
                         contentDescription = canvasDesc
                         if (canvasActions.isNotEmpty()) {
@@ -460,7 +468,7 @@ fun BodyMapPinDropControl(
                                             val xPct = (offset.x / size.width) * 100f
                                             val yPct = (offset.y / size.height) * 100f
                                             val (res, snomed) = resolveAnatomicalRegion(xPct, yPct, isPosterior)
-                                            val siteName = regionNameMap[res] ?: headText
+                                            val siteName = regionNameMap.getValue(res)
                                             val currentViewSuffix = if (isPosterior) posteriorText else anteriorText
                                             val newLocation =
                                                 BodyMapLocation(
@@ -625,7 +633,7 @@ fun BodyMapPinDropControl(
                     location.yPercent,
                     location.regionId == "posterior",
                 )
-            val site = regionNameMap[regionRes] ?: location.displayName
+            val site = regionNameMap.getValue(regionRes)
             val viewStr = if (location.regionId == "posterior") posteriorText else anteriorText
             val dynamicDisplayName = formatSiteView(siteViewFormat, site, viewStr)
             val pinSummary =
@@ -701,6 +709,35 @@ fun BodyMapPinDropControl(
             )
         }
     }
+}
+
+/**
+ * Convenience overload for [BodyMapPinDropControl] defaulting validation and error states.
+ *
+ * @param location The currently pinned [BodyMapLocation], or null.
+ * @param onLocationChanged Callback invoked when a location pin is dropped or cleared.
+ * @param label The localized title/label for the questionnaire item.
+ * @param readOnly Whether the control is rendered in read-only / review mode.
+ * @param modifier The modifier to apply to the root layout.
+ */
+@Composable
+fun BodyMapPinDropControl(
+    location: BodyMapLocation?,
+    onLocationChanged: (BodyMapLocation?) -> Unit,
+    label: String,
+    readOnly: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
+    BodyMapPinDropControl(
+        location = location,
+        onLocationChanged = onLocationChanged,
+        label = label,
+        isRequired = false,
+        isError = false,
+        errorMessage = null,
+        readOnly = readOnly,
+        modifier = modifier,
+    )
 }
 
 /**

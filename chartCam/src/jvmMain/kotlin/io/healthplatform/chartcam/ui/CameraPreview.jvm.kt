@@ -42,11 +42,10 @@ import chartcam.chartcam.generated.resources.initializing_camera
 import io.healthplatform.chartcam.camera.CameraManager
 import io.healthplatform.chartcam.camera.JvmCameraManager
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import org.jetbrains.compose.resources.stringResource
 
-private const val TIMEOUT_MS = 5000L
-private const val POLL_INTERVAL_MS = 100L
+internal var timeoutMs: Long = 5000L
+internal var pollIntervalMs: Long = 100L
 private const val STREAM_INTERVAL_MS = 33L
 
 /**
@@ -76,25 +75,24 @@ actual fun CameraPreview(
 
     LaunchedEffect(cameraManager) {
         if (cameraManager is JvmCameraManager) {
-            // Wait up to 5 seconds for the first frame
+            // Wait up to timeoutMs for the first frame
             val initSuccess =
-                kotlinx.coroutines.withTimeoutOrNull(TIMEOUT_MS) {
-                    while (isActive && imageBitmap == null) {
+                kotlinx.coroutines.withTimeoutOrNull(timeoutMs) {
+                    while (true) {
                         val img = cameraManager.getPreviewImage()
                         if (img != null) {
                             imageBitmap = img.toComposeImageBitmap()
-                            return@withTimeoutOrNull true
+                            break
                         }
-                        delay(POLL_INTERVAL_MS) // Poll for the first frame
+                        delay(pollIntervalMs)
                     }
-                    true
                 }
 
-            if (initSuccess == null || imageBitmap == null) {
+            if (initSuccess == null) {
                 hasError = true
             } else {
                 // First frame loaded, now stream at ~30fps
-                while (isActive) {
+                while (true) {
                     val img = cameraManager.getPreviewImage()
                     if (img != null) {
                         imageBitmap = img.toComposeImageBitmap()

@@ -6,12 +6,44 @@
  */
 package io.healthplatform.chartcam.navigation
 
+import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import io.healthplatform.chartcam.ui.CaptureScreen
 import io.healthplatform.chartcam.ui.TriageScreen
+import kotlinx.coroutines.launch
+
+/**
+ * Handles completion of photo capture session across capture destinations.
+ *
+ * @param outputPathsMap Mapping of questionnaire linkIds to captured image file paths.
+ * @param navController The navigation controller.
+ * @param photoSessionManager Session manager for captured photos.
+ * @param isPatientFlow True if capture was initiated from a patient record, false otherwise.
+ */
+fun handleCaptureFinished(
+    outputPathsMap: Map<String, String>,
+    navController: NavHostController,
+    photoSessionManager: PhotoSessionManager,
+    isPatientFlow: Boolean = false,
+) {
+    if (isPatientFlow) {
+        if (outputPathsMap.isNotEmpty()) {
+            photoSessionManager.setPhotos(outputPathsMap)
+        }
+        navController.popBackStack()
+    } else {
+        if (outputPathsMap.isEmpty()) {
+            navController.navigate(Routes.PATIENT_LIST)
+        } else {
+            photoSessionManager.setPhotos(outputPathsMap)
+            navController.navigate(TriageRoute)
+        }
+    }
+}
 
 /**
  * Registers the capture destination to the navigation graph.
@@ -26,21 +58,26 @@ fun NavGraphBuilder.captureDestination(
     currentLang: String,
 ) {
     composable(Routes.CAPTURE) {
-        androidx.compose.runtime.key(currentLang) {
+        val scope = rememberCoroutineScope()
+        key(currentLang) {
             CaptureScreen(
                 questionnaireId = "std-form",
                 questionnaireRepository = deps.questionnaireRepository,
                 onFinished = { outputPathsMap ->
-                    if (outputPathsMap.isEmpty()) {
-                        navController.navigate(Routes.PATIENT_LIST)
-                    } else {
-                        deps.photoSessionManager.setPhotos(outputPathsMap)
-                        navController.navigate(TriageRoute)
+                    scope.launch {
+                        handleCaptureFinished(
+                            outputPathsMap = outputPathsMap,
+                            navController = navController,
+                            photoSessionManager = deps.photoSessionManager,
+                            isPatientFlow = false,
+                        )
                     }
                 },
                 onCancel = {
-                    navController.navigate(Routes.PATIENT_LIST) {
-                        popUpTo(Routes.CAPTURE) { inclusive = true }
+                    scope.launch {
+                        navController.navigate(Routes.PATIENT_LIST) {
+                            popUpTo(Routes.CAPTURE) { inclusive = true }
+                        }
                     }
                 },
             )
@@ -62,19 +99,26 @@ fun NavGraphBuilder.captureForPatientDestination(
 ) {
     composable<CaptureForPatientRoute> { entry ->
         val route = entry.toRoute<CaptureForPatientRoute>()
-        androidx.compose.runtime.key(currentLang) {
+        val scope = rememberCoroutineScope()
+        key(currentLang) {
             CaptureScreen(
                 questionnaireId = route.questionnaireId ?: "std-form",
                 linkId = route.linkId,
                 questionnaireRepository = deps.questionnaireRepository,
                 onFinished = { outputPathsMap ->
-                    if (outputPathsMap.isNotEmpty()) {
-                        deps.photoSessionManager.setPhotos(outputPathsMap)
+                    scope.launch {
+                        handleCaptureFinished(
+                            outputPathsMap = outputPathsMap,
+                            navController = navController,
+                            photoSessionManager = deps.photoSessionManager,
+                            isPatientFlow = true,
+                        )
                     }
-                    navController.popBackStack()
                 },
                 onCancel = {
-                    navController.popBackStack()
+                    scope.launch {
+                        navController.popBackStack()
+                    }
                 },
             )
         }
@@ -94,14 +138,28 @@ fun NavGraphBuilder.triageDestination(
     currentLang: String,
 ) {
     composable<TriageRoute> {
-        androidx.compose.runtime.key(currentLang) {
+        val scope = rememberCoroutineScope()
+        val viewModel =
+            androidx.lifecycle.viewmodel.compose.viewModel {
+                io.healthplatform.chartcam.viewmodel
+                    .TriageViewModel(deps.fhirRepository)
+                    .apply {
+                        setPaths(deps.photoSessionManager.get())
+                    }
+            }
+        key(currentLang) {
             TriageScreen(
-                capturedPhotoPaths = deps.photoSessionManager.get(),
-                fhirRepository = deps.fhirRepository,
+                viewModel = viewModel,
                 onProceedToEncounter = { patientId, _ ->
-                    navController.navigate(NewVisitRoute(patientId))
+                    scope.launch {
+                        navController.navigate(NewVisitRoute(patientId))
+                    }
                 },
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    scope.launch {
+                        navController.popBackStack()
+                    }
+                },
                 fileStorage =
                     deps.fileStorage ?: io.healthplatform.chartcam.files
                         .createFileStorage(),

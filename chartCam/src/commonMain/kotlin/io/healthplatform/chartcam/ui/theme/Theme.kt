@@ -320,13 +320,13 @@ expect fun resolvePlatformColorScheme(
  * **State & Side Effects:**
  * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
  *
- * @param darkTheme Whether to use the dark theme. Defaults to the system setting.
+ * @param darkTheme Whether to use the dark theme.
  * @param dynamicColor Whether to use dynamic system colors on supported platforms (e.g. Android 12+).
  * @param content The composable content to apply the theme to.
  */
 @Composable
 fun AppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
@@ -337,6 +337,24 @@ fun AppTheme(
         colorScheme = colorScheme,
         typography = getTypography(currentLang),
         shapes = AppShapes,
+        content = content,
+    )
+}
+
+/**
+ * Convenience overload for [AppTheme] defaulting to system dark theme.
+ *
+ * @param dynamicColor Whether to use dynamic system colors on supported platforms.
+ * @param content The composable content to apply the theme to.
+ */
+@Composable
+fun AppTheme(
+    dynamicColor: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    AppTheme(
+        darkTheme = isSystemInDarkTheme(),
+        dynamicColor = dynamicColor,
         content = content,
     )
 }

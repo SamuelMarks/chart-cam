@@ -12,30 +12,108 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
+import java.io.OutputStream
 import javax.imageio.ImageIO
 
 /**
  * JVM implementation of [CameraManager] using the Sarxos webcam-capture library.
  * This provides real camera functionality for Desktop targets, fully supporting
  * the Photo Capture feature.
+ *
+ * @param defaultWebcamProvider Function resolving the default [Webcam].
+ * @param webcamsProvider Function resolving all available [Webcam] devices.
+ * @param imageWriter Function responsible for encoding buffered images into byte output streams.
  */
-class JvmCameraManager : CameraManager {
+class JvmCameraManager(
+    internal val defaultWebcamProvider: () -> Webcam?,
+    internal val webcamsProvider: () -> List<Webcam>,
+    internal val imageWriter: (BufferedImage, String, OutputStream) -> Boolean,
+) : CameraManager {
+    /**
+     * Default constructor creating a [JvmCameraManager] with standard platform providers.
+     */
+    constructor() : this(
+        defaultWebcamProvider = { createDefaultWebcam() },
+        webcamsProvider = { createDefaultWebcams() },
+        imageWriter = { img, fmt, out -> ImageIO.write(img, fmt, out) },
+    )
+
+    /**
+     * Testing constructor allowing custom default webcam and list providers.
+     *
+     * @param defaultWebcamProvider Provider resolving the active [Webcam].
+     * @param webcamsProvider Provider resolving all available [Webcam] devices.
+     */
+    constructor(
+        defaultWebcamProvider: () -> Webcam?,
+        webcamsProvider: () -> List<Webcam>,
+    ) : this(
+        defaultWebcamProvider = defaultWebcamProvider,
+        webcamsProvider = webcamsProvider,
+        imageWriter = { img, fmt, out -> ImageIO.write(img, fmt, out) },
+    )
+
     /**
      * Static initialization block to set up the webcam driver.
      */
     companion object {
-        init {
-            if (System.getProperty("chartcam.isTest") != "true" &&
-                System.getProperty("io.healthplatform.chartcam.camera.nativedriver.initialized") != "true"
-            ) {
+        /**
+         * Resolves the default webcam or null in test environments.
+         *
+         * @param isTest Indicates whether current execution is in a test environment.
+         * @return The default [Webcam], or null.
+         */
+        internal fun createDefaultWebcam(isTest: Boolean = System.getProperty("chartcam.isTest") == "true"): Webcam? =
+            if (isTest) {
+                null
+            } else {
+                Webcam.getDefault()
+            }
+
+        /**
+         * Resolves all available webcams on the platform.
+         *
+         * @return List of detected [Webcam] instances.
+         */
+        internal fun createDefaultWebcams(): List<Webcam> =
+            Webcam.getWebcams()
+
+        /**
+         * Default entry point initializing the native webcam driver.
+         */
+        internal fun initializeNativeDriver() {
+            initializeNativeDriver(
+                isTest = System.getProperty("chartcam.isTest") == "true",
+                isInitialized =
+                    System.getProperty("io.healthplatform.chartcam.camera.nativedriver.initialized") == "true",
+                setDriverAction = { Webcam.setDriver(NativeDriver()) },
+            )
+        }
+
+        /**
+         * Initializes the native webcam driver with explicit environment parameters for testing.
+         *
+         * @param isTest Indicates whether the current execution is a test environment.
+         * @param isInitialized Indicates whether the driver has previously been initialized.
+         * @param setDriverAction Action to register the native webcam driver.
+         */
+        internal fun initializeNativeDriver(
+            isTest: Boolean,
+            isInitialized: Boolean,
+            setDriverAction: () -> Unit,
+        ) {
+            if (!isTest && !isInitialized) {
                 runCatching {
-                    Webcam.setDriver(NativeDriver())
+                    setDriverAction.invoke()
                     System.setProperty("io.healthplatform.chartcam.camera.nativedriver.initialized", "true")
                 }.onFailure { t ->
                     println(t.message)
-                    // Driver might already be set or failed to initialize
                 }
             }
+        }
+
+        init {
+            initializeNativeDriver()
         }
     }
 
@@ -54,16 +132,13 @@ class JvmCameraManager : CameraManager {
      */
     private suspend fun getWebcam(): Webcam? =
         withContext(Dispatchers.IO) {
-            if (System.getProperty("chartcam.isTest") == "true") return@withContext null
-            if (webcam == null) {
-                webcam =
-                    runCatching {
-                        Webcam.getDefault()
-                    }.onFailure { t ->
-                        println(t.message)
-                    }.getOrNull()
+            val current = webcam
+            if (current != null) {
+                return@withContext current
             }
-            webcam
+            val initialized = defaultWebcamProvider.invoke()
+            webcam = initialized
+            initialized
         }
 
     /**
@@ -73,7 +148,10 @@ class JvmCameraManager : CameraManager {
      */
     suspend fun getPreviewImage(): BufferedImage? =
         withContext(Dispatchers.IO) {
-            val cam = getWebcam() ?: return@withContext null
+            val cam = getWebcam()
+            if (cam == null) {
+                return@withContext null
+            }
             runCatching {
                 if (!cam.isOpen) {
                     cam.open()
@@ -92,11 +170,14 @@ class JvmCameraManager : CameraManager {
      */
     override suspend fun captureImage(): ByteArray? =
         withContext(Dispatchers.IO) {
-            val image = getPreviewImage() ?: return@withContext null
+            val image = getPreviewImage()
+            if (image == null) {
+                return@withContext null
+            }
             runCatching {
                 val baos = ByteArrayOutputStream()
                 // Sarxos image format is typically PNG or JPG; using PNG to be safe
-                ImageIO.write(image, "PNG", baos)
+                imageWriter.invoke(image, "PNG", baos)
                 baos.toByteArray()
             }.onFailure { e ->
                 println(e.message)
@@ -125,13 +206,14 @@ class JvmCameraManager : CameraManager {
      */
     override fun toggleLens(): Result<Unit> =
         runCatching {
-            val cams = Webcam.getWebcams()
+            val cams = webcamsProvider.invoke()
             if (cams.size > 1) {
                 webcam?.close()
                 currentCameraIndex = (currentCameraIndex + 1) % cams.size
-                webcam = cams[currentCameraIndex]
-                if (webcam?.isOpen == false) {
-                    webcam?.open()
+                val nextCam = cams[currentCameraIndex]
+                webcam = nextCam
+                if (!nextCam.isOpen) {
+                    nextCam.open()
                 }
             }
         }
@@ -144,7 +226,7 @@ class JvmCameraManager : CameraManager {
     override val hasMultipleCameras: Boolean
         get() =
             runCatching {
-                Webcam.getWebcams().size > 1
+                webcamsProvider.invoke().size > 1
             }.onFailure { e ->
                 println(e.message)
             }.getOrDefault(false)
@@ -194,8 +276,11 @@ class JvmCameraManager : CameraManager {
      */
     override fun release() {
         runCatching {
-            if (webcam?.isOpen == true) {
-                webcam?.close()
+            val cam = webcam
+            if (cam != null) {
+                if (cam.isOpen) {
+                    cam.close()
+                }
             }
         }.onFailure { e ->
             println(e.message)

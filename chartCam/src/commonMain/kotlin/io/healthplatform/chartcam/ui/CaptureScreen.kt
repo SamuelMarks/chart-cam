@@ -347,9 +347,14 @@ private fun CaptureScreenContent(
         viewModel.initSteps(steps)
     }
 
+    LaunchedEffect(state.isFinished) {
+        if (state.isFinished) {
+            val output = viewModel.getResultPaths().mapKeys { it.key.id }
+            onFinished(output)
+        }
+    }
+
     if (state.isFinished) {
-        val output = viewModel.getResultPaths().mapKeys { it.key.id }
-        onFinished(output)
         return
     }
 

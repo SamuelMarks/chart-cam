@@ -8,6 +8,8 @@ import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
+import androidx.test.core.app.ApplicationProvider
+import io.healthplatform.chartcam.AndroidAppInit
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
@@ -15,6 +17,7 @@ import org.junit.runner.RunWith
 import org.mockito.Mockito
 import org.robolectric.RobolectricTestRunner
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 /**
  * Android host tests for SensorManager.
@@ -72,5 +75,83 @@ class SensorManagerAndroidTest {
 
             androidSensorManager.stopListening()
             Mockito.verify(mockSensorManager).unregisterListener(androidSensorManager as SensorEventListener)
+        }
+
+    /**
+     * Tests AndroidSensorManager when sensor event is null or non-accelerometer.
+     */
+    @Test
+    fun testAndroidSensorManagerNullEventAndNonAccelerometer() {
+        val mockContext = Mockito.mock(Context::class.java)
+        val mockSensorManager = Mockito.mock(android.hardware.SensorManager::class.java)
+        Mockito.`when`(mockContext.getSystemService(Context.SENSOR_SERVICE)).thenReturn(mockSensorManager)
+
+        val androidSensorManager = AndroidSensorManager(mockContext)
+        androidSensorManager.onSensorChanged(null)
+
+        val mockGyro = Mockito.mock(Sensor::class.java)
+        Mockito.`when`(mockGyro.type).thenReturn(Sensor.TYPE_GYROSCOPE)
+
+        val constructor = SensorEvent::class.java.getDeclaredConstructors().first { it.parameterCount == 1 }
+        constructor.isAccessible = true
+        val sensorEvent = constructor.newInstance(3) as SensorEvent
+        val sensorField = SensorEvent::class.java.getField("sensor")
+        sensorField.isAccessible = true
+        sensorField.set(sensorEvent, mockGyro)
+
+        androidSensorManager.onSensorChanged(sensorEvent)
+    }
+
+    /**
+     * Tests AndroidSensorManager when default accelerometer sensor is null.
+     */
+    @Test
+    fun testAndroidSensorManagerNullAccelerometer() {
+        val mockContext = Mockito.mock(Context::class.java)
+        val mockSensorManager = Mockito.mock(android.hardware.SensorManager::class.java)
+        Mockito.`when`(mockContext.getSystemService(Context.SENSOR_SERVICE)).thenReturn(mockSensorManager)
+        Mockito.`when`(mockSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)).thenReturn(null)
+
+        val androidSensorManager = AndroidSensorManager(mockContext)
+        androidSensorManager.startListening()
+        Mockito.verify(mockSensorManager, Mockito.never()).registerListener(
+            Mockito.any(SensorEventListener::class.java),
+            Mockito.any(Sensor::class.java),
+            Mockito.anyInt(),
+        )
+    }
+
+    /**
+     * Tests rememberSensorManager composable lifecycle integration via headless Compose runtime.
+     */
+    @Test
+    fun testRememberSensorManagerComposable() =
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            AndroidAppInit.init(context)
+
+            val applier =
+                object : androidx.compose.runtime.AbstractApplier<Unit>(Unit) {
+                    override fun insertTopDown(index: Int, instance: Unit) {}
+
+                    override fun insertBottomUp(index: Int, instance: Unit) {}
+
+                    override fun remove(index: Int, count: Int) {}
+
+                    override fun move(from: Int, to: Int, count: Int) {}
+
+                    override fun onClear() {}
+                }
+            val recomposer = androidx.compose.runtime.Recomposer(kotlinx.coroutines.Dispatchers.Unconfined)
+            val composition = androidx.compose.runtime.Composition(applier, recomposer)
+            // allow-exception
+            try {
+                composition.setContent {
+                    val manager = rememberSensorManager()
+                    assertNotNull(manager)
+                }
+            } finally {
+                composition.dispose()
+            }
         }
 }

@@ -13,17 +13,33 @@ import javax.swing.JOptionPane
 /**
  * JVM implementation for sharing files and text.
  * On Desktop, this typically opens the file location or copies text to the clipboard.
+ *
+ * @param isDesktopSupportedProvider Checks if Desktop operations are supported.
+ * @param openFileAction Action to open a file or directory in Desktop file manager.
+ * @param showDialogAction Action to show a confirmation dialog.
+ * @param copyTextAction Action to set text to the system clipboard.
+ * @param isTestingProvider Checks if current environment is in test mode.
  */
-class JvmShareService : ShareService {
+class JvmShareService(
+    private val isDesktopSupportedProvider: () -> Boolean = { Desktop.isDesktopSupported() },
+    private val openFileAction: (File) -> Unit = { target -> Desktop.getDesktop().open(target) },
+    private val showDialogAction: (String) -> Unit = { msg -> JOptionPane.showMessageDialog(null, msg) },
+    private val copyTextAction: (String) -> Unit = { text ->
+        val selection = StringSelection(text)
+        Toolkit.getDefaultToolkit().systemClipboard.setContents(selection, selection)
+    },
+    private val isTestingProvider: () -> Boolean = {
+        Thread.currentThread().stackTrace.any {
+            it.className.startsWith("org.junit.") || it.className.startsWith("kotlin.test.")
+        }
+    },
+) : ShareService {
     /**
      * Checks if the current code is running in a testing environment.
      *
      * @return True if in a testing environment, false otherwise.
      */
-    private fun isTesting(): Boolean =
-        Thread.currentThread().stackTrace.any {
-            it.className.startsWith("org.junit.") || it.className.startsWith("kotlin.test.")
-        }
+    private fun isTesting(): Boolean = isTestingProvider.invoke()
 
     /**
      * Shares a file by opening its parent directory in the native file explorer
@@ -37,7 +53,7 @@ class JvmShareService : ShareService {
         val failure =
             when {
                 !file.exists() -> ExportFileNotFoundException(filePath)
-                !Desktop.isDesktopSupported() ->
+                !isDesktopSupportedProvider.invoke() ->
                     PlatformShareException(
                         platform = "JVM",
                         reason = "Desktop operations are unsupported in this environment",
@@ -49,9 +65,9 @@ class JvmShareService : ShareService {
         }
 
         return runCatching {
-            Desktop.getDesktop().open(file.parentFile ?: file)
+            openFileAction.invoke(file.parentFile ?: file)
             if (!isTesting()) {
-                JOptionPane.showMessageDialog(null, "File saved to: ${file.absolutePath}")
+                showDialogAction.invoke("File saved to: ${file.absolutePath}")
             }
         }.mapCatching { }
     }
@@ -65,11 +81,9 @@ class JvmShareService : ShareService {
      */
     override fun shareText(text: String): Result<Unit> =
         runCatching {
-            val selection = StringSelection(text)
-            val clipboard = Toolkit.getDefaultToolkit().systemClipboard
-            clipboard.setContents(selection, selection)
+            copyTextAction.invoke(text)
             if (!isTesting()) {
-                JOptionPane.showMessageDialog(null, "Text copied to clipboard")
+                showDialogAction.invoke("Text copied to clipboard")
             }
         }.mapCatching { }
 }

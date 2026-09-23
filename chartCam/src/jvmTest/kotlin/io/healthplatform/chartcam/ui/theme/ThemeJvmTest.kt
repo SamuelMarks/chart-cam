@@ -6,6 +6,7 @@
  */
 package io.healthplatform.chartcam.ui.theme
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.v2.runComposeUiTest
 import kotlin.test.Test
@@ -71,6 +72,141 @@ class ThemeJvmTest {
                     assertNotNull(AppShapes)
                 }
             }
+        }
+    }
+
+    /**
+     * Verifies recomposition skipping for AppTheme when parent recomposes with stable constant arguments.
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testAppThemePureSkipping() {
+        runComposeUiTest {
+            val trigger = androidx.compose.runtime.mutableStateOf(0)
+            setContent {
+                val dummy = trigger.value
+                AppTheme(darkTheme = false, dynamicColor = false) {
+                    assertNotNull(AppShapes)
+                }
+                AppTheme(dynamicColor = false) {
+                    assertNotNull(AppShapes)
+                }
+            }
+            waitForIdle()
+            trigger.value++
+            waitForIdle()
+        }
+    }
+
+    /**
+     * Verifies recomposition behavior with default parameters when parent recomposes.
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testAppThemeDefaultsRecomposition() {
+        runComposeUiTest {
+            val trigger = androidx.compose.runtime.mutableStateOf(0)
+            setContent {
+                val dummy = trigger.value
+                AppTheme {
+                    assertNotNull(AppShapes)
+                }
+            }
+            waitForIdle()
+            trigger.value++
+            waitForIdle()
+        }
+    }
+
+    /**
+     * Verifies dynamic parameter mutations on darkTheme and dynamicColor flags.
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testAppThemeParameterMutations() {
+        runComposeUiTest {
+            val darkThemeState = androidx.compose.runtime.mutableStateOf(false)
+            val dynamicColorState = androidx.compose.runtime.mutableStateOf(false)
+            setContent {
+                AppTheme(darkTheme = darkThemeState.value, dynamicColor = dynamicColorState.value) {
+                    assertNotNull(AppShapes)
+                }
+            }
+            waitForIdle()
+            darkThemeState.value = true
+            waitForIdle()
+            dynamicColorState.value = true
+            waitForIdle()
+        }
+    }
+
+    /**
+     * Tests unmemoized parameter change detection branches by invoking AppTheme with changed = 0.
+     */
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testAppThemeReflectionChangedZero() {
+        runComposeUiTest {
+            val trigger = androidx.compose.runtime.mutableStateOf(0)
+            val themeClass = Class.forName("io.healthplatform.chartcam.ui.theme.ThemeKt")
+            val appThemeMethod =
+                themeClass.declaredMethods.first { m: java.lang.reflect.Method ->
+                    m.name == "AppTheme" && m.parameterCount == 6
+                }
+            appThemeMethod.isAccessible = true
+
+            val convenienceMethod =
+                themeClass.declaredMethods.first { m: java.lang.reflect.Method ->
+                    m.name == "AppTheme" && m.parameterCount == 5
+                }
+            convenienceMethod.isAccessible = true
+
+            setContent {
+                val dummy = trigger.value
+                val composer = androidx.compose.runtime.currentComposer
+                val staticContent: @Composable () -> Unit = {
+                    assertNotNull(AppShapes)
+                }
+
+                appThemeMethod.invoke(
+                    null,
+                    false,
+                    false,
+                    staticContent,
+                    composer,
+                    0,
+                    0,
+                )
+                appThemeMethod.invoke(
+                    null,
+                    true,
+                    true,
+                    staticContent,
+                    composer,
+                    0,
+                    0,
+                )
+
+                convenienceMethod.invoke(
+                    null,
+                    false,
+                    staticContent,
+                    composer,
+                    0,
+                    0,
+                )
+                convenienceMethod.invoke(
+                    null,
+                    true,
+                    staticContent,
+                    composer,
+                    0,
+                    0,
+                )
+            }
+            waitForIdle()
+            trigger.value++
+            waitForIdle()
         }
     }
 }

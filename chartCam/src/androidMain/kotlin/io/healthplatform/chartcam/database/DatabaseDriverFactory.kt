@@ -25,6 +25,8 @@ actual class DatabaseDriverFactory actual constructor() {
     /** Companion object */
     companion object {
         private const val PASSPHRASE_LENGTH = 32
+        internal var libraryLoader: (String) -> Unit = { runCatching { System.loadLibrary(it) } }
+        internal var driverCreator: ((Context, SupportOpenHelperFactory) -> SqlDriver)? = null
     }
 
     /**
@@ -36,7 +38,7 @@ actual class DatabaseDriverFactory actual constructor() {
     actual fun createDriver(): SqlDriver {
         val context = AndroidAppInit.getContext()
 
-        System.loadLibrary("sqlcipher")
+        libraryLoader.invoke("sqlcipher")
 
         val prefs = context.getSharedPreferences("db_secure_prefs_v2", Context.MODE_PRIVATE)
 
@@ -53,6 +55,11 @@ actual class DatabaseDriverFactory actual constructor() {
         val encryptedBytes = Base64.decode(encodedPassphrase, Base64.DEFAULT)
         val passphrase = CryptoHelper.decrypt(encryptedBytes)
         val factory = SupportOpenHelperFactory(passphrase)
+
+        val creator = driverCreator
+        if (creator != null) {
+            return creator.invoke(context, factory)
+        }
 
         return AndroidSqliteDriver(
             schema = ChartCamDatabase.Schema.synchronous(),

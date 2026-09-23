@@ -34,7 +34,7 @@ import kotlin.coroutines.resume
  */
 class AndroidPermissionManager(
     private val context: android.content.Context,
-    private val requestLauncher: (String) -> Unit,
+    internal val requestLauncher: (String) -> Unit,
 ) : PermissionManager {
     /**
      * Helper property to store the continuation for the suspending permission request.
@@ -111,27 +111,43 @@ class AndroidPermissionManager(
  * @return An instance of [PermissionManager] (specifically [AndroidPermissionManager]).
  */
 @Composable
-actual fun rememberPermissionManager(): PermissionManager {
-    val context = LocalContext.current
-    // Use a mutable state or reference to hold the manager so we can update it with the launcher
-    // However, the launcher must be created in composition.
+actual fun rememberPermissionManager(): PermissionManager = rememberPermissionManagerInternal()
 
-    // Pattern: We create the manager, and inject the launcher trigger.
-    // But the launcher callback needs to call back into the manager.
+/**
+ * Internal composable function that instantiates [AndroidPermissionManager] with optional custom launcher hook.
+ *
+ * @param launcherFactory Optional factory providing a custom permission request action for testing.
+ * @return An instance of [PermissionManager].
+ */
+@Composable
+internal fun rememberPermissionManagerInternal(
+    launcherFactory: ((onResult: (Boolean) -> Unit) -> ((String) -> Unit))? = null,
+): PermissionManager {
+    val context = LocalContext.current
 
     var manager by remember { mutableStateOf<AndroidPermissionManager?>(null) }
 
-    val launcher =
+    val onResultAction: (Boolean) -> Unit = { isGranted ->
+        manager?.onPermissionResult(isGranted)
+    }
+
+    val defaultLauncher =
         rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission(),
-        ) { isGranted ->
-            manager?.onPermissionResult(isGranted)
+            onResultAction,
+        )
+
+    val launchAction: (String) -> Unit =
+        if (launcherFactory != null) {
+            launcherFactory.invoke(onResultAction)
+        } else {
+            { permission -> defaultLauncher.launch(permission) }
         }
 
     val currentManager =
         remember {
             AndroidPermissionManager(context) { permission ->
-                launcher.launch(permission)
+                launchAction.invoke(permission)
             }
         }
 

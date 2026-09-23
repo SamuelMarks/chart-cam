@@ -104,9 +104,11 @@ fun buildFacialMidlinePath(
     val endY = height * 0.81f
 
     val step = (endY - startY) / 14f
-    for (i in 0 until 14 step 2) {
+    var i = 0
+    while (i < 14) {
         path.moveTo(centerX, startY + (i * step))
         path.lineTo(centerX, startY + ((i + 1) * step))
+        i += 2
     }
     return path
 }

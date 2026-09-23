@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
  * @param isLoading Flag indicating whether the patient details are currently being loaded.
  * @param error Optional error message string.
  */
+@androidx.compose.runtime.Immutable
 data class PatientDetailUiState(
     val patient: Patient? = null,
     val encounters: List<Encounter> = emptyList(),

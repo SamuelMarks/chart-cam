@@ -31,6 +31,7 @@ import kotlinx.datetime.LocalDate
  * @param selectedPatient The currently selected patient to associate with the photos.
  * @param selectedPhotoKeys Set of photo keys currently selected for association or deletion.
  */
+@androidx.compose.runtime.Immutable
 data class TriageUiState(
     val capturedPhotoPaths: Map<String, String> = emptyMap(),
     val searchQuery: String = "",

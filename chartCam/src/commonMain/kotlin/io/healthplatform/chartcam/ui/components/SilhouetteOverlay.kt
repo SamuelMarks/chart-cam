@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -71,12 +70,17 @@ fun SilhouetteOverlay(
 ) {
     if (!isVisible || silhouetteType == SilhouetteType.NONE) return
 
-    val orientation by (
-        sensorManager?.orientation ?: kotlinx.coroutines.flow.flowOf(
-            io.healthplatform.chartcam.sensors
-                .OrientationData(0.0, 0.0),
-        )
-    ).collectAsState(
+    val orientationFlow =
+        if (sensorManager != null) {
+            sensorManager.orientation
+        } else {
+            kotlinx.coroutines.flow.flowOf(
+                io.healthplatform.chartcam.sensors
+                    .OrientationData(0.0, 0.0),
+            )
+        }
+
+    val orientation by orientationFlow.collectAsState(
         initial =
             io.healthplatform.chartcam.sensors
                 .OrientationData(0.0, 0.0),
@@ -114,13 +118,11 @@ fun SilhouetteOverlayContent(
     modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
-    var lastLevelAnnounced by remember { mutableStateOf<Boolean?>(null) }
 
     LaunchedEffect(isLevel) {
-        if (isLevel && lastLevelAnnounced != true) {
+        if (isLevel) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         }
-        lastLevelAnnounced = isLevel
     }
 
     val ghostBitmap =
@@ -136,7 +138,7 @@ fun SilhouetteOverlayContent(
             SilhouetteType.PROFILE_CORNEA_NOSE_RIGHT,
             -> stringResource(Res.string.silhouette_align_cornea_nose)
             SilhouetteType.FRONTAL_FACE -> stringResource(Res.string.silhouette_align_front)
-            SilhouetteType.NONE -> ""
+            else -> ""
         }
 
     val statusText =
@@ -183,7 +185,7 @@ fun SilhouetteOverlayContent(
                 SilhouetteType.FRONTAL_FACE -> {
                     drawFrontal(w, h, activeColor, outlineColor)
                 }
-                SilhouetteType.NONE -> Unit
+                else -> Unit
             }
         }
     }

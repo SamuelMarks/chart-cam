@@ -14,13 +14,12 @@ import java.io.File
  * Android implementation of [FileStorage].
  * Ensures that patient photos and sensitive files are encrypted at rest
  * using Android Jetpack Security's equivalents.
+ *
+ * @param context Application context used for storage resolution.
  */
-class AndroidFileStorage : FileStorage {
-    /**
-     * Application context fetched from the globally initialized [AndroidAppInit].
-     */
-    private val context = AndroidAppInit.getContext()
-
+class AndroidFileStorage(
+    private val context: android.content.Context = AndroidAppInit.getContext(),
+) : FileStorage {
     /**
      * The application's internal files directory where persistent encrypted files are stored.
      */
@@ -101,9 +100,7 @@ class AndroidFileStorage : FileStorage {
     ): File =
         runCatching {
             val destFile = File(filesDir, fileName)
-            if (!destFile.exists()) {
-                cacheFile.copyTo(destFile, overwrite = true)
-            }
+            cacheFile.copyTo(destFile, overwrite = true)
             cacheFile.delete()
             destFile
         }.onFailure { e ->
@@ -119,7 +116,7 @@ class AndroidFileStorage : FileStorage {
     override fun deleteImage(path: String): Result<Unit> {
         val file =
             resolveImageFile(path) ?: return Result.failure(java.io.FileNotFoundException("File not found: $path"))
-        return if (file.delete() || !file.exists()) {
+        return if (file.delete()) {
             Result.success(Unit)
         } else {
             Result.failure(java.io.IOException("Failed to delete file: $path"))

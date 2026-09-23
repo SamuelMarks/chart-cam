@@ -6,6 +6,7 @@
  */
 package io.healthplatform.chartcam.navigation
 
+import androidx.compose.runtime.Immutable
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
@@ -24,6 +25,7 @@ import io.healthplatform.chartcam.storage.BiometricSecurityManager
  * @property fileStorage FileStorage for local media persistence.
  * @property biometricSecurityManager Optional biometric security manager for biometric authentication.
  */
+@Immutable
 data class AppDependencies(
     val authRepository: AuthRepository,
     val fhirRepository: FhirRepository,

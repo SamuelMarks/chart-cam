@@ -12,7 +12,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -36,10 +35,12 @@ private const val POLL_INTERVAL_MS = 50L
  *
  * @param fileStorage Storage used to persist encrypted audio files.
  * @param targetLineProvider Optional provider for custom or simulated TargetDataLine audio inputs.
+ * @param lineSupportedChecker Function to verify whether an audio line format is supported.
  */
 class JvmAudioRecorderManager(
     private val fileStorage: FileStorage,
     private val targetLineProvider: (() -> TargetDataLine?)? = null,
+    private val lineSupportedChecker: (DataLine.Info) -> Boolean = { AudioSystem.isLineSupported(it) },
 ) : AudioRecorderManager {
     private val _isRecording = MutableStateFlow(false)
     override val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
@@ -64,14 +65,18 @@ class JvmAudioRecorderManager(
                 isPaused = false
                 val format = AudioFormat(SAMPLE_RATE_HZ, SAMPLE_SIZE_BITS, CHANNELS, true, false)
                 val line: TargetDataLine? =
-                    targetLineProvider?.invoke() ?: runCatching {
-                        val info = DataLine.Info(TargetDataLine::class.java, format)
-                        if (AudioSystem.isLineSupported(info)) {
-                            AudioSystem.getLine(info) as TargetDataLine
-                        } else {
-                            null
-                        }
-                    }.getOrNull()
+                    if (targetLineProvider != null) {
+                        targetLineProvider.invoke()
+                    } else {
+                        runCatching {
+                            val info = DataLine.Info(TargetDataLine::class.java, format)
+                            if (lineSupportedChecker.invoke(info)) {
+                                AudioSystem.getLine(info) as TargetDataLine
+                            } else {
+                                null
+                            }
+                        }.getOrNull()
+                    }
 
                 if (line != null) {
                     line.open(format)
@@ -98,7 +103,7 @@ class JvmAudioRecorderManager(
     private fun startRecordingLoop(line: TargetDataLine): Job =
         CoroutineScope(Dispatchers.IO).launch {
             val buffer = ByteArray(BUFFER_SIZE)
-            while (isActive && _isRecording.value) {
+            while (_isRecording.value) {
                 if (!isPaused) {
                     val available = line.available()
                     if (available > 0) {
@@ -153,6 +158,7 @@ class JvmAudioRecorderManager(
                 isPaused = false
                 _amplitude.value = 0f
 
+                delay(POLL_INTERVAL_MS)
                 recordingJob?.cancel()
                 recordingJob = null
 
