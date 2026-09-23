@@ -38,6 +38,9 @@ bouncycastle = "1.85.2"
 okio = "3.18.1"
 navigationCompose = "2.9.2"
 ohs-fhir = "1.0.0-rc03"
+robolectric = "4.14.1"
+androidx-test-ext = "1.1.5"
+androidx-test-runner = "1.5.2"
 
 [libraries]
 compose-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "composeMultiplatform" }
@@ -46,6 +49,9 @@ compose-materialIconsExtended = { module = "org.jetbrains.compose.material:mater
 
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-ext" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test-runner" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "androidx-security" }

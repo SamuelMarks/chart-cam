@@ -230,7 +230,7 @@ class QuestionnaireResponseGeneratorTest {
                 .first()
                 .value
         assertTrue(answerValue is dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Coding)
-        val coding = (answerValue as dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Coding).value
+        val coding = answerValue.value
         assertEquals("LA28312-3", coding.code?.value)
         assertEquals("http://loinc.org", coding.system?.value)
     }
@@ -263,7 +263,7 @@ class QuestionnaireResponseGeneratorTest {
                 .first()
                 .value
         assertTrue(answerValue is dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Attachment)
-        val att = (answerValue as dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Attachment).value
+        val att = answerValue.value
         assertEquals("file:///photos/lesion.jpg", att.url?.value)
     }
 

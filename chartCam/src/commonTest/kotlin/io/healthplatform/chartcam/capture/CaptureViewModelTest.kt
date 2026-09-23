@@ -329,6 +329,6 @@ class CaptureViewModelTest {
 
             val err = vm.uiState.value.error
             assertTrue(err is CaptureError.CameraFailed)
-            assertEquals("Unknown error", (err as CaptureError.CameraFailed).detail)
+            assertEquals("Unknown error", err.detail)
         }
 }

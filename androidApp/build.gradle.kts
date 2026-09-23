@@ -105,15 +105,15 @@ android {
 dependencies {
     testImplementation(kotlin("test"))
     testImplementation(libs.junit)
-    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation(libs.robolectric)
 
     androidTestImplementation(libs.kotlin.test)
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.compose.ui.test)
     androidTestImplementation(libs.kotlinx.coroutines.test)
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test:runner:1.5.2")
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
 
     implementation(dependencies.project(":chartCam"))
     implementation(libs.androidx.activity.compose)

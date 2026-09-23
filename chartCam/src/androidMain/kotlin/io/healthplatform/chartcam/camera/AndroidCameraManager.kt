@@ -168,8 +168,7 @@ class AndroidCameraManager(
     override fun setFlash(on: Boolean): Result<Unit> =
         runCatching {
             camera?.cameraControl?.enableTorch(on)
-            Unit
-        }
+        }.map { }
 
     /**
      * Toggles between the front and back camera lenses.

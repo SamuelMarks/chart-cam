@@ -50,7 +50,7 @@ class SilhouetteTypeTest {
         val corneaEx = IllegalArgumentException("Cornea was obscured by hair")
         val corneaError = corneaEx.toSilhouetteError()
         assertTrue(corneaError is SilhouetteError.CorneaOccluded)
-        assertEquals("Cornea was obscured by hair", (corneaError as? SilhouetteError.CorneaOccluded)?.detail)
+        assertEquals("Cornea was obscured by hair", corneaError.detail)
 
         val scaleEx = IllegalStateException("Invalid scale factor computed")
         val scaleError = scaleEx.toSilhouetteError()
@@ -67,6 +67,6 @@ class SilhouetteTypeTest {
         val nullMsgEx = Exception(null as String?)
         val nullMsgError = nullMsgEx.toSilhouetteError()
         assertTrue(nullMsgError is SilhouetteError.SilhouetteNotSupported)
-        assertEquals("Unknown error", (nullMsgError as SilhouetteError.SilhouetteNotSupported).code)
+        assertEquals("Unknown error", nullMsgError.code)
     }
 }

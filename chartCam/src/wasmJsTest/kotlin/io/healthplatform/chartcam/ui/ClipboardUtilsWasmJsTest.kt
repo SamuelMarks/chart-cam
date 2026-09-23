@@ -15,8 +15,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
+@OptIn(ExperimentalComposeUiApi::class)
 @JsFun("() => ({})")
-private external fun createEmptyJsObject(): JsAny
+private external fun createEmptyClipboard(): W3CTemporaryClipboard
 
 /**
  * Fake implementation of [Clipboard] for WasmJs tests.
@@ -28,7 +29,7 @@ private class FakeWasmJsClipboard : Clipboard {
     override suspend fun setClipEntry(clipEntry: ClipEntry?) {}
 
     override val nativeClipboard: W3CTemporaryClipboard
-        get() = createEmptyJsObject().unsafeCast()
+        get() = createEmptyClipboard()
 }
 
 /**

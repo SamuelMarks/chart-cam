@@ -108,7 +108,7 @@ class CreatePatientDialogTest {
         val state =
             androidx.compose.material3.DatePickerState(
                 initialSelectedDateMillis = 1700000000000L,
-                locale = androidx.compose.material3.CalendarLocale("en"),
+                locale = io.healthplatform.chartcam.createTestCalendarLocale("en"),
             )
         val formatted = onDatePickerConfirm(state, "en")
         assertTrue(formatted.isNotBlank())
@@ -116,7 +116,7 @@ class CreatePatientDialogTest {
         val nullState =
             androidx.compose.material3.DatePickerState(
                 initialSelectedDateMillis = null,
-                locale = androidx.compose.material3.CalendarLocale("en"),
+                locale = io.healthplatform.chartcam.createTestCalendarLocale("en"),
             )
         val fallbackFormatted = onDatePickerConfirm(nullState, "zh")
         assertTrue(fallbackFormatted.isNotBlank())

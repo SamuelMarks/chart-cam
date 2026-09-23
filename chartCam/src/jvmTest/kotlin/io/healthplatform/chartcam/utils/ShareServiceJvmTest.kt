@@ -98,6 +98,7 @@ class ShareServiceJvmTest {
         try {
             val service =
                 JvmShareService(
+                    isDesktopSupportedProvider = { true },
                     isTestingProvider = { false },
                     showDialogAction = { msg -> dialogMessages.add(msg) },
                     openFileAction = { },
@@ -155,6 +156,7 @@ class ShareServiceJvmTest {
         var openedFile: File? = null
         val service =
             JvmShareService(
+                isDesktopSupportedProvider = { true },
                 openFileAction = { file -> openedFile = file },
             )
         val localFile = File("local_share_test.txt")

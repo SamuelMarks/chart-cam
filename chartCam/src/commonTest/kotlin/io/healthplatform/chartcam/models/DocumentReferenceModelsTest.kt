@@ -25,13 +25,13 @@ class DocumentReferenceModelsTest {
         assertTrue(resultEn.isSuccess)
         val enumEn = resultEn.getOrThrow()
         assertTrue(enumEn is ExtensibleEnumeration.Predefined)
-        assertEquals(CommonLanguages.En, (enumEn as ExtensibleEnumeration.Predefined).value)
+        assertEquals(CommonLanguages.En, enumEn.value)
 
         val resultEs = parseExtensibleLanguage("es")
         assertTrue(resultEs.isSuccess)
         val enumEs = resultEs.getOrThrow()
         assertTrue(enumEs is ExtensibleEnumeration.Predefined)
-        assertEquals(CommonLanguages.Es, (enumEs as ExtensibleEnumeration.Predefined).value)
+        assertEquals(CommonLanguages.Es, enumEs.value)
 
         val resultWhitespace = parseExtensibleLanguage("  EN  ")
         assertTrue(resultWhitespace.isSuccess)
@@ -50,7 +50,7 @@ class DocumentReferenceModelsTest {
         assertTrue(result.isSuccess)
         val enumCustom = result.getOrThrow()
         assertTrue(enumCustom is ExtensibleEnumeration.Custom)
-        assertEquals("custom-clinic-dialect-xyz", (enumCustom as ExtensibleEnumeration.Custom).code)
+        assertEquals("custom-clinic-dialect-xyz", enumCustom.code)
     }
 
     /**
