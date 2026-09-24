@@ -16,6 +16,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
@@ -242,7 +244,7 @@ fun AudioMemoControl(
                                     },
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Mic,
+                                imageVector = if (isPlayingPreview) Icons.Default.Pause else Icons.Default.PlayArrow,
                                 contentDescription = null,
                                 modifier = Modifier.size(20.dp),
                             )

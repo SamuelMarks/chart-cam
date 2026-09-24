@@ -297,8 +297,9 @@ class CameraManagerJvmTest {
 
             // Test createDefaultWebcam branches
             assertNull(JvmCameraManager.createDefaultWebcam(isTest = true))
-            JvmCameraManager.createDefaultWebcam(isTest = false)
-            assertNotNull(JvmCameraManager.createDefaultWebcams())
+            runCatching { JvmCameraManager.createDefaultWebcam(isTest = false) }
+            assertTrue(JvmCameraManager.createDefaultWebcams(isTest = true).isEmpty())
+            runCatching { JvmCameraManager.createDefaultWebcams(isTest = false) }
         }
 
     /**

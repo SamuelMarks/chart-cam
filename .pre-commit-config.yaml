@@ -8,31 +8,31 @@ repos:
     hooks:
     -   id: build-android
         name: Build Android
-        entry: env NODE_OPTIONS="--max-old-space-size=8192" ./gradlew assembleDebug assembleRelease --no-daemon
+        entry: env NODE_OPTIONS="--max-old-space-size=8192 --no-deprecation" ./gradlew assembleDebug assembleRelease --no-daemon
         language: system
         files: \.(kt|kts|java|xml|gradle|toml)$
         pass_filenames: false
     -   id: build-ios
         name: Build iOS
-        entry: env NODE_OPTIONS="--max-old-space-size=8192" ./gradlew compileKotlinIosArm64 compileKotlinIosSimulatorArm64 --no-daemon
+        entry: env NODE_OPTIONS="--max-old-space-size=8192 --no-deprecation" ./gradlew compileKotlinIosArm64 compileKotlinIosSimulatorArm64 --no-daemon
         language: system
         files: \.(kt|kts|java|xml|gradle|toml)$
         pass_filenames: false
     -   id: build-jvm
         name: Build JVM
-        entry: env NODE_OPTIONS="--max-old-space-size=8192" ./gradlew compileKotlinJvm --no-daemon
+        entry: env NODE_OPTIONS="--max-old-space-size=8192 --no-deprecation" ./gradlew compileKotlinJvm --no-daemon
         language: system
         files: \.(kt|kts|java|xml|gradle|toml)$
         pass_filenames: false
     -   id: build-web
         name: Build Web
-        entry: env NODE_OPTIONS="--max-old-space-size=8192" ./gradlew compileKotlinJs compileKotlinWasmJs --no-daemon
+        entry: env NODE_OPTIONS="--max-old-space-size=8192 --no-deprecation" ./gradlew compileKotlinJs compileKotlinWasmJs --no-daemon
         language: system
         files: \.(kt|kts|java|xml|gradle|toml)$
         pass_filenames: false
     -   id: test
         name: Test
-        entry: env NODE_OPTIONS="--max-old-space-size=8192" ./gradlew allTests --no-daemon
+        entry: env NODE_OPTIONS="--max-old-space-size=8192 --no-deprecation" ./gradlew allTests --no-daemon
         language: system
         files: \.(kt|kts|java|xml|gradle|toml)$
         pass_filenames: false

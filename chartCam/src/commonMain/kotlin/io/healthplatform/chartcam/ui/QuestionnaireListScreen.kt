@@ -641,9 +641,10 @@ fun QuestionnaireListScreen(
                         contentAlignment = Alignment.Center,
                     ) {
                         val qrDesc = stringResource(Res.string.display_qr_code)
+                        val qrForeground = MaterialTheme.colorScheme.onSurface
                         Card(
                             shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.White),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                             modifier = Modifier.padding(AppSpacing.sm),
                         ) {
                             Canvas(
@@ -658,7 +659,7 @@ fun QuestionnaireListScreen(
                                     for (x in matrix[y].indices) {
                                         if (matrix[y][x]) {
                                             drawRect(
-                                                color = androidx.compose.ui.graphics.Color.Black,
+                                                color = qrForeground,
                                                 topLeft =
                                                     androidx.compose.ui.geometry
                                                         .Offset(x * cellSize, y * cellSize),

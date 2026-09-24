@@ -36,6 +36,8 @@ def check_a11y(source_dirs):
     hardcoded_cd_pattern = re.compile(
         r'contentDescription\s*=\s*"([A-Z][a-z0-9 ]{3,})"'
     )
+    cd_concat_pattern = re.compile(r'contentDescription\s*=.*\+\s*".*"')
+    hardcoded_ui_words = ["Retake", "Capture", "Pending", "Captured"]
 
     for d in source_dirs:
         if not os.path.exists(d):
@@ -65,6 +67,20 @@ def check_a11y(source_dirs):
                             missing.append(
                                 f"{path}:{i + 1} Hardcoded contentDescription literal: '{m.group(1)}'"
                             )
+
+                        # Check for unlocalized string concatenation in contentDescription
+                        if cd_concat_pattern.search(line) and "test" not in path.lower():
+                            missing.append(
+                                f"{path}:{i + 1} Unlocalized string concatenation in contentDescription"
+                            )
+
+                        # Check for hardcoded English UI words in non-test files
+                        if "test" not in path.lower():
+                            for word in hardcoded_ui_words:
+                                if f'"{word}"' in line and ("Text(" in line or "contentDescription" in line or "statusDesc" in line):
+                                    missing.append(
+                                        f"{path}:{i + 1} Hardcoded UI word literal '{word}'"
+                                    )
 
                     content = "".join(lines)
                     # Check for clickable attached to clearAndSetSemantics

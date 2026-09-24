@@ -455,4 +455,18 @@
     <string name="label_dicom_encapsulated_pdf_format">封裝 PDF 文件：%1$d 位元組</string>
     <string name="action_export_share_pdf">匯出 / 分享 PDF</string>
     <string name="error_dicom_parse_failed_format">解析 DICOM 檔案失敗：%1$s</string>
+    <string name="facial_series_card_summary_format">%1$s：已完成 %2$d / %3$d</string>
+    <string name="facial_series_status_captured">已拍攝</string>
+    <string name="facial_series_status_pending">待拍攝</string>
+    <string name="facial_series_slot_desc_format">%1$s：%2$s</string>
+    <string name="facial_series_view_fallback_format">視角 %1$d</string>
+    <string name="not_available">不適用</string>
+    <string name="patient_mrn_label_format">%1$s (病歷號: %2$s)</string>
+    <string name="conflict_type_exact_match">完全相符</string>
+    <string name="conflict_type_id_collision">ID 衝突</string>
+    <string name="conflict_type_mrn_collision">病歷號衝突</string>
+    <string name="conflict_type_orphan">孤立紀錄</string>
+    <string name="conflict_type_name_dob_match">姓名與出生日期相符</string>
+    <string name="cd_silhouette_overlay_full_format">%1$s：%2$s。%3$s</string>
+    <string name="photo_slot_format">照片 %1$s</string>
 </resources>

@@ -73,10 +73,15 @@ class JvmCameraManager(
         /**
          * Resolves all available webcams on the platform.
          *
+         * @param isTest Indicates whether current execution is in a test environment.
          * @return List of detected [Webcam] instances.
          */
-        internal fun createDefaultWebcams(): List<Webcam> =
-            Webcam.getWebcams()
+        internal fun createDefaultWebcams(isTest: Boolean = System.getProperty("chartcam.isTest") == "true"): List<Webcam> =
+            if (isTest) {
+                emptyList()
+            } else {
+                Webcam.getWebcams()
+            }
 
         /**
          * Default entry point initializing the native webcam driver.

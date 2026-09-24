@@ -36,12 +36,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.facial_series_card_summary_format
+import chartcam.chartcam.generated.resources.facial_series_slot_desc_format
+import chartcam.chartcam.generated.resources.facial_series_status_captured
+import chartcam.chartcam.generated.resources.facial_series_status_pending
+import chartcam.chartcam.generated.resources.facial_series_view_fallback_format
+import chartcam.chartcam.generated.resources.feature_capture
+import chartcam.chartcam.generated.resources.retake
 import chartcam.chartcam.generated.resources.start_facial_series
+import chartcam.chartcam.generated.resources.step_count_format
 import chartcam.chartcam.generated.resources.step_front_view
 import chartcam.chartcam.generated.resources.step_left_profile_cornea
 import chartcam.chartcam.generated.resources.step_right_profile_cornea
@@ -86,7 +97,8 @@ fun FacialSeriesCardControl(
     val slots =
         items.mapIndexed { index, item ->
             val linkId = item.linkId.value ?: ""
-            val defaultTitle = if (index < defaultTitles.size) defaultTitles[index] else "View $index"
+            val viewFallback = stringResource(Res.string.facial_series_view_fallback_format, index)
+            val defaultTitle = if (index < defaultTitles.size) defaultTitles[index] else viewFallback
             val rawText = item.text?.value
             val itemText = if (rawText != null && rawText.isNotBlank()) rawText else defaultTitle
             val hasAnswer = answers[linkId] != null
@@ -105,6 +117,7 @@ fun FacialSeriesCardControl(
 
     val completedCount = slots.count { it.isCaptured }
     val totalCount = slots.size.coerceAtLeast(3)
+    val cardSummary = stringResource(Res.string.facial_series_card_summary_format, title, completedCount, totalCount)
 
     ElevatedCard(
         modifier =
@@ -112,7 +125,7 @@ fun FacialSeriesCardControl(
                 .fillMaxWidth()
                 .padding(vertical = AppSpacing.sm)
                 .semantics {
-                    contentDescription = "$title: $completedCount of $totalCount completed"
+                    contentDescription = cardSummary
                     heading()
                 },
         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -138,7 +151,7 @@ fun FacialSeriesCardControl(
                     shape = MaterialTheme.shapes.small,
                 ) {
                     Text(
-                        text = "$completedCount/$totalCount",
+                        text = stringResource(Res.string.step_count_format, completedCount, totalCount),
                         style = MaterialTheme.typography.labelMedium,
                         color =
                             if (completedCount == totalCount) {
@@ -204,15 +217,19 @@ fun FacialSlotTile(
     onCapture: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val statusDesc = if (slot.isCaptured) "Captured" else "Pending"
-    val slotDesc = "${slot.title}: $statusDesc"
+    val statusCaptured = stringResource(Res.string.facial_series_status_captured)
+    val statusPending = stringResource(Res.string.facial_series_status_pending)
+    val statusDesc = if (slot.isCaptured) statusCaptured else statusPending
+    val slotDesc = stringResource(Res.string.facial_series_slot_desc_format, slot.title, statusDesc)
 
     OutlinedCard(
         modifier =
             modifier
                 .testTag("FacialSlotTile_${slot.linkId}")
                 .semantics {
+                    role = Role.Button
                     contentDescription = slotDesc
+                    stateDescription = statusDesc
                 },
         border =
             BorderStroke(
@@ -288,8 +305,14 @@ fun FacialSlotTile(
                             vertical = 2.dp,
                         ),
                 ) {
+                    val actionLabel =
+                        if (slot.isCaptured) {
+                            stringResource(Res.string.retake)
+                        } else {
+                            stringResource(Res.string.feature_capture)
+                        }
                     Text(
-                        text = if (slot.isCaptured) "Retake" else "Capture",
+                        text = actionLabel,
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }

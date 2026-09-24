@@ -1,5 +1,7 @@
 -include .env
 
+export NODE_OPTIONS ?= --max-old-space-size=8192 --no-deprecation
+
 .PHONY: clean build test lint build_release_android build_release_ios build_adhoc_ios deploy_ios_to_firebase build_release_jvm build_release_js build_release_wasm run_android run_ios run_jvm bump_patch bump_version
 
 clean:

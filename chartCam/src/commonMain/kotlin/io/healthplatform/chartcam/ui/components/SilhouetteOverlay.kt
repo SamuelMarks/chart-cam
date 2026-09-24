@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cd_silhouette_overlay
+import chartcam.chartcam.generated.resources.cd_silhouette_overlay_full_format
 import chartcam.chartcam.generated.resources.level_status_level
 import chartcam.chartcam.generated.resources.level_status_tilted
 import chartcam.chartcam.generated.resources.silhouette_align_cornea_nose
@@ -147,15 +148,21 @@ fun SilhouetteOverlayContent(
         } else {
             stringResource(Res.string.level_status_tilted)
         }
-    val fullCd = stringResource(Res.string.cd_silhouette_overlay) + ": $guideText. $statusText"
+    val fullCd =
+        stringResource(
+            Res.string.cd_silhouette_overlay_full_format,
+            stringResource(Res.string.cd_silhouette_overlay),
+            guideText,
+            statusText,
+        )
 
     val activeColor =
         if (isLevel) {
             MaterialTheme.colorScheme.primary
         } else {
-            Color(0xFF00E5FF)
+            MaterialTheme.colorScheme.tertiary
         }
-    val outlineColor = Color(0x99000000)
+    val outlineColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f)
 
     Box(
         modifier =

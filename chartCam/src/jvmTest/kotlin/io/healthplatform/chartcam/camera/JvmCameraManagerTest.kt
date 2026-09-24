@@ -10,6 +10,7 @@ import com.github.sarxos.webcam.Webcam
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -59,9 +60,14 @@ class JvmCameraManagerTest {
             val hasMultiple = manager.hasMultipleCameras
 
             // Trigger Exception path
-            runCatching {
-                Webcam.setDriver(null as com.github.sarxos.webcam.WebcamDriver?)
-            }
+            val failingManager =
+                JvmCameraManager(
+                    defaultWebcamProvider = { null },
+                    webcamsProvider = { throw IllegalStateException("Driver failed") }, // allow-exception
+                    imageWriter = { _, _, _ -> true },
+                )
+            assertFalse(failingManager.hasMultipleCameras)
+
             manager.release()
             manager.hasMultipleCameras
         }

@@ -1084,6 +1084,7 @@ private fun RenderBooleanField(ctx: RenderContext) {
         modifier =
             Modifier
                 .fillMaxWidth()
+                .minimumInteractiveComponentSize()
                 .testTag("CheckboxRow ${ctx.displayLabel}")
                 .toggleable(
                     value = checked,

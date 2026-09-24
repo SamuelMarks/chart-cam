@@ -55,6 +55,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.action_clear_selection
 import chartcam.chartcam.generated.resources.action_select_all
@@ -70,6 +71,8 @@ import chartcam.chartcam.generated.resources.mrn_dob_format
 import chartcam.chartcam.generated.resources.no_patients_found
 import chartcam.chartcam.generated.resources.search_placeholder
 import chartcam.chartcam.generated.resources.selected_photos_ready
+import chartcam.chartcam.generated.resources.state_selected
+import chartcam.chartcam.generated.resources.state_unselected
 import chartcam.chartcam.generated.resources.triage_select_patient
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.customBirthDate
@@ -456,6 +459,8 @@ internal fun TriagePhotoBatchBar(
             ) {
                 photoPaths.keys.forEach { key ->
                     val isSelected = selectedKeys.contains(key)
+                    val stateSelected = stringResource(Res.string.state_selected)
+                    val stateUnselected = stringResource(Res.string.state_unselected)
                     FilterChip(
                         selected = isSelected,
                         onClick = { actions.onToggleSelect(key) },
@@ -470,6 +475,10 @@ internal fun TriagePhotoBatchBar(
                                 }
                             } else {
                                 null
+                            },
+                        modifier =
+                            Modifier.semantics {
+                                stateDescription = if (isSelected) stateSelected else stateUnselected
                             },
                     )
                 }

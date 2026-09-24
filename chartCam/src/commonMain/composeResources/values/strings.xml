@@ -455,4 +455,18 @@
     <string name="label_dicom_encapsulated_pdf_format">Encapsulated PDF Document: %1$d bytes</string>
     <string name="action_export_share_pdf">Export / Share PDF</string>
     <string name="error_dicom_parse_failed_format">Failed to parse DICOM file: %1$s</string>
+    <string name="facial_series_card_summary_format">%1$s: %2$d of %3$d completed</string>
+    <string name="facial_series_status_captured">Captured</string>
+    <string name="facial_series_status_pending">Pending</string>
+    <string name="facial_series_slot_desc_format">%1$s: %2$s</string>
+    <string name="facial_series_view_fallback_format">View %1$d</string>
+    <string name="not_available">N/A</string>
+    <string name="patient_mrn_label_format">%1$s (MRN: %2$s)</string>
+    <string name="conflict_type_exact_match">Exact Match</string>
+    <string name="conflict_type_id_collision">ID Collision</string>
+    <string name="conflict_type_mrn_collision">MRN Collision</string>
+    <string name="conflict_type_orphan">Orphan Record</string>
+    <string name="conflict_type_name_dob_match">Name and DOB Match</string>
+    <string name="cd_silhouette_overlay_full_format">%1$s: %2$s. %3$s</string>
+    <string name="photo_slot_format">Photo %1$s</string>
 </resources>

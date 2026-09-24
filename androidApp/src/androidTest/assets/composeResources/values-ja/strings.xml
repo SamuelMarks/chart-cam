@@ -455,4 +455,18 @@
     <string name="label_dicom_encapsulated_pdf_format">カプセル化PDFドキュメント: %1$d バイト</string>
     <string name="action_export_share_pdf">PDFのエクスポート / 共有</string>
     <string name="error_dicom_parse_failed_format">DICOMファイルの解析に失敗しました: %1$s</string>
+    <string name="facial_series_card_summary_format">%1$s: %2$d / %3$d 完了</string>
+    <string name="facial_series_status_captured">撮影済み</string>
+    <string name="facial_series_status_pending">未撮影</string>
+    <string name="facial_series_slot_desc_format">%1$s: %2$s</string>
+    <string name="facial_series_view_fallback_format">アングル %1$d</string>
+    <string name="not_available">該当なし</string>
+    <string name="patient_mrn_label_format">%1$s (MRN: %2$s)</string>
+    <string name="conflict_type_exact_match">完全一致</string>
+    <string name="conflict_type_id_collision">IDの競合</string>
+    <string name="conflict_type_mrn_collision">MRNの競合</string>
+    <string name="conflict_type_orphan">孤立レコード</string>
+    <string name="conflict_type_name_dob_match">氏名と生年月日の一致</string>
+    <string name="cd_silhouette_overlay_full_format">%1$s: %2$s. %3$s</string>
+    <string name="photo_slot_format">写真 %1$s</string>
 </resources>

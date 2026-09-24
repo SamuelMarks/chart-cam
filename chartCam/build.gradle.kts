@@ -94,6 +94,10 @@ kotlin {
     jvm()
 
     js {
+        compilerOptions {
+            sourceMap.set(true)
+            sourceMapEmbedSources.set(org.jetbrains.kotlin.gradle.dsl.JsSourceMapEmbedMode.SOURCE_MAP_SOURCE_CONTENT_ALWAYS)
+        }
         browser {
             testTask {
                 testLogging.showStandardStreams = true
@@ -184,9 +188,9 @@ kotlin {
         val androidHostTest =
             getByName("androidHostTest") {
                 dependencies {
-                    implementation("org.mockito:mockito-core:5.11.0")
-                    implementation("org.robolectric:robolectric:4.14.1")
-                    implementation("androidx.lifecycle:lifecycle-runtime-testing:2.6.2")
+                    implementation(libs.mockito.core)
+                    implementation(libs.robolectric)
+                    implementation(libs.androidx.lifecycle.runtime.testing)
                     implementation(libs.kotlin.test)
                     implementation(libs.junit)
                     implementation(libs.compose.ui.test.junit4)
@@ -195,9 +199,9 @@ kotlin {
                 }
             }
         jvmTest.dependencies {
-            implementation("org.mockito:mockito-core:5.11.0")
-            implementation("org.robolectric:robolectric:4.14.1")
-            implementation("androidx.lifecycle:lifecycle-runtime-testing:2.6.2")
+            implementation(libs.mockito.core)
+            implementation(libs.robolectric)
+            implementation(libs.androidx.lifecycle.runtime.testing)
             implementation(libs.kotlin.test)
 
             implementation(libs.junit)
@@ -206,7 +210,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
 
             implementation(libs.sqldelight.sqlite)
-            implementation("app.cash.sqldelight:async-extensions:2.2.1")
+            implementation(libs.sqldelight.async)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
@@ -215,7 +219,7 @@ kotlin {
             implementation(libs.webcam.capture)
             implementation(libs.webcam.capture.driver.native)
             implementation(libs.sqldelight.sqlite)
-            implementation("app.cash.sqldelight:async-extensions:2.2.1")
+            implementation(libs.sqldelight.async)
             implementation(libs.slf4j.simple)
         }
     }
@@ -226,7 +230,7 @@ sqldelight {
         create("ChartCamDatabase") {
             packageName.set("io.healthplatform.chartcam.database")
             generateAsync.set(true)
-            dialect("app.cash.sqldelight:sqlite-3-38-dialect:2.3.2")
+            dialect(libs.sqldelight.sqlite.dialect)
         }
     }
 }
@@ -328,6 +332,25 @@ kover {
 tasks.withType<Test>().configureEach {
     enabled = true
     failOnNoDiscoveredTests = false
+    jvmArgs("-Xshare:off")
+    systemProperty("chartcam.isTest", "true")
+}
+
+tasks.withType<Sync>().configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.targets.js.ir.DefaultIncrementalSyncTask>().configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrLink>().configureEach {
+    if (!name.contains("Wasm")) {
+        compilerOptions {
+            sourceMap.set(false)
+            sourceMapEmbedSources.set(null as org.jetbrains.kotlin.gradle.dsl.JsSourceMapEmbedMode?)
+        }
+    }
 }
 
 dokka {

@@ -53,7 +53,9 @@ import chartcam.chartcam.generated.resources.label_dicom_pixel_data_size_format
 import chartcam.chartcam.generated.resources.label_dicom_pixel_frame_hint
 import chartcam.chartcam.generated.resources.label_dicom_sex_format
 import chartcam.chartcam.generated.resources.label_dicom_transfer_syntax_format
+import chartcam.chartcam.generated.resources.not_available
 import chartcam.chartcam.generated.resources.title_dicom_dataset_inspector
+import chartcam.chartcam.generated.resources.unknown_patient
 import io.healthplatform.chartcam.dicom.DicomDataset
 import io.healthplatform.chartcam.ui.theme.AppSpacing
 import org.jetbrains.compose.resources.decodeToImageBitmap
@@ -158,12 +160,14 @@ fun DicomViewerComponent(
  */
 @Composable
 private fun DicomMetadataSummary(dataset: DicomDataset) {
+    val notAvailable = stringResource(Res.string.not_available)
+    val unknownPatient = stringResource(Res.string.unknown_patient)
     Text(
-        text = stringResource(Res.string.label_dicom_patient_format, dataset.patientName ?: "Unknown"),
+        text = stringResource(Res.string.label_dicom_patient_format, dataset.patientName ?: unknownPatient),
         style = MaterialTheme.typography.bodyMedium,
     )
     Text(
-        text = stringResource(Res.string.label_dicom_id_format, dataset.patientId ?: "N/A"),
+        text = stringResource(Res.string.label_dicom_id_format, dataset.patientId ?: notAvailable),
         style = MaterialTheme.typography.bodyMedium,
     )
     Text(
@@ -175,7 +179,7 @@ private fun DicomMetadataSummary(dataset: DicomDataset) {
         style = MaterialTheme.typography.bodyMedium,
     )
     Text(
-        text = stringResource(Res.string.label_dicom_transfer_syntax_format, dataset.transferSyntaxUid ?: "N/A"),
+        text = stringResource(Res.string.label_dicom_transfer_syntax_format, dataset.transferSyntaxUid ?: notAvailable),
         style = MaterialTheme.typography.bodySmall,
     )
     if (dataset.width != null && dataset.height != null) {

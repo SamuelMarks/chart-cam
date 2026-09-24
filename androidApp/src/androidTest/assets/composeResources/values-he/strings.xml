@@ -458,4 +458,18 @@
     <string name="label_dicom_encapsulated_pdf_format">מסמך PDF מוטבע: %1$d בתים</string>
     <string name="action_export_share_pdf">ייצא / שתף PDF</string>
     <string name="error_dicom_parse_failed_format">נכשל בניתוח קובץ ה-DICOM: %1$s</string>
+    <string name="facial_series_card_summary_format">%1$s: %2$d מתוך %3$d הושלמו</string>
+    <string name="facial_series_status_captured">נלכד</string>
+    <string name="facial_series_status_pending">ממתין</string>
+    <string name="facial_series_slot_desc_format">%1$s: %2$s</string>
+    <string name="facial_series_view_fallback_format">מבט %1$d</string>
+    <string name="not_available">לא זמין</string>
+    <string name="patient_mrn_label_format">%1$s (MRN: %2$s)</string>
+    <string name="conflict_type_exact_match">התאמה מדויקת</string>
+    <string name="conflict_type_id_collision">התנגשות מזהה</string>
+    <string name="conflict_type_mrn_collision">התנגשות MRN</string>
+    <string name="conflict_type_orphan">רשומה יתומה</string>
+    <string name="conflict_type_name_dob_match">התאמת שם ותאריך לידה</string>
+    <string name="cd_silhouette_overlay_full_format">%1$s: %2$s. %3$s</string>
+    <string name="photo_slot_format">תמונה %1$s</string>
 </resources>

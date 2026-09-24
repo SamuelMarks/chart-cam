@@ -39,6 +39,7 @@ import chartcam.chartcam.generated.resources.cancel
 import chartcam.chartcam.generated.resources.label_data_categories_to_import
 import chartcam.chartcam.generated.resources.label_resolution_strategy
 import chartcam.chartcam.generated.resources.patient_import_conflict_format
+import chartcam.chartcam.generated.resources.patient_mrn_label_format
 import chartcam.chartcam.generated.resources.patients_to_ingest_count_format
 import chartcam.chartcam.generated.resources.title_import_review_merge
 import io.healthplatform.chartcam.models.ConflictResolutionStrategy
@@ -49,6 +50,7 @@ import io.healthplatform.chartcam.models.ImportPreviewSummary
 import io.healthplatform.chartcam.models.fullName
 import io.healthplatform.chartcam.models.mrn
 import io.healthplatform.chartcam.ui.theme.AppSpacing
+import io.healthplatform.chartcam.utils.toLocalizedResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -194,7 +196,12 @@ fun ImportPreviewDialog(
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "$patientName (MRN: ${stagingItem.incomingPatient.mrn})",
+                                    text =
+                                        stringResource(
+                                            Res.string.patient_mrn_label_format,
+                                            patientName,
+                                            stagingItem.incomingPatient.mrn,
+                                        ),
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                                 Text(
@@ -202,7 +209,7 @@ fun ImportPreviewDialog(
                                         stringResource(
                                             Res.string.patient_import_conflict_format,
                                             stagingItem.encounterCount,
-                                            stagingItem.conflictType.name,
+                                            stringResource(stagingItem.conflictType.toLocalizedResource()),
                                         ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color =

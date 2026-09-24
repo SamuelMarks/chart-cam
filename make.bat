@@ -1,6 +1,8 @@
 @echo off
 setlocal
 
+if not defined NODE_OPTIONS set NODE_OPTIONS=--max-old-space-size=8192 --no-deprecation
+
 if "%~1"=="" goto help
 
 if /i "%~1"=="clean" goto clean

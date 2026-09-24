@@ -119,3 +119,8 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.compose.uiToolingPreview)
 }
+
+tasks.withType<Test>().configureEach {
+    jvmArgs("-Xshare:off")
+    systemProperty("chartcam.isTest", "true")
+}
