@@ -9,11 +9,12 @@ struct iOSApp: App {
         WindowGroup {
             ContentView()
                 .onChange(of: scenePhase) { phase in
+                    let nowMs = Int64(Date().timeIntervalSince1970 * 1000)
                     switch phase {
                     case .active:
-                        AppPrivacyManagerKt.currentAppPrivacyManager.onAppMovedToForeground()
+                        AppPrivacyManagerKt.currentAppPrivacyManager.onAppMovedToForeground(nowMs: nowMs)
                     case .inactive, .background:
-                        AppPrivacyManagerKt.currentAppPrivacyManager.onAppMovedToBackground()
+                        AppPrivacyManagerKt.currentAppPrivacyManager.onAppMovedToBackground(nowMs: nowMs)
                     @unknown default:
                         break
                     }
