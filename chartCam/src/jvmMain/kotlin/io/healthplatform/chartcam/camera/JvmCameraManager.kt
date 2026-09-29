@@ -63,7 +63,9 @@ class JvmCameraManager(
          * @param isTest Indicates whether current execution is in a test environment.
          * @return The default [Webcam], or null.
          */
-        internal fun createDefaultWebcam(isTest: Boolean = System.getProperty("chartcam.isTest") == "true"): Webcam? =
+        internal fun createDefaultWebcam(
+            isTest: Boolean = System.getProperty("chartcam.isTest") == "true",
+        ): Webcam? =
             if (isTest) {
                 null
             } else {
@@ -76,7 +78,9 @@ class JvmCameraManager(
          * @param isTest Indicates whether current execution is in a test environment.
          * @return List of detected [Webcam] instances.
          */
-        internal fun createDefaultWebcams(isTest: Boolean = System.getProperty("chartcam.isTest") == "true"): List<Webcam> =
+        internal fun createDefaultWebcams(
+            isTest: Boolean = System.getProperty("chartcam.isTest") == "true",
+        ): List<Webcam> =
             if (isTest) {
                 emptyList()
             } else {

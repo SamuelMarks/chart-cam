@@ -44,7 +44,7 @@ class AndroidScreenshotGeneratorTest {
 
     @get:Rule
     val composeTestRule =
-        androidx.compose.ui.test.junit4
+        androidx.compose.ui.test.junit4.v2
             .createAndroidComposeRule<io.healthplatform.chartcam.android.MainActivity>()
 
     /**

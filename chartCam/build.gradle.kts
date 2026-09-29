@@ -94,10 +94,6 @@ kotlin {
     jvm()
 
     js {
-        compilerOptions {
-            sourceMap.set(true)
-            sourceMapEmbedSources.set(org.jetbrains.kotlin.gradle.dsl.JsSourceMapEmbedMode.SOURCE_MAP_SOURCE_CONTENT_ALWAYS)
-        }
         browser {
             testTask {
                 testLogging.showStandardStreams = true
@@ -342,15 +338,6 @@ tasks.withType<Sync>().configureEach {
 
 tasks.withType<org.jetbrains.kotlin.gradle.targets.js.ir.DefaultIncrementalSyncTask>().configureEach {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrLink>().configureEach {
-    if (!name.contains("Wasm")) {
-        compilerOptions {
-            sourceMap.set(false)
-            sourceMapEmbedSources.set(null as org.jetbrains.kotlin.gradle.dsl.JsSourceMapEmbedMode?)
-        }
-    }
 }
 
 dokka {
