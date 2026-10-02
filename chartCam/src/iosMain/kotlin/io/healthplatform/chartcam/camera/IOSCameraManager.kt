@@ -4,6 +4,8 @@
     "UNCHECKED_CAST",
     "CAST_NEVER_SUCCEEDS",
     "USELESS_CAST",
+    "MaxLineLength",
+    "ReturnCount",
 )
 /**
  * @file IOSCameraManager.kt
@@ -18,9 +20,14 @@ import androidx.compose.runtime.remember
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
+import kotlinx.coroutines.CompletableDeferred
 import platform.AVFoundation.*
 import platform.Foundation.NSData
 import platform.Foundation.NSError
+import platform.Foundation.NSTemporaryDirectory
+import platform.Foundation.NSURL
+import platform.Foundation.NSUUID
+import platform.Foundation.dataWithContentsOfURL
 import platform.darwin.NSObject
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -46,6 +53,11 @@ class IOSCameraManager : CameraManager {
     private val photoOutput = AVCapturePhotoOutput()
 
     /**
+     * The output responsible for capturing video.
+     */
+    private val movieOutput = AVCaptureMovieFileOutput()
+
+    /**
      * The currently active video device input (typically the back or front camera).
      */
     private var videoDeviceInput: AVCaptureDeviceInput? = null
@@ -55,6 +67,17 @@ class IOSCameraManager : CameraManager {
      * prematurely before the photo capture completes.
      */
     private var activeDelegate: AVCapturePhotoCaptureDelegateProtocol? = null
+
+    /**
+     * Delegate for video recording.
+     */
+    private var activeMovieDelegate: AVCaptureFileOutputRecordingDelegateProtocol? = null
+
+    private var recordingDeferred: CompletableDeferred<Result<ByteArray>>? = null
+    private var isRecording = false
+
+    override val isRecordingVideo: Boolean
+        get() = isRecording
 
     /**
      * Initializes the [IOSCameraManager] and configures the [AVCaptureSession].
@@ -69,7 +92,7 @@ class IOSCameraManager : CameraManager {
      */
     private fun configureSession() {
         captureSession.beginConfiguration()
-        captureSession.sessionPreset = AVCaptureSessionPresetPhoto
+        captureSession.sessionPreset = AVCaptureSessionPresetHigh
 
         val device = AVCaptureDevice.defaultDeviceWithMediaType(AVMediaTypeVideo) ?: return
         val input = AVCaptureDeviceInput.deviceInputWithDevice(device, null) ?: return
@@ -83,6 +106,10 @@ class IOSCameraManager : CameraManager {
             captureSession.addOutput(photoOutput)
         }
 
+        if (captureSession.canAddOutput(movieOutput)) {
+            captureSession.addOutput(movieOutput)
+        }
+
         captureSession.commitConfiguration()
 
         if (!captureSession.running) {
@@ -93,11 +120,7 @@ class IOSCameraManager : CameraManager {
     /**
      * Captures a still image from the camera.
      *
-     * Suspends the coroutine until a photo is captured, processed, and its
-     * binary data is ready.
-     *
-     * @return A [ByteArray] containing the JPEG-encoded image data, or `null` if the
-     *         capture fails or no camera is available.
+     * @return A [ByteArray] containing the JPEG-encoded image data, or `null` if the capture fails.
      */
     override suspend fun captureImage(): ByteArray? =
         suspendCoroutine { continuation ->
@@ -152,9 +175,121 @@ class IOSCameraManager : CameraManager {
         }
 
     /**
+     * Starts recording a local video clip.
+     *
+     * @return A [Result] indicating success or failure of initiating recording.
+     */
+    override suspend fun startVideoRecording(): Result<Unit> {
+        if (isRecording) return Result.failure(IllegalStateException("Already recording"))
+
+        if (!captureSession.running || movieOutput.connections.isEmpty()) {
+            return Result.failure(IllegalStateException("Camera session not ready for video"))
+        }
+
+        recordingDeferred = CompletableDeferred()
+
+        val tempDir = NSTemporaryDirectory()
+        val fileName = "chartcam_video_${NSUUID.UUID().UUIDString()}.mp4"
+        val fileUrl = NSURL.fileURLWithPath("$tempDir$fileName")
+
+        val delegate =
+            object : NSObject(), AVCaptureFileOutputRecordingDelegateProtocol {
+                /**
+                 * Informs the delegate when all pending data and acknowledgments have been written to the output file.
+                 *
+                 * @param output The capture file output that has finished writing the file.
+                 * @param didFinishRecordingToOutputFileAtURL The URL of the completed file.
+                 * @param fromConnections An array of AVCaptureConnection objects associated with the file.
+                 * @param error An error describing what caused the file to stop recording, or null if there was no error.
+                 */
+                override fun captureOutput(
+                    output: AVCaptureFileOutput,
+                    didFinishRecordingToOutputFileAtURL: NSURL,
+                    fromConnections: List<*>,
+                    error: NSError?,
+                ) {
+                    isRecording = false
+                    val deferred = recordingDeferred
+                    activeMovieDelegate = null
+                    recordingDeferred = null
+
+                    if (error != null) {
+                        deferred?.complete(Result.failure(IllegalStateException("Recording failed: ${error.localizedDescription}")))
+                        return
+                    }
+
+                    val data = NSData.dataWithContentsOfURL(didFinishRecordingToOutputFileAtURL)
+                    if (data != null) {
+                        val bytes = data.toByteArray()
+                        deferred?.complete(Result.success(bytes))
+                    } else {
+                        deferred?.complete(Result.failure(IllegalStateException("Could not read video file")))
+                    }
+                }
+
+                /**
+                 * Informs the delegate that a file output has started writing to a file.
+                 *
+                 * @param output The capture file output that has started writing the file.
+                 * @param didStartRecordingToOutputFileAtURL The URL of the file.
+                 * @param fromConnections An array of AVCaptureConnection objects associated with the file.
+                 */
+                override fun captureOutput(
+                    output: AVCaptureFileOutput,
+                    didStartRecordingToOutputFileAtURL: NSURL,
+                    fromConnections: List<*>,
+                ) {
+                    // Recording started
+                    isRecording = true
+                }
+            }
+
+        activeMovieDelegate = delegate
+
+        runCatching {
+            movieOutput.startRecordingToOutputFileURL(fileUrl, recordingDelegate = delegate)
+        }.onFailure { e ->
+            activeMovieDelegate = null
+            recordingDeferred?.complete(Result.failure(IllegalStateException("Failed to start recording: ${e.message}")))
+            recordingDeferred = null
+            return Result.failure(IllegalStateException(e.message))
+        }
+
+        return Result.success(Unit)
+    }
+
+    /**
+     * Stops video recording and returns valid MP4 video bytes.
+     *
+     * @return A [Result] enclosing the recorded video byte array.
+     */
+    override suspend fun stopVideoRecording(): Result<ByteArray> {
+        if (!isRecording) return Result.failure(IllegalStateException("Not recording"))
+        val deferred = recordingDeferred ?: return Result.failure(IllegalStateException("Missing deferred"))
+        movieOutput.stopRecording()
+        return deferred.await()
+    }
+
+    /**
+     * Cancels an in-progress video recording session without saving.
+     *
+     * @return A [Result] indicating success.
+     */
+    override fun cancelVideoRecording(): Result<Unit> {
+        if (isRecording) {
+            movieOutput.stopRecording()
+        }
+        recordingDeferred?.complete(Result.failure(IllegalStateException("Recording cancelled")))
+        recordingDeferred = null
+        activeMovieDelegate = null
+        isRecording = false
+        return Result.success(Unit)
+    }
+
+    /**
      * Sets the flash/torch mode on the current camera device.
      *
-     * @param on `true` to turn the torch on, `false` to turn it off.
+     * @param on True to turn the torch on, false to turn it off.
      * @return A [Result] indicating success or failure.
      */
     override fun setFlash(on: Boolean): Result<Unit> =

@@ -5,6 +5,8 @@
  * Manages biometric authentication state, hardware keystore validation,
  * enrollment invalidation detection, and lockout/fallback policies.
  */
+@file:Suppress("MaxLineLength", "ReturnCount")
+
 package io.healthplatform.chartcam.storage
 
 /**
@@ -96,11 +98,11 @@ interface KeystoreHardwareProvider {
     suspend fun promptBiometrics(
         title: String = "Biometric Authentication",
         subtitle: String = "Verify identity to proceed",
-    ): Result<Unit> =
+    ): Result<BiometricAuthResult> =
         if (getHardwareStatus() == BiometricHardwareStatus.AVAILABLE) {
-            Result.success(Unit)
+            Result.success(BiometricAuthResult.Success)
         } else {
-            Result.failure(IllegalStateException("Biometrics unavailable: ${getHardwareStatus()}"))
+            Result.success(BiometricAuthResult.HardwareError("Biometrics unavailable: ${getHardwareStatus()}"))
         }
 }
 
@@ -143,11 +145,11 @@ class DefaultKeystoreHardwareProvider(
     override suspend fun promptBiometrics(
         title: String,
         subtitle: String,
-    ): Result<Unit> =
+    ): Result<BiometricAuthResult> =
         if (status == BiometricHardwareStatus.AVAILABLE) {
-            Result.success(Unit)
+            Result.success(BiometricAuthResult.Success)
         } else {
-            Result.failure(IllegalStateException("Biometric hardware status: $status"))
+            Result.success(BiometricAuthResult.HardwareError("Biometric hardware status: $status"))
         }
 }
 
@@ -317,11 +319,15 @@ class BiometricSecurityManager(
                 BiometricAuthResult.HardwareError("No biometric credentials enrolled on this device.")
             else -> {
                 val promptResult = hardwareProvider.promptBiometrics(title, subtitle)
-                if (promptResult.isSuccess) {
+                val authResult = promptResult.getOrElse { BiometricAuthResult.HardwareError(it.message ?: "Unknown error") }
+
+                if (authResult is BiometricAuthResult.Success) {
                     failedAttempts = 0
-                    BiometricAuthResult.Success
-                } else {
+                    authResult
+                } else if (authResult is BiometricAuthResult.Failed) {
                     recordFailedAttempt()
+                } else {
+                    authResult
                 }
             }
         }

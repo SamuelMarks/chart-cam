@@ -10,13 +10,15 @@
 package io.healthplatform.chartcam.viewmodel
 
 import chartcam.chartcam.generated.resources.Res
-import chartcam.chartcam.generated.resources.incorrect_password
 import chartcam.chartcam.generated.resources.invalid_credentials
 import chartcam.chartcam.generated.resources.unknown_error
+import io.healthplatform.chartcam.repository.AuthError
 import io.healthplatform.chartcam.repository.AuthRepository
+import io.healthplatform.chartcam.storage.BiometricAuthResult
 import io.healthplatform.chartcam.storage.SecureStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -132,6 +134,7 @@ class LoginViewModelTest {
 
             // Act: Login with valid credentials
             viewModel.login("user", "password")
+            viewModel.uiState.first { it.isLoggedIn || it.errorMessage != null }
             testDispatcher.scheduler.advanceUntilIdle()
 
             // Assert
@@ -149,18 +152,23 @@ class LoginViewModelTest {
     @Test
     fun testLoginFailure() =
         runTest {
-            authRepository = AuthRepository(mockStorage)
+            val throwingRepo =
+                object : AuthRepository(mockStorage) {
+                    override suspend fun login(
+                        username: String,
+                        password: String,
+                    ): Result<dev.ohs.fhir.model.r4.Practitioner> = Result.failure(AuthError.StorageError("Storage full"))
+                }
+            val viewModel = LoginViewModel(throwingRepo)
 
-            val viewModel = LoginViewModel(authRepository)
-
-            // Act: Login with "error" password (triggers exception in AuthRepository)
-            viewModel.login("user", "error")
+            viewModel.login("user", "password")
+            viewModel.uiState.first { it.isLoggedIn || it.errorMessage != null }
             testDispatcher.scheduler.advanceUntilIdle()
 
             // Assert
             assertFalse(viewModel.uiState.value.isLoggedIn)
             assertFalse(viewModel.uiState.value.isLoading)
-            assertEquals(Res.string.invalid_credentials, viewModel.uiState.value.errorMessage)
+            assertEquals(Res.string.unknown_error, viewModel.uiState.value.errorMessage)
         }
 
     /**
@@ -176,11 +184,12 @@ class LoginViewModelTest {
             val viewModel = LoginViewModel(authRepository)
 
             viewModel.login("user", "wrong")
+            viewModel.uiState.first { it.isLoggedIn || it.errorMessage != null }
             testDispatcher.scheduler.advanceUntilIdle()
 
             assertFalse(viewModel.uiState.value.isLoggedIn)
             assertFalse(viewModel.uiState.value.isLoading)
-            assertEquals(Res.string.incorrect_password, viewModel.uiState.value.errorMessage)
+            assertEquals(Res.string.invalid_credentials, viewModel.uiState.value.errorMessage)
         }
 
     /**
@@ -206,6 +215,7 @@ class LoginViewModelTest {
             val viewModel = LoginViewModel(throwingRepo)
 
             viewModel.login("user", "pass")
+            viewModel.uiState.first { it.isLoggedIn || it.errorMessage != null }
             testDispatcher.scheduler.advanceUntilIdle()
 
             assertFalse(viewModel.uiState.value.isLoggedIn)
@@ -342,8 +352,8 @@ class LoginViewModelTest {
                     override fun getHardwareStatus(): io.healthplatform.chartcam.storage.BiometricHardwareStatus =
                         io.healthplatform.chartcam.storage.BiometricHardwareStatus.AVAILABLE
 
-                    override suspend fun promptBiometrics(title: String, subtitle: String): Result<Unit> =
-                        Result.failure(Exception("Prompt failed"))
+                    override suspend fun promptBiometrics(title: String, subtitle: String): Result<BiometricAuthResult> =
+                        Result.success(BiometricAuthResult.Failed(1))
                 }
             val failBioManager =
                 io.healthplatform.chartcam.storage
@@ -369,8 +379,8 @@ class LoginViewModelTest {
                     override fun getHardwareStatus(): io.healthplatform.chartcam.storage.BiometricHardwareStatus =
                         io.healthplatform.chartcam.storage.BiometricHardwareStatus.AVAILABLE
 
-                    override suspend fun promptBiometrics(title: String, subtitle: String): Result<Unit> =
-                        Result.success(Unit)
+                    override suspend fun promptBiometrics(title: String, subtitle: String): Result<BiometricAuthResult> =
+                        Result.success(BiometricAuthResult.Success)
                 }
             val successBioManager =
                 io.healthplatform.chartcam.storage
@@ -447,6 +457,7 @@ class LoginViewModelTest {
             val viewModel = LoginViewModel(throwingRepo)
 
             viewModel.login("user", "pass")
+            viewModel.uiState.first { it.isLoggedIn || it.errorMessage != null }
             testDispatcher.scheduler.advanceUntilIdle()
 
             assertFalse(viewModel.uiState.value.isLoggedIn)

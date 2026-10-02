@@ -8,6 +8,7 @@ package io.healthplatform.chartcam
 
 import android.annotation.SuppressLint
 import android.content.Context
+import androidx.fragment.app.FragmentActivity
 
 /**
  * A singleton object to hold the Android Application [Context].
@@ -21,6 +22,11 @@ object AndroidAppInit {
      * The stored application [Context] reference.
      */
     private var context: Context? = null
+
+    /**
+     * The currently active [FragmentActivity].
+     */
+    var currentActivity: FragmentActivity? = null
 
     /**
      * Initializes the singleton with the provided context.

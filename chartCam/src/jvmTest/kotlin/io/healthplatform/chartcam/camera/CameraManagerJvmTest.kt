@@ -36,9 +36,8 @@ class CameraManagerJvmTest {
             assertTrue(manager.isRecordingVideo)
 
             val stopRes = manager.stopVideoRecording()
-            assertTrue(stopRes.isSuccess)
+            assertTrue(stopRes.isFailure)
             assertFalse(manager.isRecordingVideo)
-            assertTrue(stopRes.getOrThrow().isNotEmpty())
 
             // Stopping when not recording
             val stopFailRes = manager.stopVideoRecording()

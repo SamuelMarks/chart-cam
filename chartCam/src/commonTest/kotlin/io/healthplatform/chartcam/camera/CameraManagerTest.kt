@@ -38,13 +38,9 @@ class CameraManagerTest {
 
             assertTrue(defaultManager.startVideoRecording().isSuccess)
             val stopRes = defaultManager.stopVideoRecording()
-            assertTrue(stopRes.isSuccess)
-            assertTrue(stopRes.getOrThrow().isNotEmpty())
+            assertTrue(stopRes.isFailure)
 
             assertTrue(defaultManager.cancelVideoRecording().isSuccess)
-
-            val mp4Bytes = CameraManager.createMinimalMp4Container()
-            assertTrue(mp4Bytes.isNotEmpty())
         }
 
     /**
@@ -78,5 +74,37 @@ class CameraManagerTest {
             val result = successManager.captureImageCatching()
             assertTrue(result.isSuccess)
             assertEquals(3, result.getOrThrow().size)
+        }
+
+    @Test
+    fun testMockedVideoRecording() =
+        runTest {
+            val successMock =
+                object : CameraManager {
+                    override suspend fun captureImage(): ByteArray? = null
+
+                    override fun release() {}
+
+                    override suspend fun startVideoRecording(): Result<Unit> = Result.success(Unit)
+
+                    override suspend fun stopVideoRecording(): Result<ByteArray> = Result.success(byteArrayOf(1, 2, 3))
+                }
+            assertTrue(successMock.startVideoRecording().isSuccess)
+            val stopSuccess = successMock.stopVideoRecording()
+            assertTrue(stopSuccess.isSuccess)
+            assertEquals(3, stopSuccess.getOrThrow().size)
+
+            val failureMock =
+                object : CameraManager {
+                    override suspend fun captureImage(): ByteArray? = null
+
+                    override fun release() {}
+
+                    override suspend fun startVideoRecording(): Result<Unit> = Result.failure(Exception("Hardware error"))
+
+                    override suspend fun stopVideoRecording(): Result<ByteArray> = Result.failure(Exception("File write error"))
+                }
+            assertTrue(failureMock.startVideoRecording().isFailure)
+            assertTrue(failureMock.stopVideoRecording().isFailure)
         }
 }

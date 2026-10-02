@@ -117,6 +117,7 @@ dependencies {
 
     implementation(dependencies.project(":chartCam"))
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.fragment.ktx)
     implementation(libs.compose.uiToolingPreview)
 }
 

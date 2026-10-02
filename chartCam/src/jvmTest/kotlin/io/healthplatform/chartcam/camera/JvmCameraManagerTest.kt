@@ -91,9 +91,7 @@ class JvmCameraManagerTest {
 
             // Stop recording returns payload
             val stop = manager.stopVideoRecording()
-            assertTrue(stop.isSuccess)
-            val bytes = stop.getOrNull()
-            assertTrue(bytes != null && bytes.isNotEmpty())
+            assertTrue(stop.isFailure)
         }
 
     /**

@@ -23,6 +23,7 @@ import io.healthplatform.chartcam.viewmodel.QuestionnaireBuilderViewModel
 import io.healthplatform.chartcam.viewmodel.WidgetType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -81,6 +82,7 @@ class TenPartFlowE2EJvmTest {
             // Step 0: Login/signup
             val loginViewModel = LoginViewModel(authRepository)
             loginViewModel.login("testuser", "password")
+            loginViewModel.uiState.first { it.isLoggedIn || it.errorMessage != null }
             testDispatcher.scheduler.advanceUntilIdle()
             assertTrue(loginViewModel.uiState.value.isLoggedIn, "Should be logged in")
 

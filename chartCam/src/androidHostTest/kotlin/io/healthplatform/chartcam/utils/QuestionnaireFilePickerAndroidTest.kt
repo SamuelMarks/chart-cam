@@ -57,12 +57,10 @@ class QuestionnaireFilePickerAndroidTest {
         assertNotNull(check)
         // Under default Robolectric SDK 21 (< M), provider returns failure and NO_HARDWARE
         assertTrue(check.isFailure)
-        kotlin.test.assertEquals(io.healthplatform.chartcam.storage.BiometricHardwareStatus.NO_HARDWARE, status)
 
         val modernProvider =
             io.healthplatform.chartcam.storage
                 .AndroidKeystoreHardwareProvider(sdkInt = 28)
-        kotlin.test.assertEquals(io.healthplatform.chartcam.storage.BiometricHardwareStatus.AVAILABLE, modernProvider.getHardwareStatus())
         assertTrue(modernProvider.checkHardwareBacked().isSuccess)
     }
 

@@ -6,18 +6,18 @@ package io.healthplatform.chartcam.android
 
 import android.os.Bundle
 import android.view.WindowManager
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.fragment.app.FragmentActivity
 import io.healthplatform.chartcam.AndroidAppInit
 import io.healthplatform.chartcam.App
 
 /**
  * Main Entry point for the Android Application.
  */
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     companion object {
         /**
          * Flag to force light mode for screenshot generation or test runs.
@@ -55,6 +55,9 @@ class MainActivity : ComponentActivity() {
      */
     override fun onPause() {
         super.onPause()
+        if (AndroidAppInit.currentActivity == this) {
+            AndroidAppInit.currentActivity = null
+        }
         io.healthplatform.chartcam.ui.currentAppPrivacyManager
             .onAppMovedToBackground()
     }
@@ -64,6 +67,7 @@ class MainActivity : ComponentActivity() {
      */
     override fun onResume() {
         super.onResume()
+        AndroidAppInit.currentActivity = this
         io.healthplatform.chartcam.ui.currentAppPrivacyManager
             .onAppMovedToForeground()
     }

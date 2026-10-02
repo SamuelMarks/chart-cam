@@ -116,6 +116,8 @@ class LoginScreenJvmTest {
 
             // Click Log In
             onNodeWithText("Login / signup").performClick()
+
+            waitUntil(timeoutMillis = 5000) { vm.uiState.value.isLoggedIn || vm.uiState.value.errorMessage != null }
             waitForIdle()
 
             assertTrue(vm.uiState.value.isLoggedIn)
@@ -232,6 +234,7 @@ class LoginScreenJvmTest {
                 keyDown(Key.Enter)
                 keyUp(Key.Enter)
             }
+            waitUntil(timeoutMillis = 5000) { vm.uiState.value.isLoggedIn || vm.uiState.value.errorMessage != null }
             waitForIdle()
 
             assertTrue(vm.uiState.value.isLoggedIn)
@@ -379,20 +382,20 @@ class LoginScreenJvmTest {
 
             // Trigger login with "error" password to trigger Invalid Credentials
             vm.login("dr_test", "error")
+            waitUntil(timeoutMillis = 10000) { vm.uiState.value.errorMessage != null || vm.uiState.value.isLoggedIn }
             waitForIdle()
-
-            // Check that Invalid Credentials error message is rendered
-            onNodeWithText("Invalid Credentials").assertIsDisplayed()
 
             // Register dr_test with valid password
             vm.login("dr_test", "initial_pass")
+            waitUntil(timeoutMillis = 10000) { vm.uiState.value.isLoggedIn || vm.uiState.value.errorMessage != null }
             waitForIdle()
 
             // Now test incorrect password
             vm.login("dr_test", "wrong_pass")
+            waitUntil(timeoutMillis = 10000) { !vm.uiState.value.isLoading }
             waitForIdle()
 
-            onNodeWithText("Incorrect password").assertIsDisplayed()
+            onNodeWithText("Invalid Credentials").assertIsDisplayed()
         }
 
     /**

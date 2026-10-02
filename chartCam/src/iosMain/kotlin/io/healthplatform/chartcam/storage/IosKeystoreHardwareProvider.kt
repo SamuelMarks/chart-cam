@@ -7,7 +7,14 @@
 package io.healthplatform.chartcam.storage
 
 import platform.LocalAuthentication.LAContext
+import platform.LocalAuthentication.LAErrorAuthenticationFailed
+import platform.LocalAuthentication.LAErrorBiometryLockout
+import platform.LocalAuthentication.LAErrorBiometryNotAvailable
+import platform.LocalAuthentication.LAErrorBiometryNotEnrolled
+import platform.LocalAuthentication.LAErrorUserCancel
+import platform.LocalAuthentication.LAErrorUserFallback
 import platform.LocalAuthentication.LAPolicyDeviceOwnerAuthenticationWithBiometrics
+import kotlin.coroutines.resume
 
 /**
  * iOS implementation of [KeystoreHardwareProvider] backed by the Apple Secure Enclave.
@@ -48,7 +55,7 @@ class IosKeystoreHardwareProvider : KeystoreHardwareProvider {
     override suspend fun promptBiometrics(
         title: String,
         subtitle: String,
-    ): Result<Unit> =
+    ): Result<BiometricAuthResult> =
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
             kotlin.coroutines.suspendCoroutine { cont ->
                 val context = LAContext()
@@ -58,10 +65,21 @@ class IosKeystoreHardwareProvider : KeystoreHardwareProvider {
                     localizedReason = reason,
                 ) { success, error ->
                     if (success) {
-                        cont.resumeWith(Result.success(Result.success(Unit)))
+                        cont.resume(Result.success(BiometricAuthResult.Success))
                     } else {
-                        val msg = error?.localizedDescription ?: "Biometric prompt rejected or cancelled"
-                        cont.resumeWith(Result.success(Result.failure(IllegalStateException(msg))))
+                        val authResult =
+                            when (error?.code) {
+                                LAErrorUserCancel,
+                                LAErrorUserFallback,
+                                -> BiometricAuthResult.FallbackToPassword
+                                LAErrorBiometryLockout -> BiometricAuthResult.TemporarilyLockedOut(30)
+                                LAErrorBiometryNotAvailable,
+                                LAErrorBiometryNotEnrolled,
+                                -> BiometricAuthResult.HardwareError(error.localizedDescription)
+                                LAErrorAuthenticationFailed -> BiometricAuthResult.Failed(1)
+                                else -> BiometricAuthResult.HardwareError(error?.localizedDescription ?: "Unknown error")
+                            }
+                        cont.resume(Result.success(authResult))
                     }
                 }
             }

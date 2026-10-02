@@ -205,8 +205,8 @@ class MultiPractitionerDataIsolationTest {
             )
 
             // Step 5: Secure credential and salt isolation in SecureStorage
-            val aliceCredentialHash = storage.getString("hash_dr_alice")
-            val bobCredentialHash = storage.getString("hash_dr_bob")
+            val aliceCredentialHash = storage.getString("auth_payload_dr_alice")
+            val bobCredentialHash = storage.getString("auth_payload_dr_bob")
             assertNotNull(aliceCredentialHash)
             assertNotNull(bobCredentialHash)
             assertTrue(

@@ -22,6 +22,7 @@ import io.healthplatform.chartcam.viewmodel.PatientDetailViewModel
 import io.healthplatform.chartcam.viewmodel.PatientListViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -85,6 +86,7 @@ class E2EWorkflowJvmTest {
             // 2. Login Workflow
             val loginViewModel = LoginViewModel(authRepository)
             loginViewModel.login("testuser", "password123")
+            loginViewModel.uiState.first { it.isLoggedIn || it.errorMessage != null }
             testDispatcher.scheduler.advanceUntilIdle()
 
             assertTrue(loginViewModel.uiState.value.isLoggedIn, "User should be logged in")

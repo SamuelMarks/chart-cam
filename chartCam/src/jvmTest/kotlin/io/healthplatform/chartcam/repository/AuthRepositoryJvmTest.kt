@@ -132,7 +132,7 @@ class AuthRepositoryJvmTest {
         }
 
     /**
-     * Tests a login failure scenario due to an error password, ensuring no tokens are saved.
+     * Tests a login failure scenario due to an incorrect password after account creation.
      */
     @Test
     fun testLoginFailure() =
@@ -140,12 +140,15 @@ class AuthRepositoryJvmTest {
             val storage = MockStorage()
             val repo = AuthRepository(storage)
 
-            // Act (using "error" password to trigger exception in current logic)
-            val result = repo.login("dr_house", "error")
+            // Setup
+            repo.login("dr_house", "password123")
+
+            // Act
+            val result = repo.login("dr_house", "wrong_password")
 
             // Assert
             assertTrue(result.isFailure)
-            assertEquals(null, storage.getString("access_token"))
+            assertTrue(result.exceptionOrNull() is AuthError.InvalidCredentials)
         }
 
     /**
@@ -163,7 +166,7 @@ class AuthRepositoryJvmTest {
             // Second login with incorrect password fails
             val result = repo.login("dr_house", "wrong")
             assertTrue(result.isFailure)
-            assertEquals("incorrect password", result.exceptionOrNull()?.message)
+            assertTrue(result.exceptionOrNull() is AuthError.InvalidCredentials)
         }
 
     /**
@@ -178,7 +181,7 @@ class AuthRepositoryJvmTest {
             repo.login("dr_house", "password123")
             val result = repo.login("dr_house", "password321")
             assertTrue(result.isFailure)
-            assertEquals("incorrect password", result.exceptionOrNull()?.message)
+            assertTrue(result.exceptionOrNull() is AuthError.InvalidCredentials)
         }
 
     /**
@@ -190,10 +193,10 @@ class AuthRepositoryJvmTest {
             val storage = MockStorage()
             val repo = AuthRepository(storage)
 
-            storage.save("hash_dr_house", "short_hash")
+            storage.save("auth_payload_dr_house", "short_hash")
             val result = repo.login("dr_house", "password123")
             assertTrue(result.isFailure)
-            assertEquals("incorrect password", result.exceptionOrNull()?.message)
+            assertTrue(result.exceptionOrNull() is AuthError.InvalidCredentials)
         }
 
     /**

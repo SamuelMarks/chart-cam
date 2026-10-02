@@ -24,6 +24,7 @@ import io.healthplatform.chartcam.viewmodel.LoginViewModel
 import io.healthplatform.chartcam.viewmodel.TriageViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -97,6 +98,7 @@ class SnapFirstTriageWorkflowTest {
             // Step 1: Authentication -> verify post-login route target is CAPTURE
             val loginViewModel = LoginViewModel(authRepository)
             loginViewModel.login("dr_alice", "password123")
+            loginViewModel.uiState.first { it.isLoggedIn || it.errorMessage != null }
             testDispatcher.scheduler.advanceUntilIdle()
             assertTrue(loginViewModel.uiState.value.isLoggedIn, "Clinician must authenticate")
             assertEquals(Routes.CAPTURE, Routes.CAPTURE, "Default post-login destination must be CAPTURE")
@@ -202,6 +204,7 @@ class SnapFirstTriageWorkflowTest {
             // Clinician logs in
             val loginViewModel = LoginViewModel(authRepository)
             loginViewModel.login("dr_bob", "password456")
+            loginViewModel.uiState.first { it.isLoggedIn || it.errorMessage != null }
             testDispatcher.scheduler.advanceUntilIdle()
 
             // Viewfinder captures single urgent lesion

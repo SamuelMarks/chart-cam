@@ -14,12 +14,21 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.FileOutputOptions
+import androidx.camera.video.Quality
+import androidx.camera.video.QualitySelector
+import androidx.camera.video.Recorder
+import androidx.camera.video.Recording
+import androidx.camera.video.VideoCapture
+import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import io.healthplatform.chartcam.AndroidAppInit
+import kotlinx.coroutines.CompletableDeferred
+import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -36,6 +45,11 @@ class AndroidCameraManager(
      * CameraX use case for capturing images.
      */
     private var imageCapture: ImageCapture? = null
+
+    /**
+     * CameraX use case for capturing video.
+     */
+    private var videoCapture: VideoCapture<Recorder>? = null
 
     /**
      * Represents the currently bound camera instance, used for controlling flash and other hardware properties.
@@ -57,6 +71,14 @@ class AndroidCameraManager(
      */
     private var lensFacing = CameraSelector.LENS_FACING_BACK
 
+    private var activeRecording: Recording? = null
+    private var tempVideoFile: File? = null
+    private var isRecording = false
+    private var recordingDeferred: CompletableDeferred<Result<ByteArray>>? = null
+
+    override val isRecordingVideo: Boolean
+        get() = isRecording
+
     /**
      * Binds the camera to the provided lifecycle and connects the output to the [PreviewView].
      * Called by the Android CameraPreview composable.
@@ -76,7 +98,7 @@ class AndroidCameraManager(
     }
 
     /**
-     * Internal method to configure and bind the Preview and ImageCapture use cases to the [ProcessCameraProvider].
+     * Internal method to configure and bind the Preview, ImageCapture, and VideoCapture use cases.
      *
      * @param lifecycleOwner The lifecycle owner that controls the camera's active state.
      * @param view The [PreviewView] used to display the stream.
@@ -94,6 +116,13 @@ class AndroidCameraManager(
 
         imageCapture = ImageCapture.Builder().build()
 
+        val recorder =
+            Recorder
+                .Builder()
+                .setQualitySelector(QualitySelector.from(Quality.HIGHEST))
+                .build()
+        videoCapture = VideoCapture.withOutput(recorder)
+
         val cameraSelector =
             CameraSelector
                 .Builder()
@@ -108,6 +137,7 @@ class AndroidCameraManager(
                     cameraSelector,
                     preview,
                     imageCapture,
+                    videoCapture,
                 )
         }.onFailure { exc ->
             println("Camera binding failed: ${exc.message}")
@@ -128,7 +158,7 @@ class AndroidCameraManager(
                 executor,
                 object : ImageCapture.OnImageCapturedCallback() {
                     /**
-                     * Callback when image is successfully captured.
+                     * Called when image is successfully captured.
                      *
                      * @param image The captured image proxy.
                      */
@@ -147,9 +177,9 @@ class AndroidCameraManager(
                     }
 
                     /**
-                     * Callback when image capture fails.
+                     * Called when image capture fails.
                      *
-                     * @param exception The exception describing the capture failure.
+                     * @param exception The exception detailing the failure.
                      */
                     override fun onError(exception: ImageCaptureException) {
                         continuation.resumeWithException(exception)
@@ -157,6 +187,74 @@ class AndroidCameraManager(
                 },
             )
         }
+    }
+
+    /**
+     * Starts recording a local video clip.
+     *
+     * @return A [Result] indicating success or failure of initiating recording.
+     */
+    @Suppress("ReturnCount", "MaxLineLength")
+    override suspend fun startVideoRecording(): Result<Unit> {
+        val capture = videoCapture ?: return Result.failure(IllegalStateException("VideoCapture not bound"))
+        if (activeRecording != null) return Result.failure(IllegalStateException("Already recording"))
+
+        val file = File(context.cacheDir, "chartcam_video_${System.currentTimeMillis()}.mp4")
+        tempVideoFile = file
+        val outputOptions = FileOutputOptions.Builder(file).build()
+
+        recordingDeferred = CompletableDeferred()
+        isRecording = true
+        activeRecording =
+            capture.output
+                .prepareRecording(context, outputOptions)
+                .start(executor) { event ->
+                    when (event) {
+                        is VideoRecordEvent.Finalize -> {
+                            isRecording = false
+                            activeRecording = null
+                            if (event.hasError()) {
+                                recordingDeferred?.complete(Result.failure(IllegalStateException("Video recording failed: ${event.error}")))
+                            } else {
+                                val bytes = runCatching { file.readBytes() }.getOrNull()
+                                if (bytes != null) {
+                                    recordingDeferred?.complete(Result.success(bytes))
+                                } else {
+                                    recordingDeferred?.complete(Result.failure(IllegalStateException("Failed to read video file")))
+                                }
+                            }
+                        }
+                    }
+                }
+
+        return Result.success(Unit)
+    }
+
+    /**
+     * Stops video recording and returns valid MP4 video bytes.
+     *
+     * @return A [Result] enclosing the recorded video byte array.
+     */
+    @Suppress("ReturnCount")
+    override suspend fun stopVideoRecording(): Result<ByteArray> {
+        val recording = activeRecording ?: return Result.failure(IllegalStateException("No active recording"))
+        val deferred = recordingDeferred ?: return Result.failure(IllegalStateException("Missing deferred"))
+        recording.stop()
+        return deferred.await()
+    }
+
+    /**
+     * Cancels an in-progress video recording session without saving.
+     *
+     * @return A [Result] indicating success.
+     */
+    override fun cancelVideoRecording(): Result<Unit> {
+        activeRecording?.stop()
+        recordingDeferred?.complete(Result.failure(IllegalStateException("Recording cancelled")))
+        activeRecording = null
+        isRecording = false
+        tempVideoFile?.delete()
+        return Result.success(Unit)
     }
 
     /**

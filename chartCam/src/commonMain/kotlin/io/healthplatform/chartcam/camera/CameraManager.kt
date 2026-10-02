@@ -4,6 +4,8 @@
  *
  * Contains cross-platform abstractions for camera management and configuration.
  */
+@file:Suppress("MaxLineLength", "ReturnCount")
+
 package io.healthplatform.chartcam.camera
 
 import androidx.compose.runtime.Composable
@@ -65,7 +67,10 @@ interface CameraManager {
      *
      * @return A [Result] enclosing the recorded video byte array.
      */
-    suspend fun stopVideoRecording(): Result<ByteArray> = Result.success(createMinimalMp4Container())
+    suspend fun stopVideoRecording(): Result<ByteArray> =
+        Result.failure(
+            NotImplementedError("Video recording not implemented on this platform"),
+        )
 
     /**
      * Cancels an in-progress video recording session without saving.
@@ -73,61 +78,6 @@ interface CameraManager {
      * @return A [Result] indicating success.
      */
     fun cancelVideoRecording(): Result<Unit> = Result.success(Unit)
-
-    /**
-     * Shared companion object for camera container payload helpers.
-     */
-    companion object {
-        /**
-         * Creates a valid ISO/IEC 14496-12 MP4 container box stream (ftyp and mdat boxes).
-         *
-         * @return A [ByteArray] containing the ISO base media file format boxes.
-         */
-        @Suppress("MagicNumber")
-        fun createMinimalMp4Container(): ByteArray =
-            byteArrayOf(
-                0x00,
-                0x00,
-                0x00,
-                0x20, // ftyp box length (32 bytes)
-                0x66,
-                0x74,
-                0x79,
-                0x70, // 'ftyp'
-                0x69,
-                0x73,
-                0x6F,
-                0x6D, // major brand 'isom'
-                0x00,
-                0x00,
-                0x02,
-                0x00, // minor version
-                0x69,
-                0x73,
-                0x6F,
-                0x6D, // compatible brands: 'isom'
-                0x69,
-                0x73,
-                0x6F,
-                0x32, // 'iso2'
-                0x61,
-                0x76,
-                0x63,
-                0x31, // 'avc1'
-                0x6D,
-                0x70,
-                0x34,
-                0x31, // 'mp41'
-                0x00,
-                0x00,
-                0x00,
-                0x08, // mdat box length (8 bytes)
-                0x6D,
-                0x64,
-                0x61,
-                0x74, // 'mdat'
-            )
-    }
 }
 
 /**

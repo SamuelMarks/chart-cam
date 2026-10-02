@@ -126,6 +126,7 @@ kotlin {
 
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.biometric)
             implementation(libs.sqldelight.android)
             implementation(libs.sqlcipher.android)
             implementation(libs.androidx.camera.core)

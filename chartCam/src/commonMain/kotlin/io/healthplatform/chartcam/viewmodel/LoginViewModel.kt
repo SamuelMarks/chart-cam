@@ -10,9 +10,9 @@ package io.healthplatform.chartcam.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import chartcam.chartcam.generated.resources.Res
-import chartcam.chartcam.generated.resources.incorrect_password
 import chartcam.chartcam.generated.resources.invalid_credentials
 import chartcam.chartcam.generated.resources.unknown_error
+import io.healthplatform.chartcam.repository.AuthError
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.storage.BiometricAuthResult
 import io.healthplatform.chartcam.storage.BiometricHardwareStatus
@@ -215,9 +215,8 @@ class LoginViewModel(
                         it.copy(
                             isLoading = false,
                             errorMessage =
-                                when (error.message) {
-                                    "incorrect password" -> Res.string.incorrect_password
-                                    "Invalid Credentials" -> Res.string.invalid_credentials
+                                when (error) {
+                                    is AuthError.InvalidCredentials -> Res.string.invalid_credentials
                                     else -> Res.string.unknown_error
                                 },
                         )

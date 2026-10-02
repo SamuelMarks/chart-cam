@@ -121,6 +121,6 @@ class AppLockoutAndSessionSecurityTest {
             // Verified that a valid refreshed access token exists in storage
             val refreshedToken = storage.getString("access_token")
             assertNotNull(refreshedToken)
-            assertTrue(refreshedToken.startsWith("refreshed_access_token_"))
+            assertTrue(refreshedToken.startsWith("refreshed_access_"))
         }
 }

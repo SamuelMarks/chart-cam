@@ -254,7 +254,7 @@ class BiometricSecurityManagerTest {
                     override suspend fun promptBiometrics(
                         title: String,
                         subtitle: String,
-                    ): Result<Unit> = Result.failure(IllegalStateException("User cancelled"))
+                    ): Result<BiometricAuthResult> = Result.success(BiometricAuthResult.Failed(2))
                 }
             val failingManager = BiometricSecurityManager(storage, hardwareProvider = failingPromptProvider)
             assertTrue(failingManager.authenticatePrompt() is BiometricAuthResult.Failed)
@@ -274,8 +274,13 @@ class BiometricSecurityManagerTest {
 
                     override fun getHardwareStatus(): BiometricHardwareStatus = BiometricHardwareStatus.NO_HARDWARE
                 }
-            assertTrue(unavailableInterfaceProvider.promptBiometrics().isFailure)
-            assertTrue(notEnrolledProvider.promptBiometrics("Title", "Subtitle").isFailure)
+            val unavailableInterfaceResult = unavailableInterfaceProvider.promptBiometrics()
+            assertTrue(unavailableInterfaceResult.isSuccess)
+            assertTrue(unavailableInterfaceResult.getOrNull() is BiometricAuthResult.HardwareError)
+
+            val notEnrolledPromptResult = notEnrolledProvider.promptBiometrics("Title", "Subtitle")
+            assertTrue(notEnrolledPromptResult.isSuccess)
+            assertTrue(notEnrolledPromptResult.getOrNull() is BiometricAuthResult.HardwareError)
 
             // Test locked out states
             manager.onBiometricCredentialsChanged()

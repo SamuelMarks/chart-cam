@@ -265,7 +265,7 @@ class JvmCameraManager(
     override suspend fun stopVideoRecording(): Result<ByteArray> =
         if (_isRecordingVideo) {
             _isRecordingVideo = false
-            Result.success(CameraManager.createMinimalMp4Container())
+            Result.failure(NotImplementedError("Video recording not implemented on JVM"))
         } else {
             Result.failure(IllegalStateException("No active video recording session"))
         }
