@@ -469,4 +469,7 @@
     <string name="conflict_type_name_dob_match">氏名と生年月日の一致</string>
     <string name="cd_silhouette_overlay_full_format">%1$s: %2$s. %3$s</string>
     <string name="photo_slot_format">写真 %1$s</string>
+    <string name="facial_series_left_profile">左プロファイル（角膜と鼻）</string>
+    <string name="facial_series_front_view">正面</string>
+    <string name="facial_series_right_profile">右プロファイル（角膜と鼻）</string>
 </resources>

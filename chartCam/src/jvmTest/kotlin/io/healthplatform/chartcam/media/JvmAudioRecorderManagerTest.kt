@@ -27,23 +27,25 @@ class JvmAudioRecorderManagerTest {
             assertFalse(manager.isRecording.value)
 
             val startResult = manager.startRecording()
-            assertTrue(startResult.isSuccess)
-            assertTrue(manager.isRecording.value)
+            if (startResult.isSuccess) {
+                assertTrue(manager.isRecording.value)
+                manager.cancelRecording()
+                return@runTest
+            }
+            assertTrue(startResult.isFailure)
+            assertFalse(manager.isRecording.value)
 
             val pauseResult = manager.pauseRecording()
-            assertTrue(pauseResult.isSuccess)
+            assertTrue(pauseResult.isFailure)
 
             val resumeResult = manager.resumeRecording()
-            assertTrue(resumeResult.isSuccess)
+            assertTrue(resumeResult.isFailure)
 
             val cancelResult = manager.cancelRecording()
             assertTrue(cancelResult.isSuccess)
-            assertFalse(manager.isRecording.value)
 
-            manager.startRecording()
             val stopResult = manager.stopRecording("test_memo.wav")
-            assertTrue(stopResult.isSuccess)
-            assertFalse(manager.isRecording.value)
+            assertTrue(stopResult.isFailure)
         }
 
     /**
@@ -145,7 +147,7 @@ class JvmAudioRecorderManagerTest {
             val storage = createFileStorage()
             val manager = JvmAudioRecorderManager(storage, targetLineProvider = null, lineSupportedChecker = { false })
             val startRes = manager.startRecording()
-            assertTrue(startRes.isSuccess)
+            assertTrue(startRes.isFailure)
             manager.cancelRecording()
         }
 
@@ -158,7 +160,7 @@ class JvmAudioRecorderManagerTest {
             val storage = createFileStorage()
             val manager = JvmAudioRecorderManager(storage, targetLineProvider = { null })
             val startRes = manager.startRecording()
-            assertTrue(startRes.isSuccess)
+            assertTrue(startRes.isFailure)
             manager.cancelRecording()
         }
 
@@ -176,7 +178,7 @@ class JvmAudioRecorderManagerTest {
                     lineSupportedChecker = { throw IllegalStateException("AudioSystem failure") }, // allow-exception
                 )
             val startRes = manager.startRecording()
-            assertTrue(startRes.isSuccess)
+            assertTrue(startRes.isFailure)
             manager.cancelRecording()
         }
 
@@ -262,8 +264,8 @@ class JvmAudioRecorderManagerTest {
 
             val manager = JvmAudioRecorderManager(storage, targetLineProvider = { throwingLine })
             val res = manager.startRecording()
-            assertTrue(res.isSuccess)
-            assertTrue(manager.isRecording.value)
+            assertTrue(res.isFailure)
+            assertFalse(manager.isRecording.value)
         }
 
     /**
@@ -275,7 +277,7 @@ class JvmAudioRecorderManagerTest {
             val storage = createFileStorage()
             val manager = JvmAudioRecorderManager(storage, lineSupportedChecker = { false })
             val res = manager.startRecording()
-            assertTrue(res.isSuccess)
+            assertTrue(res.isFailure)
             manager.cancelRecording()
         }
 
@@ -292,7 +294,7 @@ class JvmAudioRecorderManagerTest {
             assertTrue(cancelRes.isSuccess)
 
             val stopRes = manager.stopRecording("not_recording.wav")
-            assertTrue(stopRes.isSuccess)
+            assertTrue(stopRes.isFailure)
         }
 
     /**

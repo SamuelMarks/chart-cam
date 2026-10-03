@@ -5,6 +5,22 @@
 package io.healthplatform.chartcam.utils
 
 /**
+ * Errors that can occur during file picking operations.
+ */
+sealed class FilePickerError(
+    message: String,
+) : Throwable(message) {
+    /** The user cancelled the file selection. */
+    data object UserCancelled : FilePickerError("User cancelled file selection")
+
+    /** Reading the selected file failed. */
+    data object ReadFailed : FilePickerError("Failed to read the selected file")
+
+    /** File picker is not supported on this platform. */
+    data object Unsupported : FilePickerError("File picking is not supported on this platform")
+}
+
+/**
  * Multiplatform interface for selecting and reading offline questionnaire JSON files.
  */
 interface QuestionnaireFilePicker {

@@ -765,7 +765,7 @@ fun PhotoGridItem(
         Column {
             if (isAudio) {
                 Box(
-                    Modifier.fillMaxWidth().height(150.dp).padding(16.dp),
+                    Modifier.fillMaxWidth().height(150.dp).padding(AppSpacing.md),
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -794,7 +794,7 @@ fun PhotoGridItem(
                     )
                 } else {
                     Box(
-                        Modifier.fillMaxWidth().height(150.dp).padding(16.dp),
+                        Modifier.fillMaxWidth().height(150.dp).padding(AppSpacing.md),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
@@ -810,7 +810,7 @@ fun PhotoGridItem(
                 }
             } else {
                 Box(
-                    Modifier.fillMaxWidth().height(150.dp).padding(16.dp),
+                    Modifier.fillMaxWidth().height(150.dp).padding(AppSpacing.md),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(

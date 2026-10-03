@@ -11,9 +11,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 
-private const val DEFAULT_SIMULATED_AMPLITUDE = 0.5f
-private const val DEFAULT_SILENT_AUDIO_BYTES = 1600
-
 /**
  * WasmJS Web implementation of [AudioRecorderManager].
  *
@@ -37,11 +34,7 @@ class WasmJsAudioRecorderManager(
      */
     override suspend fun startRecording(): Result<Unit> =
         withContext(Dispatchers.Default) {
-            runCatching {
-                _isRecording.value = true
-                isPaused = false
-                _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
-            }
+            Result.failure(AudioError.HardwareUnavailable)
         }
 
     /**
@@ -49,22 +42,26 @@ class WasmJsAudioRecorderManager(
      *
      * @return A [Result] indicating success.
      */
-    override suspend fun pauseRecording(): Result<Unit> =
-        runCatching {
-            isPaused = true
-            _amplitude.value = 0f
+    override suspend fun pauseRecording(): Result<Unit> {
+        if (!_isRecording.value) {
+            return Result.failure(AudioError.InvalidState("Recording not active"))
         }
+        isPaused = true
+        return Result.success(Unit)
+    }
 
     /**
      * Resumes the paused audio recording session.
      *
      * @return A [Result] indicating success.
      */
-    override suspend fun resumeRecording(): Result<Unit> =
-        runCatching {
-            isPaused = false
-            _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
+    override suspend fun resumeRecording(): Result<Unit> {
+        if (!_isRecording.value) {
+            return Result.failure(AudioError.InvalidState("Recording not active"))
         }
+        isPaused = false
+        return Result.success(Unit)
+    }
 
     /**
      * Stops audio recording and saves file to [FileStorage].
@@ -74,15 +71,10 @@ class WasmJsAudioRecorderManager(
      */
     override suspend fun stopRecording(fileName: String): Result<String> =
         withContext(Dispatchers.Default) {
-            runCatching {
-                _isRecording.value = false
-                isPaused = false
-                _amplitude.value = 0f
-
-                val silentBytes = ByteArray(DEFAULT_SILENT_AUDIO_BYTES)
-                val wavBytes = DefaultAudioRecorderManager(fileStorage).createWavPayload(silentBytes)
-                fileStorage.saveImage(fileName, wavBytes)
+            if (!_isRecording.value) {
+                return@withContext Result.failure(AudioError.InvalidState("Recording not active"))
             }
+            Result.failure(AudioError.HardwareUnavailable)
         }
 
     /**

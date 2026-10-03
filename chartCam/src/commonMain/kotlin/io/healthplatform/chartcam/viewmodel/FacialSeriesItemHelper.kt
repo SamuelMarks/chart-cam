@@ -20,39 +20,64 @@ import dev.ohs.fhir.model.r4.String as FhirString
  *
  * @param groupBuilder The group item builder to append child items to.
  * @param baseLinkId The base linkId of the group.
+ * @param leftProfileText Localized text for the left profile.
+ * @param frontViewText Localized text for the front view.
+ * @param rightProfileText Localized text for the right profile.
+ * @return A [Result] encapsulating either unit on success, or an exception on failure.
  */
 internal fun applyFacialSeriesItems(
     groupBuilder: Questionnaire.Item.Builder,
     baseLinkId: String,
-) {
-    val leftProfile =
-        createFacialSeriesChildItem(
-            linkId = "${baseLinkId}_left",
-            text = "Left Profile (Cornea & Nose)",
-            silhouetteCode = "profile-cornea-left",
-            snomedCode = "272480006",
-            snomedDisplay = "Left lateral",
-        )
-    val frontView =
-        createFacialSeriesChildItem(
-            linkId = "${baseLinkId}_front",
-            text = "Front View",
-            silhouetteCode = "frontal-face",
-            snomedCode = "272483008",
-            snomedDisplay = "Anterior",
-        )
-    val rightProfile =
-        createFacialSeriesChildItem(
-            linkId = "${baseLinkId}_right",
-            text = "Right Profile (Cornea & Nose)",
-            silhouetteCode = "profile-cornea-right",
-            snomedCode = "272481005",
-            snomedDisplay = "Right lateral",
-        )
-    groupBuilder.item.add(leftProfile)
-    groupBuilder.item.add(frontView)
-    groupBuilder.item.add(rightProfile)
-}
+    leftProfileText: String,
+    frontViewText: String,
+    rightProfileText: String,
+): Result<Unit> =
+    if (baseLinkId.isBlank()) {
+        Result.failure(IllegalArgumentException("baseLinkId cannot be blank"))
+    } else {
+        val leftProfileResult =
+            createFacialSeriesChildItem(
+                linkId = "${baseLinkId}_left",
+                text = leftProfileText,
+                silhouetteCode = "profile-cornea-left",
+                snomedCode = "272480006",
+                snomedDisplay = "Left lateral",
+            )
+        val frontViewResult =
+            createFacialSeriesChildItem(
+                linkId = "${baseLinkId}_front",
+                text = frontViewText,
+                silhouetteCode = "frontal-face",
+                snomedCode = "272483008",
+                snomedDisplay = "Anterior",
+            )
+        val rightProfileResult =
+            createFacialSeriesChildItem(
+                linkId = "${baseLinkId}_right",
+                text = rightProfileText,
+                silhouetteCode = "profile-cornea-right",
+                snomedCode = "272481005",
+                snomedDisplay = "Right lateral",
+            )
+
+        val leftProfile = leftProfileResult.getOrNull()
+        val frontView = frontViewResult.getOrNull()
+        val rightProfile = rightProfileResult.getOrNull()
+
+        if (leftProfile != null && frontView != null && rightProfile != null) {
+            groupBuilder.item.add(leftProfile)
+            groupBuilder.item.add(frontView)
+            groupBuilder.item.add(rightProfile)
+            Result.success(Unit)
+        } else {
+            Result.failure(
+                leftProfileResult.exceptionOrNull()
+                    ?: frontViewResult.exceptionOrNull()
+                    ?: rightProfileResult.exceptionOrNull()
+                    ?: IllegalArgumentException("Invalid child item configuration"),
+            )
+        }
+    }
 
 /**
  * Creates a child attachment item for the facial profile series.
@@ -62,7 +87,7 @@ internal fun applyFacialSeriesItems(
  * @param silhouetteCode The camera silhouette preset code.
  * @param snomedCode The anatomical orientation SNOMED code.
  * @param snomedDisplay The anatomical orientation display name.
- * @return A populated [Questionnaire.Item.Builder].
+ * @return A [Result] encapsulating the populated [Questionnaire.Item.Builder] or an exception on failure.
  */
 internal fun createFacialSeriesChildItem(
     linkId: String,
@@ -70,37 +95,43 @@ internal fun createFacialSeriesChildItem(
     silhouetteCode: String,
     snomedCode: String,
     snomedDisplay: String,
-): Questionnaire.Item.Builder =
-    Questionnaire.Item
-        .Builder(
-            FhirString(value = linkId).toBuilder(),
-            Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
-        ).apply {
-            this.text = FhirString(value = text).toBuilder()
-            this.required = FhirBoolean(value = true).toBuilder()
-            this.extension.add(
-                Extension
-                    .Builder(
-                        url = "http://healthplatform.io/fhir/StructureDefinition/camera-silhouette",
-                    ).apply {
-                        value =
-                            Extension.Value.Code(
-                                Code(value = silhouetteCode),
-                            )
-                    },
-            )
-            this.code.add(
-                Coding(
-                    system = Uri(value = "http://loinc.org"),
-                    code = Code(value = "72170-4"),
-                    display = FhirString(value = "Photographic image"),
-                ).toBuilder(),
-            )
-            this.code.add(
-                Coding(
-                    system = Uri(value = "http://snomed.info/sct"),
-                    code = Code(value = snomedCode),
-                    display = FhirString(value = snomedDisplay),
-                ).toBuilder(),
-            )
+): Result<Questionnaire.Item.Builder> =
+    if (linkId.isBlank() || silhouetteCode.isBlank() || snomedCode.isBlank()) {
+        Result.failure(IllegalArgumentException("Required parameters cannot be blank"))
+    } else {
+        runCatching {
+            Questionnaire.Item
+                .Builder(
+                    FhirString(value = linkId).toBuilder(),
+                    Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                ).apply {
+                    this.text = FhirString(value = text).toBuilder()
+                    this.required = FhirBoolean(value = true).toBuilder()
+                    this.extension.add(
+                        Extension
+                            .Builder(
+                                url = "http://healthplatform.io/fhir/StructureDefinition/camera-silhouette",
+                            ).apply {
+                                value =
+                                    Extension.Value.Code(
+                                        Code(value = silhouetteCode),
+                                    )
+                            },
+                    )
+                    this.code.add(
+                        Coding(
+                            system = Uri(value = "http://loinc.org"),
+                            code = Code(value = "72170-4"),
+                            display = FhirString(value = "Photographic image"),
+                        ).toBuilder(),
+                    )
+                    this.code.add(
+                        Coding(
+                            system = Uri(value = "http://snomed.info/sct"),
+                            code = Code(value = snomedCode),
+                            display = FhirString(value = snomedDisplay),
+                        ).toBuilder(),
+                    )
+                }
         }
+    }

@@ -58,3 +58,15 @@ repos:
         entry: python3 scripts/check_coverage.py
         language: system
         pass_filenames: false
+    -   id: check-a11y
+        name: Accessibility Checks
+        entry: python3 scripts/test_a11y.py
+        language: system
+        files: \.kt$
+        pass_filenames: false
+    -   id: check-i18n
+        name: Internationalization Checks
+        entry: python3 scripts/test_i18n.py
+        language: system
+        files: \.(kt|xml)$
+        pass_filenames: false

@@ -108,11 +108,21 @@ actual fun CameraPreview(
         }
     }
 
-    Box(modifier = modifier.background(MaterialTheme.colorScheme.surface), contentAlignment = Alignment.Center) {
+    val cdText =
+        safeGetCameraPreviewDescription()
+            .getOrElse { stringResource(Res.string.cd_camera_preview) }
+
+    Box(
+        modifier =
+            modifier
+                .background(MaterialTheme.colorScheme.surface)
+                .semantics { contentDescription = cdText },
+        contentAlignment = Alignment.Center,
+    ) {
         if (imageBitmap != null) {
             Image(
                 bitmap = imageBitmap!!,
-                contentDescription = stringResource(Res.string.cd_camera_preview),
+                contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
@@ -134,6 +144,7 @@ actual fun CameraPreview(
                 Text(
                     text = errorMsg,
                     color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
@@ -142,6 +153,7 @@ actual fun CameraPreview(
             Text(
                 text = initMsg,
                 color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.bodyMedium,
                 modifier =
                     Modifier.semantics {
                         liveRegion = LiveRegionMode.Polite

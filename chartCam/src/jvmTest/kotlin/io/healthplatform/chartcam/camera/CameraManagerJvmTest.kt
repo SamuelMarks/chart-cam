@@ -32,8 +32,8 @@ class CameraManagerJvmTest {
 
             // Video lifecycle
             val startRes = manager.startVideoRecording()
-            assertTrue(startRes.isSuccess)
-            assertTrue(manager.isRecordingVideo)
+            assertTrue(startRes.isFailure)
+            assertFalse(manager.isRecordingVideo)
 
             val stopRes = manager.stopVideoRecording()
             assertTrue(stopRes.isFailure)
@@ -44,8 +44,6 @@ class CameraManagerJvmTest {
             assertTrue(stopFailRes.isFailure)
 
             // Cancel recording
-            manager.startVideoRecording()
-            assertTrue(manager.isRecordingVideo)
             val cancelRes = manager.cancelVideoRecording()
             assertTrue(cancelRes.isSuccess)
             assertFalse(manager.isRecordingVideo)

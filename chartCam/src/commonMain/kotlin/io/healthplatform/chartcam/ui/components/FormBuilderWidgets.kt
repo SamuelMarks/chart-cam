@@ -652,7 +652,7 @@ fun FormBuilderMultiSelectDropdown(
 }
 
 /**
- * A Material 3 Date Picker widget mock.
+ * A Material 3 Date Picker widget.
  *
  * **State & Side Effects:**
  * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.
@@ -786,7 +786,7 @@ fun FormBuilderDatePicker(
 }
 
 /**
- * A Material 3 DateTime Picker widget mock.
+ * A Material 3 DateTime Picker widget.
  *
  * **State & Side Effects:**
  * Manages internal UI state or propagates hoisted state. `Modifier` behaviors (if any) are applied to the root element.

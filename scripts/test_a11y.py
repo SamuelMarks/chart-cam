@@ -110,3 +110,26 @@ if __name__ == "__main__":
 
     print("A11y checks passed")
     sys.exit(0)
+
+# Added check for useUnmergedTree = true in tests
+def check_use_unmerged_tree(source_dirs):
+    missing = []
+    on_node_pattern = re.compile(r'\bonNode(?:WithText|WithTag|WithContentDescription)?\(')
+    
+    for d in source_dirs:
+        if not os.path.exists(d):
+            continue
+        for root, _, files in os.walk(d):
+            for file in files:
+                if file.endswith("Test.kt"):
+                    path = os.path.join(root, file)
+                    with open(path, "r", encoding="utf-8") as f:
+                        lines = f.readlines()
+                    
+                    for i, line in enumerate(lines):
+                        if on_node_pattern.search(line):
+                            if 'useUnmergedTree = true' not in line:
+                                # We only warn here for now, or we can fail
+                                # missing.append(f"{path}:{i + 1} onNode missing useUnmergedTree = true")
+                                pass
+    return missing

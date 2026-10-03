@@ -5,6 +5,21 @@
 package io.healthplatform.chartcam.camera
 
 /**
+ * Errors that can occur during QR code scanning operations.
+ */
+sealed class QrScannerError(
+    message: String,
+) : Throwable(message) {
+    /** QR scanning is unavailable on this platform. */
+    data object ScannerUnavailable : QrScannerError("QR scanning is unavailable on this platform")
+
+    /** QR code parsing or reading failed. */
+    data class ReadFailed(
+        override val message: String,
+    ) : QrScannerError(message)
+}
+
+/**
  * Multiplatform interface for scanning QR code questionnaire payloads via camera stream.
  */
 interface QuestionnaireQrScanner {

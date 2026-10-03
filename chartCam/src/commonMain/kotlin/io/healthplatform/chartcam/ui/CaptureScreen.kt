@@ -511,7 +511,7 @@ private fun CaptureBox(
                 },
     ) {
         CameraPreview(
-            modifier = Modifier.fillMaxSize().semantics { contentDescription = cdCameraPreview },
+            modifier = Modifier.fillMaxSize(),
             cameraManager = cameraManager,
         )
 

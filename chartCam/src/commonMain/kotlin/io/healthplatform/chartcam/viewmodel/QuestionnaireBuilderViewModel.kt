@@ -450,15 +450,17 @@ class QuestionnaireBuilderViewModel(
      *
      * @return A [Result] enclosing the built [Questionnaire] if valid, or a failure result.
      */
-    fun validate(): Result<Questionnaire> {
+    fun validate(facialStrings: FacialSeriesStrings = FacialSeriesStrings()): Result<Questionnaire> {
         if (_state.value.items.any { it.isError }) {
             return Result.failure(IllegalStateException("One or more questionnaire items contain errors"))
         }
-        val questionnaire = buildQuestionnaire()
-        val validationResult =
+        return runCatching {
+            val q = buildQuestionnaire(facialStrings).getOrThrow()
             io.healthplatform.chartcam.validation.FhirValidator
-                .validate(questionnaire)
-        return validationResult.map { questionnaire }
+                .validate(q)
+                .getOrThrow()
+            q
+        }
     }
 
     /**
@@ -529,55 +531,69 @@ class QuestionnaireBuilderViewModel(
      * Builds a FHIR Questionnaire resource from the current state.
      * @return The built Questionnaire.
      */
-    fun buildQuestionnaire(): Questionnaire {
-        val currentState = _state.value
-        val rawSlug =
-            currentState.title
-                .lowercase()
-                .replace(Regex("[^a-z0-9]+"), "-")
-                .trim('-')
-        val titleHash = kotlin.math.abs(currentState.title.hashCode()).toString(16)
-        val id = if (rawSlug.isNotEmpty()) "custom-$rawSlug" else "custom-i18n-$titleHash"
+    fun buildQuestionnaire(
+        facialStrings: FacialSeriesStrings = FacialSeriesStrings(),
+    ): Result<Questionnaire> =
+        runCatching {
+            val currentState = _state.value
+            val rawSlug =
+                currentState.title
+                    .lowercase()
+                    .replace(Regex("[^a-z0-9]+"), "-")
+                    .trim('-')
+            val titleHash = kotlin.math.abs(currentState.title.hashCode()).toString(16)
+            val id = if (rawSlug.isNotEmpty()) "custom-$rawSlug" else "custom-i18n-$titleHash"
 
-        val fhirItems = currentState.items.map { mapBuilderItemToFhir(it) }
+            val fhirItems = currentState.items.map { mapBuilderItemToFhir(it, facialStrings).getOrThrow() }
 
-        return Questionnaire
-            .Builder(Enumeration(value = PublicationStatus.Active))
-            .apply {
-                this.id = id
-                this.url = Uri(value = "http://healthplatform.io/fhir/Questionnaire/$id").toBuilder()
-                this.title = FhirString(value = currentState.title).toBuilder()
-                this.item.addAll(fhirItems)
-            }.build()
-    }
+            Questionnaire
+                .Builder(Enumeration(value = PublicationStatus.Active))
+                .apply {
+                    this.id = id
+                    this.url = Uri(value = "http://healthplatform.io/fhir/Questionnaire/$id").toBuilder()
+                    this.title = FhirString(value = currentState.title).toBuilder()
+                    this.item.addAll(fhirItems)
+                }.build()
+        }
 
     /**
      * Maps item to fhir.
      * @param builderItem The builderItem.
+     * @param facialStrings The facial strings.
      * @return The result.
      */
-    private fun mapBuilderItemToFhir(builderItem: BuilderItem): Questionnaire.Item.Builder {
-        val fhirType = getFhirItemType(builderItem.widgetType)
-        val itemBuilder =
-            Questionnaire.Item
-                .Builder(
-                    FhirString(value = builderItem.linkId).toBuilder(),
-                    Enumeration(value = fhirType),
-                ).apply {
-                    text = FhirString(value = builderItem.label).toBuilder()
-                    required = FhirBoolean(value = false).toBuilder()
-                    if (builderItem.repeats) {
-                        repeats = FhirBoolean(value = true).toBuilder()
+    private fun mapBuilderItemToFhir(
+        builderItem: BuilderItem,
+        facialStrings: FacialSeriesStrings,
+    ): Result<Questionnaire.Item.Builder> =
+        runCatching {
+            val fhirType = getFhirItemType(builderItem.widgetType)
+            val itemBuilder =
+                Questionnaire.Item
+                    .Builder(
+                        FhirString(value = builderItem.linkId).toBuilder(),
+                        Enumeration(value = fhirType),
+                    ).apply {
+                        text = FhirString(value = builderItem.label).toBuilder()
+                        required = FhirBoolean(value = false).toBuilder()
+                        if (builderItem.repeats) {
+                            repeats = FhirBoolean(value = true).toBuilder()
+                        }
                     }
-                }
-        applyChoiceOptions(itemBuilder, builderItem, fhirType)
-        applyItemControl(itemBuilder, builderItem)
-        applyEnableWhen(itemBuilder, builderItem)
-        if (builderItem.widgetType == WidgetType.FACIAL_PROFILE_SERIES) {
-            applyFacialSeriesItems(itemBuilder, builderItem.linkId)
+            applyChoiceOptions(itemBuilder, builderItem, fhirType)
+            applyItemControl(itemBuilder, builderItem)
+            applyEnableWhen(itemBuilder, builderItem)
+            if (builderItem.widgetType == WidgetType.FACIAL_PROFILE_SERIES) {
+                applyFacialSeriesItems(
+                    itemBuilder,
+                    builderItem.linkId,
+                    facialStrings.leftProfile,
+                    facialStrings.frontView,
+                    facialStrings.rightProfile,
+                ).getOrThrow()
+            }
+            itemBuilder
         }
-        return itemBuilder
-    }
 
     /**
      * Creates an appropriate FHIR EnableWhen.Answer from a BuilderEnableWhen configuration.
@@ -795,10 +811,10 @@ class QuestionnaireBuilderViewModel(
      * Saves the current builder state as a FHIR Questionnaire in the repository.
      * @return The ID of the newly created Questionnaire, or null if validation failed.
      */
-    fun saveQuestionnaire(): kotlin.String? {
+    fun saveQuestionnaire(facialStrings: FacialSeriesStrings = FacialSeriesStrings()): kotlin.String? {
         var finalId: kotlin.String? = null
 
-        validate().onSuccess { questionnaire ->
+        validate(facialStrings).onSuccess { questionnaire ->
             val currentId = questionnaire.id
             val existing = repository.getAvailableQuestionnaires().firstOrNull { it.id == currentId }
 

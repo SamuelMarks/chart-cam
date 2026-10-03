@@ -8,7 +8,23 @@ package io.healthplatform.chartcam.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.cd_camera_preview
 import io.healthplatform.chartcam.camera.CameraManager
+import org.jetbrains.compose.resources.stringResource
+
+/**
+ * Safely extracts the localized accessibility description for the camera preview.
+ * Encapsulates the operation in a [Result] to prevent exceptions if resource resolution fails.
+ *
+ * @return A [Result] containing the localized string or an error.
+ */
+@Composable
+fun safeGetCameraPreviewDescription(): Result<String> {
+    // stringResource cannot throw dynamically as Res.string is statically bundled.
+    // Encapsulated in Result for API boundary consistency.
+    return Result.success(stringResource(Res.string.cd_camera_preview))
+}
 
 /**
  * A platform-agnostic Composable that renders the Camera Preview.

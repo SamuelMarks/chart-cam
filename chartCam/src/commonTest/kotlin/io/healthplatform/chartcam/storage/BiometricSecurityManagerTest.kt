@@ -4,6 +4,7 @@
  */
 package io.healthplatform.chartcam.storage
 
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -285,5 +286,75 @@ class BiometricSecurityManagerTest {
             // Test locked out states
             manager.onBiometricCredentialsChanged()
             assertEquals(BiometricAuthResult.KeyPermanentlyInvalidated, manager.authenticatePrompt())
+        }
+
+    @Test
+    fun testAuthenticatePromptFullCoverage() =
+        runTest {
+            val storage = FakeSecureStorage()
+
+            // 1. Success branch
+            val successProvider =
+                object : KeystoreHardwareProvider {
+                    override fun checkHardwareBacked(): Result<Unit> = Result.success(Unit)
+
+                    override fun getHardwareStatus() = BiometricHardwareStatus.AVAILABLE
+
+                    override suspend fun promptBiometrics(title: String, subtitle: String) =
+                        Result.success<BiometricAuthResult>(
+                            BiometricAuthResult.Success,
+                        )
+                }
+            val successManager = BiometricSecurityManager(storage, successProvider)
+            assertTrue(successManager.authenticatePrompt() is BiometricAuthResult.Success)
+
+            // 2. Failure with explicit message
+            val exFailureProvider =
+                object : KeystoreHardwareProvider {
+                    override fun checkHardwareBacked(): Result<Unit> = Result.success(Unit)
+
+                    override fun getHardwareStatus() = BiometricHardwareStatus.AVAILABLE
+
+                    override suspend fun promptBiometrics(title: String, subtitle: String) =
+                        Result.failure<BiometricAuthResult>(
+                            Exception("Oops"),
+                        )
+                }
+            val exFailureManager = BiometricSecurityManager(storage, exFailureProvider)
+            val exResult = exFailureManager.authenticatePrompt()
+            assertTrue(exResult is BiometricAuthResult.HardwareError)
+            assertEquals("Oops", (exResult as BiometricAuthResult.HardwareError).message)
+
+            // 3. Failure with null message
+            val nullExProvider =
+                object : KeystoreHardwareProvider {
+                    override fun checkHardwareBacked(): Result<Unit> = Result.success(Unit)
+
+                    override fun getHardwareStatus() = BiometricHardwareStatus.AVAILABLE
+
+                    override suspend fun promptBiometrics(title: String, subtitle: String) =
+                        Result.failure<BiometricAuthResult>(
+                            Exception((null as String?)),
+                        )
+                }
+            val nullExManager = BiometricSecurityManager(storage, nullExProvider)
+            val nullExResult = nullExManager.authenticatePrompt()
+            assertTrue(nullExResult is BiometricAuthResult.HardwareError)
+            assertEquals("Unknown error", (nullExResult as BiometricAuthResult.HardwareError).message)
+
+            // 4. Other AuthResult (e.g. Cancelled)
+            val otherProvider =
+                object : KeystoreHardwareProvider {
+                    override fun checkHardwareBacked(): Result<Unit> = Result.success(Unit)
+
+                    override fun getHardwareStatus() = BiometricHardwareStatus.AVAILABLE
+
+                    override suspend fun promptBiometrics(title: String, subtitle: String) =
+                        Result.success<BiometricAuthResult>(
+                            BiometricAuthResult.HardwareError("Cancelled"),
+                        )
+                }
+            val otherManager = BiometricSecurityManager(storage, otherProvider)
+            assertTrue(otherManager.authenticatePrompt() is BiometricAuthResult.HardwareError)
         }
 }

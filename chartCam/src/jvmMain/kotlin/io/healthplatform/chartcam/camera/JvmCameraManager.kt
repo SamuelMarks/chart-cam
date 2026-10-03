@@ -252,10 +252,7 @@ class JvmCameraManager(
      *
      * @return A [Result] indicating success.
      */
-    override suspend fun startVideoRecording(): Result<Unit> {
-        _isRecordingVideo = true
-        return Result.success(Unit)
-    }
+    override suspend fun startVideoRecording(): Result<Unit> = Result.failure(CameraError.VideoNotSupported)
 
     /**
      * Stops video recording on Desktop JVM and returns valid MP4 payload container.
@@ -263,12 +260,7 @@ class JvmCameraManager(
      * @return A [Result] enclosing the encoded video bytes or failure.
      */
     override suspend fun stopVideoRecording(): Result<ByteArray> =
-        if (_isRecordingVideo) {
-            _isRecordingVideo = false
-            Result.failure(NotImplementedError("Video recording not implemented on JVM"))
-        } else {
-            Result.failure(IllegalStateException("No active video recording session"))
-        }
+        Result.failure(CameraError.VideoNotSupported)
 
     /**
      * Cancels the active desktop video recording session.

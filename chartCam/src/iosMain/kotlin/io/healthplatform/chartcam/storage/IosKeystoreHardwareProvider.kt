@@ -77,7 +77,10 @@ class IosKeystoreHardwareProvider : KeystoreHardwareProvider {
                                 LAErrorBiometryNotEnrolled,
                                 -> BiometricAuthResult.HardwareError(error.localizedDescription)
                                 LAErrorAuthenticationFailed -> BiometricAuthResult.Failed(1)
-                                else -> BiometricAuthResult.HardwareError(error?.localizedDescription ?: "Unknown error")
+                                else -> {
+                                    val msg = error?.localizedDescription ?: "Unknown error"
+                                    BiometricAuthResult.HardwareError(msg)
+                                }
                             }
                         cont.resume(Result.success(authResult))
                     }

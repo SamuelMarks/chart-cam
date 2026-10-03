@@ -214,7 +214,6 @@ fun LevelerOverlay(
  * Constants used in LevelerOverlay.
  */
 private object LevelerConstants {
-    const val LEVEL_COLOR_HEX = 0xFF52854C
     const val MAX_DEFLECTION = 20.0
     const val DEBOUNCE_DELAY_MS = 500L
     const val LEVEL_STROKE_WIDTH = 8f

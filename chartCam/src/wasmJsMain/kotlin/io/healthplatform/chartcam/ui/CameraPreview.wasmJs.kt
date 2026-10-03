@@ -21,6 +21,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import chartcam.chartcam.generated.resources.Res
 import chartcam.chartcam.generated.resources.cd_camera_preview
 import io.healthplatform.chartcam.camera.CameraManager
@@ -72,6 +74,9 @@ actual fun CameraPreview(
 ) {
     if (cameraManager is JsCameraManager) {
         var imageBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+        val cdText =
+            safeGetCameraPreviewDescription()
+                .getOrElse { stringResource(Res.string.cd_camera_preview) }
 
         LaunchedEffect(cameraManager) {
             val video = cameraManager.videoElement
@@ -99,12 +104,17 @@ actual fun CameraPreview(
         if (imageBitmap != null) {
             Image(
                 bitmap = imageBitmap!!,
-                contentDescription = stringResource(Res.string.cd_camera_preview),
+                contentDescription = cdText,
                 modifier = modifier.background(MaterialTheme.colorScheme.surface),
                 contentScale = ContentScale.Crop,
             )
         } else {
-            Box(modifier = modifier.background(MaterialTheme.colorScheme.surface))
+            Box(
+                modifier =
+                    modifier
+                        .background(MaterialTheme.colorScheme.surface)
+                        .semantics { contentDescription = cdText },
+            )
         }
     }
 }

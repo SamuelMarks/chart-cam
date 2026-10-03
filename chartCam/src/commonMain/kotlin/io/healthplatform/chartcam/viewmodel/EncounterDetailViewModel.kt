@@ -36,6 +36,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
+ * Errors that can occur when processing questionnaires.
+ */
+sealed class QuestionnaireError(
+    message: String,
+) : Throwable(message) {
+    /** The expected questionnaire schema could not be found. */
+    data object SchemaNotFound : QuestionnaireError("Questionnaire schema could not be found")
+}
+
+/**
  * State for the Encounter Detail Screen.
  * Contains patient details, captured photos, and the state of the active questionnaire form.
  *
@@ -50,6 +60,7 @@ import kotlinx.coroutines.launch
  * @param selectedQuestionnaire The currently selected questionnaire.
  * @param isSyncing Indicates if data is currently syncing.
  * @param isFinalized Flag to signal the UI that finalization and syncing is complete.
+ * @param questionnaireError Any error encountered during questionnaire processing.
  */
 data class EncounterUiState(
     val isLoading: Boolean = true,
@@ -63,6 +74,7 @@ data class EncounterUiState(
     val selectedQuestionnaire: Questionnaire? = null,
     val isSyncing: Boolean = false,
     val isFinalized: Boolean = false,
+    val questionnaireError: QuestionnaireError? = null,
 )
 
 /**
@@ -196,26 +208,27 @@ class EncounterDetailViewModel(
      * @param existingResponses The existingResponses.
      * @param questionnaires The questionnaires.
      * @param existingAnswers The existingAnswers.
-     * @return The result.
+     * @return The result containing the Questionnaire if found, or a failure.
      */
     private suspend fun extractExistingAnswers(
         existingResponses: List<QuestionnaireResponse>,
         questionnaires: List<Questionnaire>,
         existingAnswers: MutableMap<String, Any>,
-    ): Questionnaire? {
-        if (existingResponses.isEmpty()) return null
-        val latestQr = existingResponses.first()
+    ): Result<Questionnaire?> {
+        val latestQr = existingResponses.firstOrNull() ?: return Result.success(null)
         val qCanonical = latestQr.questionnaire
         val rawVal = if (qCanonical != null) qCanonical.value else null
         val rawCanonical = if (rawVal != null) rawVal else ""
         val resolvedQId = rawCanonical.substringAfterLast("/")
-        var existingSelectedQ = questionnaires.find { it.id == resolvedQId }
-        if (existingSelectedQ == null) {
-            existingSelectedQ = createRecoveredQuestionnaire(latestQr, recoveredFormResolver())
+        val existingSelectedQ = questionnaires.find { it.id == resolvedQId }
+
+        return if (existingSelectedQ == null) {
+            Result.failure(QuestionnaireError.SchemaNotFound)
+        } else {
+            io.healthplatform.chartcam.utils.QuestionnaireUtils
+                .extractAnswersRecursively(latestQr.item, existingAnswers)
+            Result.success(existingSelectedQ)
         }
-        io.healthplatform.chartcam.utils.QuestionnaireUtils
-            .extractAnswersRecursively(latestQr.item, existingAnswers)
-        return existingSelectedQ
     }
 
     /**
@@ -318,8 +331,10 @@ class EncounterDetailViewModel(
         val existingResponses = fhirRepository.getQuestionnaireResponsesForEncounter(visitId)
 
         val existingAnswers = mutableMapOf<String, Any>()
-        val existingSelectedQ: Questionnaire? =
-            extractExistingAnswers(existingResponses, questionnaires, existingAnswers)
+        val extractResult = extractExistingAnswers(existingResponses, questionnaires, existingAnswers)
+        val existingSelectedQ: Questionnaire? = extractResult.getOrNull()
+
+        val qError = extractResult.exceptionOrNull() as? QuestionnaireError
 
         val newDocs =
             createPhotosForExistingEncounter(
@@ -341,37 +356,9 @@ class EncounterDetailViewModel(
                 answers = existingAnswers,
                 availableQuestionnaires = questionnaires,
                 selectedQuestionnaire = existingSelectedQ ?: questionnaires.firstOrNull(),
+                questionnaireError = qError,
             )
         }
-    }
-
-    /**
-     * Creates recovered questionnaire.
-     * @param latestQr The latestQr.
-     * @param recoveredFormStr The string to use for the recovered form title.
-     * @return The result.
-     */
-    private suspend fun createRecoveredQuestionnaire(
-        latestQr: QuestionnaireResponse,
-        recoveredFormStr: String,
-    ): Questionnaire {
-        val dummyItems =
-            io.healthplatform.chartcam.utils.QuestionnaireUtils
-                .buildDummyItemsRecursively(latestQr.item)
-        val qCanonical = latestQr.questionnaire
-        val rawVal = if (qCanonical != null) qCanonical.value else null
-        val qId = if (rawVal != null) rawVal else "unknown"
-        return Questionnaire
-            .Builder(
-                Enumeration(value = dev.ohs.fhir.model.r4.terminologies.PublicationStatus.Active),
-            ).apply {
-                this.id = qId
-                this.title =
-                    dev.ohs.fhir.model.r4.String
-                        .Builder()
-                        .apply { value = recoveredFormStr }
-                this.item.addAll(dummyItems)
-            }.build()
     }
 
     /**

@@ -9,9 +9,14 @@ package io.healthplatform.chartcam.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.viewinterop.UIKitView
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.cd_camera_preview
 import io.healthplatform.chartcam.camera.CameraManager
 import io.healthplatform.chartcam.camera.IOSCameraManager
+import org.jetbrains.compose.resources.stringResource
 import platform.AVFoundation.AVCaptureVideoPreviewLayer
 import platform.QuartzCore.CATransaction
 import platform.QuartzCore.kCATransactionDisableActions
@@ -34,6 +39,10 @@ actual fun CameraPreview(
     cameraManager: CameraManager,
 ) {
     val iosManager = cameraManager as? IOSCameraManager
+    val cdText =
+        safeGetCameraPreviewDescription()
+            .getOrElse { stringResource(Res.string.cd_camera_preview) }
+
     UIKitView(
         factory = {
             val view = UIView()
@@ -46,7 +55,7 @@ actual fun CameraPreview(
             }
             view
         },
-        modifier = modifier,
+        modifier = modifier.semantics { contentDescription = cdText },
         update = { view ->
             CATransaction.begin()
             CATransaction.setValue(true, kCATransactionDisableActions)

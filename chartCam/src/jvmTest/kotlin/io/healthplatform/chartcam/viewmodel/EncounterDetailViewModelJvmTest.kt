@@ -643,10 +643,10 @@ class EncounterDetailViewModelJvmTest {
     }
 
     /**
-     * Test dummy item building coverage.
+     * Test schema not found error when loading response without matching questionnaire.
      */
     @Test
-    fun testBuildDummyItemsRecursivelyCoverage() =
+    fun testSchemaNotFoundError() =
         runTest {
             // Trigger initialization with a QR that has no backing questionnaire
             val encId = "enc_dummy"
@@ -664,17 +664,6 @@ class EncounterDetailViewModelJvmTest {
                     .Builder(Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
                     .apply {
                         questionnaire = Canonical.Builder().apply { value = "non_existent_q" }
-                        val dummyItemStr =
-                            QuestionnaireResponse.Item.Builder(String.Builder().apply { value = "dummy_str" }).apply {
-                                answer.add(
-                                    QuestionnaireResponse.Item.Answer.Builder().apply {
-                                        value =
-                                            QuestionnaireResponse.Item.Answer.Value
-                                                .String(String.Builder().apply { value = "test" }.build())
-                                    },
-                                )
-                            }
-                        item.add(dummyItemStr)
                     }.build()
 
             `when`(fhirRepository.getPatient(patId)).thenReturn(patient)
@@ -686,15 +675,9 @@ class EncounterDetailViewModelJvmTest {
             viewModel.initialize(patId, encId, emptyMap())
             advanceUntilIdle()
 
-            assertEquals("test", viewModel.uiState.value.answers["dummy_str"])
-            // If the dummy items were built successfully, a fallback questionnaire will be present in state
-            assertNotNull(viewModel.uiState.value.selectedQuestionnaire)
-            assertEquals(
-                "Recovered Form",
-                viewModel.uiState.value.selectedQuestionnaire
-                    ?.title
-                    ?.value,
-            )
+            // If the schema is missing, the state should indicate QuestionnaireError.SchemaNotFound
+            val error = viewModel.uiState.value.questionnaireError
+            assertTrue(error is io.healthplatform.chartcam.viewmodel.QuestionnaireError.SchemaNotFound)
         }
 
     /**

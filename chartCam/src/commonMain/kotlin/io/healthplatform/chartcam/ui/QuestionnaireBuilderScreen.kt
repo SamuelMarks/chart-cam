@@ -130,6 +130,9 @@ import chartcam.chartcam.generated.resources.delete
 import chartcam.chartcam.generated.resources.error_duplicate_id
 import chartcam.chartcam.generated.resources.error_item_validation
 import chartcam.chartcam.generated.resources.error_required_field
+import chartcam.chartcam.generated.resources.facial_series_front_view
+import chartcam.chartcam.generated.resources.facial_series_left_profile
+import chartcam.chartcam.generated.resources.facial_series_right_profile
 import chartcam.chartcam.generated.resources.fitzpatrick_type_1
 import chartcam.chartcam.generated.resources.fitzpatrick_type_2
 import chartcam.chartcam.generated.resources.fitzpatrick_type_3
@@ -169,6 +172,7 @@ import io.healthplatform.chartcam.sdc.SdcQuestionnaireForm
 import io.healthplatform.chartcam.ui.components.tabFocusNext
 import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.viewmodel.BuilderItem
+import io.healthplatform.chartcam.viewmodel.FacialSeriesStrings
 import io.healthplatform.chartcam.viewmodel.QuestionnaireBuilderState
 import io.healthplatform.chartcam.viewmodel.QuestionnaireBuilderViewModel
 import io.healthplatform.chartcam.viewmodel.WidgetType
@@ -942,9 +946,15 @@ private fun PreviewQuestionnaire(
     state: QuestionnaireBuilderState,
     viewModel: QuestionnaireBuilderViewModel,
 ) {
+    val facialStrings =
+        FacialSeriesStrings(
+            leftProfile = stringResource(Res.string.facial_series_left_profile),
+            frontView = stringResource(Res.string.facial_series_front_view),
+            rightProfile = stringResource(Res.string.facial_series_right_profile),
+        )
     val previewQuestionnaire =
-        remember(state.items, state.title) {
-            viewModel.buildQuestionnaire()
+        remember(state.items, state.title, facialStrings) {
+            viewModel.buildQuestionnaire(facialStrings).getOrNull()
         }
     var previewAnswers by remember { mutableStateOf<Map<String, Any>>(emptyMap()) }
 
@@ -962,13 +972,15 @@ private fun PreviewQuestionnaire(
 
         ElevatedCard(modifier = Modifier.fillMaxWidth().padding(bottom = AppSpacing.md)) {
             Column(modifier = Modifier.padding(AppSpacing.md)) {
-                SdcQuestionnaireForm(
-                    questionnaire = previewQuestionnaire,
-                    answers = previewAnswers,
-                    onFormUpdated = { updatedAnswers, _ ->
-                        previewAnswers = updatedAnswers
-                    },
-                )
+                previewQuestionnaire?.let { q ->
+                    SdcQuestionnaireForm(
+                        questionnaire = q,
+                        answers = previewAnswers,
+                        onFormUpdated = { updatedAnswers, _ ->
+                            previewAnswers = updatedAnswers
+                        },
+                    )
+                }
             }
         }
     }

@@ -49,7 +49,7 @@ class QuestionnaireBuilderEnableWhenTest {
         assertEquals(Questionnaire.EnableWhenBehavior.All, item2.enableBehavior)
 
         // Generate FHIR Questionnaire
-        val fhir = viewModel.buildQuestionnaire()
+        val fhir = viewModel.buildQuestionnaire().getOrThrow()
         val fhirItem2 = fhir.item.first { it.linkId.value == "item_2" }
         assertEquals(1, fhirItem2.enableWhen.size)
         assertEquals("item_1", fhirItem2.enableWhen[0].question.value)
@@ -104,7 +104,7 @@ class QuestionnaireBuilderEnableWhenTest {
             enableBehavior = Questionnaire.EnableWhenBehavior.Any,
         )
 
-        val fhir = viewModel.buildQuestionnaire()
+        val fhir = viewModel.buildQuestionnaire().getOrThrow()
         val fhirItem4 = fhir.item.first { it.linkId.value == "item_4" }
         assertEquals(3, fhirItem4.enableWhen.size)
         assertEquals(Questionnaire.EnableWhenBehavior.Any, fhirItem4.enableBehavior?.value)
@@ -170,7 +170,7 @@ class QuestionnaireBuilderEnableWhenTest {
             enableBehavior = Questionnaire.EnableWhenBehavior.All,
         )
 
-        val originalFhir = originalVm.buildQuestionnaire()
+        val originalFhir = originalVm.buildQuestionnaire().getOrThrow()
         repo.saveQuestionnaire(originalFhir)
 
         // Create new ViewModel duplicating from originalFhir

@@ -11,6 +11,19 @@ package io.healthplatform.chartcam.camera
 import androidx.compose.runtime.Composable
 
 /**
+ * Errors that can occur during camera operations.
+ */
+sealed class CameraError(
+    message: String,
+) : Throwable(message) {
+    /** Video recording is not supported on this platform. */
+    data object VideoNotSupported : CameraError("Video recording is not supported on this platform")
+
+    /** Camera initialization failed. */
+    data object InitializationFailed : CameraError("Camera initialization failed")
+}
+
+/**
  * Interface defining the capabilities of the ChartCam camera.
  * This abstraction allows Shared Code to trigger captures and manage camera state
  * without knowing about underlying platform APIs like Android CameraX or iOS AVFoundation.
@@ -60,7 +73,7 @@ interface CameraManager {
      *
      * @return A [Result] indicating success or failure of initiating recording.
      */
-    suspend fun startVideoRecording(): Result<Unit> = Result.success(Unit)
+    suspend fun startVideoRecording(): Result<Unit> = Result.failure(CameraError.VideoNotSupported)
 
     /**
      * Stops video recording and returns valid MP4 video bytes.
@@ -68,9 +81,7 @@ interface CameraManager {
      * @return A [Result] enclosing the recorded video byte array.
      */
     suspend fun stopVideoRecording(): Result<ByteArray> =
-        Result.failure(
-            NotImplementedError("Video recording not implemented on this platform"),
-        )
+        Result.failure(CameraError.VideoNotSupported)
 
     /**
      * Cancels an in-progress video recording session without saving.

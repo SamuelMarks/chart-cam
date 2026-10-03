@@ -53,4 +53,26 @@ class AndroidAppInitTest {
             }
         assertTrue(exception.message!!.contains("AndroidAppInit.init(context) must be called"))
     }
+
+    /**
+     * Test getting and setting currentActivity.
+     */
+    @Test
+    fun testCurrentActivity() {
+        val activity = androidx.fragment.app.FragmentActivity()
+        AndroidAppInit.currentActivity = activity
+        assertEquals(activity, AndroidAppInit.currentActivity)
+
+        // Use reflection to ensure the generated synthetic getter is invoked for coverage
+        for (method in AndroidAppInit::class.java.declaredMethods) {
+            if (method.name == "getCurrentActivity") {
+                method.isAccessible = true
+                val result = method.invoke(AndroidAppInit)
+                assertEquals(activity, result)
+            }
+        }
+
+        AndroidAppInit.currentActivity = null
+        kotlin.test.assertNull(AndroidAppInit.currentActivity)
+    }
 }

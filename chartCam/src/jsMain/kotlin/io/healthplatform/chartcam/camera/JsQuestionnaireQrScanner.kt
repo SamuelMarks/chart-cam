@@ -18,7 +18,7 @@ class JsQuestionnaireQrScanner : QuestionnaireQrScanner {
      */
     override suspend fun scanQuestionnaireQrCode(): Result<String> =
         withContext(Dispatchers.Default) {
-            Result.failure(IllegalStateException("BarcodeDetector unavailable in current browser context"))
+            Result.failure(QrScannerError.ScannerUnavailable)
         }
 }
 

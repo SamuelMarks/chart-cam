@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
@@ -118,7 +117,7 @@ fun DicomViewerComponent(
                         Modifier
                             .fillMaxWidth()
                             .height(280.dp)
-                            .clip(RoundedCornerShape(AppSpacing.sm))
+                            .clip(MaterialTheme.shapes.small)
                             .background(MaterialTheme.colorScheme.scrim)
                             .pointerInput(Unit) {
                                 detectTransformGestures { _, pan, zoom, _ ->

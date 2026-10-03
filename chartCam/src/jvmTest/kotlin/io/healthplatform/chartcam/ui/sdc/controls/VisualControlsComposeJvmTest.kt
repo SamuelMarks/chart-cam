@@ -1466,7 +1466,7 @@ class VisualControlsComposeJvmTest {
             viewModel.addItem(WidgetType.BODY_MAP, "Primary Lesion Site")
             viewModel.addItem(WidgetType.SEGMENTED_TILES, "Erythema Severity")
 
-            val fhirQuestionnaire = viewModel.buildQuestionnaire()
+            val fhirQuestionnaire = viewModel.buildQuestionnaire().getOrThrow()
             assertNotNull(fhirQuestionnaire)
             assertEquals(4, fhirQuestionnaire.item.size)
 

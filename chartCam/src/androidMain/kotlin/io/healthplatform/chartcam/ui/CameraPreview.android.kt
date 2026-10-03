@@ -10,10 +10,15 @@ package io.healthplatform.chartcam.ui
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import chartcam.chartcam.generated.resources.Res
+import chartcam.chartcam.generated.resources.cd_camera_preview
 import io.healthplatform.chartcam.camera.AndroidCameraManager
 import io.healthplatform.chartcam.camera.CameraManager
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * A composable function that renders the camera preview for the Android platform.
@@ -30,9 +35,12 @@ actual fun CameraPreview(
     cameraManager: CameraManager,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
+    val cdText =
+        safeGetCameraPreviewDescription()
+            .getOrElse { stringResource(Res.string.cd_camera_preview) }
 
     AndroidView(
-        modifier = modifier,
+        modifier = modifier.semantics { contentDescription = cdText },
         factory = { context ->
             PreviewView(context)
                 .apply {

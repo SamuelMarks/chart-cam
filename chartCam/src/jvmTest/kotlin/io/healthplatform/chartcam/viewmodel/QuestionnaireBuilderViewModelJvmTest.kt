@@ -41,7 +41,7 @@ class QuestionnaireBuilderViewModelJvmTest {
                 .linkId
         viewModel.updateItem(linkId2, "Choice Field", listOf("A", "B"))
 
-        val builtQuestionnaire = viewModel.buildQuestionnaire()
+        val builtQuestionnaire = viewModel.buildQuestionnaire().getOrThrow()
 
         // 1. Serialize to JSON
         val sharingService = QuestionnaireSharingService()
@@ -373,7 +373,7 @@ class QuestionnaireBuilderViewModelJvmTest {
         // At first they are different, should be valid
         assertTrue(viewModel.validate().isSuccess)
 
-        val questionnaire = viewModel.buildQuestionnaire()
+        val questionnaire = viewModel.buildQuestionnaire().getOrThrow()
         // Duplicate the linkId in the FHIR object manually for validation check
         val duplicateQuestionnaire =
             Questionnaire
@@ -632,7 +632,7 @@ class QuestionnaireBuilderViewModelJvmTest {
 
         viewModel.updateTitle("臨床評估問卷")
         viewModel.addItem(WidgetType.SINGLE_LINE_TEXT)
-        val q = viewModel.buildQuestionnaire()
+        val q = viewModel.buildQuestionnaire().getOrThrow()
         val qId = q.id
         assertNotNull(qId)
         assertTrue(qId.startsWith("custom-"))
@@ -718,7 +718,7 @@ class QuestionnaireBuilderViewModelJvmTest {
                 BuilderEnableWhen(question = "item_1", operator = Questionnaire.QuestionnaireItemOperator.Exists, answerBoolean = null),
             )
         vm.updateItemEnableWhen(item2Id, conditions, Questionnaire.EnableWhenBehavior.All)
-        val q = vm.buildQuestionnaire()
+        val q = vm.buildQuestionnaire().getOrThrow()
         assertEquals(2, q.item.size)
         val paletteItem = q.item[1]
         assertEquals(6, paletteItem.answerOption.size)
@@ -1041,7 +1041,7 @@ class QuestionnaireBuilderViewModelJvmTest {
             vm.state.value.items
                 .isNotEmpty(),
         )
-        val qBuilt = vm.buildQuestionnaire()
+        val qBuilt = vm.buildQuestionnaire().getOrThrow()
         assertTrue(qBuilt.item.isNotEmpty())
 
         val qEmpty =
@@ -1135,7 +1135,7 @@ class QuestionnaireBuilderViewModelJvmTest {
 
         // Blank title build fallback
         vm.updateTitle("   ")
-        val q = vm.buildQuestionnaire()
+        val q = vm.buildQuestionnaire().getOrThrow()
         assertNotNull(q.id)
     }
 }

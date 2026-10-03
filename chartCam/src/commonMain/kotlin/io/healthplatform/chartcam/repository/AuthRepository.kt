@@ -113,7 +113,7 @@ open class AuthRepository(
         } else {
             // Existing user, attempt decryption to validate password
             val decryptedResult = cryptoService.decryptCatching(storedPayload, password)
-            if (decryptedResult.isFailure || decryptedResult.getOrNull() != AUTH_VALIDATION_PAYLOAD) {
+            if (decryptedResult.getOrNull() != AUTH_VALIDATION_PAYLOAD) {
                 return Result.failure(AuthError.InvalidCredentials())
             }
         }

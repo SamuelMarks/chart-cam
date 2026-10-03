@@ -36,7 +36,7 @@ class CameraManagerTest {
             assertTrue(defaultManager.setFlash(false).isSuccess)
             assertTrue(defaultManager.toggleLens().isSuccess)
 
-            assertTrue(defaultManager.startVideoRecording().isSuccess)
+            assertTrue(defaultManager.startVideoRecording().isFailure)
             val stopRes = defaultManager.stopVideoRecording()
             assertTrue(stopRes.isFailure)
 
@@ -107,4 +107,18 @@ class CameraManagerTest {
             assertTrue(failureMock.startVideoRecording().isFailure)
             assertTrue(failureMock.stopVideoRecording().isFailure)
         }
+
+    /**
+     * Tests the instantiation of CameraError instances to achieve full coverage.
+     */
+    @Test
+    fun testCameraErrors() {
+        val videoError = CameraError.VideoNotSupported
+        val initError = CameraError.InitializationFailed
+
+        assertEquals("Video recording is not supported on this platform", videoError.message)
+        assertEquals("Camera initialization failed", initError.message)
+        assertTrue(videoError is CameraError)
+        assertTrue(initError is CameraError)
+    }
 }

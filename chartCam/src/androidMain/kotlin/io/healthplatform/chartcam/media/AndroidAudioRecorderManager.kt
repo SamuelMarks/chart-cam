@@ -76,47 +76,43 @@ class AndroidAudioRecorderManager(
     override suspend fun startRecording(): Result<Unit> =
         withContext(Dispatchers.IO) {
             val ctx =
-                contextProvider.invoke() ?: return@withContext run {
-                    _isRecording.value = true
-                    isPaused = false
-                    _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
-                    Result.success(Unit)
-                }
+                contextProvider.invoke() ?: return@withContext Result.failure(AudioError.HardwareUnavailable)
 
             val hasPerm =
                 ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
                     PackageManager.PERMISSION_GRANTED
 
             if (!hasPerm) {
-                _isRecording.value = true
-                isPaused = false
-                _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
-                return@withContext Result.success(Unit)
+                return@withContext Result.failure(AudioError.PermissionDenied)
             }
 
-            runCatching {
-                val fallbackTmp = System.getProperty("java.io.tmpdir") ?: "."
-                val cacheDir = ctx.cacheDir ?: File(fallbackTmp)
-                val targetFile = File(cacheDir, "audio_record_${System.currentTimeMillis()}.m4a")
-                tempFile = targetFile
+            val setupResult =
+                runCatching {
+                    val fallbackTmp = System.getProperty("java.io.tmpdir") ?: "."
+                    val cacheDir = ctx.cacheDir ?: File(fallbackTmp)
+                    val targetFile = File(cacheDir, "audio_record_${System.currentTimeMillis()}.m4a")
+                    tempFile = targetFile
 
-                val recorder = mediaRecorderFactory.invoke(ctx)
+                    val recorder = mediaRecorderFactory.invoke(ctx)
 
-                recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
-                recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                recorder.setOutputFile(targetFile.absolutePath)
-                recorder.prepare()
-                recorder.start()
+                    recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
+                    recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                    recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                    recorder.setOutputFile(targetFile.absolutePath)
+                    recorder.prepare()
+                    recorder.start()
 
-                mediaRecorder = recorder
-                _isRecording.value = true
-                isPaused = false
-                _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
-            }.recoverCatching {
-                _isRecording.value = true
-                isPaused = false
-                _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
+                    mediaRecorder = recorder
+                    _isRecording.value = true
+                    isPaused = false
+                    _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
+                    true
+                }
+
+            if (setupResult.getOrElse { false }) {
+                Result.success(Unit)
+            } else {
+                Result.failure(AudioError.HardwareUnavailable)
             }
         }
 
@@ -125,28 +121,36 @@ class AndroidAudioRecorderManager(
      *
      * @return A [Result] indicating success.
      */
-    override suspend fun pauseRecording(): Result<Unit> =
-        runCatching {
+    override suspend fun pauseRecording(): Result<Unit> {
+        if (!_isRecording.value) {
+            return Result.failure(AudioError.InvalidState("Not recording"))
+        }
+        return runCatching {
             isPaused = true
             _amplitude.value = 0f
             if (sdkInt >= Build.VERSION_CODES.N) {
                 runCatching { mediaRecorder?.pause() }
             }
         }
+    }
 
     /**
      * Resumes the paused audio recording session.
      *
      * @return A [Result] indicating success.
      */
-    override suspend fun resumeRecording(): Result<Unit> =
-        runCatching {
+    override suspend fun resumeRecording(): Result<Unit> {
+        if (!_isRecording.value) {
+            return Result.failure(AudioError.InvalidState("Not recording"))
+        }
+        return runCatching {
             isPaused = false
             _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
             if (sdkInt >= Build.VERSION_CODES.N) {
                 runCatching { mediaRecorder?.resume() }
             }
         }
+    }
 
     /**
      * Stops audio recording and saves file to encrypted [FileStorage].
@@ -156,34 +160,47 @@ class AndroidAudioRecorderManager(
      */
     override suspend fun stopRecording(fileName: String): Result<String> =
         withContext(Dispatchers.IO) {
+            if (!_isRecording.value) {
+                return@withContext Result.failure(AudioError.InvalidState("Recording not active"))
+            }
+
+            val cleanupResult =
+                runCatching {
+                    _isRecording.value = false
+                    isPaused = false
+                    _amplitude.value = 0f
+
+                    runCatching {
+                        val recorder = mediaRecorder
+                        if (recorder != null) {
+                            recorder.stop()
+                            recorder.release()
+                        }
+                    }
+                    mediaRecorder = null
+                }
+
+            if (cleanupResult.isFailure) {
+                return@withContext Result.failure(cleanupResult.exceptionOrNull() ?: AudioError.HardwareUnavailable)
+            }
+
+            val f = tempFile
+            if (f == null || !f.exists() || f.length() == 0L) {
+                return@withContext Result.failure(AudioError.HardwareUnavailable)
+            }
+
+            val readResult = runCatching { f.readBytes() }
+            if (readResult.isFailure) {
+                return@withContext Result.failure(readResult.exceptionOrNull() ?: AudioError.HardwareUnavailable)
+            }
+            val bytes = readResult.getOrNull()!!
+
             runCatching {
-                _isRecording.value = false
-                isPaused = false
-                _amplitude.value = 0f
+                f.delete()
+            }
+            tempFile = null
 
-                runCatching {
-                    val recorder = mediaRecorder
-                    if (recorder != null) {
-                        recorder.stop()
-                        recorder.release()
-                    }
-                }
-                mediaRecorder = null
-
-                val f = tempFile
-                val bytes =
-                    if (f != null && f.exists() && f.length() > 0) {
-                        f.readBytes()
-                    } else {
-                        DefaultAudioRecorderManager(fileStorage).createWavPayload(ByteArray(DEFAULT_SILENT_AUDIO_BYTES))
-                    }
-                runCatching {
-                    if (f != null) {
-                        f.delete()
-                    }
-                }
-                tempFile = null
-
+            runCatching {
                 fileStorage.saveImage(fileName, bytes)
             }
         }

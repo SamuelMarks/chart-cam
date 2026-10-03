@@ -49,4 +49,16 @@ class QuestionnaireQrScannerTest {
             val failureResult = failureScanner.scanQuestionnaireQrCode()
             assertTrue(failureResult.isFailure)
         }
+
+    /**
+     * Verifies QrScannerError sealed classes.
+     */
+    @Test
+    fun testQrScannerErrors() {
+        val unavailable = QrScannerError.ScannerUnavailable
+        kotlin.test.assertEquals("QR scanning is unavailable on this platform", unavailable.message)
+
+        val readFailed = QrScannerError.ReadFailed("test error")
+        kotlin.test.assertEquals("test error", readFailed.message)
+    }
 }

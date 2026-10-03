@@ -60,37 +60,42 @@ class JvmAudioRecorderManager(
      */
     override suspend fun startRecording(): Result<Unit> =
         withContext(Dispatchers.IO) {
-            runCatching {
-                audioBuffer.reset()
-                isPaused = false
-                val format = AudioFormat(SAMPLE_RATE_HZ, SAMPLE_SIZE_BITS, CHANNELS, true, false)
-                val line: TargetDataLine? =
-                    if (targetLineProvider != null) {
-                        targetLineProvider.invoke()
-                    } else {
-                        runCatching {
-                            val info = DataLine.Info(TargetDataLine::class.java, format)
-                            if (lineSupportedChecker.invoke(info)) {
-                                AudioSystem.getLine(info) as TargetDataLine
-                            } else {
-                                null
-                            }
-                        }.getOrNull()
-                    }
+            val setupResult =
+                runCatching {
+                    audioBuffer.reset()
+                    isPaused = false
+                    val format = AudioFormat(SAMPLE_RATE_HZ, SAMPLE_SIZE_BITS, CHANNELS, true, false)
+                    val line: TargetDataLine? =
+                        if (targetLineProvider != null) {
+                            targetLineProvider.invoke()
+                        } else {
+                            runCatching {
+                                val info = DataLine.Info(TargetDataLine::class.java, format)
+                                if (lineSupportedChecker.invoke(info)) {
+                                    AudioSystem.getLine(info) as TargetDataLine
+                                } else {
+                                    null
+                                }
+                            }.getOrNull()
+                        }
 
-                if (line != null) {
-                    line.open(format)
-                    line.start()
-                    targetLine = line
-                    recordingJob = startRecordingLoop(line)
+                    if (line != null) {
+                        line.open(format)
+                        line.start()
+                        targetLine = line
+                        recordingJob = startRecordingLoop(line)
+                        _isRecording.value = true
+                        _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
+                        true
+                    } else {
+                        false
+                    }
                 }
-                _isRecording.value = true
-                _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
-            }.recoverCatching {
-                audioBuffer.reset()
-                _isRecording.value = true
-                isPaused = false
-                _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
+
+            if (setupResult.getOrElse { false }) {
+                Result.success(Unit)
+            } else {
+                Result.failure(AudioError.HardwareUnavailable)
             }
         }
 
@@ -128,22 +133,30 @@ class JvmAudioRecorderManager(
      *
      * @return A [Result] indicating success.
      */
-    override suspend fun pauseRecording(): Result<Unit> =
-        runCatching {
+    override suspend fun pauseRecording(): Result<Unit> {
+        if (!_isRecording.value) {
+            return Result.failure(AudioError.InvalidState("Not recording"))
+        }
+        return runCatching {
             isPaused = true
             _amplitude.value = 0f
         }
+    }
 
     /**
      * Resumes the paused audio recording session.
      *
      * @return A [Result] indicating success.
      */
-    override suspend fun resumeRecording(): Result<Unit> =
-        runCatching {
+    override suspend fun resumeRecording(): Result<Unit> {
+        if (!_isRecording.value) {
+            return Result.failure(AudioError.InvalidState("Not recording"))
+        }
+        return runCatching {
             isPaused = false
             _amplitude.value = DEFAULT_SIMULATED_AMPLITUDE
         }
+    }
 
     /**
      * Stops audio recording and saves standard RIFF WAV payload.
@@ -153,27 +166,36 @@ class JvmAudioRecorderManager(
      */
     override suspend fun stopRecording(fileName: String): Result<String> =
         withContext(Dispatchers.IO) {
+            if (!_isRecording.value) {
+                return@withContext Result.failure(AudioError.InvalidState("Recording not active"))
+            }
+
+            val cleanupResult =
+                runCatching {
+                    _isRecording.value = false
+                    isPaused = false
+                    _amplitude.value = 0f
+
+                    delay(POLL_INTERVAL_MS)
+                    recordingJob?.cancel()
+                    recordingJob = null
+
+                    targetLine?.stop()
+                    targetLine?.close()
+                    targetLine = null
+                }
+
+            if (cleanupResult.isFailure) {
+                return@withContext Result.failure(cleanupResult.exceptionOrNull() ?: AudioError.HardwareUnavailable)
+            }
+
+            if (audioBuffer.size() == 0) {
+                return@withContext Result.failure(AudioError.HardwareUnavailable)
+            }
+            val pcmData = audioBuffer.toByteArray()
+            audioBuffer.reset()
+
             runCatching {
-                _isRecording.value = false
-                isPaused = false
-                _amplitude.value = 0f
-
-                delay(POLL_INTERVAL_MS)
-                recordingJob?.cancel()
-                recordingJob = null
-
-                targetLine?.stop()
-                targetLine?.close()
-                targetLine = null
-
-                val pcmData =
-                    if (audioBuffer.size() > 0) {
-                        audioBuffer.toByteArray()
-                    } else {
-                        ByteArray(DEFAULT_SILENT_AUDIO_BYTES)
-                    }
-                audioBuffer.reset()
-
                 val wavPayload = DefaultAudioRecorderManager(fileStorage).createWavPayload(pcmData)
                 fileStorage.saveImage(fileName, wavPayload)
             }

@@ -213,4 +213,26 @@ class AndroidAppInitTest {
         mockCacheDir.deleteRecursively()
         mockFilesDirAsFile.delete()
     }
+
+    /**
+     * Test getting and setting currentActivity.
+     */
+    @Test
+    fun testCurrentActivity() {
+        val mockActivity = Mockito.mock(androidx.fragment.app.FragmentActivity::class.java)
+        AndroidAppInit.currentActivity = mockActivity
+        assertEquals(mockActivity, AndroidAppInit.currentActivity)
+
+        // Use reflection to ensure the generated synthetic getter is invoked for coverage
+        for (method in AndroidAppInit::class.java.declaredMethods) {
+            if (method.name == "getCurrentActivity") {
+                method.isAccessible = true
+                val result = method.invoke(AndroidAppInit)
+                assertEquals(mockActivity, result)
+            }
+        }
+
+        AndroidAppInit.currentActivity = null
+        kotlin.test.assertNull(AndroidAppInit.currentActivity)
+    }
 }

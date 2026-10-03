@@ -18,7 +18,7 @@ class WasmJsQuestionnaireQrScanner : QuestionnaireQrScanner {
      */
     override suspend fun scanQuestionnaireQrCode(): Result<String> =
         withContext(Dispatchers.Default) {
-            Result.failure(IllegalStateException("Barcode scanning unavailable in WebAssembly context"))
+            Result.failure(QrScannerError.ScannerUnavailable)
         }
 }
 

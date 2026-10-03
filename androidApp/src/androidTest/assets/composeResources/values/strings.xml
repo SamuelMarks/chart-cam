@@ -469,4 +469,7 @@
     <string name="conflict_type_name_dob_match">Name and DOB Match</string>
     <string name="cd_silhouette_overlay_full_format">%1$s: %2$s. %3$s</string>
     <string name="photo_slot_format">Photo %1$s</string>
+    <string name="facial_series_left_profile">Left Profile (Cornea &amp; Nose)</string>
+    <string name="facial_series_front_view">Front View</string>
+    <string name="facial_series_right_profile">Right Profile (Cornea &amp; Nose)</string>
 </resources>

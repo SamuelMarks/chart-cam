@@ -85,11 +85,11 @@ class JvmCameraManagerTest {
             val initialStop = manager.stopVideoRecording()
             assertTrue(initialStop.isFailure)
 
-            // Start recording succeeds
+            // Start recording fails because it's not supported
             val start = manager.startVideoRecording()
-            assertTrue(start.isSuccess)
+            assertTrue(start.isFailure)
 
-            // Stop recording returns payload
+            // Stop recording returns failure
             val stop = manager.stopVideoRecording()
             assertTrue(stop.isFailure)
         }

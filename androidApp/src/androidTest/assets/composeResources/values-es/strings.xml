@@ -469,4 +469,7 @@
     <string name="conflict_type_name_dob_match">Coincidencia de nombre y fecha de nacimiento</string>
     <string name="cd_silhouette_overlay_full_format">%1$s: %2$s. %3$s</string>
     <string name="photo_slot_format">Foto %1$s</string>
+    <string name="facial_series_left_profile">Perfil Izquierdo (Córnea y Nariz)</string>
+    <string name="facial_series_front_view">Vista Frontal</string>
+    <string name="facial_series_right_profile">Perfil Derecho (Córnea y Nariz)</string>
 </resources>

@@ -4,7 +4,6 @@
  */
 package io.healthplatform.chartcam.utils
 
-import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 
@@ -83,67 +82,6 @@ object QuestionnaireUtils {
             else -> fallback
         }
     }
-
-    /**
-     * Recursively builds dummy Questionnaire.Item.Builders from a QuestionnaireResponse.Item tree.
-     *
-     * @param qrItems The items from a QuestionnaireResponse.
-     * @return A list of generated Questionnaire.Item.Builder instances.
-     */
-    fun buildDummyItemsRecursively(qrItems: List<QuestionnaireResponse.Item>): List<Questionnaire.Item.Builder> {
-        val dummyItems = mutableListOf<Questionnaire.Item.Builder>()
-        qrItems.forEach { qrItem ->
-            val linkId = qrItem.linkId.value ?: return@forEach
-            val answer = qrItem.answer.firstOrNull()?.value
-            val qItemType = determineDummyItemType(answer, qrItem)
-
-            val builder =
-                Questionnaire.Item
-                    .Builder(
-                        dev.ohs.fhir.model.r4.String
-                            .Builder()
-                            .apply { value = linkId },
-                        Enumeration(value = qItemType),
-                    ).apply {
-                        this.text =
-                            dev.ohs.fhir.model.r4.String.Builder().apply {
-                                value = linkId.replaceFirstChar { it.uppercase() }
-                            }
-                        if (qrItem.item.isNotEmpty()) {
-                            this.item.addAll(buildDummyItemsRecursively(qrItem.item))
-                        }
-                    }
-            dummyItems.add(builder)
-        }
-        return dummyItems
-    }
-
-    /**
-     * Determines dummy item type.
-     * @param answer The answer.
-     * @param qrItem The qrItem.
-     * @return The result.
-     */
-    private fun determineDummyItemType(
-        answer: QuestionnaireResponse.Item.Answer.Value?,
-        qrItem: QuestionnaireResponse.Item,
-    ): Questionnaire.QuestionnaireItemType =
-        if (answer != null) {
-            when (answer) {
-                is QuestionnaireResponse.Item.Answer.Value.String -> Questionnaire.QuestionnaireItemType.String
-                is QuestionnaireResponse.Item.Answer.Value.Boolean -> Questionnaire.QuestionnaireItemType.Boolean
-                is QuestionnaireResponse.Item.Answer.Value.Attachment -> Questionnaire.QuestionnaireItemType.Attachment
-                is QuestionnaireResponse.Item.Answer.Value.Decimal -> Questionnaire.QuestionnaireItemType.Decimal
-                is QuestionnaireResponse.Item.Answer.Value.Integer -> Questionnaire.QuestionnaireItemType.Integer
-                is QuestionnaireResponse.Item.Answer.Value.Date -> Questionnaire.QuestionnaireItemType.Date
-                is QuestionnaireResponse.Item.Answer.Value.DateTime -> Questionnaire.QuestionnaireItemType.DateTime
-                else -> Questionnaire.QuestionnaireItemType.String
-            }
-        } else if (qrItem.item.isNotEmpty()) {
-            Questionnaire.QuestionnaireItemType.Group
-        } else {
-            Questionnaire.QuestionnaireItemType.String
-        }
 
     /**
      * Recursively builds QuestionnaireResponse.Item from Questionnaire.Item based on current answers.

@@ -21,6 +21,9 @@ class QuestionnaireFilePickerJsTest {
     @Test
     fun testQuestionnaireFilePicker() =
         runTest {
+            kotlinx.browser.window
+                .asDynamic()
+                ._chartcam_is_test = true
             val picker = createQuestionnaireFilePicker()
             assertNotNull(picker)
 

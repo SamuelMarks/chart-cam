@@ -11,6 +11,24 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
+ * Errors that can occur during audio recording operations.
+ */
+sealed class AudioError(
+    message: String,
+) : Throwable(message) {
+    /** Hardware is unavailable or initialization failed. */
+    data object HardwareUnavailable : AudioError("Audio hardware is unavailable or initialization failed")
+
+    /** Permission to record audio was denied. */
+    data object PermissionDenied : AudioError("Audio recording permission was denied")
+
+    /** Operation failed due to invalid state. */
+    data class InvalidState(
+        override val message: String,
+    ) : AudioError(message)
+}
+
+/**
  * Interface defining local microphone recording capabilities for voice memos.
  */
 interface AudioRecorderManager {
@@ -107,7 +125,7 @@ class DefaultAudioRecorderManager(
      */
     override suspend fun pauseRecording(): Result<Unit> {
         if (!_isRecording.value) {
-            return Result.failure(IllegalStateException("Cannot pause when recording is not active"))
+            return Result.failure(AudioError.InvalidState("Cannot pause when recording is not active"))
         }
         isPaused = true
         _amplitude.value = 0f
@@ -121,7 +139,7 @@ class DefaultAudioRecorderManager(
      */
     override suspend fun resumeRecording(): Result<Unit> {
         if (!_isRecording.value) {
-            return Result.failure(IllegalStateException("Cannot resume when recording is not active"))
+            return Result.failure(AudioError.InvalidState("Cannot resume when recording is not active"))
         }
         isPaused = false
         _amplitude.value = 0.5f
@@ -236,7 +254,7 @@ class DefaultAudioRecorderManager(
      */
     override suspend fun stopRecording(fileName: String): Result<String> {
         if (!_isRecording.value) {
-            return Result.failure(IllegalStateException("Recording not active"))
+            return Result.failure(AudioError.InvalidState("Recording not active"))
         }
         _isRecording.value = false
         isPaused = false

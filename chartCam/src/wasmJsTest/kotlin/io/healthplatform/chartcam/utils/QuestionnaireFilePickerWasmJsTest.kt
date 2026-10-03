@@ -11,9 +11,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@JsFun("() => { window._chartcam_is_test = true; }")
+private external fun setChartCamTest()
+
 /**
  * Test class for QuestionnaireFilePicker on WasmJS.
  */
+@OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
 class QuestionnaireFilePickerWasmJsTest {
     /**
      * Tests picking questionnaire file from localStorage.
@@ -21,6 +25,7 @@ class QuestionnaireFilePickerWasmJsTest {
     @Test
     fun testQuestionnaireFilePicker() =
         runTest {
+            setChartCamTest()
             val picker = createQuestionnaireFilePicker()
             assertNotNull(picker)
 

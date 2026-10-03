@@ -18,7 +18,7 @@ class IosQuestionnaireQrScanner : QuestionnaireQrScanner {
      */
     override suspend fun scanQuestionnaireQrCode(): Result<String> =
         withContext(Dispatchers.Default) {
-            Result.failure(IllegalStateException("No active AVCapture metadata detected"))
+            Result.failure(QrScannerError.ScannerUnavailable)
         }
 }
 

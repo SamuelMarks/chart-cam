@@ -29,30 +29,16 @@ class AudioRecorderManagerIosTest {
             assertEquals(0f, recorder.amplitude.value)
 
             val startRes = recorder.startRecording()
-            assertTrue(startRes.isSuccess)
-            assertTrue(recorder.isRecording.value)
-            assertEquals(0.5f, recorder.amplitude.value)
-
-            val pauseRes = recorder.pauseRecording()
-            assertTrue(pauseRes.isSuccess)
-            assertEquals(0f, recorder.amplitude.value)
-
-            val resumeRes = recorder.resumeRecording()
-            assertTrue(resumeRes.isSuccess)
-            assertEquals(0.5f, recorder.amplitude.value)
+            assertTrue(startRes.isFailure)
+            assertFalse(recorder.isRecording.value)
 
             val stopRes = recorder.stopRecording("test_memo_ios.wav")
-            assertTrue(stopRes.isSuccess)
-            assertFalse(recorder.isRecording.value)
-            assertEquals(0f, recorder.amplitude.value)
+            assertTrue(stopRes.isFailure)
 
-            val restartRes = recorder.startRecording()
-            assertTrue(restartRes.isSuccess)
-            assertTrue(recorder.isRecording.value)
+            val pauseRes = recorder.pauseRecording()
+            assertTrue(pauseRes.isFailure)
 
-            val cancelRes = recorder.cancelRecording()
-            assertTrue(cancelRes.isSuccess)
-            assertFalse(recorder.isRecording.value)
-            assertEquals(0f, recorder.amplitude.value)
+            val resumeRes = recorder.resumeRecording()
+            assertTrue(resumeRes.isFailure)
         }
 }
