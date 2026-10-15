@@ -12,6 +12,7 @@ env:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
 
@@ -20,6 +21,9 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Set up Python
         uses: actions/setup-python@v7

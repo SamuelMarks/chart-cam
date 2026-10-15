@@ -37,22 +37,22 @@ class ShareServiceTest {
         assertEquals("custom message", passExCustom.message)
 
         val fileEx = ExportFileNotFoundException("missing.enc")
-        assertTrue(fileEx.message?.contains("missing.enc") == true)
+        assertTrue(fileEx.message.contains("missing.enc"))
 
         val storageExDefault = FileStorageSaveException("patient.dcm")
-        assertTrue(storageExDefault.message?.contains("patient.dcm") == true)
+        assertTrue(storageExDefault.message.contains("patient.dcm"))
         assertEquals(null, storageExDefault.cause)
 
         val storageExWithCause = FileStorageSaveException("patient.dcm", RuntimeException("disk full"))
-        assertTrue(storageExWithCause.message?.contains("patient.dcm") == true)
+        assertTrue(storageExWithCause.message.contains("patient.dcm"))
         assertEquals("disk full", storageExWithCause.cause?.message)
 
         val platformExDefault = PlatformShareException("Android", "No activity found")
-        assertTrue(platformExDefault.message?.contains("Android") == true)
+        assertTrue(platformExDefault.message.contains("Android"))
         assertEquals(null, platformExDefault.cause)
 
         val platformExWithCause = PlatformShareException("Android", "No activity found", RuntimeException("intent failed"))
-        assertTrue(platformExWithCause.message?.contains("Android") == true)
+        assertTrue(platformExWithCause.message.contains("Android"))
         assertEquals("intent failed", platformExWithCause.cause?.message)
 
         val pacsExDefault = PacsExportException("Corrupt tag dictionary")

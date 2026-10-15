@@ -113,12 +113,15 @@ class CameraManagerTest {
      */
     @Test
     fun testCameraErrors() {
-        val videoError = CameraError.VideoNotSupported
-        val initError = CameraError.InitializationFailed
+        val errors: List<CameraError> =
+            listOf(
+                CameraError.VideoNotSupported,
+                CameraError.InitializationFailed,
+                CameraError.EmptyCaptureData,
+            )
 
-        assertEquals("Video recording is not supported on this platform", videoError.message)
-        assertEquals("Camera initialization failed", initError.message)
-        assertTrue(videoError is CameraError)
-        assertTrue(initError is CameraError)
+        assertEquals("Video recording is not supported on this platform", errors[0].message)
+        assertEquals("Camera initialization failed", errors[1].message)
+        assertEquals("Camera capture returned empty or null image data", errors[2].message)
     }
 }

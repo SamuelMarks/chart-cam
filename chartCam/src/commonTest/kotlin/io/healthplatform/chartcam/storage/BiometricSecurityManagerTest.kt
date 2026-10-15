@@ -323,7 +323,7 @@ class BiometricSecurityManagerTest {
             val exFailureManager = BiometricSecurityManager(storage, exFailureProvider)
             val exResult = exFailureManager.authenticatePrompt()
             assertTrue(exResult is BiometricAuthResult.HardwareError)
-            assertEquals("Oops", (exResult as BiometricAuthResult.HardwareError).message)
+            assertEquals("Oops", exResult.message)
 
             // 3. Failure with null message
             val nullExProvider =
@@ -334,13 +334,13 @@ class BiometricSecurityManagerTest {
 
                     override suspend fun promptBiometrics(title: String, subtitle: String) =
                         Result.failure<BiometricAuthResult>(
-                            Exception((null as String?)),
+                            Exception(),
                         )
                 }
             val nullExManager = BiometricSecurityManager(storage, nullExProvider)
             val nullExResult = nullExManager.authenticatePrompt()
             assertTrue(nullExResult is BiometricAuthResult.HardwareError)
-            assertEquals("Unknown error", (nullExResult as BiometricAuthResult.HardwareError).message)
+            assertEquals("Unknown error", nullExResult.message)
 
             // 4. Other AuthResult (e.g. Cancelled)
             val otherProvider =

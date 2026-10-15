@@ -180,7 +180,7 @@ class AuthRepositoryTest {
                 sessionResult
                     .getOrThrow()
                     .name
-                    ?.firstOrNull()
+                    .firstOrNull()
                     ?.family
                     ?.value ?: "",
             )
@@ -196,7 +196,7 @@ class AuthRepositoryTest {
                 demoResult
                     .getOrThrow()
                     .name
-                    ?.firstOrNull()
+                    .firstOrNull()
                     ?.family
                     ?.value ?: "",
             )
