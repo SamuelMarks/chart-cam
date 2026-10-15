@@ -176,8 +176,7 @@ class QuestionnaireBuilderViewModel(
         if (duplicateFromId != null) {
             val source = repository.getQuestionnaire(duplicateFromId)
             if (source != null) {
-                val tObj = source.title
-                val sourceTitle = if (tObj != null && tObj.value != null) tObj.value!! else unknownTitleResolver()
+                val sourceTitle = source.title?.value ?: unknownTitleResolver()
                 _state.update {
                     it.copy(
                         title = copyTitleResolver(sourceTitle),
@@ -448,6 +447,7 @@ class QuestionnaireBuilderViewModel(
      * for strict FHIR structural validation (such as ensuring Choice items have options).
      * Additionally, it checks the UI builder state to ensure no items are currently flagged with an error.
      *
+     * @param facialStrings Localized strings for the facial profile series preset.
      * @return A [Result] enclosing the built [Questionnaire] if valid, or a failure result.
      */
     fun validate(facialStrings: FacialSeriesStrings = FacialSeriesStrings()): Result<Questionnaire> {
@@ -529,7 +529,9 @@ class QuestionnaireBuilderViewModel(
 
     /**
      * Builds a FHIR Questionnaire resource from the current state.
-     * @return The built Questionnaire.
+     *
+     * @param facialStrings Localized strings for the facial profile series preset.
+     * @return A [Result] enclosing the built [Questionnaire].
      */
     fun buildQuestionnaire(
         facialStrings: FacialSeriesStrings = FacialSeriesStrings(),
@@ -809,6 +811,8 @@ class QuestionnaireBuilderViewModel(
 
     /**
      * Saves the current builder state as a FHIR Questionnaire in the repository.
+     *
+     * @param facialStrings Localized strings for the facial profile series preset.
      * @return The ID of the newly created Questionnaire, or null if validation failed.
      */
     fun saveQuestionnaire(facialStrings: FacialSeriesStrings = FacialSeriesStrings()): kotlin.String? {

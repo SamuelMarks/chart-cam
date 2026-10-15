@@ -52,7 +52,7 @@ private const val GET_BASE64_IMAGE_JS =
         "ctx.drawImage(video, 0, 0, canvas.width, canvas.height); " +
         "const dataUrl = canvas.toDataURL('image/jpeg', 0.9); " +
         "const base64 = dataUrl.split(',')[1]; " +
-        "if (!base64) throw new Error('Could not get base64 data'); return base64; }"
+        "return base64 || ''; }"
 
 private const val ALERT_GUIDANCE_WASM_JS =
     "(msg) => { if (typeof window !== 'undefined' && window.alert) { window.alert(msg); } }"
@@ -129,15 +129,17 @@ class JsCameraManager : CameraManager {
         val constraints = getVideoConstraints(mode.toJsString())
         window.navigator.mediaDevices
             .getUserMedia(constraints)
-            .then { stream ->
-                videoElement.srcObject = stream
-                videoElement.play()
-                null
-            }.catch { err ->
-                // allow-exception
-                consoleError("Error accessing camera: ", err)
-                null
-            }
+            .then(
+                onFulfilled = { stream ->
+                    videoElement.srcObject = stream
+                    videoElement.play()
+                    null
+                },
+                onRejected = { err ->
+                    consoleError("Error accessing camera: ", err)
+                    null
+                },
+            )
     }
 
     /**

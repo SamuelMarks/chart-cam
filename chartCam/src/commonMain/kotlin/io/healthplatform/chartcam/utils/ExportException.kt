@@ -11,9 +11,9 @@ package io.healthplatform.chartcam.utils
  * @param cause Optional underlying throwable cause for chained diagnostic context.
  */
 sealed class ExportException(
-    message: String,
-    cause: Throwable? = null,
-) : Exception(message, cause)
+    override val message: String,
+    override val cause: Throwable? = null,
+) : ChartCamError(message, cause)
 
 /**
  * Exception thrown or returned when an encryption password provided for archive export fails validation.

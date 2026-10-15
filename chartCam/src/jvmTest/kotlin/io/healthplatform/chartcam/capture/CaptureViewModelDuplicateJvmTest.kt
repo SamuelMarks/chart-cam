@@ -15,6 +15,11 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * Tests to ensure duplicate IDs in steps are handled correctly without infinite loops.
@@ -50,18 +55,34 @@ class CaptureViewModelDuplicateJvmTest {
                 )
             viewModel.initSteps(steps)
 
-            println("Initial step: ${viewModel.uiState.value.currentStep}")
+            assertEquals(
+                "Label A",
+                viewModel.uiState.value.currentStep
+                    ?.title,
+            )
+            assertEquals(0, viewModel.uiState.value.capturedCount)
+            assertFalse(viewModel.uiState.value.isFinished)
+
             viewModel.onCapture()
             testDispatcher.scheduler.advanceUntilIdle()
+            assertNotNull(viewModel.uiState.value.reviewImageBytes)
             viewModel.onConfirm()
+            assertNull(viewModel.uiState.value.reviewImageBytes)
 
-            println("Next step: ${viewModel.uiState.value.currentStep}")
-            println("isFinished: ${viewModel.uiState.value.isFinished}")
+            assertEquals(
+                "Label B",
+                viewModel.uiState.value.currentStep
+                    ?.title,
+            )
+            assertEquals(1, viewModel.uiState.value.capturedCount)
+            assertFalse(viewModel.uiState.value.isFinished)
 
             viewModel.onCapture()
             testDispatcher.scheduler.advanceUntilIdle()
+            assertNotNull(viewModel.uiState.value.reviewImageBytes)
             viewModel.onConfirm()
 
-            println("Final isFinished: ${viewModel.uiState.value.isFinished}")
+            assertEquals(2, viewModel.uiState.value.capturedCount)
+            assertTrue(viewModel.uiState.value.isFinished)
         }
 }

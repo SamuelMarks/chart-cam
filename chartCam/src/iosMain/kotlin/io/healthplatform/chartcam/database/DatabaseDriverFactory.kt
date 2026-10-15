@@ -17,7 +17,7 @@ import app.cash.sqldelight.driver.native.NativeSqliteDriver
  * allowing the cross-platform SQLDelight database to perform read and write
  * operations against an SQLite database file.
  */
-actual class DatabaseDriverFactory actual constructor() {
+actual class DatabaseDriverFactory actual constructor() : SqlDriverFactory {
     /**
      * Creates and returns an iOS-specific [SqlDriver].
      *
@@ -26,7 +26,7 @@ actual class DatabaseDriverFactory actual constructor() {
      *
      * @return A [SqlDriver] configured for iOS to execute database queries.
      */
-    actual fun createDriver(): SqlDriver =
+    actual override fun createDriver(): SqlDriver =
         NativeSqliteDriver(
             schema = ChartCamDatabase.Schema.synchronous(),
             name = "chartcam.db",

@@ -5,14 +5,13 @@
 package io.healthplatform.chartcam.utils
 
 /**
- * Service to handle encryption and decryption of data.
- *
- * This implementation utilizes platform-native AES-GCM (Advanced Encryption Standard with Galois/Counter Mode)
- * via expect/actual bindings, ensuring that key derivation uses Argon2.
+ * Interface defining multiplatform cryptographic key derivation and authenticated encryption/decryption.
+ * Enables clean dependency injection and fake/mock substitution in `commonTest`.
  */
-expect class CryptoService() {
+interface CryptoServiceContract {
     /**
      * Derives a cryptographic key using Argon2.
+     *
      * @param password The password to use.
      * @param salt The salt (must be generated securely, e.g., via SecureRandom/WebCrypto).
      * @return The derived key.
@@ -24,6 +23,7 @@ expect class CryptoService() {
 
     /**
      * Encrypts plaintext using AES-GCM.
+     *
      * @param plaintext The data to encrypt.
      * @param key The AES key (derived via Argon2).
      * @return The resulting ciphertext, prepended with the IV.
@@ -35,11 +35,77 @@ expect class CryptoService() {
 
     /**
      * Decrypts ciphertext using AES-GCM.
+     *
      * @param ciphertext The ciphertext prepended with the IV.
      * @param key The AES key (derived via Argon2).
      * @return The decrypted plaintext.
      */
     suspend fun decryptAesGcm(
+        ciphertext: ByteArray,
+        key: ByteArray,
+    ): ByteArray
+
+    /**
+     * Encrypts the [data] string using the given [password].
+     *
+     * @param data The plaintext data to encrypt.
+     * @param password The password to use as a key.
+     * @return The base64-encoded encrypted string.
+     */
+    suspend fun encrypt(
+        data: String,
+        password: String,
+    ): String
+
+    /**
+     * Decrypts the [base64Data] string using the given [password].
+     *
+     * @param base64Data The base64-encoded encrypted data.
+     * @param password The password to use as a key.
+     * @return The decrypted plaintext string, or an empty string if decryption fails.
+     */
+    suspend fun decrypt(
+        base64Data: String,
+        password: String,
+    ): String
+}
+
+/**
+ * Service to handle encryption and decryption of data.
+ *
+ * This implementation utilizes platform-native AES-GCM (Advanced Encryption Standard with Galois/Counter Mode)
+ * via expect/actual bindings, ensuring that key derivation uses Argon2.
+ */
+expect class CryptoService() : CryptoServiceContract {
+    /**
+     * Derives a cryptographic key using Argon2.
+     * @param password The password to use.
+     * @param salt The salt (must be generated securely, e.g., via SecureRandom/WebCrypto).
+     * @return The derived key.
+     */
+    override suspend fun deriveKeyArgon2(
+        password: String,
+        salt: ByteArray,
+    ): ByteArray
+
+    /**
+     * Encrypts plaintext using AES-GCM.
+     * @param plaintext The data to encrypt.
+     * @param key The AES key (derived via Argon2).
+     * @return The resulting ciphertext, prepended with the IV.
+     */
+    override suspend fun encryptAesGcm(
+        plaintext: ByteArray,
+        key: ByteArray,
+    ): ByteArray
+
+    /**
+     * Decrypts ciphertext using AES-GCM.
+     * @param ciphertext The ciphertext prepended with the IV.
+     * @param key The AES key (derived via Argon2).
+     * @return The decrypted plaintext.
+     */
+    override suspend fun decryptAesGcm(
         ciphertext: ByteArray,
         key: ByteArray,
     ): ByteArray
@@ -53,7 +119,7 @@ expect class CryptoService() {
      * @param password The password to use as a key.
      * @return The base64-encoded encrypted string.
      */
-    suspend fun encrypt(
+    override suspend fun encrypt(
         data: String,
         password: String,
     ): String
@@ -66,11 +132,18 @@ expect class CryptoService() {
      * @param password The password to use as a key.
      * @return The decrypted plaintext string, or an empty string if decryption fails.
      */
-    suspend fun decrypt(
+    override suspend fun decrypt(
         base64Data: String,
         password: String,
     ): String
 }
+
+/**
+ * Factory function creating a platform-specific [CryptoServiceContract] instance.
+ *
+ * @return A configured [CryptoService] instance.
+ */
+fun createCryptoService(): CryptoService = CryptoService()
 
 /**
  * Safely encrypts [data] with [password] returning a [Result].
@@ -79,7 +152,7 @@ expect class CryptoService() {
  * @param password The password to use as a key.
  * @return A [Result] enclosing the base64 encrypted string or an error.
  */
-suspend fun CryptoService.encryptCatching(
+suspend fun CryptoServiceContract.encryptCatching(
     data: String,
     password: String,
 ): Result<String> = runSuspendCatching { encrypt(data, password) }
@@ -89,9 +162,9 @@ suspend fun CryptoService.encryptCatching(
  *
  * @param base64Data The encrypted data payload.
  * @param password The password to use for decryption.
- * @return A [Result] enclosing the decrypted string or an error.
+ * @return A [Result] enclosing the decrypted string or a [ChartCamError.CryptoFailure] error.
  */
-suspend fun CryptoService.decryptCatching(
+suspend fun CryptoServiceContract.decryptCatching(
     base64Data: String,
     password: String,
 ): Result<String> =
@@ -99,7 +172,7 @@ suspend fun CryptoService.decryptCatching(
         decrypt(base64Data, password)
     }.flatMap { decrypted ->
         if (decrypted.isEmpty() && base64Data.isNotEmpty()) {
-            Result.failure(IllegalStateException("Decryption failed: payload could not be authenticated"))
+            Result.failure(ChartCamError.CryptoFailure("Decryption failed: payload could not be authenticated"))
         } else {
             Result.success(decrypted)
         }

@@ -190,6 +190,9 @@ fun NavGraphBuilder.newVisitDestination(
                         fhirRepository = deps.fhirRepository,
                         authRepository = deps.authRepository,
                         questionnaireRepository = deps.questionnaireRepository,
+                        fileStorage =
+                            deps.fileStorage ?: io.healthplatform.chartcam.files
+                                .createFileStorage(),
                     ),
                 actions = buildNewVisitActions(navController, scope, entry, patientId),
                 newlyCreatedQuestionnaireId = newlyCreatedQuestionnaireId,
@@ -331,6 +334,9 @@ fun NavGraphBuilder.visitDetailDestination(
                         fhirRepository = deps.fhirRepository,
                         authRepository = deps.authRepository,
                         questionnaireRepository = deps.questionnaireRepository,
+                        fileStorage =
+                            deps.fileStorage ?: io.healthplatform.chartcam.files
+                                .createFileStorage(),
                     ),
                 actions = buildVisitDetailActions(navController, scope, entry, patientId),
                 newlyCreatedQuestionnaireId = newlyCreatedQuestionnaireId,

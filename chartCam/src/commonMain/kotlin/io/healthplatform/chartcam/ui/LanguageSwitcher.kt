@@ -6,13 +6,14 @@
  */
 package io.healthplatform.chartcam.ui
 
+import io.healthplatform.chartcam.utils.appLocaleState
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
  * A mutable state flow holding the currently selected language code (e.g., "en", "es", "ja").
  * This flow can be collected by UI components to react to language changes.
  */
-val currentLanguageState = MutableStateFlow("en")
+val currentLanguageState: MutableStateFlow<String> = appLocaleState
 
 /**
  * Platform-specific implementation for updating the application's language configuration.

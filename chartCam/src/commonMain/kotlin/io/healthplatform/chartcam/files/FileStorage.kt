@@ -51,6 +51,13 @@ interface FileStorage {
 expect fun createFileStorage(): FileStorage
 
 /**
+ * Safely clears all temporary files in the capture cache, returning a [Result].
+ *
+ * @return A [Result] indicating success or failure of clearing the cache.
+ */
+fun FileStorage.clearCacheCatching(): Result<Unit> = runCatching { clearCache() }
+
+/**
  * Safely saves image bytes to storage, encapsulating any platform I/O exceptions in a [Result].
  *
  * @param fileName The name of the file.

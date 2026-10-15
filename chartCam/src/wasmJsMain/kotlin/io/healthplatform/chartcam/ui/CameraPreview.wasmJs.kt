@@ -101,9 +101,10 @@ actual fun CameraPreview(
             }
         }
 
-        if (imageBitmap != null) {
+        val currentBitmap = imageBitmap
+        if (currentBitmap != null) {
             Image(
-                bitmap = imageBitmap!!,
+                bitmap = currentBitmap,
                 contentDescription = cdText,
                 modifier = modifier.background(MaterialTheme.colorScheme.surface),
                 contentScale = ContentScale.Crop,

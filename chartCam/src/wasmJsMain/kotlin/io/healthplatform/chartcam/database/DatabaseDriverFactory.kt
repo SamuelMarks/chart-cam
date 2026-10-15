@@ -16,14 +16,14 @@ import org.w3c.dom.Worker
  * Relies on [WebWorkerDriver] and a web worker script (`sqljs.worker.js`) to handle
  * SQLite operations off the main UI thread.
  */
-actual class DatabaseDriverFactory actual constructor() {
+actual class DatabaseDriverFactory actual constructor() : SqlDriverFactory {
     /**
      * Creates and configures an [SqlDriver] for WebAssembly environments.
      * Uses a [WebWorkerDriver] communicating with a `sqljs.worker.js` worker instance.
      *
      * @return A newly created [SqlDriver] ready for SQLDelight operations.
      */
-    actual fun createDriver(): SqlDriver =
+    actual override fun createDriver(): SqlDriver =
         WebWorkerDriver(
             Worker("sqljs.worker.js"),
         )

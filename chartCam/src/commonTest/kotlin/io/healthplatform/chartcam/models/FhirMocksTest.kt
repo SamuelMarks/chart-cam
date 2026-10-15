@@ -1,26 +1,48 @@
 /**
  * @file FhirMocksTest.kt
- * Contains declarations for FhirMocksTest.kt.
+ * Contains unit tests for [FhirMocks] fixture builders.
  */
 package io.healthplatform.chartcam.models
 
+import dev.ohs.fhir.model.r4.Questionnaire
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 /**
- * Tests for FHIR mock data logic.
+ * Tests for [FhirMocks] resource fixture factories.
  */
 class FhirMocksTest {
     /**
-     * Verifies construction of mock questionnaire resources with both explicit and default parameters.
+     * Verifies construction of [Questionnaire] and [dev.ohs.fhir.model.r4.QuestionnaireResponse] fixtures
+     * with both explicit and default parameters.
      */
     @Test
     fun testMocks() {
-        val q = FhirMocks.createMockQuestionnaire("q-test-1", "Test Questionnaire")
+        val q =
+            FhirMocks.createMockQuestionnaire(
+                idStr = "q-test-1",
+                titleStr = "Test Questionnaire",
+                itemLinkId = "q-item-1",
+                itemText = "Custom Prompt",
+                itemType = Questionnaire.QuestionnaireItemType.Text,
+            )
         assertNotNull(q)
         assertEquals("q-test-1", q.id)
         assertEquals("Test Questionnaire", q.title?.value)
+        assertEquals(
+            "q-item-1",
+            q.item
+                .first()
+                .linkId.value,
+        )
+        assertEquals(
+            "Custom Prompt",
+            q.item
+                .first()
+                .text
+                ?.value,
+        )
 
         val qDefault = FhirMocks.createMockQuestionnaire()
         assertNotNull(qDefault)
@@ -32,9 +54,22 @@ class FhirMocksTest {
         assertEquals("mock-response-1", qrDefault.id)
         assertEquals("Questionnaire/mock-questionnaire-1", qrDefault.questionnaire?.value)
 
-        val qrCustom = FhirMocks.createMockQuestionnaireResponse("custom-qr", "Questionnaire/custom-1")
+        val qrCustom =
+            FhirMocks.createMockQuestionnaireResponse(
+                idStr = "custom-qr",
+                questionnaireUrl = "Questionnaire/custom-1",
+                itemLinkId = "custom-link",
+                itemText = "Custom Question",
+                answerText = "Custom Answer",
+            )
         assertNotNull(qrCustom)
         assertEquals("custom-qr", qrCustom.id)
         assertEquals("Questionnaire/custom-1", qrCustom.questionnaire?.value)
+        assertEquals(
+            "custom-link",
+            qrCustom.item
+                .first()
+                .linkId.value,
+        )
     }
 }

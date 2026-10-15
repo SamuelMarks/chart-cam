@@ -4,23 +4,29 @@
  *
  * Contains cross-platform abstractions for camera management and configuration.
  */
-@file:Suppress("MaxLineLength", "ReturnCount")
-
 package io.healthplatform.chartcam.camera
 
 import androidx.compose.runtime.Composable
+import io.healthplatform.chartcam.utils.ChartCamDomainError
+import io.healthplatform.chartcam.utils.runSuspendCatching
 
 /**
  * Errors that can occur during camera operations.
+ *
+ * @param message Human-readable diagnostic message describing the camera failure.
  */
 sealed class CameraError(
-    message: String,
-) : Throwable(message) {
+    override val message: String,
+) : Exception(message),
+    ChartCamDomainError {
     /** Video recording is not supported on this platform. */
     data object VideoNotSupported : CameraError("Video recording is not supported on this platform")
 
     /** Camera initialization failed. */
     data object InitializationFailed : CameraError("Camera initialization failed")
+
+    /** Camera capture returned empty or null image data. */
+    data object EmptyCaptureData : CameraError("Camera capture returned empty or null image data")
 }
 
 /**
@@ -56,6 +62,13 @@ interface CameraManager {
      * Important to call to prevent battery drain or camera lockups on mobile OSs.
      */
     fun release()
+
+    /**
+     * Releases camera resources wrapped in a [Result].
+     *
+     * @return A [Result] indicating success or failure of releasing camera resources.
+     */
+    fun releaseCatching(): Result<Unit> = runCatching { release() }
 
     /**
      * Indicates whether the device has more than one camera available (e.g., front and back).
@@ -94,17 +107,19 @@ interface CameraManager {
 /**
  * Safely captures a still image from the camera, returning a [Result] enclosing the [ByteArray].
  *
- * @return A [Result] enclosing the non-null, non-empty image bytes, or an error.
+ * @return A [Result] enclosing the non-null, non-empty image bytes, or a [CameraError] failure.
  */
 suspend fun CameraManager.captureImageCatching(): Result<ByteArray> =
-    io.healthplatform.chartcam.utils.runSuspendCatching {
-        val bytes = captureImage()
-        if (bytes != null && bytes.isNotEmpty()) {
-            bytes
-        } else {
-            error("Camera capture returned empty or null image data")
-        }
-    }
+    runSuspendCatching { captureImage() }.fold(
+        onSuccess = { bytes ->
+            if (bytes != null && bytes.isNotEmpty()) {
+                Result.success(bytes)
+            } else {
+                Result.failure(CameraError.EmptyCaptureData)
+            }
+        },
+        onFailure = { err -> Result.failure(err) },
+    )
 
 /**
  * Factory function to create or remember a [CameraManager] instance scoped to a Composable.

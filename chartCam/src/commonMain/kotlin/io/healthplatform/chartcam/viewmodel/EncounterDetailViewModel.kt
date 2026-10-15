@@ -748,7 +748,7 @@ class EncounterDetailViewModel(
         val prov =
             createFhirProvenance(
                 id = UUID.randomUUID(),
-                targetResourceId = qr.id!!,
+                targetResourceId = extractResourceStringId(qr.id),
                 practitionerId = "Practitioner/$pracId",
                 dateStr =
                     kotlin.time.Clock.System

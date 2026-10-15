@@ -1,6 +1,7 @@
 /**
- * @file FileStorage.js.kt
- * File storage functionality for the JS platform.
+ * @file WebFileStorage.kt
+ * Shared Web (JS and WasmJS) implementation of [FileStorage] using browser `localStorage`
+ * and Base64 encoding.
  */
 package io.healthplatform.chartcam.files
 
@@ -9,10 +10,10 @@ import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
 
 /**
- * Web implementation of [FileStorage].
- * Uses localStorage with Base64 encoding to persist files synchronously.
+ * Shared Web implementation of [FileStorage].
+ * Uses `localStorage` with Base64 encoding to persist files synchronously across JS and WasmJS targets.
  */
-class JsFileStorage : FileStorage {
+open class WebFileStorage : FileStorage {
     /**
      * Saves an image represented as a byte array into `localStorage`.
      * The bytes are encoded to a Base64 string before storing.
@@ -43,7 +44,7 @@ class JsFileStorage : FileStorage {
     }
 
     /**
-     * Deletes the specified image from storage.
+     * Deletes the specified image from `localStorage`.
      *
      * @param path The virtual path assigned when the image was saved.
      * @return A [Result] indicating success or failure of the deletion.
@@ -53,12 +54,12 @@ class JsFileStorage : FileStorage {
             localStorage.removeItem(path)
             Result.success(Unit)
         } else {
-            Result.failure(Exception("File not found: $path"))
+            Result.failure(IllegalArgumentException("File not found: $path"))
         }
 
     /**
-     * Clears all cached images stored by this [JsFileStorage] instance.
-     * It scans `localStorage` and removes keys starting with the virtual path prefix.
+     * Clears all cached images stored by this [WebFileStorage] instance.
+     * Scans `localStorage` and removes keys starting with the `mem://path/` prefix.
      */
     override fun clearCache() {
         val keysToRemove = mutableListOf<String>()
@@ -75,8 +76,18 @@ class JsFileStorage : FileStorage {
 }
 
 /**
- * Creates and returns an instance of [JsFileStorage].
+ * Typealias preserving source compatibility for JS callers referencing [JsFileStorage].
+ */
+typealias JsFileStorage = WebFileStorage
+
+/**
+ * Typealias preserving source compatibility for WasmJS callers referencing [WasmJsFileStorage].
+ */
+typealias WasmJsFileStorage = WebFileStorage
+
+/**
+ * Creates and returns an instance of [WebFileStorage] for JS and WasmJS targets.
  *
  * @return A [FileStorage] implementation tailored for the web using `localStorage`.
  */
-actual fun createFileStorage(): FileStorage = JsFileStorage()
+actual fun createFileStorage(): FileStorage = WebFileStorage()

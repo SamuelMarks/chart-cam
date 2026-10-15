@@ -21,7 +21,7 @@ import java.security.SecureRandom
  * Incorporates SQLCipher to ensure database encryption at rest (HIPAA/PHI compliance).
  * The passphrase is generated cryptographically securely and stored using Android Keystore.
  */
-actual class DatabaseDriverFactory actual constructor() {
+actual class DatabaseDriverFactory actual constructor() : SqlDriverFactory {
     /** Companion object */
     companion object {
         private const val PASSPHRASE_LENGTH = 32
@@ -35,7 +35,7 @@ actual class DatabaseDriverFactory actual constructor() {
      *
      * @return A configured [SqlDriver] suitable for operating on an encrypted SQLite database.
      */
-    actual fun createDriver(): SqlDriver {
+    actual override fun createDriver(): SqlDriver {
         val context = AndroidAppInit.getContext()
 
         libraryLoader.invoke("sqlcipher")

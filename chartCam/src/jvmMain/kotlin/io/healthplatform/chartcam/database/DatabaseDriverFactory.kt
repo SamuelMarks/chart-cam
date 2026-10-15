@@ -12,7 +12,7 @@ import java.io.File
 /**
  * A factory for creating [SqlDriver] instances on the JVM using SQLite JDBC.
  */
-actual class DatabaseDriverFactory actual constructor() {
+actual class DatabaseDriverFactory actual constructor() : SqlDriverFactory {
     /**
      * Creates and initializes a new [SqlDriver] connection to the local SQLite database.
      *
@@ -20,7 +20,7 @@ actual class DatabaseDriverFactory actual constructor() {
      *
      * @return An initialized [SqlDriver] instance ready for database operations.
      */
-    actual fun createDriver(): SqlDriver {
+    actual override fun createDriver(): SqlDriver {
         // NOTE: Standard sqlite-jdbc driver does not support transparent database encryption.
         // For a true HIPAA-compliant desktop JVM build, you must replace the standard
         // sqlite-jdbc dependency with a commercial SQLCipher JDBC driver (e.g., Zetetic)

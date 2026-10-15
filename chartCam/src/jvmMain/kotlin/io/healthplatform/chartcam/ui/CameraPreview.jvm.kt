@@ -119,9 +119,10 @@ actual fun CameraPreview(
                 .semantics { contentDescription = cdText },
         contentAlignment = Alignment.Center,
     ) {
-        if (imageBitmap != null) {
+        val currentBitmap = imageBitmap
+        if (currentBitmap != null) {
             Image(
-                bitmap = imageBitmap!!,
+                bitmap = currentBitmap,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,

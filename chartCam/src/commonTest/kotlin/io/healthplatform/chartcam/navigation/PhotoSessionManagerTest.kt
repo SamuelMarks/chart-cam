@@ -5,6 +5,7 @@
 
 package io.healthplatform.chartcam.navigation
 
+import io.healthplatform.chartcam.utils.ChartCamError
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -12,7 +13,7 @@ import kotlin.test.assertTrue
 
 /**
  * Unit tests verifying [PhotoSessionManager] functionality including addition, removal,
- * clearing, retrieval, and state flow synchronization.
+ * clearing, capacity enforcement, retrieval, and state flow synchronization.
  */
 class PhotoSessionManagerTest {
     /**
@@ -28,27 +29,39 @@ class PhotoSessionManagerTest {
     }
 
     /**
-     * Verifies adding, retrieving, and setting multiple photos.
+     * Verifies adding, retrieving, and setting multiple photos as well as capacity limits.
      */
     @Test
     fun testAddGetAndSetPhotos() {
         val manager = PhotoSessionManager()
 
-        manager.addPhoto("p1", "/path/1.jpg")
+        assertTrue(manager.addPhoto("p1", "/path/1.jpg").isSuccess)
         assertEquals(1, manager.photoCount())
         assertEquals("/path/1.jpg", manager.getPhoto("p1"))
         assertNull(manager.getPhoto("non-existent"))
         assertEquals(mapOf("p1" to "/path/1.jpg"), manager.get())
 
-        manager.addPhoto("p2", "/path/2.jpg")
+        assertTrue(manager.addPhoto("p2", "/path/2.jpg").isSuccess)
         assertEquals(2, manager.photoCount())
         assertEquals("/path/2.jpg", manager.getPhoto("p2"))
 
         val bulkPhotos = mapOf("a" to "/a.jpg", "b" to "/b.jpg", "c" to "/c.jpg")
-        manager.setPhotos(bulkPhotos)
+        assertTrue(manager.setPhotos(bulkPhotos).isSuccess)
         assertEquals(3, manager.photoCount())
         assertEquals(bulkPhotos, manager.get())
         assertEquals(bulkPhotos, manager.pendingPhotos.value)
+
+        val oversized = (1..1001).associate { "id_$it" to "/path/$it.jpg" }
+        val setOversizedResult = manager.setPhotos(oversized)
+        assertTrue(setOversizedResult.isFailure)
+        assertTrue(setOversizedResult.exceptionOrNull() is ChartCamError.StateViolation)
+
+        val atLimit = (1..1000).associate { "id_$it" to "/path/$it.jpg" }
+        assertTrue(manager.setPhotos(atLimit).isSuccess)
+        assertTrue(manager.addPhoto("id_1", "/path/updated.jpg").isSuccess)
+        val addOverLimitResult = manager.addPhoto("id_1001", "/path/1001.jpg")
+        assertTrue(addOverLimitResult.isFailure)
+        assertTrue(addOverLimitResult.exceptionOrNull() is ChartCamError.StateViolation)
     }
 
     /**

@@ -99,14 +99,16 @@ class JsCameraManager : CameraManager {
         val constraints = getVideoConstraints(mode)
         window.navigator.mediaDevices
             .getUserMedia(constraints)
-            .then { stream ->
-                videoElement.srcObject = stream
-                null
-            }.catch { err ->
-                // allow-exception
-                consoleError("Error accessing camera: ", err)
-                null
-            }
+            .then(
+                onFulfilled = { stream ->
+                    videoElement.srcObject = stream
+                    null
+                },
+                onRejected = { err ->
+                    consoleError("Error accessing camera: ", err)
+                    null
+                },
+            )
     }
 
     /**

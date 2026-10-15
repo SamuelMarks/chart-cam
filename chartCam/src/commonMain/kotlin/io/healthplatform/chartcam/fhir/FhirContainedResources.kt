@@ -24,6 +24,7 @@ import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.Reference
 import dev.ohs.fhir.model.r4.Resource
+import io.healthplatform.chartcam.utils.ChartCamError
 import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
@@ -64,30 +65,44 @@ fun createLocalReference(child: Resource): Reference {
 }
 
 /**
- * Attaches a child [Resource] to a [DomainResource]'s contained list in an immutable fashion.
+ * Attaches a child [Resource] to a [DomainResource]'s contained list in an immutable, type-safe fashion.
  *
  * @param T The concrete [DomainResource] type.
  * @param parent The parent domain resource.
  * @param child The child resource to contain.
- * @return A [Result] enclosing the updated parent resource.
+ * @return A [Result] enclosing the updated parent resource of type [T] or a [ChartCamError.ValidationFailure].
  */
-@Suppress("UNCHECKED_CAST")
-fun <T : DomainResource> addContainedResource(
+inline fun <reified T : DomainResource> addContainedResource(
     parent: T,
     child: Resource,
 ): Result<T> {
     val updatedContained = parent.contained + child
-    val updated =
-        copyClinicalResource(parent, updatedContained)
-            ?: copyAdministrativeResource(parent, updatedContained)
-            ?: return Result.failure(
-                IllegalArgumentException(
-                    "Unsupported DomainResource type for containment: ${parent::class.simpleName}",
-                ),
-            )
-    @Suppress("UNCHECKED_CAST")
-    return Result.success(updated as T)
+    val updated = copyDomainResourceWithContained(parent, updatedContained)
+    return if (updated is T) {
+        Result.success(updated)
+    } else {
+        Result.failure(
+            ChartCamError.ValidationFailure(
+                "Unsupported DomainResource type for containment: ${parent::class.simpleName}",
+            ),
+        )
+    }
 }
+
+/**
+ * Creates an updated copy of a [DomainResource] with the provided [updatedContained] resource list.
+ *
+ * @param parent The parent domain resource.
+ * @param updatedContained The new list of contained resources.
+ * @return The updated [DomainResource] copy, or null if the resource type is unsupported.
+ */
+@PublishedApi
+internal fun copyDomainResourceWithContained(
+    parent: DomainResource,
+    updatedContained: List<Resource>,
+): DomainResource? =
+    copyClinicalResource(parent, updatedContained)
+        ?: copyAdministrativeResource(parent, updatedContained)
 
 /**
  * Creates an updated copy of clinical domain resources with new contained items.

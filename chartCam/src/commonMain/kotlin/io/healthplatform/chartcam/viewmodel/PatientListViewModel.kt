@@ -473,8 +473,7 @@ class PatientListViewModel(
                 val names = practitioner.name
                 val username =
                     if (names.isNotEmpty()) {
-                        val fam = names[0].family
-                        if (fam != null && fam.value != null) fam.value!! else ""
+                        names[0].family?.value ?: ""
                     } else {
                         ""
                     }

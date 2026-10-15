@@ -10,33 +10,56 @@ import app.cash.sqldelight.async.coroutines.awaitAsList
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
-import io.healthplatform.chartcam.ui.currentLanguageState
+import io.healthplatform.chartcam.utils.ChartCamError
+import io.healthplatform.chartcam.utils.DefaultDispatcherProvider
+import io.healthplatform.chartcam.utils.DefaultLocaleProvider
+import io.healthplatform.chartcam.utils.DispatcherProvider
+import io.healthplatform.chartcam.utils.LocaleProvider
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import dev.ohs.fhir.model.r4.Boolean as FhirBoolean
 import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
  * Repository to manage Questionnaire forms available for clinical encounters.
- * Currently stores forms in memory and provides both predefined templates and the ability to generate custom forms.
+ * Stores forms in memory and coordinates persistence with [FhirRepository].
+ *
+ * @param fhirRepository Optional persistent FHIR repository for saving/loading custom questionnaires.
+ * @param dispatcherProvider Provider for coroutine dispatchers.
+ * @param localeProvider Provider for the active application language tag.
+ * @param externalScope Optional external [CoroutineScope] for background database persistence.
  */
-class QuestionnaireRepository(
+open class QuestionnaireRepository(
     private val fhirRepository: FhirRepository? = null,
+    private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider,
+    private val localeProvider: LocaleProvider = DefaultLocaleProvider,
+    externalScope: CoroutineScope? = null,
 ) {
+    /**
+     * Supervised coroutine scope used for asynchronous repository synchronization.
+     */
+    private val repositoryScope: CoroutineScope =
+        externalScope ?: CoroutineScope(SupervisorJob() + dispatcherProvider.io)
+
     /**
      * In-memory storage mapping questionnaire IDs to their respective FHIR Questionnaire resources.
      */
     private val inMemoryForms = mutableMapOf<String, Questionnaire>()
 
     /**
-     * Loads a single questionnaire template from bundled JSON resources.
+     * Loads a single questionnaire template from bundled JSON resources, falling back to an in-code
+     * template if the bundled resource is unavailable.
      *
      * @param path The resource path.
      * @param id The template ID.
+     * @return A [Result] enclosing the loaded [Questionnaire].
      */
-    internal suspend fun loadTemplate(path: String, id: String) {
-        val q =
+    internal suspend fun loadTemplate(
+        path: String,
+        id: String,
+    ): Result<Questionnaire> {
+        val loaded =
             runCatching {
                 val bytes =
                     chartcam.chartcam.generated.resources.Res
@@ -47,11 +70,12 @@ class QuestionnaireRepository(
             }.getOrNull() ?: createDefaultFallbackQuestionnaire(id)
                 ?: Questionnaire(status = Enumeration(value = PublicationStatus.Active))
 
-        inMemoryForms[id] = q
+        inMemoryForms[id] = loaded
+        return Result.success(loaded)
     }
 
     /**
-     * Creates a fallback Questionnaire when bundled JSON file cannot be read from resources.
+     * Creates a fallback Questionnaire when a bundled JSON file cannot be read from resources.
      *
      * @param id The template ID.
      * @return A constructed fallback [Questionnaire], or null if unrecognized ID.
@@ -215,19 +239,19 @@ class QuestionnaireRepository(
                 io.healthplatform.chartcam.fhir.FhirJsonParser
                     .decodeTypedResource(Questionnaire.serializer(), entity.serializedResource)
                     .getOrNull()
-            if (q != null) {
-                val qId = q.id
-                if (qId != null) {
-                    inMemoryForms[qId] = q
-                }
+            val qId = q?.id
+            if (q != null && qId != null) {
+                inMemoryForms[qId] = q
             }
         }
     }
 
     /**
-     * Loads the default questionnaire templates from bundled JSON resources.
+     * Loads the default questionnaire templates from bundled JSON resources and any persisted database forms.
+     *
+     * @return A [Result] indicating success or failure of loading default forms.
      */
-    suspend fun loadDefaultForms() {
+    suspend fun loadDefaultForms(): Result<Unit> {
         if (!inMemoryForms.containsKey("std-form")) {
             loadTemplate("files/default_templates/std-form.json", "std-form")
             loadTemplate("files/default_templates/basic-followup.json", "basic-followup")
@@ -238,6 +262,7 @@ class QuestionnaireRepository(
         if (repo != null) {
             loadDatabaseForms(repo)
         }
+        return Result.success(Unit)
     }
 
     /**
@@ -288,23 +313,26 @@ class QuestionnaireRepository(
     /**
      * Retrieves all predefined and currently stored custom questionnaires, localized to the target language.
      *
-     * @param language The BCP-47 language tag (e.g. "es", "ja", "he", "zh"). Defaults to the current in-app language.
+     * @param language The BCP-47 language tag (e.g. "es", "ja", "he", "zh").
      * @return A List containing all available localized [Questionnaire] resources.
      */
-    fun getAvailableQuestionnaires(language: String = currentLanguageState.value): List<Questionnaire> =
+    open fun getAvailableQuestionnaires(
+        language: String = io.healthplatform.chartcam.utils.appLocaleState.value,
+    ): List<Questionnaire> =
         inMemoryForms.values.map { localizeQuestionnaire(it, language) }
 
     /**
      * Retrieves a specific Questionnaire by its unique ID, localized to the target language.
      *
      * @param id The unique identifier of the desired Questionnaire.
-     * @param language The BCP-47 language tag (e.g. "es", "ja", "he", "zh"). Defaults to the current in-app language.
+     * @param language The BCP-47 language tag (e.g. "es", "ja", "he", "zh").
      * @return The [Questionnaire] if found, or null if it does not exist.
      */
-    fun getQuestionnaire(
+    open fun getQuestionnaire(
         id: kotlin.String,
-        language: String = currentLanguageState.value,
-    ): Questionnaire? = inMemoryForms[id]?.let { localizeQuestionnaire(it, language) }
+        language: String = io.healthplatform.chartcam.utils.appLocaleState.value,
+    ): Questionnaire? =
+        inMemoryForms[id]?.let { localizeQuestionnaire(it, language) }
 
     /**
      * Localizes standard questionnaire titles and item questions according to language tag.
@@ -320,7 +348,7 @@ class QuestionnaireRepository(
         val lang = language.lowercase().split("-", "_").first()
         if (lang == "en") return questionnaire
 
-        val titleMap = getStandardTitleTranslations(questionnaire.id ?: "")
+        val titleMap = StandardQuestionnaireTranslations.getTitleTranslations(questionnaire.id ?: "")
         val localizedTitle = titleMap[lang] ?: questionnaire.title?.value
 
         val newItems =
@@ -353,7 +381,7 @@ class QuestionnaireRepository(
         lang: String,
     ): Questionnaire.Item.Builder {
         val linkId = item.linkId.value ?: ""
-        val localizedText = getStandardItemTranslations(qId, linkId)[lang] ?: item.text?.value
+        val localizedText = StandardQuestionnaireTranslations.getItemTranslations(qId, linkId)[lang] ?: item.text?.value
         val builder = item.toBuilder()
         if (localizedText != null) {
             builder.text = FhirString(value = localizedText).toBuilder()
@@ -388,15 +416,8 @@ class QuestionnaireRepository(
             val coding = optVal.value
             val display = coding.display?.value
             val code = coding.code?.value
-            val raw =
-                if (display != null) {
-                    display
-                } else if (code != null) {
-                    code
-                } else {
-                    ""
-                }
-            val translated = getStandardOptionTranslations(raw)[lang] ?: raw
+            val raw = display ?: code ?: ""
+            val translated = StandardQuestionnaireTranslations.getOptionTranslations(raw)[lang] ?: raw
             val codingBuilder = coding.toBuilder()
             codingBuilder.display = FhirString(value = translated).toBuilder()
             builder.value =
@@ -404,7 +425,7 @@ class QuestionnaireRepository(
                     .Coding(codingBuilder.build())
         } else if (optVal is Questionnaire.Item.AnswerOption.Value.String) {
             val raw = optVal.value.value ?: ""
-            val translated = getStandardOptionTranslations(raw)[lang] ?: raw
+            val translated = StandardQuestionnaireTranslations.getOptionTranslations(raw)[lang] ?: raw
             builder.value =
                 Questionnaire.Item.AnswerOption.Value.String(
                     FhirString(value = translated),
@@ -412,260 +433,6 @@ class QuestionnaireRepository(
         }
         return builder
     }
-
-    /**
-     * Returns translations for standard answer options.
-     *
-     * @param optionValue The raw option value or display.
-     * @return Map of language code to translated option text.
-     */
-    private fun getStandardOptionTranslations(optionValue: String): Map<String, String> =
-        when (optionValue.lowercase()) {
-            "routine" ->
-                mapOf(
-                    "es" to "Rutina",
-                    "ja" to "定期",
-                    "he" to "שגרתי",
-                    "zh" to "常規",
-                )
-            "urgent" ->
-                mapOf(
-                    "es" to "Urgente",
-                    "ja" to "緊急",
-                    "he" to "דחוף",
-                    "zh" to "緊急",
-                )
-            else -> emptyMap()
-        }
-
-    /**
-     * Returns standard translated titles for bundled forms.
-     *
-     * @param qId The questionnaire template ID.
-     * @return Map of language code to translated title.
-     */
-    private fun getStandardTitleTranslations(qId: String): Map<String, String> =
-        when (qId) {
-            "std-form" ->
-                mapOf(
-                    "es" to "Formulario Clínico Estándar",
-                    "ja" to "標準臨床問診票",
-                    "he" to "טופס קליני סטנדרטי",
-                    "zh" to "標準臨床問診表",
-                )
-            "basic-followup" ->
-                mapOf(
-                    "es" to "Seguimiento Básico",
-                    "ja" to "基本フォローアップ",
-                    "he" to "מעקב בסיסי",
-                    "zh" to "基本追蹤",
-                )
-            "facial-cornea-profile" ->
-                mapOf(
-                    "es" to "Examen de perfil facial y córnea",
-                    "ja" to "顔貌側面および角膜検査",
-                    "he" to "בדיקת פרופיל פנים וקרנית",
-                    "zh" to "面部側臉與角膜檢查",
-                )
-            else -> emptyMap()
-        }
-
-    /**
-     * Returns standard translated item text for bundled forms.
-     *
-     * @param qId The questionnaire template ID.
-     * @param linkId The item linkId.
-     * @return Map of language code to translated item question text.
-     */
-    private fun getStandardItemTranslations(
-        qId: String,
-        linkId: String,
-    ): Map<String, String> =
-        when (qId) {
-            "std-form" -> getStdFormItemTranslations(linkId)
-            "basic-followup" -> getBasicFollowupItemTranslations(linkId)
-            "facial-cornea-profile" -> getFacialCorneaProfileItemTranslations(linkId)
-            else -> emptyMap()
-        }
-
-    /**
-     * Item translations for the facial profile and cornea examination template.
-     *
-     * @param linkId The item linkId.
-     * @return Map of language code to translated text.
-     */
-    private fun getFacialCorneaProfileItemTranslations(linkId: String): Map<String, String> =
-        when (linkId) {
-            "clinical_notes" ->
-                mapOf(
-                    "es" to "Observaciones clínicas y notas",
-                    "ja" to "臨床所見およびメモ",
-                    "he" to "תצפיות קליניות והערות",
-                    "zh" to "臨床觀察與備註",
-                )
-            "profile_left" ->
-                mapOf(
-                    "es" to "Perfil izquierdo (córnea y nariz)",
-                    "ja" to "左側面プロファイル（角膜・鼻）",
-                    "he" to "פרופיל שמאל (קרנית ואף)",
-                    "zh" to "左側臉（角膜與鼻子）",
-                )
-            "front_view" ->
-                mapOf(
-                    "es" to "Vista frontal",
-                    "ja" to "正面視",
-                    "he" to "מבט חזיתי",
-                    "zh" to "正臉視角",
-                )
-            "profile_right" ->
-                mapOf(
-                    "es" to "Perfil derecho (córnea y nariz)",
-                    "ja" to "右側面プロファイル（角膜・鼻）",
-                    "he" to "פרופיל ימין (קרנית ואף)",
-                    "zh" to "右側臉（角膜與鼻子）",
-                )
-            else -> emptyMap()
-        }
-
-    /**
-     * Item translations for the standard clinical photo template.
-     *
-     * @param linkId The item linkId.
-     * @return Map of language code to translated text.
-     */
-    private fun getStdFormItemTranslations(linkId: String): Map<String, String> =
-        getStdFormGeneralTranslations(linkId).ifEmpty { getStdFormPhotoTranslations(linkId) }
-
-    /**
-     * General translations for standard form.
-     *
-     * @param linkId The item linkId.
-     * @return Map of language code to translated text.
-     */
-    private fun getStdFormGeneralTranslations(linkId: String): Map<String, String> =
-        when (linkId) {
-            "notes" ->
-                mapOf(
-                    "es" to "Notas Clínicas",
-                    "ja" to "臨床記録",
-                    "he" to "הערות קליניות",
-                    "zh" to "臨床筆記",
-                )
-            "front" ->
-                mapOf(
-                    "es" to "Frente",
-                    "ja" to "正面",
-                    "he" to "חזית",
-                    "zh" to "正面",
-                )
-            "front_ruler" ->
-                mapOf(
-                    "es" to "Frente + Regla",
-                    "ja" to "正面 + 定規",
-                    "he" to "חזית + סרגל",
-                    "zh" to "正面 + 尺",
-                )
-            else -> emptyMap()
-        }
-
-    /**
-     * Photo orientation translations for standard form.
-     *
-     * @param linkId The item linkId.
-     * @return Map of language code to translated text.
-     */
-    private fun getStdFormPhotoTranslations(linkId: String): Map<String, String> =
-        when (linkId) {
-            "right" ->
-                mapOf(
-                    "es" to "Lado Derecho",
-                    "ja" to "右側",
-                    "he" to "צד ימין",
-                    "zh" to "右側",
-                )
-            "right_ruler" ->
-                mapOf(
-                    "es" to "Lado Derecho + Regla",
-                    "ja" to "右側 + 定規",
-                    "he" to "צד ימין + סרגל",
-                    "zh" to "右側 + 尺",
-                )
-            "back" ->
-                mapOf(
-                    "es" to "Espalda",
-                    "ja" to "背面",
-                    "he" to "גב",
-                    "zh" to "背面",
-                )
-            "back_ruler" ->
-                mapOf(
-                    "es" to "Espalda + Regla",
-                    "ja" to "背面 + 定規",
-                    "he" to "גב + סרגל",
-                    "zh" to "背面 + 尺",
-                )
-            "left" ->
-                mapOf(
-                    "es" to "Lado Izquierdo",
-                    "ja" to "左側",
-                    "he" to "צד שמאל",
-                    "zh" to "左側",
-                )
-            "left_ruler" ->
-                mapOf(
-                    "es" to "Lado Izquierdo + Regla",
-                    "ja" to "左側 + 定規",
-                    "he" to "צד שמאל + סרגל",
-                    "zh" to "左側 + 尺",
-                )
-            else -> emptyMap()
-        }
-
-    /**
-     * Item translations for the basic follow-up template.
-     *
-     * @param linkId The item linkId.
-     * @return Map of language code to translated text.
-     */
-    private fun getBasicFollowupItemTranslations(linkId: String): Map<String, String> =
-        when (linkId) {
-            "notes" ->
-                mapOf(
-                    "es" to "Notas de seguimiento",
-                    "ja" to "フォローアップ記録",
-                    "he" to "הערות מעקב",
-                    "zh" to "追蹤記錄",
-                )
-            "followup_type" ->
-                mapOf(
-                    "es" to "Tipo de seguimiento",
-                    "ja" to "フォローアップの種類",
-                    "he" to "סוג המעקב",
-                    "zh" to "追蹤類型",
-                )
-            "urgent_reason" ->
-                mapOf(
-                    "es" to "Motivo de urgencia",
-                    "ja" to "緊急の理由",
-                    "he" to "סיבת הדחיפות",
-                    "zh" to "緊急原因",
-                )
-            "patient_consent" ->
-                mapOf(
-                    "es" to "El paciente consintió las fotos",
-                    "ja" to "患者が写真撮影に同意しました",
-                    "he" to "המטופל הסכים לצילום תמונות",
-                    "zh" to "病患已同意拍攝相片",
-                )
-            "front" ->
-                mapOf(
-                    "es" to "Vista frontal",
-                    "ja" to "正面写真",
-                    "he" to "מבט חזיתי",
-                    "zh" to "正面視圖",
-                )
-            else -> emptyMap()
-        }
 
     /**
      * Dynamically creates and stores a new custom Questionnaire with a specified number of photo attachment items.
@@ -714,17 +481,18 @@ class QuestionnaireRepository(
     }
 
     /**
-     * Saves an externally created Questionnaire to the repository.
+     * Saves an externally created Questionnaire to the repository synchronously in-memory
+     * and dispatches persistence to the supervised [repositoryScope].
      *
      * @param questionnaire The Questionnaire to save.
-     * @return A [Result] indicating success or failure.
+     * @return A [Result] indicating success or a [ChartCamError.ValidationFailure] if ID is missing.
      */
     fun saveQuestionnaire(questionnaire: Questionnaire): Result<Unit> {
         val qId = questionnaire.id
         return if (qId != null) {
             inMemoryForms[qId] = questionnaire
             fhirRepository?.let { repo ->
-                CoroutineScope(Dispatchers.Default).launch {
+                repositoryScope.launch {
                     repo.saveResource("Questionnaire", qId, questionnaire)
                 }
             }
@@ -735,7 +503,24 @@ class QuestionnaireRepository(
     }
 
     /**
-     * Deletes a Questionnaire from the repository.
+     * Saves an externally created Questionnaire and suspends until database persistence completes.
+     *
+     * @param questionnaire The Questionnaire to save.
+     * @return A [Result] indicating success or failure of both in-memory and database persistence.
+     */
+    suspend fun saveQuestionnaireSuspending(questionnaire: Questionnaire): Result<Unit> {
+        val qId = questionnaire.id
+        return when {
+            qId == null -> Result.failure(ChartCamError.ValidationFailure("Questionnaire ID must not be null"))
+            else -> {
+                inMemoryForms[qId] = questionnaire
+                fhirRepository?.saveResource("Questionnaire", qId, questionnaire) ?: Result.success(Unit)
+            }
+        }
+    }
+
+    /**
+     * Deletes a Questionnaire from the repository in-memory and dispatches deletion to [repositoryScope].
      *
      * @param id The ID of the Questionnaire to delete.
      * @return A [Result] indicating success or failure.
@@ -743,10 +528,22 @@ class QuestionnaireRepository(
     fun deleteQuestionnaire(id: kotlin.String): Result<Unit> {
         inMemoryForms.remove(id)
         fhirRepository?.let { repo ->
-            CoroutineScope(Dispatchers.Default).launch {
+            repositoryScope.launch {
                 repo.deleteResource("Questionnaire", id)
             }
         }
         return Result.success(Unit)
+    }
+
+    /**
+     * Deletes a Questionnaire from the repository and suspends until database deletion completes.
+     *
+     * @param id The ID of the Questionnaire to delete.
+     * @return A [Result] indicating success or failure of the deletion.
+     */
+    suspend fun deleteQuestionnaireSuspending(id: kotlin.String): Result<Unit> {
+        inMemoryForms.remove(id)
+        val repo = fhirRepository ?: return Result.success(Unit)
+        return repo.deleteResource("Questionnaire", id)
     }
 }

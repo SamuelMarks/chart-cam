@@ -433,9 +433,9 @@ private fun CaptureScreenContent(
                 coroutineScope.launch {
                     val result = cameraManager.stopVideoRecording()
                     isRecordingVideo = false
-                    if (result.isSuccess) {
+                    result.onSuccess { videoBytes ->
                         val fileName = "video_${io.healthplatform.chartcam.utils.UUID.randomUUID()}.mp4"
-                        val path = fileStorage.saveImage(fileName, result.getOrNull()!!)
+                        val path = fileStorage.saveImage(fileName, videoBytes)
                         viewModel.onVideoRecorded(path)
                     }
                 }

@@ -10,6 +10,7 @@ import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.Resource
+import io.healthplatform.chartcam.utils.ChartCamDomainError
 import io.healthplatform.chartcam.utils.UUID
 import dev.ohs.fhir.model.r4.String as FhirString
 
@@ -19,8 +20,9 @@ import dev.ohs.fhir.model.r4.String as FhirString
  * @param message Explanation of the validation violation.
  */
 sealed class FhirValidationException(
-    message: String,
-) : Exception(message) {
+    override val message: String,
+) : Exception(message),
+    ChartCamDomainError {
     /**
      * Exception thrown when a mandatory field is missing in the FHIR resource.
      *
@@ -161,7 +163,7 @@ object FhirValidator {
         }
 
     /**
-     * Evaluates structural questionnaire errors.
+     * Evaluates structural questionnaire errors across all top-level and nested items.
      *
      * @param questionnaire The questionnaire resource.
      * @return A validation exception if an error is found, or null.
@@ -181,7 +183,7 @@ object FhirValidator {
     }
 
     /**
-     * Validates individual questionnaire items.
+     * Validates questionnaire items and their nested child items recursively.
      *
      * @param items List of questionnaire items.
      * @param linkIds Set of encountered linkIds.
@@ -192,7 +194,7 @@ object FhirValidator {
         linkIds: MutableSet<String>,
     ): FhirValidationException? {
         for (item in items) {
-            val err = validateSingleItem(item, linkIds)
+            val err = validateSingleItem(item, linkIds) ?: validateItems(item.item, linkIds)
             if (err != null) return err
         }
         return null
@@ -222,7 +224,7 @@ object FhirValidator {
     }
 
     /**
-     * Validates that all enableWhen clauses point to existing linkIds.
+     * Validates recursively that all enableWhen clauses point to existing linkIds.
      *
      * @param items List of questionnaire items.
      * @param linkIds Set of valid linkIds in the questionnaire.
@@ -231,18 +233,19 @@ object FhirValidator {
     internal fun validateEnableWhenClauses(
         items: List<Questionnaire.Item>,
         linkIds: Set<String>,
-    ): FhirValidationException? {
-        for (item in items) {
+    ): FhirValidationException? =
+        items.firstNotNullOfOrNull { item ->
             val sourceId = item.linkId.value ?: ""
-            for (ew in item.enableWhen) {
-                val target = ew.question.value
-                if (target != null && !linkIds.contains(target)) {
-                    return FhirValidationException.DanglingEnableWhenReferenceException(sourceId, target)
-                }
+            val danglingTarget =
+                item.enableWhen
+                    .mapNotNull { it.question.value }
+                    .firstOrNull { !linkIds.contains(it) }
+            if (danglingTarget != null) {
+                FhirValidationException.DanglingEnableWhenReferenceException(sourceId, danglingTarget)
+            } else {
+                validateEnableWhenClauses(item.item, linkIds)
             }
         }
-        return null
-    }
 
     /**
      * Collects Patient validation issues for OperationOutcome generation.
@@ -317,7 +320,22 @@ object FhirValidator {
             )
         }
         val linkIds = mutableSetOf<String>()
-        for (item in questionnaire.item) {
+        collectItemOutcomeIssuesRecursively(questionnaire.item, linkIds, issues)
+    }
+
+    /**
+     * Recursively collects item linkId and duplicate linkId issues for [OperationOutcome].
+     *
+     * @param items List of items to inspect.
+     * @param linkIds Set of seen linkIds.
+     * @param issues Mutable list of issues to append to.
+     */
+    private fun collectItemOutcomeIssuesRecursively(
+        items: List<Questionnaire.Item>,
+        linkIds: MutableSet<String>,
+        issues: MutableList<OperationOutcome.Issue>,
+    ) {
+        for (item in items) {
             val id = item.linkId.value
             if (id.isNullOrBlank()) {
                 issues.add(
@@ -338,6 +356,7 @@ object FhirValidator {
                     ),
                 )
             }
+            collectItemOutcomeIssuesRecursively(item.item, linkIds, issues)
         }
     }
 

@@ -596,9 +596,12 @@ fun PatientListScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        val bytes = state.exportedData!!.encodeToByteArray()
-                        val path = fileStorage.saveImage("export.enc", bytes)
-                        shareService.shareFile(path)
+                        val exported = state.exportedData
+                        if (exported != null) {
+                            val bytes = exported.encodeToByteArray()
+                            val path = fileStorage.saveImage("export.enc", bytes)
+                            shareService.shareFile(path)
+                        }
                     }) {
                         Text(stringResource(Res.string.share_file))
                     }

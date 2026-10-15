@@ -9,6 +9,7 @@
 package io.healthplatform.chartcam.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -16,7 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import io.healthplatform.chartcam.database.DatabaseDriverFactory
+import io.healthplatform.chartcam.database.createDatabaseDriverFactory
 import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.ExportImportService
@@ -41,8 +42,13 @@ fun AppNavigation() {
     val storage = remember { createSecureStorage() }
     val authRepository = remember { AuthRepository(storage) }
 
-    val dbFactory = remember { DatabaseDriverFactory() }
+    val dbFactory = remember { createDatabaseDriverFactory() }
     val driver = remember { dbFactory.createDriver() }
+    DisposableEffect(driver) {
+        onDispose {
+            driver.close()
+        }
+    }
     val fhirRepository = remember { FhirRepository(driver) }
     val questionnaireRepository = remember { QuestionnaireRepository(fhirRepository) }
 

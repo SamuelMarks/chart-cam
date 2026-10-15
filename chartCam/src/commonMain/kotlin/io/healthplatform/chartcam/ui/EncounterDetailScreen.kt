@@ -127,12 +127,18 @@ import org.jetbrains.compose.resources.stringResource
  * @property fhirRepository The FHIR repository.
  * @property authRepository The authentication repository.
  * @property questionnaireRepository The questionnaire repository.
+ * @property fileStorage The platform file storage service.
+ * @property audioRecorderProvider Factory function creating an audio recorder manager from [FileStorage].
  */
 data class EncounterDetailDependencies(
     val photoSessionManager: PhotoSessionManager,
     val fhirRepository: FhirRepository,
     val authRepository: AuthRepository,
     val questionnaireRepository: QuestionnaireRepository,
+    val fileStorage: io.healthplatform.chartcam.files.FileStorage = createFileStorage(),
+    val audioRecorderProvider: (
+        io.healthplatform.chartcam.files.FileStorage,
+    ) -> io.healthplatform.chartcam.media.AudioRecorderManager = { createAudioRecorderManager(it) },
 )
 
 /**
@@ -230,7 +236,7 @@ fun EncounterDetailScreen(
                         },
                     )
                 }
-                EncounterDetailContent(state, actions, viewModel)
+                EncounterDetailContent(state, actions, viewModel, dependencies)
             }
         }
     }
@@ -390,10 +396,16 @@ private fun EncounterTopBar(
 }
 
 /**
- * Internal helper.
- * @param state The state.
- * @param actions The actions.
- * @param viewModel The viewModel.
+ * Renders the main body content for the encounter detail screen, including voice memo dialog,
+ * loading indicator, and photo/form grid.
+ *
+ * **State & Side Effects:**
+ * Observes [state] to toggle between loading and content views and manages the local voice memo dialog state.
+ *
+ * @param state Current UI state of the encounter.
+ * @param actions Navigation and interaction callbacks.
+ * @param viewModel ViewModel coordinating encounter state updates.
+ * @param dependencies Injected repositories and platform services.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -401,6 +413,7 @@ private fun EncounterDetailContent(
     state: EncounterUiState,
     actions: EncounterDetailActions,
     viewModel: EncounterDetailViewModel,
+    dependencies: EncounterDetailDependencies,
 ) {
     var showVoiceMemoDialog by remember { mutableStateOf(false) }
 
@@ -414,8 +427,8 @@ private fun EncounterDetailContent(
         }
 
     if (showVoiceMemoDialog) {
-        val fileStorage = remember { createFileStorage() }
-        val audioRecorder = remember { createAudioRecorderManager(fileStorage) }
+        val fileStorage = dependencies.fileStorage
+        val audioRecorder = remember(fileStorage) { dependencies.audioRecorderProvider(fileStorage) }
 
         AlertDialog(
             onDismissRequest = { showVoiceMemoDialog = false },
@@ -477,7 +490,7 @@ private fun EncounterDetailContent(
             }
 
             items(state.photos) { photo ->
-                PhotoGridItem(photo, actions.onOpenDicomViewer)
+                PhotoGridItem(photo, actions.onOpenDicomViewer, dependencies.fileStorage)
             }
 
             if (canFinalizeEncounter(state)) {
@@ -706,14 +719,19 @@ private fun QuestionnaireFormArea(
 /**
  * Renders a single photo thumbnail mapped from a FHIR DocumentReference.
  *
+ * **State & Side Effects:**
+ * Reads image bytes via [fileStorage] and manages a local dialog state for full-resolution inspection.
+ *
  * @param doc The DocumentReference resource representing the photo.
  * @param onOpenDicomViewer Optional callback to open the photo in the DICOM viewer.
+ * @param fileStorage The platform [io.healthplatform.chartcam.files.FileStorage] used to load image bytes.
  */
 @OptIn(ExperimentalResourceApi::class)
 @Composable
 fun PhotoGridItem(
     doc: DocumentReference,
     onOpenDicomViewer: ((String) -> Unit)? = null,
+    fileStorage: io.healthplatform.chartcam.files.FileStorage = remember { createFileStorage() },
 ) {
     var showFullPhoto by remember { mutableStateOf(false) }
     val photoDescription = doc.description?.value ?: stringResource(Res.string.cd_patient_photo)
@@ -727,24 +745,24 @@ fun PhotoGridItem(
             ?.value
             ?.startsWith("audio/") == true
 
+    val urlPath =
+        doc.content
+            .firstOrNull()
+            ?.attachment
+            ?.url
+            ?.value ?: ""
+
     val bytes =
-        remember(
-            doc.content
-                .firstOrNull()
-                ?.attachment
-                ?.url
-                ?.value ?: "",
-        ) {
-            runCatching {
-                val storage = createFileStorage()
-                storage.readImage(
-                    doc.content
-                        .firstOrNull()
-                        ?.attachment
-                        ?.url
-                        ?.value ?: "",
-                )
-            }.getOrDefault(ByteArray(0))
+        remember(urlPath, fileStorage) {
+            runCatching { fileStorage.readImage(urlPath) }.getOrDefault(ByteArray(0))
+        }
+    val decodedBitmap =
+        remember(bytes) {
+            if (!isAudio && bytes.isNotEmpty()) {
+                runCatching { bytes.decodeToImageBitmap() }.getOrNull()
+            } else {
+                null
+            }
         }
 
     ElevatedCard(
@@ -784,10 +802,9 @@ fun PhotoGridItem(
                     }
                 }
             } else if (bytes.isNotEmpty()) {
-                val bitmap = runCatching { bytes.decodeToImageBitmap() }.getOrNull()
-                if (bitmap != null) {
+                if (decodedBitmap != null) {
                     Image(
-                        bitmap = bitmap,
+                        bitmap = decodedBitmap,
                         contentDescription = null,
                         modifier = Modifier.fillMaxWidth().height(150.dp),
                         contentScale = ContentScale.Crop,
@@ -834,7 +851,7 @@ fun PhotoGridItem(
         }
     }
 
-    if (showFullPhoto && bytes.isNotEmpty()) {
+    if (showFullPhoto && decodedBitmap != null) {
         AlertDialog(
             onDismissRequest = { showFullPhoto = false },
             title = {
@@ -846,7 +863,7 @@ fun PhotoGridItem(
             },
             text = {
                 Image(
-                    bitmap = bytes.decodeToImageBitmap(),
+                    bitmap = decodedBitmap,
                     contentDescription = photoDescription,
                     modifier = Modifier.fillMaxWidth().height(300.dp),
                     contentScale = ContentScale.Fit,

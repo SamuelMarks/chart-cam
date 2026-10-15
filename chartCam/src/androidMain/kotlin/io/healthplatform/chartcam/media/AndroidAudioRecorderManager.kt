@@ -189,11 +189,10 @@ class AndroidAudioRecorderManager(
                 return@withContext Result.failure(AudioError.HardwareUnavailable)
             }
 
-            val readResult = runCatching { f.readBytes() }
-            if (readResult.isFailure) {
-                return@withContext Result.failure(readResult.exceptionOrNull() ?: AudioError.HardwareUnavailable)
-            }
-            val bytes = readResult.getOrNull()!!
+            val bytes =
+                runCatching { f.readBytes() }.getOrElse { err ->
+                    return@withContext Result.failure(err)
+                }
 
             runCatching {
                 f.delete()

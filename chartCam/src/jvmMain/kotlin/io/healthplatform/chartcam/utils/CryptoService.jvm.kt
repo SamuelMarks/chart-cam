@@ -26,7 +26,7 @@ private const val SALT_SIZE = 16
 /**
  * Service providing cryptographic operations on the JVM platform using BouncyCastle and javax.crypto.
  */
-actual class CryptoService actual constructor() {
+actual class CryptoService actual constructor() : CryptoServiceContract {
     /**
      * Derives a cryptographic key using the Argon2 hashing algorithm.
      *
@@ -34,7 +34,7 @@ actual class CryptoService actual constructor() {
      * @param salt The salt byte array.
      * @return The derived cryptographic key.
      */
-    actual suspend fun deriveKeyArgon2(
+    actual override suspend fun deriveKeyArgon2(
         password: String,
         salt: ByteArray,
     ): ByteArray =
@@ -64,7 +64,7 @@ actual class CryptoService actual constructor() {
      * @param key The symmetric key used for encryption.
      * @return A byte array containing the Initialization Vector (IV) followed by the ciphertext.
      */
-    actual suspend fun encryptAesGcm(
+    actual override suspend fun encryptAesGcm(
         plaintext: ByteArray,
         key: ByteArray,
     ): ByteArray =
@@ -90,7 +90,7 @@ actual class CryptoService actual constructor() {
      * @param key The symmetric key used for decryption.
      * @return The decrypted plaintext byte array.
      */
-    actual suspend fun decryptAesGcm(
+    actual override suspend fun decryptAesGcm(
         ciphertext: ByteArray,
         key: ByteArray,
     ): ByteArray =
@@ -115,7 +115,7 @@ actual class CryptoService actual constructor() {
      * @return The Base64 encoded payload containing salt, IV, and ciphertext.
      */
     @OptIn(ExperimentalEncodingApi::class)
-    actual suspend fun encrypt(
+    actual override suspend fun encrypt(
         data: String,
         password: String,
     ): String =
@@ -139,7 +139,7 @@ actual class CryptoService actual constructor() {
      * @return The decrypted plaintext string, or an empty string if decryption fails.
      */
     @OptIn(ExperimentalEncodingApi::class)
-    actual suspend fun decrypt(
+    actual override suspend fun decrypt(
         base64Data: String,
         password: String,
     ): String =

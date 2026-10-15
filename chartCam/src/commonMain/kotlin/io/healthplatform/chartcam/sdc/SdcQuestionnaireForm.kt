@@ -250,6 +250,8 @@ fun RenderQuestionnaireItem(
     if (linkId != null && type != null && !item.isHidden()) {
         RenderQuestionnaireItemImpl(
             item = item,
+            linkId = linkId,
+            type = type,
             state = state,
             onAnswerChanged = onAnswerChanged,
             focusManager = focusManager,
@@ -260,25 +262,32 @@ fun RenderQuestionnaireItem(
 }
 
 /**
- * Internal helper function.
- * @param item The item.
- * @param state The state.
- * @param onAnswerChanged The onAnswerChanged.
- * @param focusManager The focusManager.
- * @param onTakePhotoRequested The onTakePhotoRequested.
- * @param onTakeVideoRequested The onTakeVideoRequested.
+ * Renders a verified non-hidden [Questionnaire.Item] with known [linkId] and [type].
+ *
+ * **State & Side Effects:**
+ * Observes language state, evaluates `enableWhen` visibility, clears answer state when disabled,
+ * and delegates input rendering to specialized item controls.
+ *
+ * @param item The questionnaire item being rendered.
+ * @param linkId The non-null linkId of the item.
+ * @param type The non-null [Questionnaire.QuestionnaireItemType] of the item.
+ * @param state Current form state including answers, touched fields, and configuration.
+ * @param onAnswerChanged Callback invoked when the user updates an answer.
+ * @param focusManager Compose focus manager to handle keyboard navigation.
+ * @param onTakePhotoRequested Callback invoked when photo capture is requested.
+ * @param onTakeVideoRequested Callback invoked when video capture is requested.
  */
 @Composable
 private fun RenderQuestionnaireItemImpl(
     item: Questionnaire.Item,
+    linkId: String,
+    type: Questionnaire.QuestionnaireItemType,
     state: SdcFormState,
     onAnswerChanged: (String, Any?) -> Unit,
     focusManager: FocusManager,
     onTakePhotoRequested: (String) -> Unit,
     onTakeVideoRequested: (String) -> Unit,
 ) {
-    val linkId = item.linkId.value!!
-    val type = item.type.value!!
     val currentLang by io.healthplatform.chartcam.ui.currentLanguageState
         .collectAsState()
     val localizedText = item.getLocalizedText(currentLang)

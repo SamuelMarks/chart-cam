@@ -4,6 +4,7 @@
  */
 package io.healthplatform.chartcam.navigation
 
+import io.healthplatform.chartcam.utils.ChartCamError
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -33,26 +34,51 @@ class PhotoSessionManager {
     val pendingPhotos = _pendingPhotos.asStateFlow()
 
     /**
-     * Sets the pending photos for the current session.
+     * Sets the pending photos for the current session, validating against [MAX_SUPPORTED_PHOTOS].
      *
      * @param photos A map of photo IDs to their corresponding file paths.
+     * @return A [Result] indicating success or a [ChartCamError.StateViolation] if capacity is exceeded.
      */
-    fun setPhotos(photos: Map<String, String>) {
-        _pendingPhotos.value = photos
-    }
+    fun setPhotos(photos: Map<String, String>): Result<Unit> =
+        if (photos.size > MAX_SUPPORTED_PHOTOS) {
+            Result.failure(
+                ChartCamError.StateViolation(
+                    "Photo session capacity exceeded: ${photos.size} > $MAX_SUPPORTED_PHOTOS",
+                ),
+            )
+        } else {
+            _pendingPhotos.value = photos
+            Result.success(Unit)
+        }
 
     /**
-     * Atomically adds a photo to the active session.
+     * Atomically adds a photo to the active session, validating against [MAX_SUPPORTED_PHOTOS].
      *
      * @param id The unique identifier for the photo.
      * @param path The file path of the captured photo.
+     * @return A [Result] indicating success or a [ChartCamError.StateViolation] if capacity is exceeded.
      */
     fun addPhoto(
         id: String,
         path: String,
-    ) {
+    ): Result<Unit> {
+        var limitExceeded = false
         _pendingPhotos.update { current ->
-            current + (id to path)
+            if (!current.containsKey(id) && current.size >= MAX_SUPPORTED_PHOTOS) {
+                limitExceeded = true
+                current
+            } else {
+                current + (id to path)
+            }
+        }
+        return if (limitExceeded) {
+            Result.failure(
+                ChartCamError.StateViolation(
+                    "Cannot add photo '$id': maximum session limit ($MAX_SUPPORTED_PHOTOS) reached",
+                ),
+            )
+        } else {
+            Result.success(Unit)
         }
     }
 
@@ -83,10 +109,10 @@ class PhotoSessionManager {
     }
 
     /**
-     * Resets the entire photo session state, wiping temporary cached image references.
+     * Resets the entire photo session state by delegating to [clear].
      */
     fun reset() {
-        _pendingPhotos.value = emptyMap()
+        clear()
     }
 
     /**

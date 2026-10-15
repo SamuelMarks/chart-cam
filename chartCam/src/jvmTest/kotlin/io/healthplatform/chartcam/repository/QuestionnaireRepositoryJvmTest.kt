@@ -502,5 +502,22 @@ class QuestionnaireRepositoryJvmTest {
 
             // Repeated loadDefaultForms to test already-loaded branch
             qrRepo.loadDefaultForms()
+
+            val suspendFakeRepo = FakeFhirRepo()
+            val suspendQrRepo = QuestionnaireRepository(suspendFakeRepo)
+            val qWithId =
+                Questionnaire
+                    .Builder(Enumeration(value = PublicationStatus.Active))
+                    .apply {
+                        id = "q-suspend-db"
+                        title =
+                            dev.ohs.fhir.model.r4.String
+                                .Builder()
+                                .apply { value = "Suspend DB Form" }
+                    }.build()
+            assertTrue(suspendQrRepo.saveQuestionnaireSuspending(qWithId).isSuccess)
+            assertTrue(suspendFakeRepo.savedResources.containsKey("q-suspend-db"))
+            assertTrue(suspendQrRepo.deleteQuestionnaireSuspending("q-suspend-db").isSuccess)
+            assertTrue(suspendFakeRepo.deletedResources.contains("q-suspend-db"))
         }
 }

@@ -1,4 +1,3 @@
-@file:Suppress("TooGenericExceptionCaught", "LargeClass", "ReturnCount")
 /**
  * @file ExportImportService.kt
  * Contains declarations for ExportImportService.kt.
@@ -20,7 +19,6 @@ import dev.ohs.fhir.model.r4.Practitioner
 import dev.ohs.fhir.model.r4.Provenance
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
-import dev.ohs.fhir.model.r4.Reference
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.ConflictResolutionStrategy
@@ -33,9 +31,8 @@ import io.healthplatform.chartcam.models.createFhirBinary
 import io.healthplatform.chartcam.models.mrn
 import io.healthplatform.chartcam.utils.CryptoService
 import io.healthplatform.chartcam.utils.UUID
-import io.healthplatform.chartcam.utils.decryptCatching
+import io.healthplatform.chartcam.utils.flatMap
 import io.healthplatform.chartcam.utils.runSuspendCatching
-import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
 
 private const val MIN_PASSWORD_LENGTH = 6
@@ -43,7 +40,6 @@ private const val MIN_PASSWORD_LENGTH = 6
 /**
  * Service responsible for creating a full or partial export of local FHIR data into
  * an encrypted Bundle, and conversely importing an encrypted Bundle into the local database.
- *
  */
 open class ExportImportService(
     /** The underlying database. */
@@ -119,58 +115,6 @@ open class ExportImportService(
     }
 
     /**
-     * Extracts a bare Encounter ID from an optional reference element.
-     *
-     * @param ref The reference element.
-     * @return The bare Encounter ID or an empty string.
-     */
-    private fun extractEncounterReferenceId(ref: Reference?): String {
-        val v =
-            if (ref != null) {
-                val r = ref.reference
-                if (r != null) r.value else null
-            } else {
-                null
-            }
-        return if (v != null) v.removePrefix("Encounter/") else ""
-    }
-
-    /**
-     * Extracts a bare Practitioner ID from an optional reference element.
-     *
-     * @param ref The reference element.
-     * @return The bare Practitioner ID or an empty string.
-     */
-    private fun extractPractitionerReferenceId(ref: Reference?): String {
-        val v =
-            if (ref != null) {
-                val r = ref.reference
-                if (r != null) r.value else null
-            } else {
-                null
-            }
-        return if (v != null) v.removePrefix("Practitioner/") else ""
-    }
-
-    /**
-     * Checks if managing organization reference contains the specified practitioner ID.
-     *
-     * @param orgRef The organization reference element.
-     * @param practitionerId The practitioner identifier to match.
-     * @return True if the reference matches the practitioner ID, false otherwise.
-     */
-    private fun organizationMatchesPractitioner(orgRef: Reference?, practitionerId: String): Boolean {
-        val v =
-            if (orgRef != null) {
-                val r = orgRef.reference
-                if (r != null) r.value else null
-            } else {
-                null
-            }
-        return v != null && v.contains(practitionerId)
-    }
-
-    /**
      * Helper for exporting.
      * @param entries The destination entry list.
      * @param exportAll The exportAll.
@@ -190,13 +134,16 @@ open class ExportImportService(
                 val encPatientIds =
                     encounters
                         .mapNotNull { enc ->
-                            extractPatientReferenceId(enc.subject).ifEmpty { null }
+                            ExportImportReferenceHelper.extractPatientReferenceId(enc.subject).ifEmpty { null }
                         }.toSet()
                 fhirRepo.getAllPatients().filter { p ->
                     val rawId = p.id
                     val pid = if (rawId != null) rawId.removePrefix("Patient/") else ""
                     encPatientIds.contains(pid) ||
-                        organizationMatchesPractitioner(p.managingOrganization, practitionerId)
+                        ExportImportReferenceHelper.organizationMatchesPractitioner(
+                            p.managingOrganization,
+                            practitionerId,
+                        )
                 }
             }
         patients.forEach { resource ->
@@ -223,7 +170,7 @@ open class ExportImportService(
             } else {
                 fhirRepo.getAllEncounters().filter { enc ->
                     enc.participant.any { p ->
-                        extractPractitionerReferenceId(p.individual) == cleanPrac
+                        ExportImportReferenceHelper.extractPractitionerReferenceId(p.individual) == cleanPrac
                     }
                 }
             }
@@ -255,7 +202,7 @@ open class ExportImportService(
                     val encList = doc.context?.encounter
                     val ref =
                         if (!encList.isNullOrEmpty()) {
-                            extractEncounterReferenceId(encList[0]).ifEmpty { null }
+                            ExportImportReferenceHelper.extractEncounterReferenceId(encList[0]).ifEmpty { null }
                         } else {
                             null
                         }
@@ -268,16 +215,13 @@ open class ExportImportService(
                 val contentList = resource.content
                 if (contentList.isEmpty()) return@forEach
                 val att = contentList[0].attachment
-                val urlObj = att.url
-                val urlVal = if (urlObj != null) urlObj.value else null
+                val urlVal = att.url?.value
                 if (urlVal.isNullOrBlank()) return@forEach
-                val filePath = urlVal
-                val bytes = fileStorage.readImage(filePath)
+                val bytes = fileStorage.readImage(urlVal)
                 val base64Data = bytes.toByteString().base64()
-                val ctObj = att.contentType
-                val ctVal = if (ctObj != null) ctObj.value else null
-                val mimeType = if (ctVal != null && ctVal.isNotBlank()) ctVal else "image/jpeg"
-                val fileName = filePath.substringAfterLast("/")
+                val ctVal = att.contentType?.value
+                val mimeType = if (!ctVal.isNullOrBlank()) ctVal else "image/jpeg"
+                val fileName = urlVal.substringAfterLast("/")
                 val binary = createFhirBinary(id = fileName, contentTypeStr = mimeType, base64Data = base64Data)
                 entries.add(Bundle.Entry(resource = binary))
             }.onFailure { e ->
@@ -305,7 +249,7 @@ open class ExportImportService(
             } else {
                 val encIds = encounters.mapNotNull { it.id?.removePrefix("Encounter/") }.toSet()
                 fhirRepo.getAllQuestionnaireResponses().filter { qr ->
-                    val ref = extractEncounterReferenceId(qr.encounter).ifEmpty { null }
+                    val ref = ExportImportReferenceHelper.extractEncounterReferenceId(qr.encounter).ifEmpty { null }
                     ref != null && encIds.contains(ref)
                 }
             }
@@ -373,7 +317,7 @@ open class ExportImportService(
                 ConflictType.EXACT_MATCH
             }
 
-        val encCount = encounters.count { extractPatientReferenceId(it.subject) == pid }
+        val encCount = encounters.count { ExportImportReferenceHelper.extractPatientReferenceId(it.subject) == pid }
 
         val resolution =
             if (conflictType == ConflictType.EXACT_MATCH) {
@@ -410,40 +354,27 @@ open class ExportImportService(
                 IllegalArgumentException("Decryption password must not be empty or weak (minimum 6 characters)."),
             )
         }
-        val decryptResult = cryptoService.decryptCatching(encryptedData, password)
-        val jsonData =
-            decryptResult.fold(
-                onSuccess = { it },
-                onFailure = { return Result.failure(it) },
-            )
-        val decodeResult =
-            io.healthplatform.chartcam.fhir.FhirJsonParser
-                .decodeTypedResource(Bundle.serializer(), jsonData)
-        val bundle =
-            decodeResult.fold(
-                onSuccess = { it },
-                onFailure = { return Result.failure(it) },
-            )
+        return ExportImportReferenceHelper
+            .decryptAndDecodeBundle(cryptoService, encryptedData, password)
+            .map { bundle ->
+                val resources = bundle.entry.mapNotNull { it.resource }
+                val patients = resources.filterIsInstance<Patient>()
+                val encounters = resources.filterIsInstance<Encounter>()
+                val docs = resources.filterIsInstance<DocumentReference>()
+                val questionnaires = resources.filterIsInstance<Questionnaire>()
 
-        val resources = bundle.entry.mapNotNull { it.resource }
-        val patients = resources.filterIsInstance<Patient>()
-        val encounters = resources.filterIsInstance<Encounter>()
-        val docs = resources.filterIsInstance<DocumentReference>()
-        val questionnaires = resources.filterIsInstance<Questionnaire>()
+                val stagedPatients = patients.map { buildStagingItem(it, encounters) }
+                val hasConflicts = stagedPatients.any { it.conflictType != ConflictType.EXACT_MATCH }
 
-        val stagedPatients = patients.map { buildStagingItem(it, encounters) }
-        val hasConflicts = stagedPatients.any { it.conflictType != ConflictType.EXACT_MATCH }
-
-        return Result.success(
-            ImportPreviewSummary(
-                totalResources = resources.size,
-                stagedPatients = stagedPatients,
-                stagedEncounterCount = encounters.size,
-                stagedPhotoCount = docs.size,
-                stagedFormCount = questionnaires.size,
-                hasConflicts = hasConflicts,
-            ),
-        )
+                ImportPreviewSummary(
+                    totalResources = resources.size,
+                    stagedPatients = stagedPatients,
+                    stagedEncounterCount = encounters.size,
+                    stagedPhotoCount = docs.size,
+                    stagedFormCount = questionnaires.size,
+                    hasConflicts = hasConflicts,
+                )
+            }
     }
 
     /**
@@ -477,8 +408,7 @@ open class ExportImportService(
                 if (localConflict != null) {
                     val merged = PatientMergeEngine().mergeDemographics(localConflict, incomingPatient)
                     fhirRepo.savePatient(merged, isLocalChange = false)
-                    val localId = localConflict.id
-                    if (localId != null) localId else pid
+                    localConflict.id ?: pid
                 } else {
                     fhirRepo.savePatient(incomingPatient, isLocalChange = false)
                     pid
@@ -536,23 +466,6 @@ open class ExportImportService(
     }
 
     /**
-     * Extracts a bare Patient ID from an optional reference element.
-     *
-     * @param ref The reference element.
-     * @return The bare Patient ID or an empty string.
-     */
-    private fun extractPatientReferenceId(ref: Reference?): String {
-        val v =
-            if (ref != null) {
-                val r = ref.reference
-                if (r != null) r.value else null
-            } else {
-                null
-            }
-        return if (v != null) v.removePrefix("Patient/") else ""
-    }
-
-    /**
      * Imports an encounter resource with patient re-parenting if permitted.
      *
      * @param encounter The encounter to import.
@@ -565,10 +478,10 @@ open class ExportImportService(
         patientIdMapping: Map<String, String?>,
     ) {
         if (!filterOptions.isCategoryEnabled(ImportCategory.ENCOUNTERS)) return
-        val rawRef = extractPatientReferenceId(encounter.subject)
+        val rawRef = ExportImportReferenceHelper.extractPatientReferenceId(encounter.subject)
         val mappedId = patientIdMapping[rawRef]
         if (patientIdMapping.containsKey(rawRef) && mappedId == null) return
-        val targetPid = if (mappedId != null) mappedId else rawRef
+        val targetPid = mappedId ?: rawRef
         val enc =
             if (targetPid != rawRef) {
                 PatientMergeEngine().reparentEncounter(encounter, targetPid)
@@ -591,10 +504,10 @@ open class ExportImportService(
         patientIdMapping: Map<String, String?>,
     ) {
         if (!filterOptions.isCategoryEnabled(ImportCategory.BINARY_PHOTOS)) return
-        val rawRef = extractPatientReferenceId(doc.subject)
+        val rawRef = ExportImportReferenceHelper.extractPatientReferenceId(doc.subject)
         val mappedId = patientIdMapping[rawRef]
         if (patientIdMapping.containsKey(rawRef) && mappedId == null) return
-        val targetPid = if (mappedId != null) mappedId else rawRef
+        val targetPid = mappedId ?: rawRef
         val toSave =
             if (targetPid != rawRef) {
                 PatientMergeEngine().reparentDocumentReference(doc, targetPid)
@@ -617,10 +530,10 @@ open class ExportImportService(
         patientIdMapping: Map<String, String?>,
     ) {
         if (!filterOptions.isCategoryEnabled(ImportCategory.CLINICAL_NOTES)) return
-        val rawRef = extractPatientReferenceId(qr.subject)
+        val rawRef = ExportImportReferenceHelper.extractPatientReferenceId(qr.subject)
         val mappedId = patientIdMapping[rawRef]
         if (patientIdMapping.containsKey(rawRef) && mappedId == null) return
-        val targetPid = if (mappedId != null) mappedId else rawRef
+        val targetPid = mappedId ?: rawRef
         val toSave =
             if (targetPid != rawRef) {
                 PatientMergeEngine().reparentQuestionnaireResponse(qr, targetPid)
@@ -643,15 +556,7 @@ open class ExportImportService(
         savedImageFiles: MutableList<String>,
     ) {
         if (!filterOptions.isCategoryEnabled(ImportCategory.BINARY_PHOTOS)) return
-        val dataObj = binary.data
-        val dataVal = if (dataObj != null) dataObj.value else null
-        val bytes =
-            if (dataVal != null) {
-                val bs = dataVal.decodeBase64()
-                if (bs != null) bs.toByteArray() else null
-            } else {
-                null
-            }
+        val bytes = ExportImportReferenceHelper.decodeBinaryBytes(binary)
         val binaryId = binary.id
         if (bytes != null && !binaryId.isNullOrBlank()) {
             fileStorage.saveImage(binaryId, bytes)
@@ -717,56 +622,41 @@ open class ExportImportService(
                 IllegalArgumentException("Decryption password must not be empty or weak (minimum 6 characters)."),
             )
         }
-        val decryptResult = cryptoService.decryptCatching(encryptedData, password)
-        val jsonData =
-            decryptResult.fold(
-                onSuccess = { it },
-                onFailure = { return Result.failure(it) },
-            )
-        val decodeResult =
-            io.healthplatform.chartcam.fhir.FhirJsonParser
-                .decodeTypedResource(Bundle.serializer(), jsonData)
-        val bundle =
-            decodeResult.fold(
-                onSuccess = { it },
-                onFailure = { return Result.failure(it) },
-            )
+        return ExportImportReferenceHelper
+            .decryptAndDecodeBundle(cryptoService, encryptedData, password)
+            .flatMap { bundle ->
+                val savedImageFiles = mutableListOf<String>()
+                val importBatchResult =
+                    runSuspendCatching {
+                        val patientMapping =
+                            if (filterOptions.isCategoryEnabled(ImportCategory.PATIENTS)) {
+                                val patients = bundle.entry.mapNotNull { it.resource as? Patient }
+                                processPatientBatch(patients, selectedPatientIds, resolutionMap)
+                            } else {
+                                emptyMap()
+                            }
 
-        val savedImageFiles = mutableListOf<String>()
-        val importBatchResult =
-            runSuspendCatching {
-                val patientMapping =
-                    if (filterOptions.isCategoryEnabled(ImportCategory.PATIENTS)) {
-                        val patients = bundle.entry.mapNotNull { it.resource as? Patient }
-                        processPatientBatch(patients, selectedPatientIds, resolutionMap)
-                    } else {
-                        emptyMap()
+                        for (entry in bundle.entry) {
+                            val res = entry.resource ?: continue
+                            if (res !is Patient) {
+                                importEntryResource(res, filterOptions, patientMapping, savedImageFiles)
+                            }
+                        }
                     }
-
-                for (entry in bundle.entry) {
-                    val res = entry.resource ?: continue
-                    if (res !is Patient) {
-                        importEntryResource(res, filterOptions, patientMapping, savedImageFiles)
+                val failureEx = importBatchResult.exceptionOrNull()
+                if (failureEx != null) {
+                    for (savedFile in savedImageFiles) {
+                        runCatching { fileStorage.deleteImage(savedFile) }
                     }
+                    Result.failure(failureEx)
+                } else {
+                    Result.success(Unit)
                 }
             }
-        val failureEx = importBatchResult.exceptionOrNull()
-        return if (failureEx != null) {
-            for (savedFile in savedImageFiles) {
-                runCatching { fileStorage.deleteImage(savedFile) }
-            }
-            Result.failure(failureEx)
-        } else {
-            Result.success(Unit)
-        }
     }
 
     /**
      * Decrypts the provided JSON string and imports the contained FHIR Bundle into the local database.
-     * Supported resources include `Device`, `Practitioner`, `Patient`, `Encounter`, `DocumentReference`,
-     * `Questionnaire`, `QuestionnaireResponse`, `Provenance`, and `Binary`.
-     * `Binary` resources are specifically used to carry raw image bytes (Base64 encoded) and will be
-     * decoded and written to the local [FileStorage].
      *
      * @param encryptedData The password-encrypted JSON string representing a FHIR Bundle.
      * @param password The password used to decrypt the data.

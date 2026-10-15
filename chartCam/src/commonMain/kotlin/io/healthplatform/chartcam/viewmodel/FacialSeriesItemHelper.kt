@@ -35,46 +35,33 @@ internal fun applyFacialSeriesItems(
     if (baseLinkId.isBlank()) {
         Result.failure(IllegalArgumentException("baseLinkId cannot be blank"))
     } else {
-        val leftProfileResult =
-            createFacialSeriesChildItem(
-                linkId = "${baseLinkId}_left",
-                text = leftProfileText,
-                silhouetteCode = "profile-cornea-left",
-                snomedCode = "272480006",
-                snomedDisplay = "Left lateral",
+        runCatching {
+            groupBuilder.item.add(
+                createFacialSeriesChildItem(
+                    linkId = "${baseLinkId}_left",
+                    text = leftProfileText,
+                    silhouetteCode = "profile-cornea-left",
+                    snomedCode = "272480006",
+                    snomedDisplay = "Left lateral",
+                ).getOrThrow(),
             )
-        val frontViewResult =
-            createFacialSeriesChildItem(
-                linkId = "${baseLinkId}_front",
-                text = frontViewText,
-                silhouetteCode = "frontal-face",
-                snomedCode = "272483008",
-                snomedDisplay = "Anterior",
+            groupBuilder.item.add(
+                createFacialSeriesChildItem(
+                    linkId = "${baseLinkId}_front",
+                    text = frontViewText,
+                    silhouetteCode = "frontal-face",
+                    snomedCode = "272483008",
+                    snomedDisplay = "Anterior",
+                ).getOrThrow(),
             )
-        val rightProfileResult =
-            createFacialSeriesChildItem(
-                linkId = "${baseLinkId}_right",
-                text = rightProfileText,
-                silhouetteCode = "profile-cornea-right",
-                snomedCode = "272481005",
-                snomedDisplay = "Right lateral",
-            )
-
-        val leftProfile = leftProfileResult.getOrNull()
-        val frontView = frontViewResult.getOrNull()
-        val rightProfile = rightProfileResult.getOrNull()
-
-        if (leftProfile != null && frontView != null && rightProfile != null) {
-            groupBuilder.item.add(leftProfile)
-            groupBuilder.item.add(frontView)
-            groupBuilder.item.add(rightProfile)
-            Result.success(Unit)
-        } else {
-            Result.failure(
-                leftProfileResult.exceptionOrNull()
-                    ?: frontViewResult.exceptionOrNull()
-                    ?: rightProfileResult.exceptionOrNull()
-                    ?: IllegalArgumentException("Invalid child item configuration"),
+            groupBuilder.item.add(
+                createFacialSeriesChildItem(
+                    linkId = "${baseLinkId}_right",
+                    text = rightProfileText,
+                    silhouetteCode = "profile-cornea-right",
+                    snomedCode = "272481005",
+                    snomedDisplay = "Right lateral",
+                ).getOrThrow(),
             )
         }
     }

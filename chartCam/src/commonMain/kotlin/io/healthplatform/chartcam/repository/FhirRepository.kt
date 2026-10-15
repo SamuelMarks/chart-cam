@@ -1500,11 +1500,12 @@ open class FhirRepository(
         encounterId: String? = null,
         isLocalChange: Boolean,
     ): Result<Unit> {
-        val saveResult = saveResourceTyped("Provenance", provenance.id ?: "", provenance, isLocalChange)
+        val provId = provenance.id
+        val saveResult = saveResourceTyped("Provenance", provId ?: "", provenance, isLocalChange)
         if (saveResult.isFailure) return saveResult
         return runSuspendCatching {
-            if (encounterId != null && provenance.id != null) {
-                dbQuery.insertReferenceIndex("Provenance", provenance.id!!, "encounter", encounterId)
+            if (encounterId != null && provId != null) {
+                dbQuery.insertReferenceIndex("Provenance", provId, "encounter", encounterId)
             }
         }
     }
