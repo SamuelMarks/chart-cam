@@ -9,6 +9,8 @@ import dev.ohs.fhir.model.r4.Bundle
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Resource
 import dev.ohs.fhir.model.r4.Uri
+import dev.ohs.fhir.model.r4.terminologies.BundleType
+import dev.ohs.fhir.model.r4.terminologies.HTTPVerb
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.utils.UUID
 import io.healthplatform.chartcam.utils.runSuspendCatching
@@ -23,14 +25,14 @@ object FhirBundleOrchestrator {
      * @param repository The local FHIR repository to query.
      * @param encounterId The unique identifier of the target encounter.
      * @param patientId The unique identifier of the associated patient.
-     * @param bundleType The [Bundle.BundleType] to assign to the bundle (defaults to Collection).
+     * @param bundleType The [BundleType] to assign to the bundle (defaults to Collection).
      * @return A [Result] enclosing the generated [Bundle].
      */
     suspend fun createEncounterBundle(
         repository: FhirRepository,
         encounterId: String,
         patientId: String,
-        bundleType: Bundle.BundleType = Bundle.BundleType.Collection,
+        bundleType: BundleType = BundleType.Collection,
     ): Result<Bundle> {
         val cleanPatientId = patientId.removePrefix("Patient/")
         val cleanEncounterId = encounterId.removePrefix("Encounter/")
@@ -145,7 +147,7 @@ object FhirBundleOrchestrator {
         return Result.success(
             Bundle(
                 id = UUID.randomUUID(),
-                type = Enumeration(value = Bundle.BundleType.Transaction_Response),
+                type = Enumeration(value = BundleType.Transaction_Response),
                 entry = responseEntries,
             ),
         )
@@ -245,8 +247,8 @@ object FhirBundleOrchestrator {
             return processSaveEntry(repository, entry.resource, isPost = false)
         }
         return when (req.method.value) {
-            Bundle.HTTPVerb.Delete -> processDeleteEntry(repository, req)
-            Bundle.HTTPVerb.Post -> processSaveEntry(repository, entry.resource, isPost = true)
+            HTTPVerb.Delete -> processDeleteEntry(repository, req)
+            HTTPVerb.Post -> processSaveEntry(repository, entry.resource, isPost = true)
             else -> processSaveEntry(repository, entry.resource, isPost = false)
         }
     }

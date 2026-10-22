@@ -10,6 +10,7 @@ import dev.ohs.fhir.model.r4.Canonical
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.Reference
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import io.healthplatform.chartcam.models.createFhirEncounter
 import io.healthplatform.chartcam.models.createFhirPatient
 import kotlinx.datetime.LocalDate
@@ -239,7 +240,7 @@ object DemoDataSeeder {
         chiefComplaint: String,
     ): QuestionnaireResponse =
         QuestionnaireResponse
-            .Builder(status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
+            .Builder(status = Enumeration(value = QuestionnaireResponseStatus.Completed))
             .apply {
                 id = qrId
                 questionnaire = Canonical(value = "Questionnaire/std-form").toBuilder()

@@ -10,6 +10,7 @@ import app.cash.sqldelight.async.coroutines.awaitAsList
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.utils.ChartCamError
 import io.healthplatform.chartcam.utils.DefaultDispatcherProvider
 import io.healthplatform.chartcam.utils.DefaultLocaleProvider
@@ -99,7 +100,7 @@ open class QuestionnaireRepository(
             createItem(
                 "clinical_notes",
                 "Clinical Observations & Notes",
-                Questionnaire.QuestionnaireItemType.Text,
+                QuestionnaireItemType.Text,
                 required = false,
             )
         val left =
@@ -150,7 +151,7 @@ open class QuestionnaireRepository(
         snomedCode: String,
         snomedDisplay: String,
     ): Questionnaire.Item.Builder =
-        createItem(linkId, text, Questionnaire.QuestionnaireItemType.Attachment, required = true).apply {
+        createItem(linkId, text, QuestionnaireItemType.Attachment, required = true).apply {
             extension.add(
                 dev.ohs.fhir.model.r4.Extension
                     .Builder(
@@ -198,11 +199,11 @@ open class QuestionnaireRepository(
     private fun createStdFormFallback(id: String): Questionnaire {
         val items =
             listOf(
-                createItem("notes", "Clinical Notes", Questionnaire.QuestionnaireItemType.String, required = false),
-                createItem("front", "Front", Questionnaire.QuestionnaireItemType.Attachment, required = true),
-                createItem("front_ruler", "Front + Ruler", Questionnaire.QuestionnaireItemType.Attachment, true),
-                createItem("right", "Right Side", Questionnaire.QuestionnaireItemType.Attachment, required = true),
-                createItem("right_ruler", "Right Side + Ruler", Questionnaire.QuestionnaireItemType.Attachment, true),
+                createItem("notes", "Clinical Notes", QuestionnaireItemType.String, required = false),
+                createItem("front", "Front", QuestionnaireItemType.Attachment, required = true),
+                createItem("front_ruler", "Front + Ruler", QuestionnaireItemType.Attachment, true),
+                createItem("right", "Right Side", QuestionnaireItemType.Attachment, required = true),
+                createItem("right_ruler", "Right Side + Ruler", QuestionnaireItemType.Attachment, true),
             )
         return createFhirQuestionnaire(id, "Standard Clinical Photo", items)
     }
@@ -216,9 +217,9 @@ open class QuestionnaireRepository(
     private fun createBasicFollowupFallback(id: String): Questionnaire {
         val items =
             listOf(
-                createItem("notes", "Follow-up Notes", Questionnaire.QuestionnaireItemType.String, required = false),
-                createItem("front", "Front View", Questionnaire.QuestionnaireItemType.Attachment, required = true),
-                createItem("right", "Right View", Questionnaire.QuestionnaireItemType.Attachment, required = true),
+                createItem("notes", "Follow-up Notes", QuestionnaireItemType.String, required = false),
+                createItem("front", "Front View", QuestionnaireItemType.Attachment, required = true),
+                createItem("right", "Right View", QuestionnaireItemType.Attachment, required = true),
             )
         return createFhirQuestionnaire(id, "Basic Follow-up", items)
     }
@@ -277,7 +278,7 @@ open class QuestionnaireRepository(
     private fun createItem(
         linkId: String,
         text: String,
-        type: Questionnaire.QuestionnaireItemType,
+        type: QuestionnaireItemType,
         required: Boolean,
     ): Questionnaire.Item.Builder =
         Questionnaire.Item
@@ -454,7 +455,7 @@ open class QuestionnaireRepository(
                 createItem(
                     "notes",
                     "Clinical Notes",
-                    Questionnaire.QuestionnaireItemType.String,
+                    QuestionnaireItemType.String,
                     required = false,
                 ),
             )
@@ -470,7 +471,7 @@ open class QuestionnaireRepository(
                 createItem(
                     "photo_$i",
                     labelStr,
-                    Questionnaire.QuestionnaireItemType.Attachment,
+                    QuestionnaireItemType.Attachment,
                     required = true,
                 ),
             )

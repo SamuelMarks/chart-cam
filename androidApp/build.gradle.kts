@@ -103,7 +103,7 @@ android {
 }
 
 dependencies {
-    testImplementation(kotlin("test"))
+    testImplementation(libs.kotlin.test)
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
 

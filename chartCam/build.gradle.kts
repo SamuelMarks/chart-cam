@@ -14,7 +14,7 @@ val copyAndroidComposeResources =
 
 buildscript {
     dependencies {
-        classpath("org.jetbrains.dokka:dokka-base:2.0.0")
+        classpath(libs.dokka.base)
     }
 }
 
@@ -91,7 +91,11 @@ kotlin {
         }
     }
 
-    jvm()
+    jvm {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_11)
+        }
+    }
 
     js {
         browser {
@@ -121,7 +125,7 @@ kotlin {
             )
         }
         androidMain.dependencies {
-            implementation("app.cash.sqldelight:async-extensions:2.2.1")
+            implementation(libs.sqldelight.async)
             implementation(libs.bouncycastle)
 
             implementation(libs.compose.uiToolingPreview)
@@ -172,15 +176,15 @@ kotlin {
         wasmJsMain.dependencies {
             implementation(libs.sqldelight.webworker)
             implementation(npm("crypto-js", "4.2.0"))
-            implementation(npm("hash-wasm", "4.11.0"))
-            implementation(npm("crypto-browserify", "3.12.0"))
+            implementation(npm("hash-wasm", "4.12.0"))
+            implementation(npm("crypto-browserify", "3.12.1"))
         }
 
         jsMain.dependencies {
             implementation(libs.sqldelight.webworker)
             implementation(npm("crypto-js", "4.2.0"))
-            implementation(npm("hash-wasm", "4.11.0"))
-            implementation(npm("crypto-browserify", "3.12.0"))
+            implementation(npm("hash-wasm", "4.12.0"))
+            implementation(npm("crypto-browserify", "3.12.1"))
         }
         val androidHostTest =
             getByName("androidHostTest") {

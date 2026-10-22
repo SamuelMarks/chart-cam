@@ -23,6 +23,7 @@ import kotlin.test.assertTrue
  * @property nativeClipboard The underlying native clipboard object.
  */
 class FakeJvmClipboard(
+    @Suppress("OVERRIDE_DEPRECATION")
     override val nativeClipboard: Any,
 ) : Clipboard {
     /**
@@ -227,6 +228,18 @@ class ClipboardUtilsJvmTest {
                 })
             val clipboard = FakeJvmClipboard(awtClipboard)
 
+            assertNull(clipboard.getPlainText())
+        }
+
+    /**
+     * Verifies graceful handling when the underlying clipboard is not an AWT Clipboard.
+     */
+    @Test
+    fun testNonAwtClipboardReturnsNullAndNoOpsOnSet() =
+        runTest {
+            val clipboard = FakeJvmClipboard(Any())
+
+            clipboard.setPlainText("Ignored")
             assertNull(clipboard.getPlainText())
         }
 }

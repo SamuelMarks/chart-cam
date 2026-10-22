@@ -13,6 +13,7 @@ import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.Uri
 import dev.ohs.fhir.model.r4.terminologies.AdministrativeGender
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -49,19 +50,19 @@ class SdcPrePopulatorTest {
                     listOf(
                         Questionnaire.Item(
                             linkId = FhirString(value = "patient_name"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                         Questionnaire.Item(
                             linkId = FhirString(value = "patient_dob"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Date),
+                            type = Enumeration(value = QuestionnaireItemType.Date),
                         ),
                         Questionnaire.Item(
                             linkId = FhirString(value = "patient_gender"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            type = Enumeration(value = QuestionnaireItemType.Choice),
                         ),
                         Questionnaire.Item(
                             linkId = FhirString(value = "unrelated_question"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                             initial =
                                 listOf(
                                     Questionnaire.Item.Initial(
@@ -108,27 +109,27 @@ class SdcPrePopulatorTest {
                         // LinkId with sex
                         Questionnaire.Item(
                             linkId = FhirString(value = "patient_sex"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            type = Enumeration(value = QuestionnaireItemType.Choice),
                         ),
                         // LinkId with fullname
                         Questionnaire.Item(
                             linkId = FhirString(value = "fullname"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                         // LinkId with name only
                         Questionnaire.Item(
                             linkId = FhirString(value = "name"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                         // LinkId with birth
                         Questionnaire.Item(
                             linkId = FhirString(value = "birth_date"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Date),
+                            type = Enumeration(value = QuestionnaireItemType.Date),
                         ),
                         // Initial with Boolean
                         Questionnaire.Item(
                             linkId = FhirString(value = "init_bool"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                            type = Enumeration(value = QuestionnaireItemType.Boolean),
                             initial =
                                 listOf(
                                     Questionnaire.Item.Initial(
@@ -144,7 +145,7 @@ class SdcPrePopulatorTest {
                         // Initial with Decimal
                         Questionnaire.Item(
                             linkId = FhirString(value = "init_dec"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                            type = Enumeration(value = QuestionnaireItemType.Decimal),
                             initial =
                                 listOf(
                                     Questionnaire.Item.Initial(
@@ -163,7 +164,7 @@ class SdcPrePopulatorTest {
                         // Initial with Integer
                         Questionnaire.Item(
                             linkId = FhirString(value = "init_int"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                            type = Enumeration(value = QuestionnaireItemType.Integer),
                             initial =
                                 listOf(
                                     Questionnaire.Item.Initial(
@@ -179,7 +180,7 @@ class SdcPrePopulatorTest {
                         // Initial with Date
                         Questionnaire.Item(
                             linkId = FhirString(value = "init_date"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Date),
+                            type = Enumeration(value = QuestionnaireItemType.Date),
                             initial =
                                 listOf(
                                     Questionnaire.Item.Initial(
@@ -192,7 +193,7 @@ class SdcPrePopulatorTest {
                         // Initial with DateTime
                         Questionnaire.Item(
                             linkId = FhirString(value = "init_datetime"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.DateTime),
+                            type = Enumeration(value = QuestionnaireItemType.DateTime),
                             initial =
                                 listOf(
                                     Questionnaire.Item.Initial(
@@ -210,7 +211,7 @@ class SdcPrePopulatorTest {
                         // Initial with Uri
                         Questionnaire.Item(
                             linkId = FhirString(value = "init_uri"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Url),
+                            type = Enumeration(value = QuestionnaireItemType.Url),
                             initial =
                                 listOf(
                                     Questionnaire.Item.Initial(
@@ -226,7 +227,7 @@ class SdcPrePopulatorTest {
                         // Initial with Coding
                         Questionnaire.Item(
                             linkId = FhirString(value = "init_coding"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            type = Enumeration(value = QuestionnaireItemType.Choice),
                             initial =
                                 listOf(
                                     Questionnaire.Item.Initial(
@@ -245,7 +246,7 @@ class SdcPrePopulatorTest {
                         // Initial with unsupported type (e.g. Attachment)
                         Questionnaire.Item(
                             linkId = FhirString(value = "init_attachment"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                            type = Enumeration(value = QuestionnaireItemType.Attachment),
                             initial =
                                 listOf(
                                     Questionnaire.Item.Initial(
@@ -261,17 +262,17 @@ class SdcPrePopulatorTest {
                         // Item with blank linkId
                         Questionnaire.Item(
                             linkId = FhirString(value = "   "),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                         // Item with null linkId.value and null linkId.id
                         Questionnaire.Item(
                             linkId = FhirString(id = null, value = null),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                         // Item with null linkId.value but linkId.id set
                         Questionnaire.Item(
                             linkId = FhirString(id = "fallback_id", value = null),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                             initial =
                                 listOf(
                                     Questionnaire.Item.Initial(
@@ -284,7 +285,7 @@ class SdcPrePopulatorTest {
                         // Null value in Date initial
                         Questionnaire.Item(
                             linkId = FhirString(value = "null_init_date"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Date),
+                            type = Enumeration(value = QuestionnaireItemType.Date),
                             initial =
                                 listOf(
                                     Questionnaire.Item.Initial(
@@ -297,7 +298,7 @@ class SdcPrePopulatorTest {
                         // Null value in DateTime initial
                         Questionnaire.Item(
                             linkId = FhirString(value = "null_init_datetime"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.DateTime),
+                            type = Enumeration(value = QuestionnaireItemType.DateTime),
                             initial =
                                 listOf(
                                     Questionnaire.Item.Initial(
@@ -313,7 +314,7 @@ class SdcPrePopulatorTest {
                         // Null code in Coding initial
                         Questionnaire.Item(
                             linkId = FhirString(value = "null_init_coding1"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            type = Enumeration(value = QuestionnaireItemType.Choice),
                             initial =
                                 listOf(
                                     Questionnaire.Item.Initial(
@@ -329,7 +330,7 @@ class SdcPrePopulatorTest {
                         // Null code value in Coding initial
                         Questionnaire.Item(
                             linkId = FhirString(value = "null_init_coding2"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            type = Enumeration(value = QuestionnaireItemType.Choice),
                             initial =
                                 listOf(
                                     Questionnaire.Item.Initial(

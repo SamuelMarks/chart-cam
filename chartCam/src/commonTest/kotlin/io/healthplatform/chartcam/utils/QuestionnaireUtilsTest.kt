@@ -16,6 +16,8 @@ import dev.ohs.fhir.model.r4.FhirDecimal
 import dev.ohs.fhir.model.r4.Integer
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemOperator
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -85,7 +87,7 @@ class QuestionnaireUtilsTest {
                 listOf(
                     Questionnaire.Item(
                         linkId = FhirString(value = "x"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                        type = Enumeration(value = QuestionnaireItemType.String),
                     ),
                 ),
                 "",
@@ -96,7 +98,7 @@ class QuestionnaireUtilsTest {
                 listOf(
                     Questionnaire.Item(
                         linkId = FhirString(value = "x"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                        type = Enumeration(value = QuestionnaireItemType.String),
                     ),
                 ),
                 "   ",
@@ -106,25 +108,25 @@ class QuestionnaireUtilsTest {
         val nestedItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "nested-1"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 text = FhirString(value = "Nested Question"),
             )
         val parentItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "parent-1"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                type = Enumeration(value = QuestionnaireItemType.Group),
                 text = FhirString(value = "Parent Question"),
                 item = listOf(nestedItem),
             )
         val duplicateItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "parent-1"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
             )
         val nullLinkIdItem =
             Questionnaire.Item(
                 linkId = FhirString(),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
             )
 
         val items = listOf(parentItem, duplicateItem, nullLinkIdItem)
@@ -165,25 +167,25 @@ class QuestionnaireUtilsTest {
         val itemWithText =
             Questionnaire.Item(
                 linkId = FhirString(value = "q-text"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 text = FhirString(value = "Question Text"),
             )
         val itemWithoutText =
             Questionnaire.Item(
                 linkId = FhirString(value = "q-no-text"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 text = FhirString(value = "   "),
             )
         val itemNullText =
             Questionnaire.Item(
                 linkId = FhirString(value = "q-null-text"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 text = null,
             )
         val itemBlankLinkId =
             Questionnaire.Item(
                 linkId = FhirString(value = "   "),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 text = null,
             )
 
@@ -210,91 +212,91 @@ class QuestionnaireUtilsTest {
             listOf(
                 Questionnaire.Item(
                     linkId = FhirString(value = "date-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Date),
+                    type = Enumeration(value = QuestionnaireItemType.Date),
                     text = FhirString(value = "Date Question"),
                 ),
                 Questionnaire.Item(
                     linkId = FhirString(value = "dt-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.DateTime),
+                    type = Enumeration(value = QuestionnaireItemType.DateTime),
                 ),
                 Questionnaire.Item(
                     linkId = FhirString(value = "dec-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                    type = Enumeration(value = QuestionnaireItemType.Decimal),
                 ),
                 Questionnaire.Item(
                     linkId = FhirString(value = "int-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                    type = Enumeration(value = QuestionnaireItemType.Integer),
                 ),
                 Questionnaire.Item(
                     linkId = FhirString(value = "int-invalid-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                    type = Enumeration(value = QuestionnaireItemType.Integer),
                 ),
                 Questionnaire.Item(
                     linkId = FhirString(value = "str-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ),
                 Questionnaire.Item(
                     linkId = FhirString(value = "blank-str-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ),
                 Questionnaire.Item(
                     linkId = FhirString(value = "list-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                    type = Enumeration(value = QuestionnaireItemType.Choice),
                 ),
                 Questionnaire.Item(
                     linkId = FhirString(value = "empty-list-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                    type = Enumeration(value = QuestionnaireItemType.Choice),
                 ),
                 Questionnaire.Item(
                     linkId = FhirString(value = "bool-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                    type = Enumeration(value = QuestionnaireItemType.Boolean),
                 ),
                 Questionnaire.Item(
                     linkId = FhirString(value = "float-dec-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                    type = Enumeration(value = QuestionnaireItemType.Decimal),
                 ),
                 Questionnaire.Item(
                     linkId = FhirString(value = "float-int-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                    type = Enumeration(value = QuestionnaireItemType.Integer),
                 ),
                 // Group item with nested child
                 Questionnaire.Item(
                     linkId = FhirString(value = "group-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    type = Enumeration(value = QuestionnaireItemType.Group),
                     item =
                         listOf(
                             Questionnaire.Item(
                                 linkId = FhirString(value = "nested-q"),
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                type = Enumeration(value = QuestionnaireItemType.String),
                             ),
                         ),
                 ),
                 // Group item with empty nested children
                 Questionnaire.Item(
                     linkId = FhirString(value = "empty-group-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    type = Enumeration(value = QuestionnaireItemType.Group),
                     item =
                         listOf(
                             Questionnaire.Item(
                                 linkId = FhirString(value = "unanswered-child"),
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                type = Enumeration(value = QuestionnaireItemType.String),
                             ),
                         ),
                 ),
                 // Item with unsupported answer type
                 Questionnaire.Item(
                     linkId = FhirString(value = "unsupported-ans-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ),
                 // Disabled item via enableWhen
                 Questionnaire.Item(
                     linkId = FhirString(value = "disabled-q"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                     enableWhen =
                         listOf(
                             Questionnaire.Item.EnableWhen(
                                 question = FhirString(value = "bool-q"),
-                                operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.EqualTo),
+                                operator = Enumeration(value = QuestionnaireItemOperator.EqualTo),
                                 answer =
                                     Questionnaire.Item.EnableWhen.Answer
                                         .Boolean(FhirBoolean(value = false)),
@@ -304,7 +306,7 @@ class QuestionnaireUtilsTest {
                 // Item with null linkId
                 Questionnaire.Item(
                     linkId = FhirString(),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ),
                 // Item with null type value
                 Questionnaire.Item(

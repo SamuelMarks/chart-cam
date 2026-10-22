@@ -15,6 +15,8 @@ import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.AdministrativeGender
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemOperator
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.fhir.QuestionnaireResponseGenerator
 import io.healthplatform.chartcam.models.createFhirPractitioner
@@ -84,7 +86,7 @@ class SdcConditionalAnswerPruningAndPurgeWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "has_allergy" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                    type = Enumeration(value = QuestionnaireItemType.Boolean),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Does patient have drug allergies?" }
                 }
@@ -96,7 +98,7 @@ class SdcConditionalAnswerPruningAndPurgeWorkflowTest {
                         Questionnaire.Item.EnableWhen.Answer.Boolean(
                             FhirBoolean.Builder().apply { value = true }.build(),
                         ),
-                    operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.EqualTo),
+                    operator = Enumeration(value = QuestionnaireItemOperator.EqualTo),
                     question = FhirString.Builder().apply { value = "has_allergy" },
                 )
 
@@ -104,7 +106,7 @@ class SdcConditionalAnswerPruningAndPurgeWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "allergy_details" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Specify drug allergies and adverse reaction severity" }
                     enableWhen.add(enableWhenCondition)
@@ -114,7 +116,7 @@ class SdcConditionalAnswerPruningAndPurgeWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "allergy_photo" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                    type = Enumeration(value = QuestionnaireItemType.Attachment),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Upload photo of allergic rash" }
                     enableWhen.add(enableWhenCondition)
@@ -211,7 +213,7 @@ class SdcConditionalAnswerPruningAndPurgeWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "sub_question" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Sub Question" }
                 }
@@ -220,7 +222,7 @@ class SdcConditionalAnswerPruningAndPurgeWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "parent_group" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    type = Enumeration(value = QuestionnaireItemType.Group),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Parent Group" }
                     enableWhen.add(
@@ -230,7 +232,7 @@ class SdcConditionalAnswerPruningAndPurgeWorkflowTest {
                                     Questionnaire.Item.EnableWhen.Answer.Boolean(
                                         FhirBoolean.Builder().apply { value = true }.build(),
                                     ),
-                                operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.EqualTo),
+                                operator = Enumeration(value = QuestionnaireItemOperator.EqualTo),
                                 question = FhirString.Builder().apply { value = "root_toggle" },
                             ),
                     )
@@ -241,7 +243,7 @@ class SdcConditionalAnswerPruningAndPurgeWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "root_toggle" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                    type = Enumeration(value = QuestionnaireItemType.Boolean),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Show Advanced" }
                 }

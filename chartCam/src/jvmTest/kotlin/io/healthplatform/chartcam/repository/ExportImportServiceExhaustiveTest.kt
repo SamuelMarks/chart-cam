@@ -24,6 +24,9 @@ import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.Reference
 import dev.ohs.fhir.model.r4.Uri
+import dev.ohs.fhir.model.r4.terminologies.BundleType
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.ConflictResolutionStrategy
@@ -188,7 +191,7 @@ class ExportImportServiceExhaustiveTest {
             val enc1 =
                 Encounter(
                     id = "enc-1",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     subject = Reference(reference = FhirString(value = "Patient/p-prac1")),
                     participant =
@@ -201,7 +204,7 @@ class ExportImportServiceExhaustiveTest {
             val enc2 =
                 Encounter(
                     id = "enc-2",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     subject = Reference(reference = FhirString(value = "Patient/p-prac2")),
                     participant =
@@ -248,14 +251,14 @@ class ExportImportServiceExhaustiveTest {
             val qr1 =
                 QuestionnaireResponse(
                     id = "qr-1",
-                    status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                     encounter = Reference(reference = FhirString(value = "Encounter/enc-1")),
                     subject = Reference(reference = FhirString(value = "Patient/p-prac1")),
                 )
             val qr2 =
                 QuestionnaireResponse(
                     id = "qr-2",
-                    status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                     encounter = Reference(reference = FhirString(value = "Encounter/enc-2")),
                     subject = Reference(reference = FhirString(value = "Patient/p-prac2")),
                 )
@@ -379,12 +382,12 @@ class ExportImportServiceExhaustiveTest {
             val qrNoEnc =
                 QuestionnaireResponse(
                     id = "qr-no-enc",
-                    status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                 )
             val qrEmptyEncRef =
                 QuestionnaireResponse(
                     id = "qr-empty-enc-ref",
-                    status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                     encounter = Reference(reference = null),
                 )
             fhirRepo.saveQuestionnaireResponse(qrNoEnc)
@@ -393,20 +396,20 @@ class ExportImportServiceExhaustiveTest {
             val encNoPrac =
                 Encounter(
                     id = "enc-no-prac",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                 )
             val encNullPracRef =
                 Encounter(
                     id = "enc-null-prac-ref",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     participant = listOf(Encounter.Participant(individual = Reference())),
                 )
             val encNullValPrac =
                 Encounter(
                     id = "enc-null-val-prac",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     participant =
                         listOf(
@@ -418,14 +421,14 @@ class ExportImportServiceExhaustiveTest {
             val encNullIndividual =
                 Encounter(
                     id = "enc-null-indiv",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     participant = listOf(Encounter.Participant(individual = null)),
                 )
             val encPrac1NoSubject =
                 Encounter(
                     id = "enc-prac1-no-subj",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     subject = null,
                     participant =
@@ -438,7 +441,7 @@ class ExportImportServiceExhaustiveTest {
             val encNullIdExport =
                 Encounter(
                     id = null,
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     participant =
                         listOf(
@@ -537,7 +540,7 @@ class ExportImportServiceExhaustiveTest {
             val encNoSubject =
                 Encounter(
                     id = "enc-no-subj",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     subject = null,
                 )
@@ -551,13 +554,13 @@ class ExportImportServiceExhaustiveTest {
             val qrNoSubject =
                 QuestionnaireResponse(
                     id = "qr-no-subj",
-                    status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                     subject = null,
                 )
 
             val bundle =
                 Bundle(
-                    type = Enumeration(value = Bundle.BundleType.Collection),
+                    type = Enumeration(value = BundleType.Collection),
                     entry =
                         listOf(
                             Bundle.Entry(resource = incomingExact),
@@ -585,7 +588,7 @@ class ExportImportServiceExhaustiveTest {
             // Test archive with no conflicts
             val noConflictBundle =
                 Bundle(
-                    type = Enumeration(value = Bundle.BundleType.Collection),
+                    type = Enumeration(value = BundleType.Collection),
                     entry = listOf(Bundle.Entry(resource = incomingNew)),
                 )
             val noConflictJson =
@@ -651,7 +654,7 @@ class ExportImportServiceExhaustiveTest {
             val enc =
                 Encounter(
                     id = "enc-c",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     subject = Reference(reference = FhirString(value = "Patient/p-conflict")),
                 )
@@ -670,14 +673,14 @@ class ExportImportServiceExhaustiveTest {
             val qr =
                 QuestionnaireResponse(
                     id = "qr-c",
-                    status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                     encounter = Reference(reference = FhirString(value = "Encounter/enc-c")),
                     subject = Reference(reference = FhirString(value = "Patient/p-conflict")),
                 )
 
             val bundle =
                 Bundle(
-                    type = Enumeration(value = Bundle.BundleType.Collection),
+                    type = Enumeration(value = BundleType.Collection),
                     entry =
                         listOf(
                             Bundle.Entry(resource = incomingPatient),
@@ -757,7 +760,7 @@ class ExportImportServiceExhaustiveTest {
             val nonConflictingPatient2 = createFhirPatient("p-no-conf-2", "NoConf", "Two", LocalDate(2000, 2, 2), "MRN-NC2")
             val nonConfBundle =
                 Bundle(
-                    type = Enumeration(value = Bundle.BundleType.Collection),
+                    type = Enumeration(value = BundleType.Collection),
                     entry = listOf(Bundle.Entry(resource = nonConflictingPatient1), Bundle.Entry(resource = nonConflictingPatient2)),
                 )
             val nonConfJson =
@@ -834,7 +837,7 @@ class ExportImportServiceExhaustiveTest {
 
             val bundle =
                 Bundle(
-                    type = Enumeration(value = Bundle.BundleType.Collection),
+                    type = Enumeration(value = BundleType.Collection),
                     entry = listOf(Bundle.Entry(resource = bin1), Bundle.Entry(resource = bin2)),
                 )
             val json =
@@ -954,7 +957,7 @@ class ExportImportServiceExhaustiveTest {
             val encUnknownPat =
                 Encounter(
                     id = "enc-unknown",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     subject = Reference(reference = FhirString(value = "Patient/p-unknown")),
                 )
@@ -968,7 +971,7 @@ class ExportImportServiceExhaustiveTest {
             val qrUnknownPat =
                 QuestionnaireResponse(
                     id = "qr-unknown",
-                    status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                     subject = Reference(reference = FhirString(value = "Patient/p-unknown")),
                 )
             val basic =
@@ -981,7 +984,7 @@ class ExportImportServiceExhaustiveTest {
 
             val bundle =
                 Bundle(
-                    type = Enumeration(value = Bundle.BundleType.Collection),
+                    type = Enumeration(value = BundleType.Collection),
                     entry =
                         listOf(
                             Bundle.Entry(resource = patient),
@@ -1041,7 +1044,7 @@ class ExportImportServiceExhaustiveTest {
             val patient2 = createFhirPatient("p-unselected", "Skip", "Me", LocalDate(1990, 1, 1), "MRN-SKIP")
             val bundle2 =
                 Bundle(
-                    type = Enumeration(value = Bundle.BundleType.Collection),
+                    type = Enumeration(value = BundleType.Collection),
                     entry = listOf(Bundle.Entry(resource = patient), Bundle.Entry(resource = patient2)),
                 )
             val json2 =
@@ -1071,14 +1074,14 @@ class ExportImportServiceExhaustiveTest {
             val encUnknownPat =
                 Encounter(
                     id = "enc-unk",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     subject = Reference(reference = FhirString(value = "Patient/p-unk")),
                 )
             val encNullRefVal =
                 Encounter(
                     id = "enc-null-ref-val",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     subject = Reference(reference = FhirString(value = null)),
                 )
@@ -1092,7 +1095,7 @@ class ExportImportServiceExhaustiveTest {
             val qrUnknownPat =
                 QuestionnaireResponse(
                     id = "qr-unk",
-                    status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                     subject = Reference(reference = FhirString(value = "Patient/p-unk")),
                 )
             val binValid =
@@ -1131,7 +1134,7 @@ class ExportImportServiceExhaustiveTest {
 
             val bundle =
                 Bundle(
-                    type = Enumeration(value = Bundle.BundleType.Collection),
+                    type = Enumeration(value = BundleType.Collection),
                     entry =
                         listOf(
                             Bundle.Entry(resource = encUnknownPat),

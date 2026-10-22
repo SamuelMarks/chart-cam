@@ -18,6 +18,8 @@ import dev.ohs.fhir.model.r4.Integer
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.Url
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import io.healthplatform.chartcam.models.BodyMapLocation
 import io.healthplatform.chartcam.models.FitzpatrickSkinType
 import io.healthplatform.chartcam.sdc.SdcEvaluator
@@ -50,7 +52,7 @@ object QuestionnaireResponseGenerator {
             }
 
         return QuestionnaireResponse(
-            status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+            status = Enumeration(value = QuestionnaireResponseStatus.Completed),
             item = responseItemBuilders.map { it.build() },
             questionnaire = canonicalUri,
         )
@@ -91,7 +93,7 @@ object QuestionnaireResponseGenerator {
         val linkId = item.linkId.value
         val isRepeatingGroup =
             linkId != null &&
-                item.type.value == Questionnaire.QuestionnaireItemType.Group &&
+                item.type.value == QuestionnaireItemType.Group &&
                 item.repeats?.value == true
 
         return if (isRepeatingGroup) {
@@ -190,7 +192,7 @@ object QuestionnaireResponseGenerator {
         builder: QuestionnaireResponse.Item.Builder,
     ) {
         val itemType = item.type.value ?: return
-        if (itemType == Questionnaire.QuestionnaireItemType.Choice) {
+        if (itemType == QuestionnaireItemType.Choice) {
             populateChoiceAnswer(item, answerValue, builder)
         } else {
             populateNonChoiceAnswer(itemType, answerValue, builder)
@@ -308,13 +310,13 @@ object QuestionnaireResponseGenerator {
      * @param builder The response item builder.
      */
     private fun populateNonChoiceAnswer(
-        itemType: Questionnaire.QuestionnaireItemType,
+        itemType: QuestionnaireItemType,
         answerValue: Any,
         builder: QuestionnaireResponse.Item.Builder,
     ) {
         when (itemType) {
-            Questionnaire.QuestionnaireItemType.String,
-            Questionnaire.QuestionnaireItemType.Text,
+            QuestionnaireItemType.String,
+            QuestionnaireItemType.Text,
             -> {
                 val strVal =
                     when (answerValue) {
@@ -324,14 +326,14 @@ object QuestionnaireResponseGenerator {
                     }
                 addStringAnswer(builder, strVal)
             }
-            Questionnaire.QuestionnaireItemType.Boolean -> {
+            QuestionnaireItemType.Boolean -> {
                 addBooleanAnswer(builder, answerValue as? Boolean ?: false)
             }
-            Questionnaire.QuestionnaireItemType.Decimal -> addDecimalAnswer(builder, answerValue)
-            Questionnaire.QuestionnaireItemType.Integer -> addIntegerAnswer(builder, answerValue)
-            Questionnaire.QuestionnaireItemType.Date,
-            Questionnaire.QuestionnaireItemType.DateTime,
-            Questionnaire.QuestionnaireItemType.Attachment,
+            QuestionnaireItemType.Decimal -> addDecimalAnswer(builder, answerValue)
+            QuestionnaireItemType.Integer -> addIntegerAnswer(builder, answerValue)
+            QuestionnaireItemType.Date,
+            QuestionnaireItemType.DateTime,
+            QuestionnaireItemType.Attachment,
             ->
                 populateTemporalOrAttachment(itemType, answerValue, builder)
             else -> {}
@@ -346,18 +348,18 @@ object QuestionnaireResponseGenerator {
      * @param builder The response item builder.
      */
     private fun populateTemporalOrAttachment(
-        itemType: Questionnaire.QuestionnaireItemType,
+        itemType: QuestionnaireItemType,
         answerValue: Any,
         builder: QuestionnaireResponse.Item.Builder,
     ) {
         when (itemType) {
-            Questionnaire.QuestionnaireItemType.Date -> {
+            QuestionnaireItemType.Date -> {
                 (answerValue as? String)?.let { addDateAnswer(builder, it) }
             }
-            Questionnaire.QuestionnaireItemType.DateTime -> {
+            QuestionnaireItemType.DateTime -> {
                 (answerValue as? String)?.let { addDateTimeAnswer(builder, it) }
             }
-            Questionnaire.QuestionnaireItemType.Attachment -> {
+            QuestionnaireItemType.Attachment -> {
                 when (answerValue) {
                     is Attachment -> addAttachmentAnswer(builder, answerValue)
                     is String -> addAttachmentAnswer(builder, Attachment(url = Url(value = answerValue)))

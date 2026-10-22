@@ -21,6 +21,7 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Narrative
 import dev.ohs.fhir.model.r4.Xhtml
+import dev.ohs.fhir.model.r4.terminologies.NarrativeStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.createFhirEncounter
@@ -95,7 +96,7 @@ class PatientDetailScreenJvmTest {
                 createFhirEncounter("enc-1", "pat-1", "dr1", "2026-09-01T10:00:00Z").copy(
                     text =
                         Narrative(
-                            status = Enumeration(value = Narrative.NarrativeStatus.Generated),
+                            status = Enumeration(value = NarrativeStatus.Generated),
                             div = Xhtml(value = "<div>Follow-up checkup completed</div>"),
                         ),
                 )
@@ -104,7 +105,7 @@ class PatientDetailScreenJvmTest {
                 createFhirEncounter("enc-3", "pat-1", "dr1", "2026-09-04T10:00:00Z").copy(
                     text =
                         Narrative(
-                            status = Enumeration(value = Narrative.NarrativeStatus.Generated),
+                            status = Enumeration(value = NarrativeStatus.Generated),
                             div = Xhtml(value = ""),
                         ),
                 )

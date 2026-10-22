@@ -8,6 +8,8 @@ import dev.ohs.fhir.model.r4.Boolean
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemOperator
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -31,13 +33,13 @@ class SdcEvaluatorHierarchyTest {
             Questionnaire.Item
                 .Builder(
                     linkId = String.Builder().apply { value = "group_symptoms" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    type = Enumeration(value = QuestionnaireItemType.Group),
                 ).apply {
                     enableWhen.add(
                         Questionnaire.Item.EnableWhen
                             .Builder(
                                 answer = ewTrue,
-                                operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.EqualTo),
+                                operator = Enumeration(value = QuestionnaireItemOperator.EqualTo),
                                 question = String.Builder().apply { value = "has_symptoms" },
                             ),
                     )
@@ -48,13 +50,13 @@ class SdcEvaluatorHierarchyTest {
             Questionnaire.Item
                 .Builder(
                     linkId = String.Builder().apply { value = "temp_reading" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                    type = Enumeration(value = QuestionnaireItemType.Decimal),
                 ).apply {
                     enableWhen.add(
                         Questionnaire.Item.EnableWhen
                             .Builder(
                                 answer = ewTrue,
-                                operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.EqualTo),
+                                operator = Enumeration(value = QuestionnaireItemOperator.EqualTo),
                                 question = String.Builder().apply { value = "fever_present" },
                             ),
                     )
@@ -82,7 +84,7 @@ class SdcEvaluatorHierarchyTest {
             Questionnaire.Item
                 .Builder(
                     linkId = String.Builder().apply { value = "standalone_question" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).build()
 
         assertTrue(SdcEvaluator.isItemHierarchyEnabled(item, emptyList(), emptyMap()))

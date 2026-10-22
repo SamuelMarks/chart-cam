@@ -11,6 +11,7 @@ import dev.ohs.fhir.model.r4.Coding
 import dev.ohs.fhir.model.r4.Extension
 import dev.ohs.fhir.model.r4.Integer
 import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -33,7 +34,7 @@ class SdcExtensionsJvmTest {
                     .apply { value = "test_link" },
             type =
                 dev.ohs.fhir.model.r4
-                    .Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    .Enumeration(value = QuestionnaireItemType.String),
         )
 
     /**

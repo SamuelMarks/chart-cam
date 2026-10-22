@@ -10,12 +10,14 @@ import dev.ohs.fhir.model.r4.Coding
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.ExtensibleEnumeration
 import dev.ohs.fhir.model.r4.Integer
-import dev.ohs.fhir.model.r4.OperationOutcome
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.Uri
 import dev.ohs.fhir.model.r4.terminologies.AdministrativeGender
+import dev.ohs.fhir.model.r4.terminologies.IssueType
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -55,7 +57,7 @@ class OfflineValueSetValidatorTest {
         val nullCodeOutcome = OfflineValueSetValidator.validateCoding(nullCode, setOf("87474-3")).getOrThrow()
         assertNotNull(nullCodeOutcome)
         assertEquals(
-            OperationOutcome.IssueType.Required,
+            IssueType.Required,
             nullCodeOutcome.issue
                 .first()
                 .code.value,
@@ -66,7 +68,7 @@ class OfflineValueSetValidatorTest {
         val blankCodeOutcome = OfflineValueSetValidator.validateCoding(blankCode, setOf("87474-3")).getOrThrow()
         assertNotNull(blankCodeOutcome)
         assertEquals(
-            OperationOutcome.IssueType.Required,
+            IssueType.Required,
             blankCodeOutcome.issue
                 .first()
                 .code.value,
@@ -77,7 +79,7 @@ class OfflineValueSetValidatorTest {
         val sysOutcome = OfflineValueSetValidator.validateCoding(systemMismatch, setOf("87474-3"), "http://loinc.org").getOrThrow()
         assertNotNull(sysOutcome)
         assertEquals(
-            OperationOutcome.IssueType.Code_Invalid,
+            IssueType.Code_Invalid,
             sysOutcome.issue
                 .first()
                 .code.value,
@@ -145,7 +147,7 @@ class OfflineValueSetValidatorTest {
         val emptyRes = OfflineValueSetValidator.validateCodeableConcept(emptyConcept, setOf("87474-3")).getOrThrow()
         assertNotNull(emptyRes)
         assertEquals(
-            OperationOutcome.IssueType.Required,
+            IssueType.Required,
             emptyRes.issue
                 .first()
                 .code.value,
@@ -214,7 +216,7 @@ class OfflineValueSetValidatorTest {
                         // 1. Choice item with String options
                         Questionnaire.Item(
                             linkId = FhirString(value = "string-choice"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            type = Enumeration(value = QuestionnaireItemType.Choice),
                             answerOption =
                                 listOf(
                                     Questionnaire.Item.AnswerOption(
@@ -237,7 +239,7 @@ class OfflineValueSetValidatorTest {
                         // 2. Choice item with Coding options
                         Questionnaire.Item(
                             linkId = FhirString(value = "coding-choice"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            type = Enumeration(value = QuestionnaireItemType.Choice),
                             answerOption =
                                 listOf(
                                     Questionnaire.Item.AnswerOption(
@@ -260,18 +262,18 @@ class OfflineValueSetValidatorTest {
                         // 3. Choice item with no answerOption
                         Questionnaire.Item(
                             linkId = FhirString(value = "empty-choice"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            type = Enumeration(value = QuestionnaireItemType.Choice),
                             answerOption = emptyList(),
                         ),
                         // 4. Non-choice item
                         Questionnaire.Item(
                             linkId = FhirString(value = "text-item"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                         // 5. Item identified only by linkId.id
                         Questionnaire.Item(
                             linkId = FhirString(id = "id-only-link"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            type = Enumeration(value = QuestionnaireItemType.Choice),
                             answerOption =
                                 listOf(
                                     Questionnaire.Item.AnswerOption(
@@ -284,12 +286,12 @@ class OfflineValueSetValidatorTest {
                         // 6. Nested item structure
                         Questionnaire.Item(
                             linkId = FhirString(value = "group-item"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                            type = Enumeration(value = QuestionnaireItemType.Group),
                             item =
                                 listOf(
                                     Questionnaire.Item(
                                         linkId = FhirString(value = "nested-choice"),
-                                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                                        type = Enumeration(value = QuestionnaireItemType.Choice),
                                         answerOption =
                                             listOf(
                                                 Questionnaire.Item.AnswerOption(
@@ -304,12 +306,12 @@ class OfflineValueSetValidatorTest {
                         // 7. Item with blank linkId (ignored in index)
                         Questionnaire.Item(
                             linkId = FhirString(value = "   "),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                         // 8. Item with null linkId value and null id (ignored in index)
                         Questionnaire.Item(
                             linkId = FhirString(),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                     ),
             )
@@ -317,7 +319,7 @@ class OfflineValueSetValidatorTest {
         val response =
             QuestionnaireResponse(
                 id = "qr-options-test",
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                 item =
                     listOf(
                         QuestionnaireResponse.Item(

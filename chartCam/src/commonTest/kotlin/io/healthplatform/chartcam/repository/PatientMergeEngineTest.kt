@@ -16,6 +16,8 @@ import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.terminologies.AdministrativeGender
 import dev.ohs.fhir.model.r4.terminologies.DocumentReferenceStatus
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import dev.ohs.fhir.model.r4.String as FhirString
@@ -98,7 +100,7 @@ class PatientMergeEngineTest {
         val encounter =
             Encounter(
                 id = "enc-1",
-                status = Enumeration(value = Encounter.EncounterStatus.Planned),
+                status = Enumeration(value = EncounterStatus.Planned),
                 `class` = Coding(),
             )
 
@@ -138,7 +140,7 @@ class PatientMergeEngineTest {
         val qr =
             QuestionnaireResponse(
                 id = "qr-1",
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
             )
 
         val reparented1 = engine.reparentQuestionnaireResponse(qr, "target-123")

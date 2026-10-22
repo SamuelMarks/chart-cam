@@ -13,6 +13,9 @@ import dev.ohs.fhir.model.r4.FhirEnum
 import dev.ohs.fhir.model.r4.OperationOutcome
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.terminologies.IssueSeverity
+import dev.ohs.fhir.model.r4.terminologies.IssueType
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.utils.UUID
 import dev.ohs.fhir.model.r4.String as FhirString
 
@@ -42,15 +45,15 @@ object OfflineValueSetValidator {
                     val customCode = enumeration.code
                     if (customCode.isBlank()) {
                         createOutcome(
-                            severity = OperationOutcome.IssueSeverity.Error,
-                            code = OperationOutcome.IssueType.Required,
+                            severity = IssueSeverity.Error,
+                            code = IssueType.Required,
                             diagnostics = "Custom code in ExtensibleEnumeration cannot be blank",
                             expression = "ExtensibleEnumeration.code",
                         )
                     } else if (allowedCustomCodes != null && !allowedCustomCodes.contains(customCode)) {
                         createOutcome(
-                            severity = OperationOutcome.IssueSeverity.Warning,
-                            code = OperationOutcome.IssueType.Code_Invalid,
+                            severity = IssueSeverity.Warning,
+                            code = IssueType.Code_Invalid,
                             diagnostics = "Custom code '$customCode' is not in permitted extension set",
                             expression = "ExtensibleEnumeration.code",
                         )
@@ -97,22 +100,22 @@ object OfflineValueSetValidator {
         return when {
             codeVal.isNullOrBlank() ->
                 createOutcome(
-                    severity = OperationOutcome.IssueSeverity.Error,
-                    code = OperationOutcome.IssueType.Required,
+                    severity = IssueSeverity.Error,
+                    code = IssueType.Required,
                     diagnostics = "Coding is missing required code element",
                     expression = "Coding.code",
                 )
             expectedSystem != null && sysVal != expectedSystem ->
                 createOutcome(
-                    severity = OperationOutcome.IssueSeverity.Warning,
-                    code = OperationOutcome.IssueType.Code_Invalid,
+                    severity = IssueSeverity.Warning,
+                    code = IssueType.Code_Invalid,
                     diagnostics = "Expected system '$expectedSystem' but found '$sysVal'",
                     expression = "Coding.system",
                 )
             allowedCodes.isNotEmpty() && !allowedCodes.contains(codeVal) ->
                 createOutcome(
-                    severity = OperationOutcome.IssueSeverity.Error,
-                    code = OperationOutcome.IssueType.Code_Invalid,
+                    severity = IssueSeverity.Error,
+                    code = IssueType.Code_Invalid,
                     diagnostics = "Code '$codeVal' is not in permitted value set",
                     expression = "Coding.code",
                 )
@@ -136,8 +139,8 @@ object OfflineValueSetValidator {
         runCatching {
             if (concept.coding.isEmpty()) {
                 return@runCatching createOutcome(
-                    severity = OperationOutcome.IssueSeverity.Warning,
-                    code = OperationOutcome.IssueType.Required,
+                    severity = IssueSeverity.Warning,
+                    code = IssueType.Required,
                     diagnostics = "CodeableConcept has no coding elements",
                     expression = "CodeableConcept.coding",
                 )
@@ -218,7 +221,7 @@ object OfflineValueSetValidator {
         issues: MutableList<OperationOutcome.Issue>,
         linkId: String,
     ) {
-        if (qItem.type.value != Questionnaire.QuestionnaireItemType.Choice || qItem.answerOption.isEmpty()) {
+        if (qItem.type.value != QuestionnaireItemType.Choice || qItem.answerOption.isEmpty()) {
             return
         }
         val validOptionStrings =
@@ -243,8 +246,8 @@ object OfflineValueSetValidator {
                 val expr = "QuestionnaireResponse.item.where(linkId='$linkId').answer"
                 issues.add(
                     OperationOutcome.Issue(
-                        severity = Enumeration(value = OperationOutcome.IssueSeverity.Error),
-                        code = Enumeration(value = OperationOutcome.IssueType.Code_Invalid),
+                        severity = Enumeration(value = IssueSeverity.Error),
+                        code = Enumeration(value = IssueType.Code_Invalid),
                         diagnostics = FhirString(value = diag),
                         expression = listOf(FhirString(value = expr)),
                     ),
@@ -263,8 +266,8 @@ object OfflineValueSetValidator {
      * @return Populated [OperationOutcome].
      */
     private fun createOutcome(
-        severity: OperationOutcome.IssueSeverity,
-        code: OperationOutcome.IssueType,
+        severity: IssueSeverity,
+        code: IssueType,
         diagnostics: String,
         expression: String,
     ): OperationOutcome =

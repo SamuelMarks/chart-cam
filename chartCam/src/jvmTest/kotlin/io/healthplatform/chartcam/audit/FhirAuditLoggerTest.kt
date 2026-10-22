@@ -12,6 +12,9 @@ import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Observation
 import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.Practitioner
+import dev.ohs.fhir.model.r4.terminologies.AuditEventAction
+import dev.ohs.fhir.model.r4.terminologies.AuditEventOutcome
+import dev.ohs.fhir.model.r4.terminologies.ObservationStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.fhir.getContainedResource
 import io.healthplatform.chartcam.repository.FhirRepository
@@ -70,8 +73,8 @@ class FhirAuditLoggerTest {
 
             assertTrue(logResult.isSuccess)
             val event = logResult.getOrThrow()
-            assertEquals(AuditEvent.AuditEventAction.R, event.action?.value)
-            assertEquals(AuditEvent.AuditEventOutcome._0, event.outcome?.value)
+            assertEquals(AuditEventAction.R, event.action?.value)
+            assertEquals(AuditEventOutcome._0, event.outcome?.value)
             assertEquals("Viewing patient demographics", event.outcomeDesc?.value)
 
             val fetched = repository.getResource("AuditEvent", event.id ?: "")
@@ -138,7 +141,7 @@ class FhirAuditLoggerTest {
         val childObservation =
             Observation(
                 id = "inline-obs-1",
-                status = Enumeration(value = Observation.ObservationStatus.Final),
+                status = Enumeration(value = ObservationStatus.Final),
                 code =
                     dev.ohs.fhir.model.r4
                         .CodeableConcept(),

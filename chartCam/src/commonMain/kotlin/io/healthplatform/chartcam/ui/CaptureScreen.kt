@@ -93,6 +93,7 @@ import chartcam.chartcam.generated.resources.take_photo
 import chartcam.chartcam.generated.resources.unknown_error
 import chartcam.chartcam.generated.resources.video_recording_duration_format
 import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.camera.CameraManager
 import io.healthplatform.chartcam.camera.PermissionStatus
 import io.healthplatform.chartcam.camera.rememberCameraManager
@@ -130,7 +131,7 @@ internal fun extractSteps(
 ): List<PhotoStep> {
     val result = mutableListOf<PhotoStep>()
     for (item in items) {
-        if (item.type.value == Questionnaire.QuestionnaireItemType.Attachment) {
+        if (item.type.value == QuestionnaireItemType.Attachment) {
             val silhouette =
                 item.getSilhouetteType().getOrDefault(
                     io.healthplatform.chartcam.camera.SilhouetteType.NONE,

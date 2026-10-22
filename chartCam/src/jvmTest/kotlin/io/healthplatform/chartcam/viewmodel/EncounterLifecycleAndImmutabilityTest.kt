@@ -8,8 +8,8 @@ package io.healthplatform.chartcam.viewmodel
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import dev.ohs.fhir.model.r4.Encounter
-import dev.ohs.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.models.createFhirPatient
 import io.healthplatform.chartcam.repository.AuthRepository
@@ -113,7 +113,7 @@ class EncounterLifecycleAndImmutabilityTest {
             // Verify encounter status in DB remains in-progress
             val inProgressEnc = fhirRepo.getEncounter(visitId)
             assertNotNull(inProgressEnc)
-            assertEquals(Encounter.EncounterStatus.In_Progress, inProgressEnc.status.value)
+            assertEquals(EncounterStatus.In_Progress, inProgressEnc.status.value)
 
             // 4. Clinician finalizes encounter
             viewModel.finalizeEncounter()
@@ -124,12 +124,12 @@ class EncounterLifecycleAndImmutabilityTest {
             // Verify persistence in DB has transitioned status to Finished
             val finalizedEnc = fhirRepo.getEncounter(visitId)
             assertNotNull(finalizedEnc)
-            assertEquals(Encounter.EncounterStatus.Finished, finalizedEnc.status.value)
+            assertEquals(EncounterStatus.Finished, finalizedEnc.status.value)
 
             // Verify QuestionnaireResponse status is Completed
             val responses = fhirRepo.getQuestionnaireResponsesForEncounter(visitId)
             assertTrue(responses.isNotEmpty(), "Finalized encounter must have generated QuestionnaireResponses")
-            assertEquals(QuestionnaireResponse.QuestionnaireResponseStatus.Completed, responses.first().status.value)
+            assertEquals(QuestionnaireResponseStatus.Completed, responses.first().status.value)
 
             // 5. Verify reloading existing finalized encounter maintains read-only finalized state
             val reloadedViewModel =
@@ -148,7 +148,7 @@ class EncounterLifecycleAndImmutabilityTest {
             // Finished encounter in DB
             val loadedEnc = reloadedViewModel.uiState.value.encounter
             assertNotNull(loadedEnc)
-            assertEquals(Encounter.EncounterStatus.Finished, loadedEnc.status.value)
+            assertEquals(EncounterStatus.Finished, loadedEnc.status.value)
 
             // 6. Clinician explicitly unlocks/reopens encounter
             reloadedViewModel.reopenEncounter()
@@ -157,7 +157,7 @@ class EncounterLifecycleAndImmutabilityTest {
             assertFalse(reloadedViewModel.uiState.value.isFinalized, "Encounter should no longer be locked")
             val reopenedEnc = fhirRepo.getEncounter(visitId)
             assertNotNull(reopenedEnc)
-            assertEquals(Encounter.EncounterStatus.In_Progress, reopenedEnc.status.value)
+            assertEquals(EncounterStatus.In_Progress, reopenedEnc.status.value)
 
             driver.close()
             storage.clearAll()

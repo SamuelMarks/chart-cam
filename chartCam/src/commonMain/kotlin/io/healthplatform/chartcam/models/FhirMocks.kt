@@ -9,6 +9,8 @@ import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import dev.ohs.fhir.model.r4.String as FhirString
 
 /**
@@ -31,7 +33,7 @@ object FhirMocks {
         titleStr: String = "Mock Questionnaire",
         itemLinkId: String = "mock-item-1",
         itemText: String = "Mock Question",
-        itemType: Questionnaire.QuestionnaireItemType = Questionnaire.QuestionnaireItemType.String,
+        itemType: QuestionnaireItemType = QuestionnaireItemType.String,
     ): Questionnaire =
         Questionnaire(
             id = idStr,
@@ -66,7 +68,7 @@ object FhirMocks {
     ): QuestionnaireResponse =
         QuestionnaireResponse(
             id = idStr,
-            status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+            status = Enumeration(value = QuestionnaireResponseStatus.Completed),
             questionnaire = Canonical(value = questionnaireUrl),
             item =
                 listOf(

@@ -6,7 +6,7 @@ package io.healthplatform.chartcam
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import dev.ohs.fhir.model.r4.Encounter
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.repository.AuthRepository
@@ -200,7 +200,7 @@ class TenPartFlowE2EJvmTest {
             val encounters = patientDetailViewModel.uiState.value.encounters
             assertTrue(encounters.isNotEmpty(), "Should list encounters for patient")
             assertEquals(encounterId, encounters[0].id, "Encounter ID should match")
-            assertEquals(Encounter.EncounterStatus.Finished, encounters[0].status.value, "Encounter should be Finished")
+            assertEquals(EncounterStatus.Finished, encounters[0].status.value, "Encounter should be Finished")
 
             // Step 6: View specific questionnaire filled out for given patient
             val readOnlyEncounterViewModel =

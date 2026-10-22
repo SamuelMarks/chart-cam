@@ -1,11 +1,12 @@
 /**
  * @file ClipboardUtils.jvm.kt
- * @file ClipboardUtils.jvm.kt
  * Contains declarations for ClipboardUtils.jvm.kt.
  */
 package io.healthplatform.chartcam.ui
 
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.platform.Clipboard
+import androidx.compose.ui.platform.awtClipboard
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.StringSelection
 
@@ -15,8 +16,9 @@ import java.awt.datatransfer.StringSelection
  * @receiver The [Clipboard] instance.
  * @return The plain text string currently stored in the JVM clipboard, or null if empty or not plain text.
  */
+@OptIn(ExperimentalComposeUiApi::class)
 actual suspend fun Clipboard.getPlainText(): String? {
-    val clipboard: java.awt.datatransfer.Clipboard = this.nativeClipboard as java.awt.datatransfer.Clipboard
+    val clipboard = this.awtClipboard ?: return null
     return runCatching {
         val transferable = clipboard.getContents(null)
         if (transferable != null && transferable.isDataFlavorSupported(DataFlavor.stringFlavor)) {
@@ -33,7 +35,7 @@ actual suspend fun Clipboard.getPlainText(): String? {
  * @receiver The [Clipboard] instance.
  * @param text The plain text string to be copied to the JVM clipboard.
  */
+@OptIn(ExperimentalComposeUiApi::class)
 actual suspend fun Clipboard.setPlainText(text: String) {
-    val clipboard: java.awt.datatransfer.Clipboard = this.nativeClipboard as java.awt.datatransfer.Clipboard
-    clipboard.setContents(StringSelection(text), null)
+    this.awtClipboard?.setContents(StringSelection(text), null)
 }

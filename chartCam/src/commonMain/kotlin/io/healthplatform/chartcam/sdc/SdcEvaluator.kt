@@ -6,6 +6,8 @@ package io.healthplatform.chartcam.sdc
 
 import dev.ohs.fhir.model.r4.Extension
 import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.EnableWhenBehavior
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemOperator
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
@@ -546,9 +548,9 @@ object SdcEvaluator {
         if (item.enableWhen.isEmpty()) return true
         val bEnum = item.enableBehavior
         val behavior = if (bEnum != null) bEnum.value else null
-        val effectiveBehavior = if (behavior != null) behavior else Questionnaire.EnableWhenBehavior.Any
+        val effectiveBehavior = if (behavior != null) behavior else EnableWhenBehavior.Any
         val conditions = item.enableWhen.map { ew -> evaluateCondition(ew, answers).getOrDefault(false) }
-        return if (effectiveBehavior == Questionnaire.EnableWhenBehavior.All) {
+        return if (effectiveBehavior == EnableWhenBehavior.All) {
             conditions.all { it }
         } else {
             conditions.any { it }
@@ -582,17 +584,17 @@ object SdcEvaluator {
 
         val res =
             when (operator) {
-                Questionnaire.QuestionnaireItemOperator.EqualTo -> evaluateEqualTo(ewAnswer, targetAnswer)
-                Questionnaire.QuestionnaireItemOperator.NotEqualTo ->
+                QuestionnaireItemOperator.EqualTo -> evaluateEqualTo(ewAnswer, targetAnswer)
+                QuestionnaireItemOperator.NotEqualTo ->
                     evaluateNotEqualTo(ewAnswer, targetAnswer).getOrElse { false }
-                Questionnaire.QuestionnaireItemOperator.Exists -> evaluateExists(ewAnswer, targetAnswer)
-                Questionnaire.QuestionnaireItemOperator.GreaterThan ->
+                QuestionnaireItemOperator.Exists -> evaluateExists(ewAnswer, targetAnswer)
+                QuestionnaireItemOperator.GreaterThan ->
                     evaluateComparison(operator, ewAnswer, targetAnswer)
-                Questionnaire.QuestionnaireItemOperator.LessThan ->
+                QuestionnaireItemOperator.LessThan ->
                     evaluateComparison(operator, ewAnswer, targetAnswer)
-                Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo ->
+                QuestionnaireItemOperator.GreaterThanOrEqualTo ->
                     evaluateComparison(operator, ewAnswer, targetAnswer)
-                Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo ->
+                QuestionnaireItemOperator.LessThanOrEqualTo ->
                     evaluateComparison(operator, ewAnswer, targetAnswer)
             }
         return Result.success(res)
@@ -805,16 +807,16 @@ object SdcEvaluator {
      * @return True if relation holds.
      */
     private fun compareNumbers(
-        operator: Questionnaire.QuestionnaireItemOperator,
+        operator: QuestionnaireItemOperator,
         targetNum: Double,
         expectedNum: Double,
     ): Boolean {
         val cmp = targetNum.compareTo(expectedNum)
         return when (operator) {
-            Questionnaire.QuestionnaireItemOperator.GreaterThan -> cmp > 0
-            Questionnaire.QuestionnaireItemOperator.LessThan -> cmp < 0
-            Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo -> cmp >= 0
-            Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo -> cmp <= 0
+            QuestionnaireItemOperator.GreaterThan -> cmp > 0
+            QuestionnaireItemOperator.LessThan -> cmp < 0
+            QuestionnaireItemOperator.GreaterThanOrEqualTo -> cmp >= 0
+            QuestionnaireItemOperator.LessThanOrEqualTo -> cmp <= 0
             else -> false
         }
     }
@@ -828,16 +830,16 @@ object SdcEvaluator {
      * @return True if relation holds.
      */
     private fun compareStrings(
-        operator: Questionnaire.QuestionnaireItemOperator,
+        operator: QuestionnaireItemOperator,
         targetStr: String,
         expectedStr: String,
     ): Boolean {
         val cmp = targetStr.compareTo(expectedStr)
         return when (operator) {
-            Questionnaire.QuestionnaireItemOperator.GreaterThan -> cmp > 0
-            Questionnaire.QuestionnaireItemOperator.LessThan -> cmp < 0
-            Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo -> cmp >= 0
-            Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo -> cmp <= 0
+            QuestionnaireItemOperator.GreaterThan -> cmp > 0
+            QuestionnaireItemOperator.LessThan -> cmp < 0
+            QuestionnaireItemOperator.GreaterThanOrEqualTo -> cmp >= 0
+            QuestionnaireItemOperator.LessThanOrEqualTo -> cmp <= 0
             else -> false
         }
     }
@@ -851,7 +853,7 @@ object SdcEvaluator {
      * @return True if the relational condition holds.
      */
     fun evaluateComparison(
-        operator: Questionnaire.QuestionnaireItemOperator,
+        operator: QuestionnaireItemOperator,
         ewAnswer: Questionnaire.Item.EnableWhen.Answer,
         targetAnswer: Any?,
     ): Boolean {

@@ -19,6 +19,7 @@ import dev.ohs.fhir.model.r4.Boolean
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.fhir.isHidden
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -40,7 +41,7 @@ class SdcQuestionnaireFormJvmTest {
                     Questionnaire.Item
                         .Builder(
                             String.Builder().apply { value = "item1" },
-                            Enumeration(value = Questionnaire.QuestionnaireItemType.Text),
+                            Enumeration(value = QuestionnaireItemType.Text),
                         ).apply {
                             text = String.Builder().apply { value = "Multi-line Text Item" }
                             required = Boolean.Builder().apply { value = false }
@@ -48,14 +49,14 @@ class SdcQuestionnaireFormJvmTest {
                     Questionnaire.Item
                         .Builder(
                             String.Builder().apply { value = "item7" },
-                            Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            Enumeration(value = QuestionnaireItemType.String),
                         ).apply {
                             text = String.Builder().apply { value = "String Item" }
                         },
                     Questionnaire.Item
                         .Builder(
                             String.Builder().apply { value = "item8" },
-                            Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                            Enumeration(value = QuestionnaireItemType.Boolean),
                         ).apply {
                             text = String.Builder().apply { value = "Boolean Item" }
                         },
@@ -105,7 +106,7 @@ class SdcQuestionnaireFormJvmTest {
                 Questionnaire.Item
                     .Builder(
                         String.Builder().apply { value = "nestedItem1" },
-                        Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                        Enumeration(value = QuestionnaireItemType.String),
                     ).apply {
                         text = String.Builder().apply { value = "Nested Text Item" }
                     }
@@ -114,7 +115,7 @@ class SdcQuestionnaireFormJvmTest {
                 Questionnaire.Item
                     .Builder(
                         String.Builder().apply { value = "group1" },
-                        Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                        Enumeration(value = QuestionnaireItemType.Group),
                     ).apply {
                         text = String.Builder().apply { value = "Group Item Header" }
                         item.add(nestedItemBuilder)
@@ -155,7 +156,7 @@ class SdcQuestionnaireFormJvmTest {
             Questionnaire.Item
                 .Builder(
                     String.Builder().apply { value = "hidden_item" },
-                    Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     extension.add(
                         dev.ohs.fhir.model.r4.Extension
@@ -184,7 +185,7 @@ class SdcQuestionnaireFormJvmTest {
                 Questionnaire.Item
                     .Builder(
                         String.Builder().apply { value = "singleSelectChoice" },
-                        Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                        Enumeration(value = QuestionnaireItemType.Choice),
                     ).apply {
                         text = String.Builder().apply { value = "Single Select Checkbox" }
                         repeats = Boolean.Builder().apply { value = false }
@@ -284,7 +285,7 @@ class SdcQuestionnaireFormJvmTest {
                                 .apply { value = "repeatsChoice" },
                         type =
                             Enumeration(
-                                value = Questionnaire.QuestionnaireItemType.Choice,
+                                value = QuestionnaireItemType.Choice,
                             ),
                     ).apply {
                         text =
@@ -331,7 +332,7 @@ class SdcQuestionnaireFormJvmTest {
                 Questionnaire.Item
                     .Builder(
                         String.Builder().apply { value = "lesion_desc" },
-                        Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                        Enumeration(value = QuestionnaireItemType.String),
                     ).apply {
                         text = String.Builder().apply { value = "Lesion Description" }
                     }
@@ -340,7 +341,7 @@ class SdcQuestionnaireFormJvmTest {
                 Questionnaire.Item
                     .Builder(
                         String.Builder().apply { value = "lesions_group" },
-                        Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                        Enumeration(value = QuestionnaireItemType.Group),
                     ).apply {
                         repeats = Boolean.Builder().apply { value = true }
                         text = String.Builder().apply { value = "Lesions" }

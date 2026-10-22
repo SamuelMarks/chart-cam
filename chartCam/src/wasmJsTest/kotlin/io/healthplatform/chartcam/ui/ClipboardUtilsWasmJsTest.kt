@@ -6,30 +6,20 @@
 
 package io.healthplatform.chartcam.ui
 
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.Clipboard
-import androidx.compose.ui.platform.W3CTemporaryClipboard
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-@OptIn(ExperimentalComposeUiApi::class)
-@JsFun("() => ({})")
-private external fun createEmptyClipboard(): W3CTemporaryClipboard
-
 /**
  * Fake implementation of [Clipboard] for WasmJs tests.
  */
-@OptIn(ExperimentalComposeUiApi::class)
 private class FakeWasmJsClipboard : Clipboard {
     override suspend fun getClipEntry(): ClipEntry? = null
 
     override suspend fun setClipEntry(clipEntry: ClipEntry?) {}
-
-    override val nativeClipboard: W3CTemporaryClipboard
-        get() = createEmptyClipboard()
 }
 
 /**

@@ -11,6 +11,7 @@ import dev.ohs.fhir.model.r4.Coding
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -323,7 +324,7 @@ class QuestionnaireRepositoryJvmTest {
                             dev.ohs.fhir.model.r4.String
                                 .Builder()
                                 .apply { value = "child-item" },
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                        type = Enumeration(value = QuestionnaireItemType.Choice),
                     ).apply {
                         text =
                             dev.ohs.fhir.model.r4.String
@@ -360,7 +361,7 @@ class QuestionnaireRepositoryJvmTest {
                             dev.ohs.fhir.model.r4.String
                                 .Builder()
                                 .apply { value = "group-item" },
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                        type = Enumeration(value = QuestionnaireItemType.Group),
                     ).apply {
                         item.add(childItem)
                     }
@@ -408,7 +409,7 @@ class QuestionnaireRepositoryJvmTest {
                             dev.ohs.fhir.model.r4.String
                                 .Builder()
                                 .apply { value = "unknown-link" },
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                        type = Enumeration(value = QuestionnaireItemType.Choice),
                     ).apply {
                         answerOption.add(
                             Questionnaire.Item.AnswerOption.Builder(
@@ -459,7 +460,7 @@ class QuestionnaireRepositoryJvmTest {
                             dev.ohs.fhir.model.r4.String
                                 .Builder()
                                 .apply { value = null },
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                        type = Enumeration(value = QuestionnaireItemType.Choice),
                     ).apply {
                         answerOption.add(
                             Questionnaire.Item.AnswerOption.Builder(

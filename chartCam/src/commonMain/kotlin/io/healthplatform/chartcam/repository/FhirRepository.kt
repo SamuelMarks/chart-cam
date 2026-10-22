@@ -20,6 +20,7 @@ import dev.ohs.fhir.model.r4.Provenance
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.Resource
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.database.DatabaseDriverFactory
 import io.healthplatform.chartcam.fhir.FhirJsonParser
@@ -1190,14 +1191,14 @@ open class FhirRepository(
         if (encounter != null) {
             val mappedStatus =
                 when (status.lowercase()) {
-                    "finished" -> Encounter.EncounterStatus.Finished
-                    "in-progress" -> Encounter.EncounterStatus.In_Progress
-                    "planned" -> Encounter.EncounterStatus.Planned
-                    "arrived" -> Encounter.EncounterStatus.Arrived
-                    "triaged" -> Encounter.EncounterStatus.Triaged
-                    "onleave" -> Encounter.EncounterStatus.Onleave
-                    "cancelled" -> Encounter.EncounterStatus.Cancelled
-                    else -> Encounter.EncounterStatus.Unknown
+                    "finished" -> EncounterStatus.Finished
+                    "in-progress" -> EncounterStatus.In_Progress
+                    "planned" -> EncounterStatus.Planned
+                    "arrived" -> EncounterStatus.Arrived
+                    "triaged" -> EncounterStatus.Triaged
+                    "onleave" -> EncounterStatus.Onleave
+                    "cancelled" -> EncounterStatus.Cancelled
+                    else -> EncounterStatus.Unknown
                 }
             val updatedStatus = Enumeration(value = mappedStatus)
             val updatedEncounter =
@@ -1210,7 +1211,7 @@ open class FhirRepository(
                                 dev.ohs.fhir.model.r4.Narrative.Builder(
                                     status =
                                         Enumeration(
-                                            value = dev.ohs.fhir.model.r4.Narrative.NarrativeStatus.Generated,
+                                            value = dev.ohs.fhir.model.r4.terminologies.NarrativeStatus.Generated,
                                         ),
                                     div =
                                         dev.ohs.fhir.model.r4.Xhtml

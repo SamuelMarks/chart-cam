@@ -100,7 +100,7 @@ import chartcam.chartcam.generated.resources.unknown
 import chartcam.chartcam.generated.resources.visit_detail
 import chartcam.chartcam.generated.resources.yes
 import dev.ohs.fhir.model.r4.DocumentReference
-import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.fhir.getLocalizedTitle
 import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.media.createAudioRecorderManager
@@ -373,7 +373,7 @@ private fun EncounterTopBar(
                 onDismissRequest = { showMenu = false },
             ) {
                 val status = state.encounter?.status?.value
-                val isFinished = status == dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished
+                val isFinished = status == dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished
                 if (isFinished || state.isFinalized) {
                     DropdownMenuItem(
                         text = { Text(stringResource(Res.string.edit_visit)) },
@@ -584,7 +584,7 @@ private fun QuestionnaireSelector(
     var expanded by remember { mutableStateOf(false) }
     val selectorCd = stringResource(Res.string.cd_questionnaire_selector)
     val status = state.encounter?.status?.value
-    val isFinished = status == dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished
+    val isFinished = status == dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished
     val isLocked = state.answers.isNotEmpty() || isFinished || state.isFinalized
     val qTitle =
         state.selectedQuestionnaire?.let { q ->
@@ -664,7 +664,7 @@ private fun QuestionnaireFormArea(
 
     val targetPhotosCount =
         state.selectedQuestionnaire?.item?.count {
-            it.type.value == Questionnaire.QuestionnaireItemType.Attachment
+            it.type.value == QuestionnaireItemType.Attachment
         } ?: 0
 
     val currentLang by io.healthplatform.chartcam.ui.currentLanguageState
@@ -909,7 +909,7 @@ private fun canFinalizeEncounter(state: EncounterUiState): Boolean =
     !state.isLoading &&
         !state.isSyncing &&
         !state.isFinalized &&
-        state.encounter?.status?.value != dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished
+        state.encounter?.status?.value != dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished
 
 /**
  * Internal helper.

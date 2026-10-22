@@ -16,6 +16,7 @@ import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.AdministrativeGender
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.fhir.QuestionnaireResponseGenerator
 import io.healthplatform.chartcam.models.createFhirPractitioner
@@ -109,7 +110,7 @@ class SdcCalculatedExpressionDivisionByZeroWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "weight" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                    type = Enumeration(value = QuestionnaireItemType.Decimal),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Weight (kg)" }
                 }
@@ -118,7 +119,7 @@ class SdcCalculatedExpressionDivisionByZeroWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "height" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                    type = Enumeration(value = QuestionnaireItemType.Decimal),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Height (m)" }
                 }
@@ -127,7 +128,7 @@ class SdcCalculatedExpressionDivisionByZeroWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "bmi" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                    type = Enumeration(value = QuestionnaireItemType.Decimal),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Body Mass Index" }
                     extension.add(bmiExt)
@@ -137,7 +138,7 @@ class SdcCalculatedExpressionDivisionByZeroWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "map" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                    type = Enumeration(value = QuestionnaireItemType.Decimal),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Mean Arterial Pressure" }
                     extension.add(mapExt)

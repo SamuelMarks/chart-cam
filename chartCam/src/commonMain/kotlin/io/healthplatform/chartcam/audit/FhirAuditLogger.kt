@@ -13,6 +13,8 @@ import dev.ohs.fhir.model.r4.FhirDateTime
 import dev.ohs.fhir.model.r4.Instant
 import dev.ohs.fhir.model.r4.Reference
 import dev.ohs.fhir.model.r4.Uri
+import dev.ohs.fhir.model.r4.terminologies.AuditEventAction
+import dev.ohs.fhir.model.r4.terminologies.AuditEventOutcome
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.utils.UUID
 import dev.ohs.fhir.model.r4.Boolean as FhirBoolean
@@ -136,31 +138,31 @@ object FhirAuditLogger {
      * Maps security audit action to FHIR AuditEventAction enum.
      *
      * @param action Source security audit action.
-     * @return FHIR [AuditEvent.AuditEventAction].
+     * @return FHIR [AuditEventAction].
      */
-    private fun mapAuditAction(action: SecurityAuditAction): AuditEvent.AuditEventAction =
+    private fun mapAuditAction(action: SecurityAuditAction): AuditEventAction =
         when (action) {
-            SecurityAuditAction.CREATE -> AuditEvent.AuditEventAction.C
-            SecurityAuditAction.READ -> AuditEvent.AuditEventAction.R
-            SecurityAuditAction.UPDATE -> AuditEvent.AuditEventAction.U
-            SecurityAuditAction.DELETE -> AuditEvent.AuditEventAction.D
+            SecurityAuditAction.CREATE -> AuditEventAction.C
+            SecurityAuditAction.READ -> AuditEventAction.R
+            SecurityAuditAction.UPDATE -> AuditEventAction.U
+            SecurityAuditAction.DELETE -> AuditEventAction.D
             SecurityAuditAction.EXPORT,
             SecurityAuditAction.IMPORT,
             SecurityAuditAction.KEY_UNLOCK,
-            -> AuditEvent.AuditEventAction.E
+            -> AuditEventAction.E
         }
 
     /**
      * Maps security audit outcome to FHIR AuditEventOutcome enum.
      *
      * @param outcome Source security audit outcome.
-     * @return FHIR [AuditEvent.AuditEventOutcome].
+     * @return FHIR [AuditEventOutcome].
      */
-    private fun mapAuditOutcome(outcome: SecurityAuditOutcome): AuditEvent.AuditEventOutcome =
+    private fun mapAuditOutcome(outcome: SecurityAuditOutcome): AuditEventOutcome =
         when (outcome) {
-            SecurityAuditOutcome.SUCCESS -> AuditEvent.AuditEventOutcome._0
-            SecurityAuditOutcome.MINOR_FAILURE -> AuditEvent.AuditEventOutcome._4
-            SecurityAuditOutcome.SERIOUS_FAILURE -> AuditEvent.AuditEventOutcome._8
-            SecurityAuditOutcome.MAJOR_FAILURE -> AuditEvent.AuditEventOutcome._12
+            SecurityAuditOutcome.SUCCESS -> AuditEventOutcome._0
+            SecurityAuditOutcome.MINOR_FAILURE -> AuditEventOutcome._4
+            SecurityAuditOutcome.SERIOUS_FAILURE -> AuditEventOutcome._8
+            SecurityAuditOutcome.MAJOR_FAILURE -> AuditEventOutcome._12
         }
 }

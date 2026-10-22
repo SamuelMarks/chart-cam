@@ -501,7 +501,7 @@ class PatientListViewModelTest {
                     id = "enc-shared",
                     status =
                         dev.ohs.fhir.model.r4
-                            .Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                            .Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished),
                     `class` = encClass,
                     participant =
                         listOf(
@@ -536,7 +536,7 @@ class PatientListViewModelTest {
                     id = null,
                     status =
                         dev.ohs.fhir.model.r4
-                            .Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                            .Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished),
                     `class` = encClass,
                     participant =
                         listOf(
@@ -563,7 +563,7 @@ class PatientListViewModelTest {
                     id = "enc-other-only",
                     status =
                         dev.ohs.fhir.model.r4
-                            .Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                            .Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished),
                     `class` = encClass,
                     participant =
                         listOf(

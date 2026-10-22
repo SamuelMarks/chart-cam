@@ -29,7 +29,12 @@ import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.Reference
 import dev.ohs.fhir.model.r4.Resource
+import dev.ohs.fhir.model.r4.terminologies.BundleType
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
+import dev.ohs.fhir.model.r4.terminologies.EventStatus
+import dev.ohs.fhir.model.r4.terminologies.ObservationStatus
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -80,7 +85,7 @@ class FhirResourceTypesTest {
         val encounter =
             Encounter(
                 id = "e1",
-                status = Enumeration(value = Encounter.EncounterStatus.Planned),
+                status = Enumeration(value = EncounterStatus.Planned),
                 `class` = Coding(),
             )
         assertEquals("Encounter", resolveResourceTypeName(encounter))
@@ -88,7 +93,7 @@ class FhirResourceTypesTest {
         val observation =
             Observation(
                 id = "o1",
-                status = Enumeration(value = Observation.ObservationStatus.Final),
+                status = Enumeration(value = ObservationStatus.Final),
                 code = CodeableConcept(),
             )
         assertEquals("Observation", resolveResourceTypeName(observation))
@@ -111,7 +116,7 @@ class FhirResourceTypesTest {
         val questionnaireResponse =
             QuestionnaireResponse(
                 id = "qr1",
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
             )
         assertEquals("QuestionnaireResponse", resolveResourceTypeName(questionnaireResponse))
 
@@ -133,7 +138,7 @@ class FhirResourceTypesTest {
         val media =
             Media(
                 id = "m1",
-                status = Enumeration(value = Media.EventStatus.Completed),
+                status = Enumeration(value = EventStatus.Completed),
                 content = Attachment(),
             )
         assertEquals("Media", resolveResourceTypeName(media))
@@ -158,7 +163,7 @@ class FhirResourceTypesTest {
         val bundle =
             Bundle(
                 id = "b1",
-                type = Enumeration(value = Bundle.BundleType.Collection),
+                type = Enumeration(value = BundleType.Collection),
             )
         assertEquals("Bundle", resolveResourceTypeName(bundle))
 

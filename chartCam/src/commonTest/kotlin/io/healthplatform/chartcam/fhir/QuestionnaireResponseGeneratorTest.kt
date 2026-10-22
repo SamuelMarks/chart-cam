@@ -7,6 +7,7 @@ package io.healthplatform.chartcam.fhir
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -32,7 +33,7 @@ class QuestionnaireResponseGeneratorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = "name" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                type = Enumeration(value = QuestionnaireItemType.String),
                             ).apply {
                                 text = FhirString.Builder().apply { value = "Patient Name" }
                             },
@@ -62,14 +63,14 @@ class QuestionnaireResponseGeneratorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = "lesion_group" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                                type = Enumeration(value = QuestionnaireItemType.Group),
                             ).apply {
                                 repeats = FhirBoolean.Builder().apply { value = true }
                                 text = FhirString.Builder().apply { value = "Lesions" }
                                 item.add(
                                     Questionnaire.Item.Builder(
                                         linkId = FhirString.Builder().apply { value = "location" },
-                                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                        type = Enumeration(value = QuestionnaireItemType.String),
                                     ),
                                 )
                             },
@@ -105,14 +106,14 @@ class QuestionnaireResponseGeneratorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = "dob" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Date),
+                                type = Enumeration(value = QuestionnaireItemType.Date),
                             ),
                     )
                     item.add(
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = "recorded" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.DateTime),
+                                type = Enumeration(value = QuestionnaireItemType.DateTime),
                             ),
                     )
                 }.build()
@@ -168,7 +169,7 @@ class QuestionnaireResponseGeneratorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = "unlabeled_q" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                type = Enumeration(value = QuestionnaireItemType.String),
                             ).apply {
                                 text = null
                             },
@@ -199,7 +200,7 @@ class QuestionnaireResponseGeneratorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = "skin_type" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                                type = Enumeration(value = QuestionnaireItemType.Choice),
                             ).apply {
                                 answerOption.add(
                                     Questionnaire.Item.AnswerOption.Builder(
@@ -249,7 +250,7 @@ class QuestionnaireResponseGeneratorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = "photo" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                                type = Enumeration(value = QuestionnaireItemType.Attachment),
                             ),
                     )
                 }.build()
@@ -320,21 +321,21 @@ class QuestionnaireResponseGeneratorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = fhirStr("repeat_group"),
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                                type = Enumeration(value = QuestionnaireItemType.Group),
                             ).apply {
                                 repeats = FhirBoolean.Builder().apply { value = true }
                                 item.add(
                                     Questionnaire.Item
                                         .Builder(
                                             linkId = fhirStr("inner_q"),
-                                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                            type = Enumeration(value = QuestionnaireItemType.String),
                                         ),
                                 )
                                 item.add(
                                     Questionnaire.Item
                                         .Builder(
                                             linkId = fhirStr("repeat_group#0.prefixed_q"),
-                                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                            type = Enumeration(value = QuestionnaireItemType.String),
                                         ),
                                 )
                             },
@@ -344,13 +345,13 @@ class QuestionnaireResponseGeneratorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = fhirStr("static_group"),
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                                type = Enumeration(value = QuestionnaireItemType.Group),
                             ).apply {
                                 item.add(
                                     Questionnaire.Item
                                         .Builder(
                                             linkId = fhirStr("child_text"),
-                                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Text),
+                                            type = Enumeration(value = QuestionnaireItemType.Text),
                                         ),
                                 )
                             },
@@ -360,7 +361,7 @@ class QuestionnaireResponseGeneratorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = fhirStr("choice_q"),
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                                type = Enumeration(value = QuestionnaireItemType.Choice),
                             ).apply {
                                 answerOption.add(
                                     Questionnaire.Item.AnswerOption.Builder(
@@ -423,56 +424,56 @@ class QuestionnaireResponseGeneratorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = fhirStr("bool_q"),
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                                type = Enumeration(value = QuestionnaireItemType.Boolean),
                             ),
                     )
                     item.add(
                         Questionnaire.Item
                             .Builder(
                                 linkId = fhirStr("dec_q"),
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                                type = Enumeration(value = QuestionnaireItemType.Decimal),
                             ),
                     )
                     item.add(
                         Questionnaire.Item
                             .Builder(
                                 linkId = fhirStr("int_q"),
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                                type = Enumeration(value = QuestionnaireItemType.Integer),
                             ),
                     )
                     item.add(
                         Questionnaire.Item
                             .Builder(
                                 linkId = fhirStr("att_q"),
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                                type = Enumeration(value = QuestionnaireItemType.Attachment),
                             ),
                     )
                     item.add(
                         Questionnaire.Item
                             .Builder(
                                 linkId = fhirStr("body_map_q"),
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                type = Enumeration(value = QuestionnaireItemType.String),
                             ),
                     )
                     item.add(
                         Questionnaire.Item
                             .Builder(
                                 linkId = fhirStr("non_string_text_q"),
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                type = Enumeration(value = QuestionnaireItemType.String),
                             ),
                     )
                     item.add(
                         Questionnaire.Item
                             .Builder(
                                 linkId = fhirStr("temporal_date_q"),
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Date),
+                                type = Enumeration(value = QuestionnaireItemType.Date),
                             ),
                     )
                     item.add(
                         Questionnaire.Item
                             .Builder(
                                 linkId = fhirStr("temporal_datetime_q"),
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.DateTime),
+                                type = Enumeration(value = QuestionnaireItemType.DateTime),
                             ),
                     )
                     // Question with null linkId value
@@ -480,7 +481,7 @@ class QuestionnaireResponseGeneratorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = null },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Display),
+                                type = Enumeration(value = QuestionnaireItemType.Display),
                             ),
                     )
                     // Question with null type value

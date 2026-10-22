@@ -3,6 +3,7 @@
  * Contains declarations for EncounterDetailViewModelJvmTest.kt.
  */
 package io.healthplatform.chartcam.viewmodel
+
 import dev.ohs.fhir.model.r4.Canonical
 import dev.ohs.fhir.model.r4.Date
 import dev.ohs.fhir.model.r4.DateTime
@@ -17,6 +18,8 @@ import dev.ohs.fhir.model.r4.Practitioner
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import io.healthplatform.chartcam.models.DocumentReferenceCreationParams
 import io.healthplatform.chartcam.models.createFhirEncounter
 import io.healthplatform.chartcam.repository.AuthRepository
@@ -95,7 +98,7 @@ class EncounterDetailViewModelJvmTest {
     private val dummyQr =
         QuestionnaireResponse
             .Builder(
-                Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                Enumeration(value = QuestionnaireResponseStatus.Completed),
             ).build()
 
     /**
@@ -320,7 +323,7 @@ class EncounterDetailViewModelJvmTest {
                     String.Builder().apply {
                         value = "link_nested"
                     },
-                    Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    Enumeration(value = QuestionnaireItemType.String),
                 )
             val groupItem =
                 Questionnaire.Item
@@ -328,7 +331,7 @@ class EncounterDetailViewModelJvmTest {
                         String.Builder().apply {
                             value = "group1"
                         },
-                        Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                        Enumeration(value = QuestionnaireItemType.Group),
                     ).apply { item.add(nestedItem) }
 
             val q =
@@ -341,7 +344,7 @@ class EncounterDetailViewModelJvmTest {
                                 String.Builder().apply {
                                     value = "link_str"
                                 },
-                                Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                Enumeration(value = QuestionnaireItemType.String),
                             ),
                         )
                         item.add(
@@ -349,7 +352,7 @@ class EncounterDetailViewModelJvmTest {
                                 String.Builder().apply {
                                     value = "link_bool"
                                 },
-                                Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                                Enumeration(value = QuestionnaireItemType.Boolean),
                             ),
                         )
                         item.add(
@@ -357,7 +360,7 @@ class EncounterDetailViewModelJvmTest {
                                 String.Builder().apply {
                                     value = "link_float_dec"
                                 },
-                                Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                                Enumeration(value = QuestionnaireItemType.Decimal),
                             ),
                         )
                         item.add(
@@ -365,7 +368,7 @@ class EncounterDetailViewModelJvmTest {
                                 String.Builder().apply {
                                     value = "link_float_int"
                                 },
-                                Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                                Enumeration(value = QuestionnaireItemType.Integer),
                             ),
                         )
                         item.add(
@@ -373,7 +376,7 @@ class EncounterDetailViewModelJvmTest {
                                 String.Builder().apply {
                                     value = "link_date"
                                 },
-                                Enumeration(value = Questionnaire.QuestionnaireItemType.Date),
+                                Enumeration(value = QuestionnaireItemType.Date),
                             ),
                         )
                         item.add(
@@ -381,7 +384,7 @@ class EncounterDetailViewModelJvmTest {
                                 String.Builder().apply {
                                     value = "link_datetime"
                                 },
-                                Enumeration(value = Questionnaire.QuestionnaireItemType.DateTime),
+                                Enumeration(value = QuestionnaireItemType.DateTime),
                             ),
                         )
                         item.add(
@@ -389,7 +392,7 @@ class EncounterDetailViewModelJvmTest {
                                 String.Builder().apply {
                                     value = "link_list"
                                 },
-                                Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                                Enumeration(value = QuestionnaireItemType.Choice),
                             ),
                         )
                         item.add(groupItem)
@@ -447,7 +450,7 @@ class EncounterDetailViewModelJvmTest {
                 Questionnaire.Item
                     .Builder(
                         String.Builder().apply { value = "fever" },
-                        Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                        Enumeration(value = QuestionnaireItemType.Boolean),
                     ).apply {
                         text = String.Builder().apply { value = "Fiebre" }
                     }
@@ -590,7 +593,7 @@ class EncounterDetailViewModelJvmTest {
 
             val qr =
                 QuestionnaireResponse
-                    .Builder(Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
+                    .Builder(Enumeration(value = QuestionnaireResponseStatus.Completed))
                     .apply {
                         questionnaire = Canonical.Builder().apply { value = "Questionnaire/q1" }
                         item.add(itemStr)
@@ -661,7 +664,7 @@ class EncounterDetailViewModelJvmTest {
                 )
             val qr =
                 QuestionnaireResponse
-                    .Builder(Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
+                    .Builder(Enumeration(value = QuestionnaireResponseStatus.Completed))
                     .apply {
                         questionnaire = Canonical.Builder().apply { value = "non_existent_q" }
                     }.build()
@@ -715,7 +718,7 @@ class EncounterDetailViewModelJvmTest {
 
             val qr =
                 QuestionnaireResponse
-                    .Builder(Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
+                    .Builder(Enumeration(value = QuestionnaireResponseStatus.Completed))
                     .apply {
                         questionnaire = Canonical.Builder().apply { value = "Questionnaire/q1" }
                         item.add(itemMultiStr)
@@ -774,7 +777,7 @@ class EncounterDetailViewModelJvmTest {
 
             val dummyQr =
                 QuestionnaireResponse
-                    .Builder(Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
+                    .Builder(Enumeration(value = QuestionnaireResponseStatus.Completed))
                     .apply {
                         questionnaire = Canonical.Builder().apply { value = qId }
                     }.build()
@@ -809,7 +812,7 @@ class EncounterDetailViewModelJvmTest {
             verify(fhirRepository).updateEncounterStatus(encId, "in-progress", "")
 
             val state = viewModel.uiState.value
-            assertEquals(dev.ohs.fhir.model.r4.Encounter.EncounterStatus.In_Progress, state.encounter?.status?.value)
+            assertEquals(dev.ohs.fhir.model.r4.terminologies.EncounterStatus.In_Progress, state.encounter?.status?.value)
             assertEquals(false, state.isFinalized)
         }
 
@@ -895,7 +898,7 @@ class EncounterDetailViewModelJvmTest {
                         dev.ohs.fhir.model.r4.String
                             .Builder()
                             .apply { value = "step1" },
-                        Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply {
                         text =
                             dev.ohs.fhir.model.r4.String
@@ -916,7 +919,7 @@ class EncounterDetailViewModelJvmTest {
                         dev.ohs.fhir.model.r4.String
                             .Builder()
                             .apply { value = "step_active" },
-                        Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply {
                         text =
                             dev.ohs.fhir.model.r4.String
@@ -934,7 +937,7 @@ class EncounterDetailViewModelJvmTest {
 
             val dummyQr =
                 QuestionnaireResponse
-                    .Builder(Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
+                    .Builder(Enumeration(value = QuestionnaireResponseStatus.Completed))
                     .apply {
                         questionnaire = Canonical.Builder().apply { value = "q-photos" }
                     }.build()
@@ -1051,28 +1054,28 @@ class EncounterDetailViewModelJvmTest {
                     dev.ohs.fhir.model.r4.String.Builder().apply {
                         value = "item_int"
                     },
-                    Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                    Enumeration(value = QuestionnaireItemType.Integer),
                 )
             val decItem =
                 Questionnaire.Item.Builder(
                     dev.ohs.fhir.model.r4.String.Builder().apply {
                         value = "item_dec"
                     },
-                    Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                    Enumeration(value = QuestionnaireItemType.Decimal),
                 )
             val boolItem =
                 Questionnaire.Item.Builder(
                     dev.ohs.fhir.model.r4.String.Builder().apply {
                         value = "item_bool"
                     },
-                    Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                    Enumeration(value = QuestionnaireItemType.Boolean),
                 )
             val strItem =
                 Questionnaire.Item.Builder(
                     dev.ohs.fhir.model.r4.String.Builder().apply {
                         value = "item_str"
                     },
-                    Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    Enumeration(value = QuestionnaireItemType.String),
                 )
 
             val formWithTypes =
@@ -1191,7 +1194,7 @@ class EncounterDetailViewModelJvmTest {
                         dev.ohs.fhir.model.r4.String.Builder().apply {
                             value = "link_text"
                         },
-                        Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                        Enumeration(value = QuestionnaireItemType.String),
                     ).apply {
                         text =
                             dev.ohs.fhir.model.r4.String
@@ -1439,7 +1442,7 @@ class EncounterDetailViewModelJvmTest {
                     id = null,
                     status =
                         dev.ohs.fhir.model.r4
-                            .Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                            .Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished),
                     `class` = encClass,
                     subject = null,
                 )
@@ -1450,7 +1453,7 @@ class EncounterDetailViewModelJvmTest {
             // QR with null questionnaire
             val qrNoQ =
                 QuestionnaireResponse
-                    .Builder(Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
+                    .Builder(Enumeration(value = QuestionnaireResponseStatus.Completed))
                     .apply {
                         questionnaire = null
                     }.build()
@@ -1479,7 +1482,7 @@ class EncounterDetailViewModelJvmTest {
                     id = "enc_ref_test",
                     status =
                         dev.ohs.fhir.model.r4
-                            .Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                            .Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished),
                     `class` = encClass,
                     subject =
                         dev.ohs.fhir.model.r4
@@ -1491,7 +1494,7 @@ class EncounterDetailViewModelJvmTest {
                     id = "enc_ref_test",
                     status =
                         dev.ohs.fhir.model.r4
-                            .Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                            .Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished),
                     `class` = encClass,
                     subject =
                         dev.ohs.fhir.model.r4
@@ -1507,7 +1510,7 @@ class EncounterDetailViewModelJvmTest {
                     id = "enc_subj_null",
                     status =
                         dev.ohs.fhir.model.r4
-                            .Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                            .Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished),
                     `class` = encClass,
                     subject = null,
                 )
@@ -1551,7 +1554,7 @@ class EncounterDetailViewModelJvmTest {
                         dev.ohs.fhir.model.r4.String.Builder().apply {
                             value = "item_no_text"
                         },
-                        Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                        Enumeration(value = QuestionnaireItemType.String),
                     ).apply {
                         text =
                             null

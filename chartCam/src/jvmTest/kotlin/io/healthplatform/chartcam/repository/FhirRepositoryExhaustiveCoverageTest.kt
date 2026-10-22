@@ -35,7 +35,11 @@ import dev.ohs.fhir.model.r4.search.EncounterSearchParams
 import dev.ohs.fhir.model.r4.search.ObservationSearchParams
 import dev.ohs.fhir.model.r4.search.PatientSearchParams
 import dev.ohs.fhir.model.r4.terminologies.DocumentReferenceStatus
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
+import dev.ohs.fhir.model.r4.terminologies.EventStatus
+import dev.ohs.fhir.model.r4.terminologies.ObservationStatus
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.database.DatabaseDriverFactory
 import io.healthplatform.chartcam.files.FileStorage
@@ -296,7 +300,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val enc =
                 Encounter(
                     id = "enc-sc-1",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     subject = Reference(reference = FhirString(value = "Patient/p-sc-1")),
                     participant =
@@ -307,7 +311,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val encNoSubject =
                 Encounter(
                     id = "enc-no-subj",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     subject = null,
                     participant =
@@ -383,7 +387,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val obs1 =
                 Observation(
                     id = "obs-q-1",
-                    status = Enumeration(value = Observation.ObservationStatus.Final),
+                    status = Enumeration(value = ObservationStatus.Final),
                     code = CodeableConcept(coding = listOf(Coding(code = Code(value = "bp")))),
                     value =
                         Observation.Value.Quantity(
@@ -397,7 +401,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val obs2 =
                 Observation(
                     id = "obs-q-2",
-                    status = Enumeration(value = Observation.ObservationStatus.Final),
+                    status = Enumeration(value = ObservationStatus.Final),
                     code = CodeableConcept(coding = listOf(Coding(code = Code(value = "bp")))),
                     value =
                         Observation.Value.Quantity(
@@ -411,7 +415,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val obsOtherSys =
                 Observation(
                     id = "obs-q-other",
-                    status = Enumeration(value = Observation.ObservationStatus.Final),
+                    status = Enumeration(value = ObservationStatus.Final),
                     code = CodeableConcept(coding = listOf(Coding(code = Code(value = "bp")))),
                     value =
                         Observation.Value.Quantity(
@@ -425,7 +429,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val obsNoValue =
                 Observation(
                     id = "obs-q-noval",
-                    status = Enumeration(value = Observation.ObservationStatus.Final),
+                    status = Enumeration(value = ObservationStatus.Final),
                     code = CodeableConcept(coding = listOf(Coding(code = Code(value = "bp")))),
                     value = null,
                 )
@@ -482,11 +486,11 @@ class FhirRepositoryExhaustiveCoverageTest {
             // extractObservationQuantity direct branch tests
             assertNull(repository.extractObservationQuantity(Patient()))
             val obsNullVal =
-                Observation(status = Enumeration(value = Observation.ObservationStatus.Final), code = CodeableConcept(), value = null)
+                Observation(status = Enumeration(value = ObservationStatus.Final), code = CodeableConcept(), value = null)
             assertNull(repository.extractObservationQuantity(obsNullVal))
             val obsNullSys =
                 Observation(
-                    status = Enumeration(value = Observation.ObservationStatus.Final),
+                    status = Enumeration(value = ObservationStatus.Final),
                     code = CodeableConcept(),
                     value = Observation.Value.Quantity(Quantity(value = Decimal(value = FhirDecimal.fromString("10")), system = null)),
                 )
@@ -495,7 +499,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             assertNull(pairNullSys.second)
             val obsNullSysVal =
                 Observation(
-                    status = Enumeration(value = Observation.ObservationStatus.Final),
+                    status = Enumeration(value = ObservationStatus.Final),
                     code = CodeableConcept(),
                     value =
                         Observation.Value.Quantity(
@@ -517,7 +521,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val enc1 =
                 Encounter(
                     id = "enc-d-1",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     period =
                         dev.ohs.fhir.model.r4.Period(
@@ -553,7 +557,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val enc =
                 Encounter(
                     id = "enc-chain",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     subject = Reference(reference = FhirString(value = "Patient/p-chain")),
                 )
@@ -562,7 +566,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val obs =
                 Observation(
                     id = "obs-chain",
-                    status = Enumeration(value = Observation.ObservationStatus.Final),
+                    status = Enumeration(value = ObservationStatus.Final),
                     code = CodeableConcept(coding = listOf(Coding(code = Code(value = "GLUCOSE")))),
                     subject = Reference(reference = FhirString(value = "Patient/p-chain")),
                     encounter = Reference(reference = FhirString(value = "Encounter/enc-chain")),
@@ -570,7 +574,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val obsNoEnc =
                 Observation(
                     id = "obs-no-enc",
-                    status = Enumeration(value = Observation.ObservationStatus.Final),
+                    status = Enumeration(value = ObservationStatus.Final),
                     code = CodeableConcept(coding = listOf(Coding(code = Code(value = "GLUCOSE")))),
                     subject = Reference(reference = FhirString(value = "Patient/p-chain")),
                     encounter = null,
@@ -578,14 +582,14 @@ class FhirRepositoryExhaustiveCoverageTest {
             val obsNoSubj =
                 Observation(
                     id = "obs-no-subj",
-                    status = Enumeration(value = Observation.ObservationStatus.Final),
+                    status = Enumeration(value = ObservationStatus.Final),
                     code = CodeableConcept(coding = listOf(Coding(code = Code(value = "GLUCOSE")))),
                     subject = null,
                 )
             val encNoSubj =
                 Encounter(
                     id = "enc-no-subj-chain",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     subject = null,
                 )
@@ -752,7 +756,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val enc =
                 Encounter(
                     id = "enc-date-test",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     period =
                         dev.ohs.fhir.model.r4.Period(
@@ -767,7 +771,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val obs =
                 Observation(
                     id = "obs-token-test",
-                    status = Enumeration(value = Observation.ObservationStatus.Final),
+                    status = Enumeration(value = ObservationStatus.Final),
                     code = CodeableConcept(coding = listOf(Coding(code = Code(value = "bp")))),
                 )
             repository.saveObservation(obs)
@@ -793,7 +797,7 @@ class FhirRepositoryExhaustiveCoverageTest {
     fun testUpdateEncounterStatusBranches() =
         runTest {
             val encClass = Coding(code = Code(value = "AMB"), system = Uri(value = "http://terminology.hl7.org/CodeSystem/v3-ActCode"))
-            val enc = Encounter(id = "enc-status-test", status = Enumeration(value = Encounter.EncounterStatus.Planned), `class` = encClass)
+            val enc = Encounter(id = "enc-status-test", status = Enumeration(value = EncounterStatus.Planned), `class` = encClass)
             repository.saveEncounter(enc)
 
             val statuses = listOf("planned", "arrived", "triaged", "in-progress", "onleave", "finished", "cancelled", "unknown-status")
@@ -824,7 +828,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val enc =
                 Encounter(
                     id = "enc-del-test",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     subject = Reference(reference = FhirString(value = "Patient/p-del-test")),
                 )
@@ -877,28 +881,28 @@ class FhirRepositoryExhaustiveCoverageTest {
             val qr =
                 QuestionnaireResponse(
                     id = "qr-del-test",
-                    status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                     encounter = Reference(reference = FhirString(value = "Encounter/enc-del-test")),
                     subject = Reference(reference = FhirString(value = "Patient/p-del-test")),
                 )
             val qrPatientOnly =
                 QuestionnaireResponse(
                     id = "qr-patient-only",
-                    status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                     encounter = null,
                     subject = Reference(reference = FhirString(value = "Patient/p-del-test")),
                 )
             val encNoId =
                 Encounter(
                     id = null,
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` = encClass,
                     subject = Reference(reference = FhirString(value = "Patient/p-del-test")),
                 )
             val qrNoIdPatient =
                 QuestionnaireResponse(
                     id = null,
-                    status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                     subject = Reference(reference = FhirString(value = "Patient/p-del-test")),
                 )
             val docNoId =
@@ -943,7 +947,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val media =
                 Media(
                     id = "media-1",
-                    status = Enumeration(value = Media.EventStatus.Completed),
+                    status = Enumeration(value = EventStatus.Completed),
                     content =
                         dev.ohs.fhir.model.r4
                             .Attachment(
@@ -1024,7 +1028,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val obs =
                 Observation(
                     id = "obs-helper",
-                    status = Enumeration(value = Observation.ObservationStatus.Final),
+                    status = Enumeration(value = ObservationStatus.Final),
                     code = CodeableConcept(coding = listOf(Coding(code = Code(value = "test")))),
                     subject = Reference(reference = FhirString(value = "Patient/p-obs")),
                     encounter = Reference(reference = FhirString(value = "Encounter/enc-obs")),
@@ -1086,7 +1090,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val obsNullId =
                 Observation(
                     id = null,
-                    status = Enumeration(value = Observation.ObservationStatus.Final),
+                    status = Enumeration(value = ObservationStatus.Final),
                     code = CodeableConcept(coding = listOf(Coding(code = Code(value = "bp")))),
                 )
             assertTrue(repository.saveObservation(obsNullId).isSuccess)
@@ -1096,13 +1100,13 @@ class FhirRepositoryExhaustiveCoverageTest {
             assertTrue(repository.saveQuestionnaire(qNullId).isSuccess)
 
             val qrNullId =
-                QuestionnaireResponse(id = null, status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
+                QuestionnaireResponse(id = null, status = Enumeration(value = QuestionnaireResponseStatus.Completed))
             assertTrue(repository.saveQuestionnaireResponse(qrNullId).isSuccess)
 
             val mediaNullId =
                 Media(
                     id = null,
-                    status = Enumeration(value = Media.EventStatus.Completed),
+                    status = Enumeration(value = EventStatus.Completed),
                     content =
                         dev.ohs.fhir.model.r4
                             .Attachment(
@@ -1115,7 +1119,7 @@ class FhirRepositoryExhaustiveCoverageTest {
 
             // Delete encounter with null ID inside photos and responses
             val encForNullChild =
-                Encounter(id = "enc-null-child", status = Enumeration(value = Encounter.EncounterStatus.Finished), `class` = encClass)
+                Encounter(id = "enc-null-child", status = Enumeration(value = EncounterStatus.Finished), `class` = encClass)
             repository.saveEncounter(encForNullChild)
             val docNullId =
                 DocumentReference(
@@ -1130,7 +1134,7 @@ class FhirRepositoryExhaustiveCoverageTest {
             val qrChildNullId =
                 QuestionnaireResponse(
                     id = null,
-                    status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                     encounter = Reference(reference = FhirString(value = "Encounter/enc-null-child")),
                 )
             repository.saveDocumentReference(docNullId)

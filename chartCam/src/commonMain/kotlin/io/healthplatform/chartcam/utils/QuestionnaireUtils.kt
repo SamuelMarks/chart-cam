@@ -6,6 +6,7 @@ package io.healthplatform.chartcam.utils
 
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 
 private const val MAX_RECURSION_DEPTH = 50
 
@@ -125,7 +126,7 @@ object QuestionnaireUtils {
                 .isItemHierarchyEnabled(qItem, ancestors, answers)
         if (linkId == null || !isEnabled) return null
 
-        val qType = qItem.type.value ?: Questionnaire.QuestionnaireItemType.String
+        val qType = qItem.type.value ?: QuestionnaireItemType.String
         val answer = answers[linkId]
 
         val itemBuilder =
@@ -153,7 +154,7 @@ object QuestionnaireUtils {
             }
         }
 
-        return if (hasAnswer || qType == Questionnaire.QuestionnaireItemType.Group) {
+        return if (hasAnswer || qType == QuestionnaireItemType.Group) {
             itemBuilder
         } else {
             null
@@ -170,7 +171,7 @@ object QuestionnaireUtils {
     private fun applyAnswerToItem(
         itemBuilder: QuestionnaireResponse.Item.Builder,
         answer: Any,
-        qType: Questionnaire.QuestionnaireItemType,
+        qType: QuestionnaireItemType,
     ): Boolean {
         var hasAnswer = false
         when (answer) {
@@ -237,10 +238,10 @@ object QuestionnaireUtils {
      */
     private fun mapStringAnswer(
         answer: String,
-        qType: Questionnaire.QuestionnaireItemType,
+        qType: QuestionnaireItemType,
     ): dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value =
         when (qType) {
-            Questionnaire.QuestionnaireItemType.Date ->
+            QuestionnaireItemType.Date ->
                 dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Date(
                     dev.ohs.fhir.model.r4.Date
                         .Builder()
@@ -250,7 +251,7 @@ object QuestionnaireUtils {
                                     .fromString(answer)
                         }.build(),
                 )
-            Questionnaire.QuestionnaireItemType.DateTime ->
+            QuestionnaireItemType.DateTime ->
                 dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.DateTime(
                     dev.ohs.fhir.model.r4.DateTime
                         .Builder()
@@ -260,7 +261,7 @@ object QuestionnaireUtils {
                                     .fromString(answer)
                         }.build(),
                 )
-            Questionnaire.QuestionnaireItemType.Decimal ->
+            QuestionnaireItemType.Decimal ->
                 dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Decimal(
                     dev.ohs.fhir.model.r4.Decimal
                         .Builder()
@@ -270,7 +271,7 @@ object QuestionnaireUtils {
                                     .fromString(answer)
                         }.build(),
                 )
-            Questionnaire.QuestionnaireItemType.Integer ->
+            QuestionnaireItemType.Integer ->
                 dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Integer(
                     dev.ohs.fhir.model.r4.Integer
                         .Builder()
@@ -295,10 +296,10 @@ object QuestionnaireUtils {
      */
     private fun mapFloatAnswer(
         answer: Float,
-        qType: Questionnaire.QuestionnaireItemType,
+        qType: QuestionnaireItemType,
     ): dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value =
         when (qType) {
-            Questionnaire.QuestionnaireItemType.Integer ->
+            QuestionnaireItemType.Integer ->
                 dev.ohs.fhir.model.r4.QuestionnaireResponse.Item.Answer.Value.Integer(
                     dev.ohs.fhir.model.r4.Integer
                         .Builder()

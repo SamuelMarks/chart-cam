@@ -19,6 +19,7 @@ import dev.ohs.fhir.model.r4.Practitioner
 import dev.ohs.fhir.model.r4.Provenance
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.terminologies.BundleType
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.ConflictResolutionStrategy
@@ -79,7 +80,7 @@ open class ExportImportService(
             addProvenances(entries, exportAll, practitionerId)
             val bundle =
                 Bundle(
-                    type = Enumeration(value = Bundle.BundleType.Collection),
+                    type = Enumeration(value = BundleType.Collection),
                     entry = entries,
                 )
 

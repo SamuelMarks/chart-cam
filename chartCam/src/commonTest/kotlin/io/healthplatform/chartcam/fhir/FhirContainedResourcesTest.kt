@@ -29,7 +29,14 @@ import dev.ohs.fhir.model.r4.Provenance
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.Reference
+import dev.ohs.fhir.model.r4.terminologies.CarePlanIntent
+import dev.ohs.fhir.model.r4.terminologies.DiagnosticReportStatus
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
+import dev.ohs.fhir.model.r4.terminologies.EventStatus
+import dev.ohs.fhir.model.r4.terminologies.ObservationStatus
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
+import dev.ohs.fhir.model.r4.terminologies.RequestStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -93,7 +100,7 @@ class FhirContainedResourcesTest {
         val newObs =
             Observation(
                 id = "obs-c2",
-                status = Enumeration(value = Observation.ObservationStatus.Final),
+                status = Enumeration(value = ObservationStatus.Final),
                 code =
                     CodeableConcept(text = FhirString(value = "Vitals")),
             )
@@ -107,7 +114,7 @@ class FhirContainedResourcesTest {
         val media =
             Media(
                 id = "med-1",
-                status = Enumeration(value = Media.EventStatus.Completed),
+                status = Enumeration(value = EventStatus.Completed),
                 content = Attachment(),
             )
         val updatedMedia = addContainedResource(media, newObs).getOrThrow()
@@ -126,7 +133,7 @@ class FhirContainedResourcesTest {
         val encounter =
             Encounter(
                 id = "enc-1",
-                status = Enumeration(value = Encounter.EncounterStatus.Planned),
+                status = Enumeration(value = EncounterStatus.Planned),
                 `class` = Coding(),
             )
         assertEquals(1, addContainedResource(encounter, child).getOrThrow().contained.size)
@@ -144,7 +151,7 @@ class FhirContainedResourcesTest {
         val qr =
             QuestionnaireResponse(
                 id = "qr-1",
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
             )
         assertEquals(1, addContainedResource(qr, child).getOrThrow().contained.size)
 
@@ -160,7 +167,7 @@ class FhirContainedResourcesTest {
         val obs =
             Observation(
                 id = "obs-1",
-                status = Enumeration(value = Observation.ObservationStatus.Final),
+                status = Enumeration(value = ObservationStatus.Final),
                 code = CodeableConcept(),
             )
         assertEquals(1, addContainedResource(obs, child).getOrThrow().contained.size)
@@ -177,8 +184,8 @@ class FhirContainedResourcesTest {
         val cp =
             CarePlan(
                 id = "cp-1",
-                status = Enumeration(value = CarePlan.RequestStatus.Active),
-                intent = Enumeration(value = CarePlan.CarePlanIntent.Plan),
+                status = Enumeration(value = RequestStatus.Active),
+                intent = Enumeration(value = CarePlanIntent.Plan),
                 subject = Reference(),
             )
         assertEquals(1, addContainedResource(cp, child).getOrThrow().contained.size)
@@ -187,7 +194,7 @@ class FhirContainedResourcesTest {
         val dr =
             DiagnosticReport(
                 id = "dr-1",
-                status = Enumeration(value = DiagnosticReport.DiagnosticReportStatus.Final),
+                status = Enumeration(value = DiagnosticReportStatus.Final),
                 code = CodeableConcept(),
             )
         assertEquals(1, addContainedResource(dr, child).getOrThrow().contained.size)

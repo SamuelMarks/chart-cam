@@ -20,7 +20,10 @@ import dev.ohs.fhir.model.r4.Quantity
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.Reference
 import dev.ohs.fhir.model.r4.Time
+import dev.ohs.fhir.model.r4.terminologies.EnableWhenBehavior
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemOperator
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import kotlinx.datetime.LocalTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -59,7 +62,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
         return Questionnaire.Item
             .Builder(
                 linkId = FhirString.Builder().apply { value = linkId },
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
             ).apply {
                 extension.add(calcExt)
             }
@@ -89,7 +92,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
         return Questionnaire.Item
             .Builder(
                 linkId = FhirString.Builder().apply { value = linkId },
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
             ).apply {
                 extension.add(initExt)
             }
@@ -100,7 +103,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
      */
     private fun createCondition(
         targetQuestion: String?,
-        operator: Questionnaire.QuestionnaireItemOperator?,
+        operator: QuestionnaireItemOperator?,
         answer: Questionnaire.Item.EnableWhen.Answer,
     ): Questionnaire.Item.EnableWhen {
         val qBuilder = FhirString.Builder().apply { value = targetQuestion }
@@ -147,7 +150,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
         val plainItem =
             Questionnaire.Item.Builder(
                 linkId = FhirString.Builder().apply { value = "plain" },
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
             )
         val qNoLink =
             Questionnaire
@@ -168,7 +171,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "emptyExtItem" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     extension.add(emptyExt.toBuilder())
                 }.build()
@@ -310,7 +313,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
                     item.add(
                         Questionnaire.Item.Builder(
                             linkId = FhirString.Builder().apply { value = "plainInit" },
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                     )
                     // Item with other extension URL
@@ -318,7 +321,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = "otherExtInit" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                type = Enumeration(value = QuestionnaireItemType.String),
                             ).apply {
                                 extension.add(Extension.Builder(url = "http://example.com/other-ext"))
                             },
@@ -328,7 +331,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = "group1" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                                type = Enumeration(value = QuestionnaireItemType.Group),
                             ).apply {
                                 item.add(createItemWithInit("childInit", "%patient.gender"))
                             }
@@ -358,7 +361,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
         val cond =
             createCondition(
                 "q1",
-                Questionnaire.QuestionnaireItemOperator.EqualTo,
+                QuestionnaireItemOperator.EqualTo,
                 Questionnaire.Item.EnableWhen.Answer
                     .String(FhirString.Builder().apply { value = "yes" }.build()),
             )
@@ -367,7 +370,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "parent" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    type = Enumeration(value = QuestionnaireItemType.Group),
                 ).apply {
                     enableWhen.add(cond.toBuilder())
                 }.build()
@@ -376,7 +379,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "child" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).build()
 
         // Disabled parent blocks child
@@ -391,7 +394,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
         val cond2 =
             createCondition(
                 "q2",
-                Questionnaire.QuestionnaireItemOperator.EqualTo,
+                QuestionnaireItemOperator.EqualTo,
                 Questionnaire.Item.EnableWhen.Answer
                     .String(FhirString.Builder().apply { value = "ok" }.build()),
             )
@@ -400,9 +403,9 @@ class SdcEvaluatorExhaustiveCoverageTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "all" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
-                    enableBehavior = Enumeration(value = Questionnaire.EnableWhenBehavior.All)
+                    enableBehavior = Enumeration(value = EnableWhenBehavior.All)
                     enableWhen.add(cond.toBuilder())
                     enableWhen.add(cond2.toBuilder())
                 }.build()
@@ -414,9 +417,9 @@ class SdcEvaluatorExhaustiveCoverageTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "any" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
-                    enableBehavior = Enumeration(value = Questionnaire.EnableWhenBehavior.Any)
+                    enableBehavior = Enumeration(value = EnableWhenBehavior.Any)
                     enableWhen.add(cond.toBuilder())
                     enableWhen.add(cond2.toBuilder())
                 }.build()
@@ -429,7 +432,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "defaultBehavior" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     enableWhen.add(cond.toBuilder())
                 }.build()
@@ -440,7 +443,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
         val condInvalid =
             createCondition(
                 null,
-                Questionnaire.QuestionnaireItemOperator.Exists,
+                QuestionnaireItemOperator.Exists,
                 Questionnaire.Item.EnableWhen.Answer.Boolean(
                     FhirBoolean
                         .Builder()
@@ -454,7 +457,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "invalidCond" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     enableWhen.add(condInvalid.toBuilder())
                 }.build()
@@ -473,7 +476,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
                 .Boolean(FhirBoolean.Builder().apply { value = true }.build())
 
         // Target question null
-        val condNoQuestion = createCondition(null, Questionnaire.QuestionnaireItemOperator.Exists, answer)
+        val condNoQuestion = createCondition(null, QuestionnaireItemOperator.Exists, answer)
         assertTrue(SdcEvaluator.evaluateCondition(condNoQuestion, emptyMap()).isFailure)
 
         // Operator null
@@ -481,7 +484,7 @@ class SdcEvaluatorExhaustiveCoverageTest {
         assertTrue(SdcEvaluator.evaluateCondition(condNoOp, emptyMap()).isFailure)
 
         // NotEqualTo
-        val condNotEqual = createCondition("q1", Questionnaire.QuestionnaireItemOperator.NotEqualTo, answer)
+        val condNotEqual = createCondition("q1", QuestionnaireItemOperator.NotEqualTo, answer)
         assertTrue(SdcEvaluator.evaluateCondition(condNotEqual, mapOf("q1" to false)).getOrDefault(false))
         assertFalse(SdcEvaluator.evaluateCondition(condNotEqual, mapOf("q1" to true)).getOrDefault(true))
 
@@ -489,11 +492,11 @@ class SdcEvaluatorExhaustiveCoverageTest {
         val ewInt =
             Questionnaire.Item.EnableWhen.Answer
                 .Integer(FhirInteger.Builder().apply { value = 10 }.build())
-        val condEqual = createCondition("q1", Questionnaire.QuestionnaireItemOperator.EqualTo, ewInt)
-        val condGt = createCondition("q1", Questionnaire.QuestionnaireItemOperator.GreaterThan, ewInt)
-        val condLt = createCondition("q1", Questionnaire.QuestionnaireItemOperator.LessThan, ewInt)
-        val condGte = createCondition("q1", Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo, ewInt)
-        val condLte = createCondition("q1", Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo, ewInt)
+        val condEqual = createCondition("q1", QuestionnaireItemOperator.EqualTo, ewInt)
+        val condGt = createCondition("q1", QuestionnaireItemOperator.GreaterThan, ewInt)
+        val condLt = createCondition("q1", QuestionnaireItemOperator.LessThan, ewInt)
+        val condGte = createCondition("q1", QuestionnaireItemOperator.GreaterThanOrEqualTo, ewInt)
+        val condLte = createCondition("q1", QuestionnaireItemOperator.LessThanOrEqualTo, ewInt)
         assertTrue(SdcEvaluator.evaluateCondition(condEqual, mapOf("q1" to 10)).getOrDefault(false))
         assertTrue(SdcEvaluator.evaluateCondition(condGt, mapOf("q1" to 15)).getOrDefault(false))
         assertTrue(SdcEvaluator.evaluateCondition(condLt, mapOf("q1" to 5)).getOrDefault(false))
@@ -691,25 +694,25 @@ class SdcEvaluatorExhaustiveCoverageTest {
         assertFalse(SdcEvaluator.matchesSingleValue(ewBoolNull, true))
 
         // Relational comparisons
-        assertFalse(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.GreaterThan, ewInt, null))
-        assertFalse(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.GreaterThan, ewInt, "not_a_num"))
-        assertTrue(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.GreaterThan, ewInt, 15))
-        assertFalse(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.GreaterThan, ewInt, 5))
+        assertFalse(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.GreaterThan, ewInt, null))
+        assertFalse(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.GreaterThan, ewInt, "not_a_num"))
+        assertTrue(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.GreaterThan, ewInt, 15))
+        assertFalse(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.GreaterThan, ewInt, 5))
 
-        assertTrue(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.LessThan, ewInt, 5))
-        assertFalse(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.LessThan, ewInt, 15))
+        assertTrue(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.LessThan, ewInt, 5))
+        assertFalse(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.LessThan, ewInt, 15))
 
-        assertTrue(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo, ewInt, 10))
-        assertFalse(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo, ewInt, 9))
+        assertTrue(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.GreaterThanOrEqualTo, ewInt, 10))
+        assertFalse(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.GreaterThanOrEqualTo, ewInt, 9))
 
-        assertTrue(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo, ewInt, 10))
-        assertFalse(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo, ewInt, 11))
+        assertTrue(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.LessThanOrEqualTo, ewInt, 10))
+        assertFalse(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.LessThanOrEqualTo, ewInt, 11))
 
         // Date comparisons
-        assertTrue(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.GreaterThan, ewDate, "2026-01-02"))
-        assertTrue(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.LessThan, ewDate, "2025-12-31"))
-        assertTrue(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo, ewDate, "2026-01-01"))
-        assertTrue(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo, ewDate, "2026-01-01"))
+        assertTrue(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.GreaterThan, ewDate, "2026-01-02"))
+        assertTrue(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.LessThan, ewDate, "2025-12-31"))
+        assertTrue(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.GreaterThanOrEqualTo, ewDate, "2026-01-01"))
+        assertTrue(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.LessThanOrEqualTo, ewDate, "2026-01-01"))
 
         // Boolean enableWhen answer match variants
         val ewBool =
@@ -723,15 +726,15 @@ class SdcEvaluatorExhaustiveCoverageTest {
         assertFalse(SdcEvaluator.matchesSingleValue(ewBool, 123))
 
         // Unsupported operator fallback
-        assertFalse(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.EqualTo, ewInt, 10))
-        assertFalse(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.EqualTo, ewDate, "2026-01-01"))
-        assertFalse(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.GreaterThan, ewBool, true))
+        assertFalse(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.EqualTo, ewInt, 10))
+        assertFalse(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.EqualTo, ewDate, "2026-01-01"))
+        assertFalse(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.GreaterThan, ewBool, true))
 
         // Date comparison false branches
-        assertFalse(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.GreaterThan, ewDate, "2026-01-01"))
-        assertFalse(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.LessThan, ewDate, "2026-01-02"))
-        assertFalse(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo, ewDate, "2025-12-31"))
-        assertFalse(SdcEvaluator.evaluateComparison(Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo, ewDate, "2026-01-02"))
+        assertFalse(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.GreaterThan, ewDate, "2026-01-01"))
+        assertFalse(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.LessThan, ewDate, "2026-01-02"))
+        assertFalse(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.GreaterThanOrEqualTo, ewDate, "2025-12-31"))
+        assertFalse(SdcEvaluator.evaluateComparison(QuestionnaireItemOperator.LessThanOrEqualTo, ewDate, "2026-01-02"))
 
         // extractNumericValue
         assertEquals(42.0, SdcEvaluator.extractNumericValue(BigDecimal.fromInt(42)))

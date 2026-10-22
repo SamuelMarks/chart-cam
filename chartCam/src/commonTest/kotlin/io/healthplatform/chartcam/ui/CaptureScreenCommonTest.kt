@@ -7,6 +7,7 @@ package io.healthplatform.chartcam.ui
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Extension
 import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.fhir.SdcExtensions
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,7 +40,7 @@ class CaptureScreenCommonTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "step1" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                    type = Enumeration(value = QuestionnaireItemType.Attachment),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Front Photo" }
                     extension.add(transExtEs)
@@ -49,13 +50,13 @@ class CaptureScreenCommonTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "group1" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    type = Enumeration(value = QuestionnaireItemType.Group),
                 ).apply {
                     val nestedAttachment =
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = "step2" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                                type = Enumeration(value = QuestionnaireItemType.Attachment),
                             ).apply {
                                 text = FhirString.Builder().apply { value = "Side Photo" }
                             }

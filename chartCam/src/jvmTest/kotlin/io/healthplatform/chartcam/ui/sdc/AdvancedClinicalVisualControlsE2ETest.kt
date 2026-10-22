@@ -22,6 +22,7 @@ import dev.ohs.fhir.model.r4.Extension
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.fhir.QuestionnaireResponseGenerator
 import io.healthplatform.chartcam.models.BodyMapLocation
 import io.healthplatform.chartcam.models.FitzpatrickSkinType
@@ -55,7 +56,7 @@ class AdvancedClinicalVisualControlsE2ETest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "pain_scale" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                    type = Enumeration(value = QuestionnaireItemType.Integer),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Patient Reported Pain Level" }
                     extension.add(createItemControlExt("pain-vas"))
@@ -65,7 +66,7 @@ class AdvancedClinicalVisualControlsE2ETest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "fitzpatrick_skin" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                    type = Enumeration(value = QuestionnaireItemType.Choice),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Fitzpatrick Skin Phototype" }
                     extension.add(createItemControlExt("fitzpatrick"))
@@ -75,7 +76,7 @@ class AdvancedClinicalVisualControlsE2ETest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "lesion_location" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Lesion Anatomical Site" }
                     extension.add(createItemControlExt("body-map"))

@@ -13,6 +13,10 @@ import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.Reference
+import dev.ohs.fhir.model.r4.terminologies.BundleType
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
+import dev.ohs.fhir.model.r4.terminologies.HTTPVerb
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.models.createFhirEncounter
 import io.healthplatform.chartcam.models.createFhirPatient
@@ -83,7 +87,7 @@ class FhirBundleOrchestratorTest {
             val qr =
                 QuestionnaireResponse(
                     id = "qr-bundle-1",
-                    status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                 )
             repository.saveQuestionnaireResponse(qr)
 
@@ -92,12 +96,12 @@ class FhirBundleOrchestratorTest {
                     repository = repository,
                     encounterId = "enc-bundle-1",
                     patientId = "pat-bundle-1",
-                    bundleType = Bundle.BundleType.Collection,
+                    bundleType = BundleType.Collection,
                 )
 
             assertTrue(bundleResult.isSuccess)
             val bundle = bundleResult.getOrThrow()
-            assertEquals(Bundle.BundleType.Collection, bundle.type.value)
+            assertEquals(BundleType.Collection, bundle.type.value)
             assertTrue(bundle.entry.size >= 2)
 
             val unpacked = FhirBundleOrchestrator.unpackEncounterBundle(bundle)
@@ -152,7 +156,7 @@ class FhirBundleOrchestratorTest {
     fun testUnpackEmptyBundleReturnsFailure() {
         val emptyBundle =
             Bundle(
-                type = Enumeration(value = Bundle.BundleType.Collection),
+                type = Enumeration(value = BundleType.Collection),
             )
         val result = FhirBundleOrchestrator.unpackEncounterBundle(emptyBundle)
         assertTrue(result.isFailure)
@@ -167,7 +171,7 @@ class FhirBundleOrchestratorTest {
         val encounter =
             Encounter(
                 id = "enc-1",
-                status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                status = Enumeration(value = EncounterStatus.Finished),
                 subject = Reference(reference = FhirString(value = "Patient/pat-1")),
                 `class` =
                     dev.ohs.fhir.model.r4
@@ -180,7 +184,7 @@ class FhirBundleOrchestratorTest {
 
         val bundle =
             Bundle(
-                type = Enumeration(value = Bundle.BundleType.Collection),
+                type = Enumeration(value = BundleType.Collection),
                 entry =
                     listOf(
                         Bundle.Entry(
@@ -214,7 +218,7 @@ class FhirBundleOrchestratorTest {
         val encounter =
             Encounter(
                 id = "enc-broken",
-                status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                status = Enumeration(value = EncounterStatus.Finished),
                 subject = Reference(reference = FhirString(value = "https://external-ehr.hospital.com/Patient/999")),
                 serviceProvider = Reference(reference = FhirString(value = "Organization/missing-org")),
                 `class` =
@@ -228,7 +232,7 @@ class FhirBundleOrchestratorTest {
 
         val bundle =
             Bundle(
-                type = Enumeration(value = Bundle.BundleType.Collection),
+                type = Enumeration(value = BundleType.Collection),
                 entry =
                     listOf(
                         Bundle.Entry(
@@ -276,7 +280,7 @@ class FhirBundleOrchestratorTest {
                     resource = patToCreate,
                     request =
                         Bundle.Entry.Request(
-                            method = Enumeration(value = Bundle.HTTPVerb.Post),
+                            method = Enumeration(value = HTTPVerb.Post),
                             url =
                                 dev.ohs.fhir.model.r4
                                     .Uri(value = "Patient"),
@@ -287,7 +291,7 @@ class FhirBundleOrchestratorTest {
                     resource = encToUpdate,
                     request =
                         Bundle.Entry.Request(
-                            method = Enumeration(value = Bundle.HTTPVerb.Put),
+                            method = Enumeration(value = HTTPVerb.Put),
                             url =
                                 dev.ohs.fhir.model.r4
                                     .Uri(value = "Encounter/enc-txn-1"),
@@ -296,14 +300,14 @@ class FhirBundleOrchestratorTest {
             val txnBundle =
                 Bundle(
                     id = "txn-bundle-1",
-                    type = Enumeration(value = Bundle.BundleType.Transaction),
+                    type = Enumeration(value = BundleType.Transaction),
                     entry = listOf(postEntry, putEntry),
                 )
 
             val respResult = FhirBundleOrchestrator.executeTransactionBundle(repository, txnBundle)
             assertTrue(respResult.isSuccess)
             val resp = respResult.getOrThrow()
-            assertEquals(Bundle.BundleType.Transaction_Response, resp.type.value)
+            assertEquals(BundleType.Transaction_Response, resp.type.value)
             assertEquals(2, resp.entry.size)
             assertEquals(
                 "201 Created",
@@ -327,7 +331,7 @@ class FhirBundleOrchestratorTest {
                 Bundle.Entry(
                     request =
                         Bundle.Entry.Request(
-                            method = Enumeration(value = Bundle.HTTPVerb.Delete),
+                            method = Enumeration(value = HTTPVerb.Delete),
                             url =
                                 dev.ohs.fhir.model.r4
                                     .Uri(value = "Patient/pat-txn-1"),
@@ -335,7 +339,7 @@ class FhirBundleOrchestratorTest {
                 )
             val deleteBundle =
                 Bundle(
-                    type = Enumeration(value = Bundle.BundleType.Transaction),
+                    type = Enumeration(value = BundleType.Transaction),
                     entry = listOf(deleteEntry),
                 )
             val delRespResult = FhirBundleOrchestrator.executeTransactionBundle(repository, deleteBundle)
@@ -361,7 +365,7 @@ class FhirBundleOrchestratorTest {
             val bundle =
                 Bundle(
                     id = "b-import-1",
-                    type = Enumeration(value = Bundle.BundleType.Collection),
+                    type = Enumeration(value = BundleType.Collection),
                     entry =
                         listOf(
                             Bundle.Entry(
@@ -405,7 +409,7 @@ class FhirBundleOrchestratorTest {
                     .importProtobufBundlePayload(repository, byteArrayOf(1, 2, 3))
             assertTrue(fail2.isFailure)
 
-            val emptyBundle = Bundle(type = Enumeration(value = Bundle.BundleType.Collection), entry = emptyList())
+            val emptyBundle = Bundle(type = Enumeration(value = BundleType.Collection), entry = emptyList())
             val failEmptyIngest = FhirBundleOrchestrator.ingestBundle(repository, emptyBundle)
             assertTrue(failEmptyIngest.isFailure)
 
@@ -417,7 +421,7 @@ class FhirBundleOrchestratorTest {
                 FhirBundleOrchestrator.executeTransactionBundle(
                     repository,
                     Bundle(
-                        type = Enumeration(value = Bundle.BundleType.Transaction),
+                        type = Enumeration(value = BundleType.Transaction),
                         entry = listOf(Bundle.Entry(resource = bundle.entry.first().resource)),
                     ),
                 )
@@ -427,13 +431,13 @@ class FhirBundleOrchestratorTest {
                 FhirBundleOrchestrator.executeTransactionBundle(
                     repository,
                     Bundle(
-                        type = Enumeration(value = Bundle.BundleType.Transaction),
+                        type = Enumeration(value = BundleType.Transaction),
                         entry =
                             listOf(
                                 Bundle.Entry(
                                     request =
                                         Bundle.Entry.Request(
-                                            method = Enumeration(value = Bundle.HTTPVerb.Delete),
+                                            method = Enumeration(value = HTTPVerb.Delete),
                                             url =
                                                 dev.ohs.fhir.model.r4
                                                     .Uri(value = "Patient/p1"),
@@ -458,7 +462,7 @@ class FhirBundleOrchestratorTest {
         val encounter =
             Encounter(
                 id = "enc-full",
-                status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                status = Enumeration(value = EncounterStatus.Finished),
                 subject = Reference(reference = FhirString(value = "Patient/p-full")),
                 serviceProvider = Reference(reference = FhirString(value = "Organization/org-1")),
                 participant =
@@ -483,7 +487,7 @@ class FhirBundleOrchestratorTest {
         val observation =
             dev.ohs.fhir.model.r4.Observation(
                 id = "obs-full",
-                status = Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                 subject = Reference(reference = FhirString(value = "Patient/p-full")),
                 encounter = Reference(reference = FhirString(value = "Encounter/enc-full")),
                 code =
@@ -505,7 +509,7 @@ class FhirBundleOrchestratorTest {
         val qr =
             QuestionnaireResponse(
                 id = "qr-full",
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                 subject = Reference(reference = FhirString(value = "Patient/p-full")),
                 encounter = Reference(reference = FhirString(value = "Encounter/enc-full")),
                 author = Reference(reference = FhirString(value = "Practitioner/prac-1")),
@@ -522,7 +526,7 @@ class FhirBundleOrchestratorTest {
 
         val bundle =
             Bundle(
-                type = Enumeration(value = Bundle.BundleType.Collection),
+                type = Enumeration(value = BundleType.Collection),
                 entry =
                     listOf(
                         Bundle.Entry(
@@ -623,41 +627,41 @@ class FhirBundleOrchestratorTest {
                 Bundle.Entry(
                     request =
                         Bundle.Entry.Request(
-                            method = Enumeration(value = Bundle.HTTPVerb.Delete),
+                            method = Enumeration(value = HTTPVerb.Delete),
                             url =
                                 dev.ohs.fhir.model.r4
                                     .Uri(value = null),
                         ),
                 )
-            val txn1 = Bundle(type = Enumeration(value = Bundle.BundleType.Transaction), entry = listOf(deleteNoUrl))
+            val txn1 = Bundle(type = Enumeration(value = BundleType.Transaction), entry = listOf(deleteNoUrl))
             assertTrue(FhirBundleOrchestrator.executeTransactionBundle(repository, txn1).isFailure)
 
             val postNoRes =
                 Bundle.Entry(
                     request =
                         Bundle.Entry.Request(
-                            method = Enumeration(value = Bundle.HTTPVerb.Post),
+                            method = Enumeration(value = HTTPVerb.Post),
                             url =
                                 dev.ohs.fhir.model.r4
                                     .Uri(value = "Patient"),
                         ),
                     resource = null,
                 )
-            val txn2 = Bundle(type = Enumeration(value = Bundle.BundleType.Transaction), entry = listOf(postNoRes))
+            val txn2 = Bundle(type = Enumeration(value = BundleType.Transaction), entry = listOf(postNoRes))
             assertTrue(FhirBundleOrchestrator.executeTransactionBundle(repository, txn2).isFailure)
 
             val putNoRes =
                 Bundle.Entry(
                     request =
                         Bundle.Entry.Request(
-                            method = Enumeration(value = Bundle.HTTPVerb.Put),
+                            method = Enumeration(value = HTTPVerb.Put),
                             url =
                                 dev.ohs.fhir.model.r4
                                     .Uri(value = "Patient/123"),
                         ),
                     resource = null,
                 )
-            val txn3 = Bundle(type = Enumeration(value = Bundle.BundleType.Transaction), entry = listOf(putNoRes))
+            val txn3 = Bundle(type = Enumeration(value = BundleType.Transaction), entry = listOf(putNoRes))
             assertTrue(FhirBundleOrchestrator.executeTransactionBundle(repository, txn3).isFailure)
         }
 
@@ -672,14 +676,14 @@ class FhirBundleOrchestratorTest {
             val putPatNullId = Patient(id = null)
             val txnBundle =
                 Bundle(
-                    type = Enumeration(value = Bundle.BundleType.Transaction),
+                    type = Enumeration(value = BundleType.Transaction),
                     entry =
                         listOf(
                             Bundle.Entry(
                                 resource = postPatNullId,
                                 request =
                                     Bundle.Entry.Request(
-                                        method = Enumeration(value = Bundle.HTTPVerb.Post),
+                                        method = Enumeration(value = HTTPVerb.Post),
                                         url =
                                             dev.ohs.fhir.model.r4
                                                 .Uri(value = "Patient"),
@@ -689,7 +693,7 @@ class FhirBundleOrchestratorTest {
                                 resource = putPatNullId,
                                 request =
                                     Bundle.Entry.Request(
-                                        method = Enumeration(value = Bundle.HTTPVerb.Put),
+                                        method = Enumeration(value = HTTPVerb.Put),
                                         url =
                                             dev.ohs.fhir.model.r4
                                                 .Uri(value = "Patient"),
@@ -735,7 +739,7 @@ class FhirBundleOrchestratorTest {
             // 3. Ingest bundle where entry resource has null ID
             val nullIdBundle =
                 Bundle(
-                    type = Enumeration(value = Bundle.BundleType.Collection),
+                    type = Enumeration(value = BundleType.Collection),
                     entry = listOf(Bundle.Entry(resource = Patient(id = null))),
                 )
             val ingestedCount = FhirBundleOrchestrator.ingestBundle(repository, nullIdBundle)
@@ -747,7 +751,7 @@ class FhirBundleOrchestratorTest {
             val externalHttpsUrl = "https://secure.org/fhir/Encounter/ext-2"
             val selfContainedWithHttp =
                 Bundle(
-                    type = Enumeration(value = Bundle.BundleType.Collection),
+                    type = Enumeration(value = BundleType.Collection),
                     entry =
                         listOf(
                             Bundle.Entry(
@@ -767,7 +771,7 @@ class FhirBundleOrchestratorTest {
                                 resource =
                                     Encounter(
                                         id = "ext-2",
-                                        status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                                        status = Enumeration(value = EncounterStatus.Finished),
                                         subject = Reference(reference = FhirString(value = externalHttpUrl)),
                                         serviceProvider = Reference(reference = FhirString(value = externalHttpsUrl)),
                                         `class` =
@@ -782,7 +786,7 @@ class FhirBundleOrchestratorTest {
                             Bundle.Entry(
                                 resource =
                                     dev.ohs.fhir.model.r4.Observation(
-                                        status = Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                                        status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                                         code =
                                             dev.ohs.fhir.model.r4
                                                 .CodeableConcept(),
@@ -801,7 +805,7 @@ class FhirBundleOrchestratorTest {
                             Bundle.Entry(
                                 resource =
                                     QuestionnaireResponse(
-                                        status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                                        status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                                         subject = null,
                                         encounter = null,
                                         author = null,
@@ -820,7 +824,7 @@ class FhirBundleOrchestratorTest {
             val encNoId =
                 Encounter(
                     id = null,
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` =
                         dev.ohs.fhir.model.r4
                             .Coding(
@@ -859,7 +863,7 @@ class FhirBundleOrchestratorTest {
                 Bundle.Entry(
                     request =
                         Bundle.Entry.Request(
-                            method = Enumeration(value = Bundle.HTTPVerb.Delete),
+                            method = Enumeration(value = HTTPVerb.Delete),
                             url =
                                 dev.ohs.fhir.model.r4
                                     .Uri(value = null),
@@ -867,21 +871,21 @@ class FhirBundleOrchestratorTest {
                 )
             val txn4 =
                 Bundle(
-                    type = Enumeration(value = Bundle.BundleType.Transaction),
+                    type = Enumeration(value = BundleType.Transaction),
                     entry = listOf(noReqEntry, noReqNullIdEntry, nullMethodEntry),
                 )
             assertTrue(FhirBundleOrchestrator.executeTransactionBundle(repository, txn4).isSuccess)
 
-            val txnNoReqFail = Bundle(type = Enumeration(value = Bundle.BundleType.Transaction), entry = listOf(noReqNullResEntry))
+            val txnNoReqFail = Bundle(type = Enumeration(value = BundleType.Transaction), entry = listOf(noReqNullResEntry))
             assertTrue(FhirBundleOrchestrator.executeTransactionBundle(repository, txnNoReqFail).isFailure)
 
-            val txnDelFail = Bundle(type = Enumeration(value = Bundle.BundleType.Transaction), entry = listOf(delNoUrl))
+            val txnDelFail = Bundle(type = Enumeration(value = BundleType.Transaction), entry = listOf(delNoUrl))
             assertTrue(FhirBundleOrchestrator.executeTransactionBundle(repository, txnDelFail).isFailure)
 
             // 7. collectBundleIdentifiers with blank resource id and null fullUrl / null fullUrl value
             val blankIdBundle =
                 Bundle(
-                    type = Enumeration(value = Bundle.BundleType.Collection),
+                    type = Enumeration(value = BundleType.Collection),
                     entry =
                         listOf(
                             Bundle.Entry(

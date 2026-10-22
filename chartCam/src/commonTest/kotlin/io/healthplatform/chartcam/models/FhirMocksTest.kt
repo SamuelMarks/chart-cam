@@ -5,6 +5,7 @@
 package io.healthplatform.chartcam.models
 
 import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -25,7 +26,7 @@ class FhirMocksTest {
                 titleStr = "Test Questionnaire",
                 itemLinkId = "q-item-1",
                 itemText = "Custom Prompt",
-                itemType = Questionnaire.QuestionnaireItemType.Text,
+                itemType = QuestionnaireItemType.Text,
             )
         assertNotNull(q)
         assertEquals("q-test-1", q.id)

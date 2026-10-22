@@ -16,6 +16,7 @@ import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.Reference
 import dev.ohs.fhir.model.r4.terminologies.DocumentReferenceStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.ui.setAppLanguage
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,19 +38,19 @@ class FacialSeriesCardControlJvmTest {
                 Questionnaire.Item
                     .Builder(
                         linkId = str("item_left"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = str("Left Profile") }
                     .build(),
                 Questionnaire.Item
                     .Builder(
                         linkId = str("item_front"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = str("Front View") }
                     .build(),
                 Questionnaire.Item
                     .Builder(
                         linkId = str("item_right"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = str("Right Profile") }
                     .build(),
             )
@@ -96,13 +97,13 @@ class FacialSeriesCardControlJvmTest {
                 Questionnaire.Item
                     .Builder(
                         linkId = str("item_left"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = str("Left Profile") }
                     .build(),
                 Questionnaire.Item
                     .Builder(
                         linkId = str("item_front"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = str("Front View") }
                     .build(),
             )
@@ -136,19 +137,19 @@ class FacialSeriesCardControlJvmTest {
                 Questionnaire.Item
                     .Builder(
                         linkId = str("item_1"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = str("Step 1") }
                     .build(),
                 Questionnaire.Item
                     .Builder(
                         linkId = str("item_2"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = str("Step 2") }
                     .build(),
                 Questionnaire.Item
                     .Builder(
                         linkId = str("item_3"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = str("Step 3") }
                     .build(),
             )
@@ -217,31 +218,31 @@ class FacialSeriesCardControlJvmTest {
                 Questionnaire.Item
                     .Builder(
                         linkId = str("slot_null_text"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = null }
                     .build(),
                 Questionnaire.Item
                     .Builder(
                         linkId = str("slot_blank_text"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = str("   ") }
                     .build(),
                 Questionnaire.Item
                     .Builder(
                         linkId = str("slot_existing"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = str("Existing Doc") }
                     .build(),
                 Questionnaire.Item
                     .Builder(
                         linkId = str("slot_extra_fallback"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = str("") }
                     .build(),
                 Questionnaire.Item
                     .Builder(
                         linkId = FhirString.Builder().apply { value = null },
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = FhirString.Builder().apply { value = null } }
                     .build(),
             )
@@ -324,14 +325,14 @@ class FacialSeriesCardControlJvmTest {
                 Questionnaire.Item
                     .Builder(
                         linkId = str("slot_dyn1"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = str("動態欄位1") }
                     .build()
             val item2 =
                 Questionnaire.Item
                     .Builder(
                         linkId = str("slot_dyn2"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = str("動態欄位2") }
                     .build()
             val itemsState = androidx.compose.runtime.mutableStateOf(listOf(item1))
@@ -411,7 +412,7 @@ class FacialSeriesCardControlJvmTest {
                 Questionnaire.Item
                     .Builder(
                         linkId = str("item_const"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = str("靜態題目") }
                     .build()
             val items = listOf(item)
@@ -520,7 +521,7 @@ class FacialSeriesCardControlJvmTest {
                 Questionnaire.Item
                     .Builder(
                         linkId = str("item_dyn"),
-                        type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                        type = Enumeration(value = QuestionnaireItemType.Attachment),
                     ).apply { text = str("動態題目") }
                     .build()
             val staticItems = listOf(item)

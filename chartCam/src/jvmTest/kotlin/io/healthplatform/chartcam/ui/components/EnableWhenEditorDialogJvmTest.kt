@@ -16,7 +16,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.unit.Density
-import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.EnableWhenBehavior
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemOperator
 import io.healthplatform.chartcam.viewmodel.BuilderEnableWhen
 import io.healthplatform.chartcam.viewmodel.BuilderItem
 import io.healthplatform.chartcam.viewmodel.WidgetType
@@ -57,14 +58,14 @@ class EnableWhenEditorDialogJvmTest {
                         listOf(
                             BuilderEnableWhen(
                                 question = "q1",
-                                operator = Questionnaire.QuestionnaireItemOperator.EqualTo,
+                                operator = QuestionnaireItemOperator.EqualTo,
                                 answerString = "Yes",
                             ),
                         ),
-                    enableBehavior = Questionnaire.EnableWhenBehavior.All,
+                    enableBehavior = EnableWhenBehavior.All,
                 )
             var savedConditions: List<BuilderEnableWhen>? = null
-            var savedBehavior: Questionnaire.EnableWhenBehavior? = null
+            var savedBehavior: EnableWhenBehavior? = null
             var dismissed = false
 
             setContent {
@@ -88,7 +89,7 @@ class EnableWhenEditorDialogJvmTest {
             waitForIdle()
 
             assertEquals(1, savedConditions?.size)
-            assertEquals(Questionnaire.EnableWhenBehavior.All, savedBehavior)
+            assertEquals(EnableWhenBehavior.All, savedBehavior)
         }
 
     /**
@@ -161,14 +162,14 @@ class EnableWhenEditorDialogJvmTest {
                         listOf(
                             BuilderEnableWhen(
                                 question = "q_numeric",
-                                operator = Questionnaire.QuestionnaireItemOperator.EqualTo,
+                                operator = QuestionnaireItemOperator.EqualTo,
                                 answerString = "25",
                             ),
                         ),
-                    enableBehavior = Questionnaire.EnableWhenBehavior.All,
+                    enableBehavior = EnableWhenBehavior.All,
                 )
             var savedConditions: List<BuilderEnableWhen>? = null
-            var savedBehavior: Questionnaire.EnableWhenBehavior? = null
+            var savedBehavior: EnableWhenBehavior? = null
 
             setContent {
                 EnableWhenEditorDialog(
@@ -237,7 +238,7 @@ class EnableWhenEditorDialogJvmTest {
 
             assertEquals(1, savedConditions?.size)
             assertEquals("q_text", savedConditions?.first()?.question)
-            assertEquals(Questionnaire.QuestionnaireItemOperator.Exists, savedConditions?.first()?.operator)
+            assertEquals(QuestionnaireItemOperator.Exists, savedConditions?.first()?.operator)
         }
 
     /**
@@ -255,11 +256,11 @@ class EnableWhenEditorDialogJvmTest {
                         listOf(
                             BuilderEnableWhen(
                                 question = "unknown_link_id",
-                                operator = Questionnaire.QuestionnaireItemOperator.GreaterThan,
+                                operator = QuestionnaireItemOperator.GreaterThan,
                                 answerString = null,
                             ),
                         ),
-                    enableBehavior = Questionnaire.EnableWhenBehavior.Any,
+                    enableBehavior = EnableWhenBehavior.Any,
                 )
 
             setContent {
@@ -317,7 +318,7 @@ class EnableWhenEditorDialogJvmTest {
             val onDismissState = androidx.compose.runtime.mutableStateOf<() -> Unit>({})
             val onSaveState =
                 androidx.compose.runtime.mutableStateOf<
-                    (List<BuilderEnableWhen>, Questionnaire.EnableWhenBehavior) -> Unit,
+                    (List<BuilderEnableWhen>, EnableWhenBehavior) -> Unit,
                 >({ _, _ -> })
 
             setContent {
@@ -386,7 +387,7 @@ class EnableWhenEditorDialogJvmTest {
                 androidx.compose.runtime.mutableStateOf(
                     BuilderEnableWhen(
                         question = "q_range",
-                        operator = Questionnaire.QuestionnaireItemOperator.GreaterThan,
+                        operator = QuestionnaireItemOperator.GreaterThan,
                         answerString = "5",
                     ),
                 )
@@ -447,7 +448,7 @@ class EnableWhenEditorDialogJvmTest {
             waitForIdle()
 
             // Switch operator to Exists so the Expected Answer text field is hidden
-            condState.value = condState.value.copy(operator = Questionnaire.QuestionnaireItemOperator.Exists)
+            condState.value = condState.value.copy(operator = QuestionnaireItemOperator.Exists)
             waitForIdle()
 
             // Delete
@@ -461,7 +462,7 @@ class EnableWhenEditorDialogJvmTest {
      */
     @Test
     fun testUpdateConditionAnswerHelper() {
-        val initial = BuilderEnableWhen("q1", Questionnaire.QuestionnaireItemOperator.EqualTo, "old")
+        val initial = BuilderEnableWhen("q1", QuestionnaireItemOperator.EqualTo, "old")
         val updated = updateConditionAnswer(initial, "new")
         assertEquals("new", updated.answerString)
         assertEquals("q1", updated.question)

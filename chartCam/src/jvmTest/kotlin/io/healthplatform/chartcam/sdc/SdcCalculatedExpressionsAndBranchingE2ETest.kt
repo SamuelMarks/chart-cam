@@ -12,6 +12,8 @@ import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Extension
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemOperator
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.validation.FhirValidator
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -47,7 +49,7 @@ class SdcCalculatedExpressionsAndBranchingE2ETest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "weight" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                    type = Enumeration(value = QuestionnaireItemType.Decimal),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Weight (kg)" }
                 }
@@ -56,7 +58,7 @@ class SdcCalculatedExpressionsAndBranchingE2ETest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "height" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                    type = Enumeration(value = QuestionnaireItemType.Decimal),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Height (m)" }
                 }
@@ -65,7 +67,7 @@ class SdcCalculatedExpressionsAndBranchingE2ETest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "bmi" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                    type = Enumeration(value = QuestionnaireItemType.Decimal),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Body Mass Index" }
                     extension.add(calcExt)
@@ -75,7 +77,7 @@ class SdcCalculatedExpressionsAndBranchingE2ETest {
             Questionnaire.Item.EnableWhen
                 .Builder(
                     question = FhirString.Builder().apply { value = "bmi" },
-                    operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo),
+                    operator = Enumeration(value = QuestionnaireItemOperator.GreaterThanOrEqualTo),
                     answer =
                         Questionnaire.Item.EnableWhen.Answer.Decimal(
                             Decimal
@@ -92,7 +94,7 @@ class SdcCalculatedExpressionsAndBranchingE2ETest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "high_bmi_group" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    type = Enumeration(value = QuestionnaireItemType.Group),
                 ).apply {
                     text = FhirString.Builder().apply { value = "High BMI Clinical Follow-Up" }
                     enableWhen.add(followUpEnableWhenBuilder)

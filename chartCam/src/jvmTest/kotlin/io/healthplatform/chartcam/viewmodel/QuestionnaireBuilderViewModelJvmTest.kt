@@ -5,6 +5,9 @@
 package io.healthplatform.chartcam.viewmodel
 
 import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.EnableWhenBehavior
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemOperator
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import io.healthplatform.chartcam.repository.QuestionnaireSharingService
 import org.junit.Test
@@ -176,7 +179,7 @@ class QuestionnaireBuilderViewModelJvmTest {
         val condition =
             BuilderEnableWhen(
                 question = item1.linkId,
-                operator = Questionnaire.QuestionnaireItemOperator.Exists,
+                operator = QuestionnaireItemOperator.Exists,
                 answerBoolean = true,
             )
         viewModel.updateItemEnableWhen(item2.linkId, listOf(condition))
@@ -677,7 +680,7 @@ class QuestionnaireBuilderViewModelJvmTest {
                 .linkId
         vm.updateItemEnableWhen(
             item2Id,
-            listOf(BuilderEnableWhen(question = item1Id, operator = Questionnaire.QuestionnaireItemOperator.Exists, answerBoolean = true)),
+            listOf(BuilderEnableWhen(question = item1Id, operator = QuestionnaireItemOperator.Exists, answerBoolean = true)),
         )
         assertEquals(
             1,
@@ -708,16 +711,16 @@ class QuestionnaireBuilderViewModelJvmTest {
                 .linkId
         val conditions =
             listOf(
-                BuilderEnableWhen(question = "item_1", operator = Questionnaire.QuestionnaireItemOperator.EqualTo, answerInteger = 42),
+                BuilderEnableWhen(question = "item_1", operator = QuestionnaireItemOperator.EqualTo, answerInteger = 42),
                 BuilderEnableWhen(
                     question = "item_1",
-                    operator = Questionnaire.QuestionnaireItemOperator.GreaterThan,
+                    operator = QuestionnaireItemOperator.GreaterThan,
                     answerDecimal = 3.14,
                 ),
-                BuilderEnableWhen(question = "item_1", operator = Questionnaire.QuestionnaireItemOperator.EqualTo, answerString = "test"),
-                BuilderEnableWhen(question = "item_1", operator = Questionnaire.QuestionnaireItemOperator.Exists, answerBoolean = null),
+                BuilderEnableWhen(question = "item_1", operator = QuestionnaireItemOperator.EqualTo, answerString = "test"),
+                BuilderEnableWhen(question = "item_1", operator = QuestionnaireItemOperator.Exists, answerBoolean = null),
             )
-        vm.updateItemEnableWhen(item2Id, conditions, Questionnaire.EnableWhenBehavior.All)
+        vm.updateItemEnableWhen(item2Id, conditions, EnableWhenBehavior.All)
         val q = vm.buildQuestionnaire().getOrThrow()
         assertEquals(2, q.item.size)
         val paletteItem = q.item[1]
@@ -750,7 +753,7 @@ class QuestionnaireBuilderViewModelJvmTest {
         val items = mutableListOf<Questionnaire.Item>()
         val eqOp =
             dev.ohs.fhir.model.r4
-                .Enumeration(value = Questionnaire.QuestionnaireItemOperator.EqualTo)
+                .Enumeration(value = QuestionnaireItemOperator.EqualTo)
         controls.forEachIndexed { i, ctrl ->
             val ext =
                 dev.ohs.fhir.model.r4.Extension(
@@ -777,7 +780,7 @@ class QuestionnaireBuilderViewModelJvmTest {
                             .String(value = "ctrl_$i"),
                     type =
                         dev.ohs.fhir.model.r4
-                            .Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            .Enumeration(value = QuestionnaireItemType.Choice),
                     extension = listOf(ext),
                     repeats =
                         if (ctrl == "check-box") {
@@ -797,7 +800,7 @@ class QuestionnaireBuilderViewModelJvmTest {
                         .String(value = "cb_no_rep"),
                 type =
                     dev.ohs.fhir.model.r4
-                        .Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                        .Enumeration(value = QuestionnaireItemType.Choice),
                 extension =
                     listOf(
                         dev.ohs.fhir.model.r4.Extension(
@@ -826,17 +829,17 @@ class QuestionnaireBuilderViewModelJvmTest {
 
         val standardTypes =
             listOf(
-                Questionnaire.QuestionnaireItemType.Attachment,
-                Questionnaire.QuestionnaireItemType.Boolean,
-                Questionnaire.QuestionnaireItemType.Choice,
-                Questionnaire.QuestionnaireItemType.String,
-                Questionnaire.QuestionnaireItemType.Text,
-                Questionnaire.QuestionnaireItemType.Date,
-                Questionnaire.QuestionnaireItemType.DateTime,
-                Questionnaire.QuestionnaireItemType.Decimal,
-                Questionnaire.QuestionnaireItemType.Integer,
-                Questionnaire.QuestionnaireItemType.Group,
-                Questionnaire.QuestionnaireItemType.Display,
+                QuestionnaireItemType.Attachment,
+                QuestionnaireItemType.Boolean,
+                QuestionnaireItemType.Choice,
+                QuestionnaireItemType.String,
+                QuestionnaireItemType.Text,
+                QuestionnaireItemType.Date,
+                QuestionnaireItemType.DateTime,
+                QuestionnaireItemType.Decimal,
+                QuestionnaireItemType.Integer,
+                QuestionnaireItemType.Group,
+                QuestionnaireItemType.Display,
             )
         standardTypes.forEachIndexed { i, st ->
             items.add(
@@ -848,7 +851,7 @@ class QuestionnaireBuilderViewModelJvmTest {
                         dev.ohs.fhir.model.r4
                             .Enumeration(value = st),
                     repeats =
-                        if (st == Questionnaire.QuestionnaireItemType.Choice) {
+                        if (st == QuestionnaireItemType.Choice) {
                             dev.ohs.fhir.model.r4
                                 .Boolean(value = true)
                         } else {
@@ -865,7 +868,7 @@ class QuestionnaireBuilderViewModelJvmTest {
                         .String(value = "ew_all"),
                 type =
                     dev.ohs.fhir.model.r4
-                        .Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                        .Enumeration(value = QuestionnaireItemType.String),
                 enableWhen =
                     listOf(
                         Questionnaire.Item.EnableWhen(
@@ -991,7 +994,7 @@ class QuestionnaireBuilderViewModelJvmTest {
                         .String(value = "choice_no_rep"),
                 type =
                     dev.ohs.fhir.model.r4
-                        .Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                        .Enumeration(value = QuestionnaireItemType.Choice),
                 repeats = null,
             ),
         )
@@ -1019,7 +1022,7 @@ class QuestionnaireBuilderViewModelJvmTest {
                 text = null,
                 type =
                     dev.ohs.fhir.model.r4
-                        .Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                        .Enumeration(value = QuestionnaireItemType.String),
             ),
         )
 

@@ -21,13 +21,13 @@ import dev.ohs.fhir.model.r4.Observation as R4Observation
 import dev.ohs.fhir.model.r4.Patient as R4Patient
 import dev.ohs.fhir.model.r4.Period as R4Period
 import dev.ohs.fhir.model.r4.Quantity as R4Quantity
-import dev.ohs.fhir.model.r4.QuestionnaireResponse.QuestionnaireResponseStatus as R4QrStatus
 import dev.ohs.fhir.model.r4.Reference as R4Reference
 import dev.ohs.fhir.model.r4.String as R4String
 import dev.ohs.fhir.model.r4.Uri as R4Uri
 import dev.ohs.fhir.model.r4.Url as R4Url
 import dev.ohs.fhir.model.r4.terminologies.AdministrativeGender as R4Gender
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus as R4PubStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus as R4QrStatus
 import dev.ohs.fhir.model.r4b.terminologies.AdministrativeGender as R4BGender
 import dev.ohs.fhir.model.r5.Canonical as R5Canonical
 import dev.ohs.fhir.model.r5.Code as R5Code
@@ -48,13 +48,13 @@ import dev.ohs.fhir.model.r5.Observation as R5Observation
 import dev.ohs.fhir.model.r5.Patient as R5Patient
 import dev.ohs.fhir.model.r5.Period as R5Period
 import dev.ohs.fhir.model.r5.Quantity as R5Quantity
-import dev.ohs.fhir.model.r5.QuestionnaireResponse.QuestionnaireResponseStatus as R5QrStatus
 import dev.ohs.fhir.model.r5.Reference as R5Reference
 import dev.ohs.fhir.model.r5.String as R5String
 import dev.ohs.fhir.model.r5.Uri as R5Uri
 import dev.ohs.fhir.model.r5.Url as R5Url
 import dev.ohs.fhir.model.r5.terminologies.AdministrativeGender as R5Gender
 import dev.ohs.fhir.model.r5.terminologies.PublicationStatus as R5PubStatus
+import dev.ohs.fhir.model.r5.terminologies.QuestionnaireResponseStatus as R5QrStatus
 
 /**
  * Offline converter transforming core clinical resources between FHIR R4 and FHIR R5 schemas.
@@ -339,18 +339,18 @@ object FhirVersionConverter {
         runCatching {
             val s = r4.status.value
             val statusR5 =
-                if (s == dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Planned) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Encounter.EncounterStatus.Planned)
-                } else if (s == dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Encounter.EncounterStatus.Completed)
-                } else if (s == dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Cancelled) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Encounter.EncounterStatus.Cancelled)
-                } else if (s == dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Entered_In_Error) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Encounter.EncounterStatus.Entered_In_Error)
-                } else if (s == dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Unknown) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Encounter.EncounterStatus.Unknown)
+                if (s == dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Planned) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.EncounterStatus.Planned)
+                } else if (s == dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.EncounterStatus.Completed)
+                } else if (s == dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Cancelled) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.EncounterStatus.Cancelled)
+                } else if (s == dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Entered_In_Error) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.EncounterStatus.Entered_In_Error)
+                } else if (s == dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Unknown) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.EncounterStatus.Unknown)
                 } else {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Encounter.EncounterStatus.In_Progress)
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.EncounterStatus.In_Progress)
                 }
 
             val p = r4.period
@@ -406,18 +406,18 @@ object FhirVersionConverter {
         runCatching {
             val s = r5.status.value
             val statusR4 =
-                if (s == dev.ohs.fhir.model.r5.Encounter.EncounterStatus.Planned) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Planned)
-                } else if (s == dev.ohs.fhir.model.r5.Encounter.EncounterStatus.Completed) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished)
-                } else if (s == dev.ohs.fhir.model.r5.Encounter.EncounterStatus.Cancelled) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Cancelled)
-                } else if (s == dev.ohs.fhir.model.r5.Encounter.EncounterStatus.Entered_In_Error) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Entered_In_Error)
-                } else if (s == dev.ohs.fhir.model.r5.Encounter.EncounterStatus.Unknown) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Unknown)
+                if (s == dev.ohs.fhir.model.r5.terminologies.EncounterStatus.Planned) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Planned)
+                } else if (s == dev.ohs.fhir.model.r5.terminologies.EncounterStatus.Completed) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished)
+                } else if (s == dev.ohs.fhir.model.r5.terminologies.EncounterStatus.Cancelled) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Cancelled)
+                } else if (s == dev.ohs.fhir.model.r5.terminologies.EncounterStatus.Entered_In_Error) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Entered_In_Error)
+                } else if (s == dev.ohs.fhir.model.r5.terminologies.EncounterStatus.Unknown) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Unknown)
                 } else {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.In_Progress)
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.In_Progress)
                 }
 
             val p = r5.actualPeriod
@@ -488,22 +488,22 @@ object FhirVersionConverter {
         runCatching {
             val s = r4.status.value
             val statusR5 =
-                if (s == dev.ohs.fhir.model.r4.Observation.ObservationStatus.Registered) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Observation.ObservationStatus.Registered)
-                } else if (s == dev.ohs.fhir.model.r4.Observation.ObservationStatus.Preliminary) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Observation.ObservationStatus.Preliminary)
-                } else if (s == dev.ohs.fhir.model.r4.Observation.ObservationStatus.Amended) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Observation.ObservationStatus.Amended)
-                } else if (s == dev.ohs.fhir.model.r4.Observation.ObservationStatus.Corrected) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Observation.ObservationStatus.Corrected)
-                } else if (s == dev.ohs.fhir.model.r4.Observation.ObservationStatus.Cancelled) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Observation.ObservationStatus.Cancelled)
-                } else if (s == dev.ohs.fhir.model.r4.Observation.ObservationStatus.Entered_In_Error) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Observation.ObservationStatus.Entered_In_Error)
-                } else if (s == dev.ohs.fhir.model.r4.Observation.ObservationStatus.Unknown) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Observation.ObservationStatus.Unknown)
+                if (s == dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Registered) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Registered)
+                } else if (s == dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Preliminary) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Preliminary)
+                } else if (s == dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Amended) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Amended)
+                } else if (s == dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Corrected) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Corrected)
+                } else if (s == dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Cancelled) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Cancelled)
+                } else if (s == dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Entered_In_Error) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Entered_In_Error)
+                } else if (s == dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Unknown) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Unknown)
                 } else {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Observation.ObservationStatus.Final)
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Final)
                 }
 
             val codeR5 =
@@ -541,22 +541,22 @@ object FhirVersionConverter {
         runCatching {
             val s = r5.status.value
             val statusR4 =
-                if (s == dev.ohs.fhir.model.r5.Observation.ObservationStatus.Registered) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Registered)
-                } else if (s == dev.ohs.fhir.model.r5.Observation.ObservationStatus.Preliminary) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Preliminary)
-                } else if (s == dev.ohs.fhir.model.r5.Observation.ObservationStatus.Amended) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Amended)
-                } else if (s == dev.ohs.fhir.model.r5.Observation.ObservationStatus.Corrected) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Corrected)
-                } else if (s == dev.ohs.fhir.model.r5.Observation.ObservationStatus.Cancelled) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Cancelled)
-                } else if (s == dev.ohs.fhir.model.r5.Observation.ObservationStatus.Entered_In_Error) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Entered_In_Error)
-                } else if (s == dev.ohs.fhir.model.r5.Observation.ObservationStatus.Unknown) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Unknown)
+                if (s == dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Registered) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Registered)
+                } else if (s == dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Preliminary) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Preliminary)
+                } else if (s == dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Amended) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Amended)
+                } else if (s == dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Corrected) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Corrected)
+                } else if (s == dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Cancelled) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Cancelled)
+                } else if (s == dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Entered_In_Error) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Entered_In_Error)
+                } else if (s == dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Unknown) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Unknown)
                 } else {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final)
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final)
                 }
 
             val codeR4 =
@@ -670,7 +670,7 @@ object FhirVersionConverter {
                     R5Enumeration(value = R5PubStatus.Active)
                 }
 
-            val itemsR5 = r4.item.map { convertQuestionnaireItemR4ToR5(it).getOrThrow() }
+            val itemsR5 = r4.item.map { mapQuestionnaireItemR4ToR5(it) }
 
             dev.ohs.fhir.model.r5.Questionnaire(
                 id = r4.id,
@@ -691,32 +691,44 @@ object FhirVersionConverter {
         item: dev.ohs.fhir.model.r4.Questionnaire.Item,
     ): Result<dev.ohs.fhir.model.r5.Questionnaire.Item> =
         runCatching {
-            val t = item.type.value
-            val typeR5 =
-                if (t != null) {
-                    runCatching {
-                        dev.ohs.fhir.model.r5.Questionnaire.QuestionnaireItemType
-                            .fromCode(t.code)
-                    }.getOrDefault(dev.ohs.fhir.model.r5.Questionnaire.QuestionnaireItemType.String)
-                } else {
-                    dev.ohs.fhir.model.r5.Questionnaire.QuestionnaireItemType.String
-                }
-
-            val subItemsR5 = item.item.map { convertQuestionnaireItemR4ToR5(it).getOrThrow() }
-            val optionsR5 = convertAnswerOptionsR4ToR5(item.answerOption)
-
-            dev.ohs.fhir.model.r5.Questionnaire.Item(
-                linkId = mapStringR4ToR5(item.linkId) ?: R5String(value = ""),
-                text = mapStringR4ToR5(item.text),
-                type =
-                    dev.ohs.fhir.model.r5
-                        .Enumeration(value = typeR5),
-                required = mapBooleanR4ToR5(item.required),
-                repeats = mapBooleanR4ToR5(item.repeats),
-                answerOption = optionsR5,
-                item = subItemsR5,
-            )
+            mapQuestionnaireItemR4ToR5(item)
         }
+
+    /**
+     * Internal recursive mapper from an R4 Questionnaire item to an R5 Questionnaire item.
+     *
+     * @param item The source R4 item.
+     * @return The converted R5 item.
+     */
+    private fun mapQuestionnaireItemR4ToR5(
+        item: dev.ohs.fhir.model.r4.Questionnaire.Item,
+    ): dev.ohs.fhir.model.r5.Questionnaire.Item {
+        val t = item.type.value
+        val typeR5 =
+            if (t != null) {
+                runCatching {
+                    dev.ohs.fhir.model.r5.terminologies.QuestionnaireItemType
+                        .fromCode(t.code)
+                }.getOrDefault(dev.ohs.fhir.model.r5.terminologies.QuestionnaireItemType.String)
+            } else {
+                dev.ohs.fhir.model.r5.terminologies.QuestionnaireItemType.String
+            }
+
+        val subItemsR5 = item.item.map { mapQuestionnaireItemR4ToR5(it) }
+        val optionsR5 = convertAnswerOptionsR4ToR5(item.answerOption)
+
+        return dev.ohs.fhir.model.r5.Questionnaire.Item(
+            linkId = mapStringR4ToR5(item.linkId) ?: R5String(value = ""),
+            text = mapStringR4ToR5(item.text),
+            type =
+                dev.ohs.fhir.model.r5
+                    .Enumeration(value = typeR5),
+            required = mapBooleanR4ToR5(item.required),
+            repeats = mapBooleanR4ToR5(item.repeats),
+            answerOption = optionsR5,
+            item = subItemsR5,
+        )
+    }
 
     /**
      * Converts R4 answer options into R5 answer options.
@@ -779,7 +791,7 @@ object FhirVersionConverter {
                     R4Enumeration(value = R4PubStatus.Active)
                 }
 
-            val itemsR4 = r5.item.map { convertQuestionnaireItemR5ToR4(it).getOrThrow() }
+            val itemsR4 = r5.item.map { mapQuestionnaireItemR5ToR4(it) }
 
             dev.ohs.fhir.model.r4.Questionnaire(
                 id = r5.id,
@@ -800,32 +812,44 @@ object FhirVersionConverter {
         item: dev.ohs.fhir.model.r5.Questionnaire.Item,
     ): Result<dev.ohs.fhir.model.r4.Questionnaire.Item> =
         runCatching {
-            val t = item.type.value
-            val typeR4 =
-                if (t != null) {
-                    runCatching {
-                        dev.ohs.fhir.model.r4.Questionnaire.QuestionnaireItemType
-                            .fromCode(t.code)
-                    }.getOrDefault(dev.ohs.fhir.model.r4.Questionnaire.QuestionnaireItemType.String)
-                } else {
-                    dev.ohs.fhir.model.r4.Questionnaire.QuestionnaireItemType.String
-                }
-
-            val subItemsR4 = item.item.map { convertQuestionnaireItemR5ToR4(it).getOrThrow() }
-            val optionsR4 = convertAnswerOptionsR5ToR4(item.answerOption)
-
-            dev.ohs.fhir.model.r4.Questionnaire.Item(
-                linkId = mapStringR5ToR4(item.linkId) ?: R4String(value = ""),
-                text = mapStringR5ToR4(item.text),
-                type =
-                    dev.ohs.fhir.model.r4
-                        .Enumeration(value = typeR4),
-                required = mapBooleanR5ToR4(item.required),
-                repeats = mapBooleanR5ToR4(item.repeats),
-                answerOption = optionsR4,
-                item = subItemsR4,
-            )
+            mapQuestionnaireItemR5ToR4(item)
         }
+
+    /**
+     * Internal recursive mapper from an R5 Questionnaire item to an R4 Questionnaire item.
+     *
+     * @param item The source R5 item.
+     * @return The converted R4 item.
+     */
+    private fun mapQuestionnaireItemR5ToR4(
+        item: dev.ohs.fhir.model.r5.Questionnaire.Item,
+    ): dev.ohs.fhir.model.r4.Questionnaire.Item {
+        val t = item.type.value
+        val typeR4 =
+            if (t != null) {
+                runCatching {
+                    dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
+                        .fromCode(t.code)
+                }.getOrDefault(dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType.String)
+            } else {
+                dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType.String
+            }
+
+        val subItemsR4 = item.item.map { mapQuestionnaireItemR5ToR4(it) }
+        val optionsR4 = convertAnswerOptionsR5ToR4(item.answerOption)
+
+        return dev.ohs.fhir.model.r4.Questionnaire.Item(
+            linkId = mapStringR5ToR4(item.linkId) ?: R4String(value = ""),
+            text = mapStringR5ToR4(item.text),
+            type =
+                dev.ohs.fhir.model.r4
+                    .Enumeration(value = typeR4),
+            required = mapBooleanR5ToR4(item.required),
+            repeats = mapBooleanR5ToR4(item.repeats),
+            answerOption = optionsR4,
+            item = subItemsR4,
+        )
+    }
 
     /**
      * Converts R5 answer options into R4 answer options.
@@ -1142,24 +1166,24 @@ object FhirVersionConverter {
         runCatching {
             val t = r4.type.value
             val typeR5 =
-                if (t == dev.ohs.fhir.model.r4.Bundle.BundleType.Document) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Bundle.BundleType.Document)
-                } else if (t == dev.ohs.fhir.model.r4.Bundle.BundleType.Message) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Bundle.BundleType.Message)
-                } else if (t == dev.ohs.fhir.model.r4.Bundle.BundleType.Transaction) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Bundle.BundleType.Transaction)
-                } else if (t == dev.ohs.fhir.model.r4.Bundle.BundleType.Transaction_Response) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Bundle.BundleType.Transaction_Response)
-                } else if (t == dev.ohs.fhir.model.r4.Bundle.BundleType.Batch) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Bundle.BundleType.Batch)
-                } else if (t == dev.ohs.fhir.model.r4.Bundle.BundleType.Batch_Response) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Bundle.BundleType.Batch_Response)
-                } else if (t == dev.ohs.fhir.model.r4.Bundle.BundleType.History) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Bundle.BundleType.History)
-                } else if (t == dev.ohs.fhir.model.r4.Bundle.BundleType.Searchset) {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Bundle.BundleType.Searchset)
+                if (t == dev.ohs.fhir.model.r4.terminologies.BundleType.Document) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.BundleType.Document)
+                } else if (t == dev.ohs.fhir.model.r4.terminologies.BundleType.Message) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.BundleType.Message)
+                } else if (t == dev.ohs.fhir.model.r4.terminologies.BundleType.Transaction) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.BundleType.Transaction)
+                } else if (t == dev.ohs.fhir.model.r4.terminologies.BundleType.Transaction_Response) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.BundleType.Transaction_Response)
+                } else if (t == dev.ohs.fhir.model.r4.terminologies.BundleType.Batch) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.BundleType.Batch)
+                } else if (t == dev.ohs.fhir.model.r4.terminologies.BundleType.Batch_Response) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.BundleType.Batch_Response)
+                } else if (t == dev.ohs.fhir.model.r4.terminologies.BundleType.History) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.BundleType.History)
+                } else if (t == dev.ohs.fhir.model.r4.terminologies.BundleType.Searchset) {
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.BundleType.Searchset)
                 } else {
-                    R5Enumeration(value = dev.ohs.fhir.model.r5.Bundle.BundleType.Collection)
+                    R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.BundleType.Collection)
                 }
 
             val entriesR5 =
@@ -1188,24 +1212,24 @@ object FhirVersionConverter {
         runCatching {
             val t = r5.type.value
             val typeR4 =
-                if (t == dev.ohs.fhir.model.r5.Bundle.BundleType.Document) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Bundle.BundleType.Document)
-                } else if (t == dev.ohs.fhir.model.r5.Bundle.BundleType.Message) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Bundle.BundleType.Message)
-                } else if (t == dev.ohs.fhir.model.r5.Bundle.BundleType.Transaction) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Bundle.BundleType.Transaction)
-                } else if (t == dev.ohs.fhir.model.r5.Bundle.BundleType.Transaction_Response) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Bundle.BundleType.Transaction_Response)
-                } else if (t == dev.ohs.fhir.model.r5.Bundle.BundleType.Batch) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Bundle.BundleType.Batch)
-                } else if (t == dev.ohs.fhir.model.r5.Bundle.BundleType.Batch_Response) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Bundle.BundleType.Batch_Response)
-                } else if (t == dev.ohs.fhir.model.r5.Bundle.BundleType.History) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Bundle.BundleType.History)
-                } else if (t == dev.ohs.fhir.model.r5.Bundle.BundleType.Searchset) {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Bundle.BundleType.Searchset)
+                if (t == dev.ohs.fhir.model.r5.terminologies.BundleType.Document) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.BundleType.Document)
+                } else if (t == dev.ohs.fhir.model.r5.terminologies.BundleType.Message) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.BundleType.Message)
+                } else if (t == dev.ohs.fhir.model.r5.terminologies.BundleType.Transaction) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.BundleType.Transaction)
+                } else if (t == dev.ohs.fhir.model.r5.terminologies.BundleType.Transaction_Response) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.BundleType.Transaction_Response)
+                } else if (t == dev.ohs.fhir.model.r5.terminologies.BundleType.Batch) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.BundleType.Batch)
+                } else if (t == dev.ohs.fhir.model.r5.terminologies.BundleType.Batch_Response) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.BundleType.Batch_Response)
+                } else if (t == dev.ohs.fhir.model.r5.terminologies.BundleType.History) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.BundleType.History)
+                } else if (t == dev.ohs.fhir.model.r5.terminologies.BundleType.Searchset) {
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.BundleType.Searchset)
                 } else {
-                    R4Enumeration(value = dev.ohs.fhir.model.r4.Bundle.BundleType.Collection)
+                    R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.BundleType.Collection)
                 }
 
             val entriesR4 =

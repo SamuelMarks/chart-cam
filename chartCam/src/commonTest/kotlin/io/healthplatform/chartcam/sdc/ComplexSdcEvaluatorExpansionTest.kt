@@ -8,6 +8,8 @@ import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Extension
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemOperator
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.fhir.SdcExtensions
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -59,7 +61,7 @@ class ComplexSdcEvaluatorExpansionTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "child_score" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                    type = Enumeration(value = QuestionnaireItemType.Decimal),
                 ).apply {
                     extension.add(createCalcExtension("(%a * 2) + (%b / 2)"))
                 }
@@ -68,7 +70,7 @@ class ComplexSdcEvaluatorExpansionTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "child_full_name" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     extension.add(createCalcExtension("concat(%first_name, ' ', %last_name)"))
                 }
@@ -77,7 +79,7 @@ class ComplexSdcEvaluatorExpansionTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "parent_group" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    type = Enumeration(value = QuestionnaireItemType.Group),
                 ).apply {
                     item.add(childItem)
                     item.add(childConcat)
@@ -87,7 +89,7 @@ class ComplexSdcEvaluatorExpansionTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "root_group" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    type = Enumeration(value = QuestionnaireItemType.Group),
                 ).apply {
                     item.add(parentGroup)
                 }
@@ -122,7 +124,7 @@ class ComplexSdcEvaluatorExpansionTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "hospital_stay_details" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    type = Enumeration(value = QuestionnaireItemType.Group),
                 ).apply {
                     enableWhen.add(
                         Questionnaire.Item.EnableWhen
@@ -130,7 +132,7 @@ class ComplexSdcEvaluatorExpansionTest {
                                 answer =
                                     Questionnaire.Item.EnableWhen.Answer
                                         .Boolean(FhirBoolean.Builder().apply { value = true }.build()),
-                                operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.EqualTo),
+                                operator = Enumeration(value = QuestionnaireItemOperator.EqualTo),
                                 question = FhirString.Builder().apply { value = "is_hospitalized" },
                             ),
                     )
@@ -141,7 +143,7 @@ class ComplexSdcEvaluatorExpansionTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "icu_bed_number" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     enableWhen.add(
                         Questionnaire.Item.EnableWhen
@@ -149,7 +151,7 @@ class ComplexSdcEvaluatorExpansionTest {
                                 answer =
                                     Questionnaire.Item.EnableWhen.Answer
                                         .Boolean(FhirBoolean.Builder().apply { value = true }.build()),
-                                operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.EqualTo),
+                                operator = Enumeration(value = QuestionnaireItemOperator.EqualTo),
                                 question = FhirString.Builder().apply { value = "icu_stay" },
                             ),
                     )
@@ -221,7 +223,7 @@ class ComplexSdcEvaluatorExpansionTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = "pat_name" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                type = Enumeration(value = QuestionnaireItemType.String),
                             ).apply {
                                 extension.add(createInitialExtension("%patient.name"))
                             },
@@ -230,7 +232,7 @@ class ComplexSdcEvaluatorExpansionTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = "pat_gender" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                type = Enumeration(value = QuestionnaireItemType.String),
                             ).apply {
                                 extension.add(createInitialExtension("%patient.gender"))
                             },
@@ -239,7 +241,7 @@ class ComplexSdcEvaluatorExpansionTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = "encounter_ref" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                type = Enumeration(value = QuestionnaireItemType.String),
                             ).apply {
                                 extension.add(createInitialExtension("%encounter.id"))
                             },

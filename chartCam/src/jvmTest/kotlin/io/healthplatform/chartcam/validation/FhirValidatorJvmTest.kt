@@ -11,6 +11,7 @@ import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.String
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -59,7 +60,7 @@ class FhirValidatorJvmTest {
                     listOf(
                         Questionnaire.Item(
                             linkId = String(value = "1"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                             text = String(value = "Text"),
                         ),
                     ),
@@ -93,7 +94,7 @@ class FhirValidatorJvmTest {
                     listOf(
                         Questionnaire.Item(
                             linkId = String(value = "1"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            type = Enumeration(value = QuestionnaireItemType.Choice),
                             text = String(value = "Pick one"),
                         ),
                     ),

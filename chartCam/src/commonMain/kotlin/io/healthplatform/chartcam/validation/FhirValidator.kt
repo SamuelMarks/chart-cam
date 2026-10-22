@@ -10,6 +10,9 @@ import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.Resource
+import dev.ohs.fhir.model.r4.terminologies.IssueSeverity
+import dev.ohs.fhir.model.r4.terminologies.IssueType
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.utils.ChartCamDomainError
 import io.healthplatform.chartcam.utils.UUID
 import dev.ohs.fhir.model.r4.String as FhirString
@@ -212,7 +215,7 @@ object FhirValidator {
         linkIds: MutableSet<String>,
     ): FhirValidationException? {
         val id = item.linkId.value
-        val isChoice = item.type.value == Questionnaire.QuestionnaireItemType.Choice
+        val isChoice = item.type.value == QuestionnaireItemType.Choice
         return when {
             id.isNullOrEmpty() -> FhirValidationException.MissingRequiredFieldException("item.linkId")
             item.text?.value.isNullOrEmpty() ->
@@ -260,8 +263,8 @@ object FhirValidator {
         if (patient.name.isEmpty()) {
             issues.add(
                 createIssue(
-                    severity = OperationOutcome.IssueSeverity.Error,
-                    code = OperationOutcome.IssueType.Required,
+                    severity = IssueSeverity.Error,
+                    code = IssueType.Required,
                     diagnostics = "Patient is missing required field 'name'",
                     expression = "Patient.name",
                 ),
@@ -270,8 +273,8 @@ object FhirValidator {
         if (!patient.name.any { it.given.isNotEmpty() }) {
             issues.add(
                 createIssue(
-                    severity = OperationOutcome.IssueSeverity.Error,
-                    code = OperationOutcome.IssueType.Required,
+                    severity = IssueSeverity.Error,
+                    code = IssueType.Required,
                     diagnostics = "Patient.name is missing 'given' name",
                     expression = "Patient.name.given",
                 ),
@@ -280,8 +283,8 @@ object FhirValidator {
         if (!patient.name.any { it.family?.value?.isNotEmpty() == true }) {
             issues.add(
                 createIssue(
-                    severity = OperationOutcome.IssueSeverity.Error,
-                    code = OperationOutcome.IssueType.Required,
+                    severity = IssueSeverity.Error,
+                    code = IssueType.Required,
                     diagnostics = "Patient.name is missing 'family' name",
                     expression = "Patient.name.family",
                 ),
@@ -290,8 +293,8 @@ object FhirValidator {
         if (patient.identifier.isEmpty()) {
             issues.add(
                 createIssue(
-                    severity = OperationOutcome.IssueSeverity.Error,
-                    code = OperationOutcome.IssueType.Required,
+                    severity = IssueSeverity.Error,
+                    code = IssueType.Required,
                     diagnostics = "Patient is missing required field 'identifier'",
                     expression = "Patient.identifier",
                 ),
@@ -312,8 +315,8 @@ object FhirValidator {
         if (questionnaire.title?.value.isNullOrBlank()) {
             issues.add(
                 createIssue(
-                    severity = OperationOutcome.IssueSeverity.Error,
-                    code = OperationOutcome.IssueType.Required,
+                    severity = IssueSeverity.Error,
+                    code = IssueType.Required,
                     diagnostics = "Questionnaire is missing required field 'title'",
                     expression = "Questionnaire.title",
                 ),
@@ -340,8 +343,8 @@ object FhirValidator {
             if (id.isNullOrBlank()) {
                 issues.add(
                     createIssue(
-                        severity = OperationOutcome.IssueSeverity.Error,
-                        code = OperationOutcome.IssueType.Required,
+                        severity = IssueSeverity.Error,
+                        code = IssueType.Required,
                         diagnostics = "Questionnaire item missing linkId",
                         expression = "Questionnaire.item.linkId",
                     ),
@@ -349,8 +352,8 @@ object FhirValidator {
             } else if (!linkIds.add(id)) {
                 issues.add(
                     createIssue(
-                        severity = OperationOutcome.IssueSeverity.Error,
-                        code = OperationOutcome.IssueType.Duplicate,
+                        severity = IssueSeverity.Error,
+                        code = IssueType.Duplicate,
                         diagnostics = "Duplicate linkId: $id",
                         expression = "Questionnaire.item.where(linkId='$id')",
                     ),
@@ -373,8 +376,8 @@ object FhirValidator {
         if (response.status.value == null) {
             issues.add(
                 createIssue(
-                    severity = OperationOutcome.IssueSeverity.Error,
-                    code = OperationOutcome.IssueType.Required,
+                    severity = IssueSeverity.Error,
+                    code = IssueType.Required,
                     diagnostics = "QuestionnaireResponse is missing required field 'status'",
                     expression = "QuestionnaireResponse.status",
                 ),
@@ -392,8 +395,8 @@ object FhirValidator {
      * @return The populated [OperationOutcome.Issue].
      */
     private fun createIssue(
-        severity: OperationOutcome.IssueSeverity,
-        code: OperationOutcome.IssueType,
+        severity: IssueSeverity,
+        code: IssueType,
         diagnostics: kotlin.String,
         expression: kotlin.String,
     ): OperationOutcome.Issue =

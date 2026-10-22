@@ -55,8 +55,12 @@ class QuestionnaireFilePickerAndroidTest {
         assertNotNull(status)
         val check = provider.checkHardwareBacked()
         assertNotNull(check)
-        // Under default Robolectric SDK 21 (< M), provider returns failure and NO_HARDWARE
-        assertTrue(check.isFailure)
+        assertTrue(check.isSuccess)
+
+        val legacyProvider =
+            io.healthplatform.chartcam.storage
+                .AndroidKeystoreHardwareProvider(sdkInt = 21)
+        assertTrue(legacyProvider.checkHardwareBacked().isFailure)
 
         val modernProvider =
             io.healthplatform.chartcam.storage

@@ -8,9 +8,9 @@ package io.healthplatform.chartcam.repository
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import dev.ohs.fhir.model.r4.Encounter
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Practitioner
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.DocumentReferenceCreationParams
@@ -144,7 +144,7 @@ class DisasterRecoveryRoundTripTest {
                     dateStr = "2026-09-01T10:00:00Z",
                 ).toBuilder()
                     .apply {
-                        status = Enumeration(value = Encounter.EncounterStatus.Finished)
+                        status = Enumeration(value = EncounterStatus.Finished)
                     }.build()
             fhirRepository.saveEncounter(encounter1)
 
@@ -209,7 +209,7 @@ class DisasterRecoveryRoundTripTest {
             // 8. Verify encounters and document references
             val restoredEncounter = freshFhirRepo.getEncounter("enc-pat1-01")
             assertNotNull(restoredEncounter)
-            assertEquals(Encounter.EncounterStatus.Finished, restoredEncounter.status.value)
+            assertEquals(EncounterStatus.Finished, restoredEncounter.status.value)
 
             val restoredDocRef = freshFhirRepo.getDocumentReference("docref-001")
             assertNotNull(restoredDocRef)

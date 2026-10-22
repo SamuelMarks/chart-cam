@@ -14,6 +14,7 @@ import dev.ohs.fhir.model.r4.FhirDecimal
 import dev.ohs.fhir.model.r4.Integer
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -47,7 +48,7 @@ class SdcExtensionsTest {
             Questionnaire.Item
                 .Builder(
                     linkId = str("1"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     extension.add(hiddenExt)
                 }.build()
@@ -57,7 +58,7 @@ class SdcExtensionsTest {
             Questionnaire.Item
                 .Builder(
                     linkId = str("2"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).build()
         assertFalse(visibleItem.isHidden())
     }
@@ -79,7 +80,7 @@ class SdcExtensionsTest {
             Questionnaire.Item
                 .Builder(
                     linkId = str("1"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     extension.add(controlExt)
                 }.build()
@@ -90,7 +91,7 @@ class SdcExtensionsTest {
             Questionnaire.Item
                 .Builder(
                     linkId = str("2"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).build()
         assertNull(itemNoControl.getItemControl())
     }
@@ -113,7 +114,7 @@ class SdcExtensionsTest {
             Questionnaire.Item
                 .Builder(
                     linkId = str("1"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     extension.add(minExt)
                     extension.add(maxExt)
@@ -128,7 +129,7 @@ class SdcExtensionsTest {
             Questionnaire.Item
                 .Builder(
                     linkId = str("2"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).build()
         assertNull(emptyItem.getMinValue())
         assertNull(emptyItem.getMaxValue())
@@ -158,7 +159,7 @@ class SdcExtensionsTest {
             Questionnaire.Item
                 .Builder(
                     linkId = str("1"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     text = str("Clinical Notes")
                     extension.add(transExt)
@@ -171,7 +172,7 @@ class SdcExtensionsTest {
             Questionnaire.Item
                 .Builder(
                     linkId = str("2"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     text = str("Default Text")
                 }.build()
@@ -253,7 +254,7 @@ class SdcExtensionsTest {
         val item =
             Questionnaire.Item(
                 linkId = FhirString(value = "q-weight"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                type = Enumeration(value = QuestionnaireItemType.Decimal),
                 extension = listOf(unitExt, weightExt, orientExt),
             )
 
@@ -286,7 +287,7 @@ class SdcExtensionsTest {
             }
             return Questionnaire.Item(
                 linkId = FhirString(value = "ctrl_q"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                type = Enumeration(value = QuestionnaireItemType.Choice),
                 extension = exts,
                 code = codings,
             )
@@ -326,7 +327,7 @@ class SdcExtensionsTest {
         val codeItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "code_item"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 extension = listOf(Extension(url = SdcExtensions.ITEM_CONTROL, value = Extension.Value.Code(Code(value = "radio")))),
             )
         assertEquals("radio", codeItem.safeItemControl.getOrNull())
@@ -334,7 +335,7 @@ class SdcExtensionsTest {
         val unsupportedControlItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "unsupported_ctrl"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 extension = listOf(Extension(url = SdcExtensions.ITEM_CONTROL, value = Extension.Value.Integer(Integer(value = 1)))),
             )
         assertNull(unsupportedControlItem.safeItemControl.getOrNull())
@@ -369,7 +370,7 @@ class SdcExtensionsTest {
         val numItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "num_item"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                type = Enumeration(value = QuestionnaireItemType.Decimal),
                 extension = listOf(decExt, maxDecExt),
             )
         assertEquals("1.5", numItem.getDecimalMinValue().getOrNull()?.toString())
@@ -378,7 +379,7 @@ class SdcExtensionsTest {
         val unsuppMinItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "unsupp_min"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                type = Enumeration(value = QuestionnaireItemType.Decimal),
                 extension = listOf(Extension(url = SdcExtensions.MIN_VALUE, value = Extension.Value.String(FhirString(value = "not-dec")))),
             )
         assertNull(unsuppMinItem.safeMinValue.getOrNull())
@@ -393,7 +394,7 @@ class SdcExtensionsTest {
         val exprChildItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "expr_child"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Date),
+                type = Enumeration(value = QuestionnaireItemType.Date),
                 extension = listOf(exprChildExt),
             )
         assertEquals("today()", exprChildItem.getInitialExpression())
@@ -406,7 +407,7 @@ class SdcExtensionsTest {
         val exprDirectItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "expr_direct"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.DateTime),
+                type = Enumeration(value = QuestionnaireItemType.DateTime),
                 extension = listOf(exprDirectExt),
             )
         assertEquals("now()", exprDirectItem.getInitialExpression())
@@ -419,7 +420,7 @@ class SdcExtensionsTest {
         val exprUnsuppItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "expr_unsupp"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                type = Enumeration(value = QuestionnaireItemType.Integer),
                 extension = listOf(exprUnsuppExt),
             )
         assertNull(exprUnsuppItem.getInitialExpression())
@@ -427,7 +428,7 @@ class SdcExtensionsTest {
         val noInitItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "no_init"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
             )
         assertNull(noInitItem.safeInitialExpression.getOrNull())
 
@@ -435,7 +436,7 @@ class SdcExtensionsTest {
         val hiddenFalseItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "hf"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 extension = listOf(Extension(url = SdcExtensions.HIDDEN, value = Extension.Value.Boolean(FhirBoolean(value = false)))),
             )
         assertFalse(hiddenFalseItem.isHidden())
@@ -443,7 +444,7 @@ class SdcExtensionsTest {
         val hiddenUnsuppItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "hu"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 extension = listOf(Extension(url = SdcExtensions.HIDDEN, value = Extension.Value.String(FhirString(value = "false")))),
             )
         assertFalse(hiddenUnsuppItem.isHidden())
@@ -452,7 +453,7 @@ class SdcExtensionsTest {
         val unsuppGenericItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "ug"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 extension =
                     listOf(
                         Extension(url = SdcExtensions.QUESTIONNAIRE_UNIT, value = Extension.Value.Integer(Integer(value = 1))),
@@ -467,7 +468,7 @@ class SdcExtensionsTest {
         val codeOrientItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "co"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                type = Enumeration(value = QuestionnaireItemType.Choice),
                 extension =
                     listOf(
                         Extension(url = SdcExtensions.CHOICE_ORIENTATION, value = Extension.Value.Code(Code(value = "vertical"))),
@@ -497,7 +498,7 @@ class SdcExtensionsTest {
         val jaItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "ja_q"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 text = FhirString(value = "Fallback Text"),
                 extension = listOf(langCodeExt, blankContentExt),
             )
@@ -509,7 +510,7 @@ class SdcExtensionsTest {
         val nullTextItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "nt_q"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
             )
         assertEquals("", nullTextItem.getLocalizedText("fr"))
 
@@ -559,7 +560,7 @@ class SdcExtensionsTest {
         val itemWithNullCodeCoding =
             Questionnaire.Item(
                 linkId = FhirString(value = "null_code_coding"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                type = Enumeration(value = QuestionnaireItemType.Choice),
                 code = listOf(Coding(code = null), Coding(code = Code(value = SdcExtensions.LOINC_PAIN_SCORE))),
             )
         assertTrue(itemWithNullCodeCoding.isVisualPainControl())
@@ -568,7 +569,7 @@ class SdcExtensionsTest {
         val emptyCodingItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "empty_coding"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                type = Enumeration(value = QuestionnaireItemType.Choice),
                 extension =
                     listOf(
                         Extension(
@@ -582,7 +583,7 @@ class SdcExtensionsTest {
         val nullCodeItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "null_code"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                type = Enumeration(value = QuestionnaireItemType.Choice),
                 extension =
                     listOf(
                         Extension(
@@ -596,7 +597,7 @@ class SdcExtensionsTest {
         val nullValueItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "null_val"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                type = Enumeration(value = QuestionnaireItemType.Choice),
                 extension =
                     listOf(
                         Extension(
@@ -611,7 +612,7 @@ class SdcExtensionsTest {
         val nullIntMinItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "nim"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                type = Enumeration(value = QuestionnaireItemType.Integer),
                 extension =
                     listOf(
                         Extension(url = SdcExtensions.MIN_VALUE, value = Extension.Value.Integer(Integer(value = null))),
@@ -627,7 +628,7 @@ class SdcExtensionsTest {
         val initParentStringChildInt =
             Questionnaire.Item(
                 linkId = FhirString(value = "ipsc"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 extension =
                     listOf(
                         Extension(
@@ -643,7 +644,7 @@ class SdcExtensionsTest {
         val hiddenNullBoolItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "hnb"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 extension = listOf(Extension(url = SdcExtensions.HIDDEN, value = Extension.Value.Boolean(FhirBoolean(value = null)))),
             )
         assertFalse(hiddenNullBoolItem.isHidden())
@@ -670,7 +671,7 @@ class SdcExtensionsTest {
         val qItemWithNonString =
             Questionnaire.Item(
                 linkId = FhirString(value = "ns_q"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 text = FhirString(value = "English Default"),
                 extension = listOf(nonStringTrans, nonStringTransMatchLang),
             )
@@ -688,7 +689,7 @@ class SdcExtensionsTest {
         val itemWithNullTextVal =
             Questionnaire.Item(
                 linkId = FhirString(value = "ntv"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 text = FhirString(value = null),
             )
         assertEquals("", itemWithNullTextVal.getLocalizedText("en"))
@@ -704,7 +705,7 @@ class SdcExtensionsTest {
         val itemWithOtherUnit =
             Questionnaire.Item(
                 linkId = FhirString(value = "iou"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                type = Enumeration(value = QuestionnaireItemType.Decimal),
                 extension = listOf(Extension(url = SdcExtensions.QUESTIONNAIRE_UNIT, value = Extension.Value.Integer(Integer(value = 1)))),
             )
         assertNull(itemWithOtherUnit.safeUnit.getOrNull())
@@ -712,7 +713,7 @@ class SdcExtensionsTest {
         val itemWithOtherWeight =
             Questionnaire.Item(
                 linkId = FhirString(value = "iow"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                type = Enumeration(value = QuestionnaireItemType.Decimal),
                 extension = listOf(Extension(url = SdcExtensions.ITEM_WEIGHT, value = Extension.Value.Integer(Integer(value = 1)))),
             )
         assertNull(itemWithOtherWeight.safeItemWeight.getOrNull())
@@ -720,7 +721,7 @@ class SdcExtensionsTest {
         val itemWithOtherOrientation =
             Questionnaire.Item(
                 linkId = FhirString(value = "ioo"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                type = Enumeration(value = QuestionnaireItemType.Choice),
                 extension = listOf(Extension(url = SdcExtensions.CHOICE_ORIENTATION, value = Extension.Value.Integer(Integer(value = 1)))),
             )
         assertNull(itemWithOtherOrientation.safeChoiceOrientation.getOrNull())
@@ -728,7 +729,7 @@ class SdcExtensionsTest {
         val itemWithCodeOrientation =
             Questionnaire.Item(
                 linkId = FhirString(value = "ico"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                type = Enumeration(value = QuestionnaireItemType.Choice),
                 extension =
                     listOf(
                         Extension(url = SdcExtensions.CHOICE_ORIENTATION, value = Extension.Value.Code(Code(value = "horizontal"))),
@@ -739,7 +740,7 @@ class SdcExtensionsTest {
         val itemWithStringOrientation =
             Questionnaire.Item(
                 linkId = FhirString(value = "iso"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                type = Enumeration(value = QuestionnaireItemType.Choice),
                 extension =
                     listOf(
                         Extension(url = SdcExtensions.CHOICE_ORIENTATION, value = Extension.Value.String(FhirString(value = "vertical"))),
@@ -750,7 +751,7 @@ class SdcExtensionsTest {
         val itemWithOtherInitExpr =
             Questionnaire.Item(
                 linkId = FhirString(value = "ioie"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 extension = listOf(Extension(url = SdcExtensions.INITIAL_EXPRESSION, value = Extension.Value.Integer(Integer(value = 99)))),
             )
         assertNull(itemWithOtherInitExpr.getInitialExpression())
@@ -759,7 +760,7 @@ class SdcExtensionsTest {
         val itemNoMinMax =
             Questionnaire.Item(
                 linkId = FhirString(value = "nomm"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                type = Enumeration(value = QuestionnaireItemType.Decimal),
             )
         assertNull(itemNoMinMax.getMinValue())
         assertNull(itemNoMinMax.getMaxValue())
@@ -768,7 +769,7 @@ class SdcExtensionsTest {
         val emptyItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "completely_empty"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
             )
         assertNull(emptyItem.safeUnit.getOrNull())
         assertNull(emptyItem.safeItemWeight.getOrNull())
@@ -782,7 +783,7 @@ class SdcExtensionsTest {
         val itemWithDecimalMinMax =
             Questionnaire.Item(
                 linkId = FhirString(value = "dmm"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                type = Enumeration(value = QuestionnaireItemType.Decimal),
                 extension =
                     listOf(
                         Extension(
@@ -804,7 +805,7 @@ class SdcExtensionsTest {
         val itemWithStringMinMax =
             Questionnaire.Item(
                 linkId = FhirString(value = "smm"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                type = Enumeration(value = QuestionnaireItemType.Decimal),
                 extension =
                     listOf(
                         Extension(url = SdcExtensions.MIN_VALUE, value = Extension.Value.String(FhirString(value = "nan"))),
@@ -831,7 +832,7 @@ class SdcExtensionsTest {
         val itemTransEdge =
             Questionnaire.Item(
                 linkId = FhirString(value = "ite"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 text = FhirString(value = "Fallback Text"),
                 extension = listOf(transNoLang, transNoContent),
             )

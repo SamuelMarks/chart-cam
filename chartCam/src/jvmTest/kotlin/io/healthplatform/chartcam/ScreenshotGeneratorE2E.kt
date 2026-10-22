@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.camera.SilhouetteType
 import io.healthplatform.chartcam.database.DatabaseDriverFactory
 import io.healthplatform.chartcam.dicom.DicomDataset
@@ -740,7 +741,7 @@ class ScreenshotGeneratorE2E {
                                 dev.ohs.fhir.model.r4.String
                                     .Builder()
                                     .apply { value = "profile_left" },
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                            type = Enumeration(value = QuestionnaireItemType.Attachment),
                         ).apply {
                             text =
                                 dev.ohs.fhir.model.r4.String
@@ -753,7 +754,7 @@ class ScreenshotGeneratorE2E {
                                 dev.ohs.fhir.model.r4.String
                                     .Builder()
                                     .apply { value = "front_view" },
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                            type = Enumeration(value = QuestionnaireItemType.Attachment),
                         ).apply {
                             text =
                                 dev.ohs.fhir.model.r4.String
@@ -766,7 +767,7 @@ class ScreenshotGeneratorE2E {
                                 dev.ohs.fhir.model.r4.String
                                     .Builder()
                                     .apply { value = "profile_right" },
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                            type = Enumeration(value = QuestionnaireItemType.Attachment),
                         ).apply {
                             text =
                                 dev.ohs.fhir.model.r4.String

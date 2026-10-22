@@ -24,6 +24,7 @@ import dev.ohs.fhir.model.r4.Extension
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.fhir.QuestionnaireResponseGenerator
 import io.healthplatform.chartcam.fhir.SdcExtensions
 import io.healthplatform.chartcam.sdc.SdcQuestionnaireForm
@@ -87,7 +88,7 @@ class DynamicLanguageAndRtlWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "fever_symptom" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                    type = Enumeration(value = QuestionnaireItemType.Boolean),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Do you have a fever?" }
                     extension.add(createTranslationExt("he", "האם יש לך חום?"))
@@ -99,7 +100,7 @@ class DynamicLanguageAndRtlWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "clinical_notes" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Clinical Observations" }
                     extension.add(createTranslationExt("he", "הערות קליניות"))

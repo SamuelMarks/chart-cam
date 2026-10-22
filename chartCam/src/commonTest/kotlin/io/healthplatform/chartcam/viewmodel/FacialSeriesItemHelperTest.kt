@@ -6,6 +6,7 @@ package io.healthplatform.chartcam.viewmodel
 
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -23,7 +24,7 @@ class FacialSeriesItemHelperTest {
         val groupBuilder =
             Questionnaire.Item.Builder(
                 linkId = FhirString(value = "group1").toBuilder(),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                type = Enumeration(value = QuestionnaireItemType.Group),
             )
 
         val result =
@@ -57,7 +58,7 @@ class FacialSeriesItemHelperTest {
         val groupBuilder =
             Questionnaire.Item.Builder(
                 linkId = FhirString(value = "group1").toBuilder(),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                type = Enumeration(value = QuestionnaireItemType.Group),
             )
 
         val result =

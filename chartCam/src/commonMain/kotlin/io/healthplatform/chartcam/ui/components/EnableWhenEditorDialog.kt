@@ -61,7 +61,8 @@ import chartcam.chartcam.generated.resources.enable_when_operator_less_than
 import chartcam.chartcam.generated.resources.enable_when_operator_not_equal
 import chartcam.chartcam.generated.resources.enable_when_target_question
 import chartcam.chartcam.generated.resources.enable_when_title
-import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.EnableWhenBehavior
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemOperator
 import io.healthplatform.chartcam.ui.theme.AppSpacing
 import io.healthplatform.chartcam.viewmodel.BuilderEnableWhen
 import io.healthplatform.chartcam.viewmodel.BuilderItem
@@ -90,22 +91,22 @@ fun updateConditionAnswer(
     )
 
 /**
- * Resolves the localized string resource corresponding to the given [Questionnaire.QuestionnaireItemOperator].
+ * Resolves the localized string resource corresponding to the given [QuestionnaireItemOperator].
  *
  * @param operator The questionnaire item operator.
  * @return The corresponding [StringResource].
  */
-fun getOperatorStringResource(operator: Questionnaire.QuestionnaireItemOperator): StringResource =
+fun getOperatorStringResource(operator: QuestionnaireItemOperator): StringResource =
     when (operator) {
-        Questionnaire.QuestionnaireItemOperator.EqualTo -> Res.string.enable_when_operator_equal
-        Questionnaire.QuestionnaireItemOperator.NotEqualTo -> Res.string.enable_when_operator_not_equal
-        Questionnaire.QuestionnaireItemOperator.GreaterThan -> Res.string.enable_when_operator_greater_than
-        Questionnaire.QuestionnaireItemOperator.LessThan -> Res.string.enable_when_operator_less_than
-        Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo ->
+        QuestionnaireItemOperator.EqualTo -> Res.string.enable_when_operator_equal
+        QuestionnaireItemOperator.NotEqualTo -> Res.string.enable_when_operator_not_equal
+        QuestionnaireItemOperator.GreaterThan -> Res.string.enable_when_operator_greater_than
+        QuestionnaireItemOperator.LessThan -> Res.string.enable_when_operator_less_than
+        QuestionnaireItemOperator.GreaterThanOrEqualTo ->
             Res.string.enable_when_operator_greater_or_equal
-        Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo ->
+        QuestionnaireItemOperator.LessThanOrEqualTo ->
             Res.string.enable_when_operator_less_or_equal
-        Questionnaire.QuestionnaireItemOperator.Exists -> Res.string.enable_when_operator_exists
+        QuestionnaireItemOperator.Exists -> Res.string.enable_when_operator_exists
     }
 
 /**
@@ -122,11 +123,11 @@ fun EnableWhenEditorDialog(
     currentItem: BuilderItem,
     candidateQuestions: List<BuilderItem>,
     onDismiss: () -> Unit,
-    onSave: (conditions: List<BuilderEnableWhen>, behavior: Questionnaire.EnableWhenBehavior) -> Unit,
+    onSave: (conditions: List<BuilderEnableWhen>, behavior: EnableWhenBehavior) -> Unit,
 ) {
     var conditions by remember { mutableStateOf(currentItem.enableWhen) }
     var behavior by remember {
-        mutableStateOf(currentItem.enableBehavior ?: Questionnaire.EnableWhenBehavior.All)
+        mutableStateOf(currentItem.enableBehavior ?: EnableWhenBehavior.All)
     }
 
     AlertDialog(
@@ -151,7 +152,7 @@ fun EnableWhenEditorDialog(
                 ) {
                     Text(
                         text =
-                            if (behavior == Questionnaire.EnableWhenBehavior.All) {
+                            if (behavior == EnableWhenBehavior.All) {
                                 stringResource(Res.string.enable_when_behavior_all)
                             } else {
                                 stringResource(Res.string.enable_when_behavior_any)
@@ -162,17 +163,17 @@ fun EnableWhenEditorDialog(
                     TextButton(
                         onClick = {
                             behavior =
-                                if (behavior == Questionnaire.EnableWhenBehavior.All) {
-                                    Questionnaire.EnableWhenBehavior.Any
+                                if (behavior == EnableWhenBehavior.All) {
+                                    EnableWhenBehavior.Any
                                 } else {
-                                    Questionnaire.EnableWhenBehavior.All
+                                    EnableWhenBehavior.All
                                 }
                         },
                         modifier = Modifier.minimumInteractiveComponentSize(),
                     ) {
                         Text(
                             text =
-                                if (behavior == Questionnaire.EnableWhenBehavior.All) {
+                                if (behavior == EnableWhenBehavior.All) {
                                     stringResource(Res.string.enable_when_behavior_any)
                                 } else {
                                     stringResource(Res.string.enable_when_behavior_all)
@@ -223,7 +224,7 @@ fun EnableWhenEditorDialog(
                             conditions +
                             BuilderEnableWhen(
                                 question = candidateQuestions.first().linkId,
-                                operator = Questionnaire.QuestionnaireItemOperator.EqualTo,
+                                operator = QuestionnaireItemOperator.EqualTo,
                                 answerString = "",
                                 answerBoolean = null,
                                 answerDecimal = null,
@@ -373,7 +374,7 @@ internal fun ConditionRow(
                     expanded = operatorExpanded,
                     onDismissRequest = { operatorExpanded = false },
                 ) {
-                    Questionnaire.QuestionnaireItemOperator.entries.forEach { op ->
+                    QuestionnaireItemOperator.entries.forEach { op ->
                         DropdownMenuItem(
                             text = { Text(stringResource(getOperatorStringResource(op))) },
                             onClick = {
@@ -395,7 +396,7 @@ internal fun ConditionRow(
             }
 
             // Expected Answer
-            if (condition.operator != Questionnaire.QuestionnaireItemOperator.Exists) {
+            if (condition.operator != QuestionnaireItemOperator.Exists) {
                 val targetItem = candidateQuestions.firstOrNull { it.linkId == condition.question }
                 val keyboardType =
                     when (targetItem?.widgetType) {

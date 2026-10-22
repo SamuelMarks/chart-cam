@@ -81,7 +81,7 @@ class MultiplePhotosE2EJvmTest {
             // 2. Simulate capturing photos via CaptureViewModel
             val captureViewModel = CaptureViewModel(MockCameraManager(), MockFileStorage())
             val steps =
-                q?.item?.filter { it.type.value == dev.ohs.fhir.model.r4.Questionnaire.QuestionnaireItemType.Attachment }?.map {
+                q?.item?.filter { it.type.value == dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType.Attachment }?.map {
                     PhotoStep(it.linkId.value ?: "", it.text?.value ?: "")
                 } ?: emptyList()
 
@@ -123,7 +123,7 @@ class MultiplePhotosE2EJvmTest {
             fun extractSteps(items: List<dev.ohs.fhir.model.r4.Questionnaire.Item>): List<PhotoStep> {
                 val result = mutableListOf<PhotoStep>()
                 for (item in items) {
-                    if (item.type.value == dev.ohs.fhir.model.r4.Questionnaire.QuestionnaireItemType.Attachment) {
+                    if (item.type.value == dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType.Attachment) {
                         result.add(PhotoStep(item.linkId.value ?: "", item.text?.value ?: ""))
                     }
                     if (item.item.isNotEmpty()) {

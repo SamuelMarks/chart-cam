@@ -8,6 +8,7 @@ import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Extension
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -40,7 +41,7 @@ class SdcEvaluatorTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = linkIdStr },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     extension.add(calcExt)
                 }
@@ -67,7 +68,7 @@ class SdcEvaluatorTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = linkIdStr },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     extension.add(calcExt)
                 }
@@ -118,7 +119,7 @@ class SdcEvaluatorTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "B" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     extension.add(
                         Extension
@@ -138,7 +139,7 @@ class SdcEvaluatorTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "C" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     extension.add(
                         Extension
@@ -202,7 +203,7 @@ class SdcEvaluatorTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "nested" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     extension.add(calcExt)
                 }
@@ -211,7 +212,7 @@ class SdcEvaluatorTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "parent" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    type = Enumeration(value = QuestionnaireItemType.Group),
                 ).apply {
                     item.add(nestedItem)
                 }
@@ -262,7 +263,7 @@ class SdcEvaluatorTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder(), // missing value
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     extension.add(calcExt)
                 }
@@ -287,7 +288,7 @@ class SdcEvaluatorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = "a" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                type = Enumeration(value = QuestionnaireItemType.String),
                             ).apply {
                                 extension.add(
                                     Extension
@@ -307,7 +308,7 @@ class SdcEvaluatorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = FhirString.Builder().apply { value = "b" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                                type = Enumeration(value = QuestionnaireItemType.String),
                             ).apply {
                                 extension.add(
                                     Extension

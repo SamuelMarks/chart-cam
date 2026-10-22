@@ -5,11 +5,8 @@
 package io.healthplatform.chartcam.ui
 
 import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.Clipboard
-import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -44,15 +41,6 @@ class FakeAndroidClipboard(
     override suspend fun setClipEntry(clipEntry: ClipEntry?) {
         currentEntry = clipEntry
     }
-
-    /**
-     * Native clipboard accessor.
-     */
-    override val nativeClipboard: ClipboardManager
-        get() =
-            ApplicationProvider
-                .getApplicationContext<Context>()
-                .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 }
 
 /**

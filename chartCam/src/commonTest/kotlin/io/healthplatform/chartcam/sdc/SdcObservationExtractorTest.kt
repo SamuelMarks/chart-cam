@@ -10,6 +10,9 @@ import dev.ohs.fhir.model.r4.FhirDecimal
 import dev.ohs.fhir.model.r4.Observation
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.terminologies.ObservationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -34,12 +37,12 @@ class SdcObservationExtractorTest {
                         Questionnaire.Item(
                             linkId = FhirString(value = "pain_score"),
                             text = FhirString(value = "Current Pain Level (0-10)"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                            type = Enumeration(value = QuestionnaireItemType.Decimal),
                         ),
                         Questionnaire.Item(
                             linkId = FhirString(value = "fitzpatrick_skin"),
                             text = FhirString(value = "Fitzpatrick Skin Phototype"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            type = Enumeration(value = QuestionnaireItemType.Choice),
                         ),
                     ),
             )
@@ -47,7 +50,7 @@ class SdcObservationExtractorTest {
         val response =
             QuestionnaireResponse(
                 id = "qr-triage-1",
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                 item =
                     listOf(
                         QuestionnaireResponse.Item(
@@ -86,7 +89,7 @@ class SdcObservationExtractorTest {
         val painObs = observations.first { it.code.coding.any { c -> c.code?.value == SdcObservationExtractor.LOINC_PAIN_SCORE } }
         assertEquals("Patient/pat-123", painObs.subject?.reference?.value)
         assertEquals("Encounter/enc-456", painObs.encounter?.reference?.value)
-        assertEquals(Observation.ObservationStatus.Final, painObs.status.value)
+        assertEquals(ObservationStatus.Final, painObs.status.value)
         val painVal = painObs.value as? Observation.Value.Quantity
         assertNotNull(painVal)
         assertEquals(
@@ -115,7 +118,7 @@ class SdcObservationExtractorTest {
         val response =
             QuestionnaireResponse(
                 id = "qr-empty",
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
             )
 
         val result = SdcObservationExtractor.extractObservations(questionnaire, response, "pat-empty")
@@ -138,7 +141,7 @@ class SdcObservationExtractorTest {
                             linkId =
                                 dev.ohs.fhir.model.r4
                                     .String(value = "custom-hr"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                            type = Enumeration(value = QuestionnaireItemType.Decimal),
                             text =
                                 dev.ohs.fhir.model.r4
                                     .String(value = "Heart Rate"),
@@ -151,7 +154,7 @@ class SdcObservationExtractorTest {
         val response =
             QuestionnaireResponse(
                 id = "qr-def-1",
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                 item =
                     listOf(
                         QuestionnaireResponse.Item(
@@ -210,7 +213,7 @@ class SdcObservationExtractorTest {
                         Questionnaire.Item(
                             linkId = FhirString(value = "generic_vital"),
                             text = FhirString(value = "Systolic Blood Pressure"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                            type = Enumeration(value = QuestionnaireItemType.Decimal),
                             extension =
                                 listOf(
                                     dev.ohs.fhir.model.r4.Extension(
@@ -229,7 +232,7 @@ class SdcObservationExtractorTest {
         val response =
             QuestionnaireResponse(
                 id = "qr-extract-ext-1",
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                 item =
                     listOf(
                         QuestionnaireResponse.Item(
@@ -274,14 +277,14 @@ class SdcObservationExtractorTest {
                         Questionnaire.Item(
                             linkId = FhirString(value = "fitzpatrick_skin"),
                             text = FhirString(value = "Fitzpatrick Skin Phototype"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            type = Enumeration(value = QuestionnaireItemType.Choice),
                         ),
                     ),
             )
         val response =
             QuestionnaireResponse(
                 id = "qr-coding-1",
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                 item =
                     listOf(
                         QuestionnaireResponse.Item(
@@ -329,7 +332,7 @@ class SdcObservationExtractorTest {
             Questionnaire.Item(
                 linkId = FhirString(value = "item_code"),
                 text = FhirString(value = "Item with Code"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                type = Enumeration(value = QuestionnaireItemType.Integer),
                 code =
                     listOf(
                         dev.ohs.fhir.model.r4.Coding(
@@ -346,7 +349,7 @@ class SdcObservationExtractorTest {
         val qItemWithLoincDef =
             Questionnaire.Item(
                 linkId = FhirString(value = "item_loinc_def"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                type = Enumeration(value = QuestionnaireItemType.Boolean),
                 definition =
                     dev.ohs.fhir.model.r4
                         .Uri(value = "http://loinc.org/rdf#1234-5"),
@@ -355,7 +358,7 @@ class SdcObservationExtractorTest {
         val qItemWithSnomedDef =
             Questionnaire.Item(
                 linkId = FhirString(value = "item_snomed_def"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Date),
+                type = Enumeration(value = QuestionnaireItemType.Date),
                 definition =
                     dev.ohs.fhir.model.r4
                         .Uri(value = "http://snomed.info/sct/999"),
@@ -365,7 +368,7 @@ class SdcObservationExtractorTest {
         val qItemExtractExtNoText =
             Questionnaire.Item(
                 linkId = FhirString(value = "item_fallback_text"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                type = Enumeration(value = QuestionnaireItemType.Boolean),
                 extension =
                     listOf(
                         dev.ohs.fhir.model.r4.Extension(
@@ -384,7 +387,7 @@ class SdcObservationExtractorTest {
             Questionnaire.Item(
                 linkId = FhirString(value = "item_datetime"),
                 text = FhirString(value = "DateTime Vital"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.DateTime),
+                type = Enumeration(value = QuestionnaireItemType.DateTime),
                 definition =
                     dev.ohs.fhir.model.r4
                         .Uri(value = "http://loinc.org/111"),
@@ -394,7 +397,7 @@ class SdcObservationExtractorTest {
             Questionnaire.Item(
                 linkId = FhirString(value = "item_qty"),
                 text = FhirString(value = "Quantity Vital"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Quantity),
+                type = Enumeration(value = QuestionnaireItemType.Quantity),
                 definition =
                     dev.ohs.fhir.model.r4
                         .Uri(value = "http://loinc.org/222"),
@@ -404,7 +407,7 @@ class SdcObservationExtractorTest {
             Questionnaire.Item(
                 linkId = FhirString(value = "item_unsupported"),
                 text = FhirString(value = "Unsupported Vital"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                type = Enumeration(value = QuestionnaireItemType.Attachment),
                 definition =
                     dev.ohs.fhir.model.r4
                         .Uri(value = "http://loinc.org/333"),
@@ -429,7 +432,7 @@ class SdcObservationExtractorTest {
         val response =
             QuestionnaireResponse(
                 id = "qr-exhaustive-obs",
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                 item =
                     listOf(
                         // Integer answer
@@ -595,17 +598,17 @@ class SdcObservationExtractorTest {
                         // Standard metric with "skin" (not fitzpatrick)
                         Questionnaire.Item(
                             linkId = FhirString(value = "skin_score"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                         // Question with no extract conditions (shouldExtractObservation == false)
                         Questionnaire.Item(
                             linkId = FhirString(value = "random_no_extract"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                         // Question with observationExtract extension = false
                         Questionnaire.Item(
                             linkId = FhirString(value = "extract_disabled"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                             extension =
                                 listOf(
                                     dev.ohs.fhir.model.r4.Extension(
@@ -622,7 +625,7 @@ class SdcObservationExtractorTest {
                         // Question with observationExtract extension having non-boolean value
                         Questionnaire.Item(
                             linkId = FhirString(value = "extract_non_bool"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                             extension =
                                 listOf(
                                     dev.ohs.fhir.model.r4.Extension(
@@ -636,7 +639,7 @@ class SdcObservationExtractorTest {
                         // Question with unrelated extension url
                         Questionnaire.Item(
                             linkId = FhirString(value = "unrelated_ext"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                             extension =
                                 listOf(
                                     dev.ohs.fhir.model.r4.Extension(
@@ -653,7 +656,7 @@ class SdcObservationExtractorTest {
                         // Question with null value but id set
                         Questionnaire.Item(
                             linkId = FhirString(id = "q_fallback_id", value = null),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                             definition =
                                 dev.ohs.fhir.model.r4
                                     .Uri(value = "http://loinc.org/999"),
@@ -661,12 +664,12 @@ class SdcObservationExtractorTest {
                         // Question with null value and null id
                         Questionnaire.Item(
                             linkId = FhirString(id = null, value = null),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                         // Question with blank value
                         Questionnaire.Item(
                             linkId = FhirString(value = "   "),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                     ),
             )
@@ -674,7 +677,7 @@ class SdcObservationExtractorTest {
         val response =
             QuestionnaireResponse(
                 id = "qr-extra",
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                 item =
                     listOf(
                         // Skin metric -> extracts LOINC_FITZPATRICK

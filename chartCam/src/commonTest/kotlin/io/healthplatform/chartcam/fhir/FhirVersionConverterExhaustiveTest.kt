@@ -143,13 +143,13 @@ class FhirVersionConverterExhaustiveTest {
     fun testAllEncounterStatusesAndFields() {
         val statuses =
             listOf(
-                dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Planned,
-                dev.ohs.fhir.model.r4.Encounter.EncounterStatus.In_Progress,
-                dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Onleave,
-                dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished,
-                dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Cancelled,
-                dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Entered_In_Error,
-                dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Unknown,
+                dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Planned,
+                dev.ohs.fhir.model.r4.terminologies.EncounterStatus.In_Progress,
+                dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Onleave,
+                dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished,
+                dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Cancelled,
+                dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Entered_In_Error,
+                dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Unknown,
             )
 
         for (status in statuses) {
@@ -174,8 +174,8 @@ class FhirVersionConverterExhaustiveTest {
             val r5Enc = FhirVersionConverter.convertEncounterR4ToR5(r4Enc).getOrThrow()
             val expectedR5Code =
                 when (status) {
-                    dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Onleave -> "in-progress"
-                    dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished -> "completed"
+                    dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Onleave -> "in-progress"
+                    dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished -> "completed"
                     else -> status.code
                 }
             assertEquals(expectedR5Code, r5Enc.status.value?.code)
@@ -183,8 +183,8 @@ class FhirVersionConverterExhaustiveTest {
 
             val r4Back = FhirVersionConverter.convertEncounterR5ToR4(r5Enc).getOrThrow()
             val expectedStatus =
-                if (status == dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Onleave) {
-                    dev.ohs.fhir.model.r4.Encounter.EncounterStatus.In_Progress
+                if (status == dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Onleave) {
+                    dev.ohs.fhir.model.r4.terminologies.EncounterStatus.In_Progress
                 } else {
                     status
                 }
@@ -204,7 +204,7 @@ class FhirVersionConverterExhaustiveTest {
                 serviceProvider = null,
             )
         val r5Minimal = FhirVersionConverter.convertEncounterR4ToR5(r4EncMinimal).getOrThrow()
-        assertEquals(dev.ohs.fhir.model.r5.Encounter.EncounterStatus.In_Progress, r5Minimal.status.value)
+        assertEquals(dev.ohs.fhir.model.r5.terminologies.EncounterStatus.In_Progress, r5Minimal.status.value)
         assertNull(r5Minimal.actualPeriod)
         assertNull(r5Minimal.subject)
         assertNull(r5Minimal.serviceProvider)
@@ -223,7 +223,7 @@ class FhirVersionConverterExhaustiveTest {
                         .Period(start = null, end = null),
             )
         val r4FromEmptyClass = FhirVersionConverter.convertEncounterR5ToR4(r5EncEmptyClass).getOrThrow()
-        assertEquals(dev.ohs.fhir.model.r4.Encounter.EncounterStatus.In_Progress, r4FromEmptyClass.status.value)
+        assertEquals(dev.ohs.fhir.model.r4.terminologies.EncounterStatus.In_Progress, r4FromEmptyClass.status.value)
         assertEquals("AMB", r4FromEmptyClass.`class`.code?.value)
         assertNull(r4FromEmptyClass.period?.start)
         assertNull(r4FromEmptyClass.period?.end)
@@ -232,7 +232,7 @@ class FhirVersionConverterExhaustiveTest {
         val r5EncConceptNullCoding =
             dev.ohs.fhir.model.r5.Encounter(
                 id = "r5-enc-cnc",
-                status = R5Enumeration(value = dev.ohs.fhir.model.r5.Encounter.EncounterStatus.Completed),
+                status = R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.EncounterStatus.Completed),
                 `class` = listOf(R5CodeableConcept(coding = listOf(R5Coding(system = null, code = null, display = null)))),
             )
         val r4FromConceptNull = FhirVersionConverter.convertEncounterR5ToR4(r5EncConceptNullCoding).getOrThrow()
@@ -246,14 +246,14 @@ class FhirVersionConverterExhaustiveTest {
     fun testAllObservationStatusesAndValues() {
         val statuses =
             listOf(
-                dev.ohs.fhir.model.r4.Observation.ObservationStatus.Registered,
-                dev.ohs.fhir.model.r4.Observation.ObservationStatus.Preliminary,
-                dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final,
-                dev.ohs.fhir.model.r4.Observation.ObservationStatus.Amended,
-                dev.ohs.fhir.model.r4.Observation.ObservationStatus.Corrected,
-                dev.ohs.fhir.model.r4.Observation.ObservationStatus.Cancelled,
-                dev.ohs.fhir.model.r4.Observation.ObservationStatus.Entered_In_Error,
-                dev.ohs.fhir.model.r4.Observation.ObservationStatus.Unknown,
+                dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Registered,
+                dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Preliminary,
+                dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final,
+                dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Amended,
+                dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Corrected,
+                dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Cancelled,
+                dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Entered_In_Error,
+                dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Unknown,
             )
 
         for (status in statuses) {
@@ -307,7 +307,7 @@ class FhirVersionConverterExhaustiveTest {
         val r4IntVal =
             dev.ohs.fhir.model.r4.Observation(
                 id = "obs-int",
-                status = R4Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                status = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                 code =
                     dev.ohs.fhir.model.r4
                         .CodeableConcept(),
@@ -324,7 +324,7 @@ class FhirVersionConverterExhaustiveTest {
         val r4NullQuantity =
             dev.ohs.fhir.model.r4.Observation(
                 id = "obs-null-q",
-                status = R4Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                status = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                 code =
                     dev.ohs.fhir.model.r4
                         .CodeableConcept(),
@@ -338,7 +338,7 @@ class FhirVersionConverterExhaustiveTest {
         val r5NullQuantity =
             dev.ohs.fhir.model.r5.Observation(
                 id = "r5-null-q",
-                status = R5Enumeration(value = dev.ohs.fhir.model.r5.Observation.ObservationStatus.Final),
+                status = R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Final),
                 code =
                     dev.ohs.fhir.model.r5
                         .CodeableConcept(),
@@ -352,7 +352,7 @@ class FhirVersionConverterExhaustiveTest {
         val r4NullStringVal =
             dev.ohs.fhir.model.r4.Observation(
                 id = "obs-null-str",
-                status = R4Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                status = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                 code =
                     dev.ohs.fhir.model.r4
                         .CodeableConcept(),
@@ -365,7 +365,7 @@ class FhirVersionConverterExhaustiveTest {
         val r5NullStringVal =
             dev.ohs.fhir.model.r5.Observation(
                 id = "r5-null-str",
-                status = R5Enumeration(value = dev.ohs.fhir.model.r5.Observation.ObservationStatus.Final),
+                status = R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Final),
                 code =
                     dev.ohs.fhir.model.r5
                         .CodeableConcept(),
@@ -378,7 +378,7 @@ class FhirVersionConverterExhaustiveTest {
         val r4NullIntVal =
             dev.ohs.fhir.model.r4.Observation(
                 id = "obs-null-int",
-                status = R4Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                status = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                 code =
                     dev.ohs.fhir.model.r4
                         .CodeableConcept(),
@@ -391,7 +391,7 @@ class FhirVersionConverterExhaustiveTest {
         val r5NullIntVal =
             dev.ohs.fhir.model.r5.Observation(
                 id = "r5-null-int",
-                status = R5Enumeration(value = dev.ohs.fhir.model.r5.Observation.ObservationStatus.Final),
+                status = R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Final),
                 code =
                     dev.ohs.fhir.model.r5
                         .CodeableConcept(),
@@ -404,7 +404,7 @@ class FhirVersionConverterExhaustiveTest {
         val r4BoolVal =
             dev.ohs.fhir.model.r4.Observation(
                 id = "obs-bool",
-                status = R4Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                status = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                 code =
                     dev.ohs.fhir.model.r4
                         .CodeableConcept(),
@@ -420,7 +420,7 @@ class FhirVersionConverterExhaustiveTest {
         val r5BoolVal =
             dev.ohs.fhir.model.r5.Observation(
                 id = "r5-bool",
-                status = R5Enumeration(value = dev.ohs.fhir.model.r5.Observation.ObservationStatus.Final),
+                status = R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Final),
                 code =
                     dev.ohs.fhir.model.r5
                         .CodeableConcept(),
@@ -470,7 +470,7 @@ class FhirVersionConverterExhaustiveTest {
         val r4ItemWithOptions =
             dev.ohs.fhir.model.r4.Questionnaire.Item(
                 linkId = R4String(value = "item-options"),
-                type = R4Enumeration(value = dev.ohs.fhir.model.r4.Questionnaire.QuestionnaireItemType.Choice),
+                type = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType.Choice),
                 answerOption =
                     listOf(
                         dev.ohs.fhir.model.r4.Questionnaire.Item.AnswerOption(
@@ -510,7 +510,7 @@ class FhirVersionConverterExhaustiveTest {
         val r5ItemWithOptions =
             dev.ohs.fhir.model.r5.Questionnaire.Item(
                 linkId = R5String(value = "r5-item-opt"),
-                type = R5Enumeration(value = dev.ohs.fhir.model.r5.Questionnaire.QuestionnaireItemType.String),
+                type = R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.QuestionnaireItemType.String),
                 answerOption =
                     listOf(
                         dev.ohs.fhir.model.r5.Questionnaire.Item.AnswerOption(
@@ -554,11 +554,11 @@ class FhirVersionConverterExhaustiveTest {
     fun testAllQrAndDocRefStatuses() {
         val qrStatuses =
             listOf(
-                dev.ohs.fhir.model.r4.QuestionnaireResponse.QuestionnaireResponseStatus.In_Progress,
-                dev.ohs.fhir.model.r4.QuestionnaireResponse.QuestionnaireResponseStatus.Completed,
-                dev.ohs.fhir.model.r4.QuestionnaireResponse.QuestionnaireResponseStatus.Amended,
-                dev.ohs.fhir.model.r4.QuestionnaireResponse.QuestionnaireResponseStatus.Entered_In_Error,
-                dev.ohs.fhir.model.r4.QuestionnaireResponse.QuestionnaireResponseStatus.Stopped,
+                dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus.In_Progress,
+                dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus.Completed,
+                dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus.Amended,
+                dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus.Entered_In_Error,
+                dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus.Stopped,
             )
 
         for (status in qrStatuses) {
@@ -615,15 +615,15 @@ class FhirVersionConverterExhaustiveTest {
     fun testAllBundleTypesAndEntries() {
         val bundleTypes =
             listOf(
-                dev.ohs.fhir.model.r4.Bundle.BundleType.Document,
-                dev.ohs.fhir.model.r4.Bundle.BundleType.Message,
-                dev.ohs.fhir.model.r4.Bundle.BundleType.Transaction,
-                dev.ohs.fhir.model.r4.Bundle.BundleType.Transaction_Response,
-                dev.ohs.fhir.model.r4.Bundle.BundleType.Batch,
-                dev.ohs.fhir.model.r4.Bundle.BundleType.Batch_Response,
-                dev.ohs.fhir.model.r4.Bundle.BundleType.History,
-                dev.ohs.fhir.model.r4.Bundle.BundleType.Searchset,
-                dev.ohs.fhir.model.r4.Bundle.BundleType.Collection,
+                dev.ohs.fhir.model.r4.terminologies.BundleType.Document,
+                dev.ohs.fhir.model.r4.terminologies.BundleType.Message,
+                dev.ohs.fhir.model.r4.terminologies.BundleType.Transaction,
+                dev.ohs.fhir.model.r4.terminologies.BundleType.Transaction_Response,
+                dev.ohs.fhir.model.r4.terminologies.BundleType.Batch,
+                dev.ohs.fhir.model.r4.terminologies.BundleType.Batch_Response,
+                dev.ohs.fhir.model.r4.terminologies.BundleType.History,
+                dev.ohs.fhir.model.r4.terminologies.BundleType.Searchset,
+                dev.ohs.fhir.model.r4.terminologies.BundleType.Collection,
             )
 
         for (bt in bundleTypes) {
@@ -678,7 +678,7 @@ class FhirVersionConverterExhaustiveTest {
         val r4Encounter =
             dev.ohs.fhir.model.r4.Encounter(
                 id = "poly-enc",
-                status = R4Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                status = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished),
                 `class` =
                     dev.ohs.fhir.model.r4
                         .Coding(code = R4Code(value = "AMB")),
@@ -686,7 +686,7 @@ class FhirVersionConverterExhaustiveTest {
         val r4Observation =
             dev.ohs.fhir.model.r4.Observation(
                 id = "poly-obs",
-                status = R4Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                status = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                 code =
                     dev.ohs.fhir.model.r4
                         .CodeableConcept(),
@@ -699,7 +699,7 @@ class FhirVersionConverterExhaustiveTest {
         val r4Qr =
             dev.ohs.fhir.model.r4.QuestionnaireResponse(
                 id = "poly-qr",
-                status = R4Enumeration(value = dev.ohs.fhir.model.r4.QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus.Completed),
             )
         val r4DocRef =
             dev.ohs.fhir.model.r4.DocumentReference(
@@ -823,7 +823,7 @@ class FhirVersionConverterExhaustiveTest {
         val r4EncEdge =
             dev.ohs.fhir.model.r4.Encounter(
                 id = "enc-edge",
-                status = R4Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                status = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished),
                 `class` =
                     dev.ohs.fhir.model.r4.Coding(
                         system = R4Uri(value = null),
@@ -852,7 +852,7 @@ class FhirVersionConverterExhaustiveTest {
         val r4ObsEdge =
             dev.ohs.fhir.model.r4.Observation(
                 id = "obs-edge",
-                status = R4Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                status = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                 code =
                     dev.ohs.fhir.model.r4.CodeableConcept(
                         coding =
@@ -896,7 +896,7 @@ class FhirVersionConverterExhaustiveTest {
                     listOf(
                         dev.ohs.fhir.model.r4.Questionnaire.Item(
                             linkId = R4String(value = null),
-                            type = R4Enumeration(value = dev.ohs.fhir.model.r4.Questionnaire.QuestionnaireItemType.String),
+                            type = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType.String),
                             text = R4String(value = null),
                             required =
                                 dev.ohs.fhir.model.r4
@@ -922,7 +922,7 @@ class FhirVersionConverterExhaustiveTest {
         val r4QrEdge =
             dev.ohs.fhir.model.r4.QuestionnaireResponse(
                 id = "qr-edge",
-                status = R4Enumeration(value = dev.ohs.fhir.model.r4.QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus.Completed),
                 questionnaire = R4Canonical(value = null),
                 encounter = R4Reference(reference = R4String(value = null)),
                 author = R4Reference(reference = R4String(value = null)),
@@ -1042,7 +1042,7 @@ class FhirVersionConverterExhaustiveTest {
         val r4BundleEdge =
             dev.ohs.fhir.model.r4.Bundle(
                 id = "b-edge",
-                type = R4Enumeration(value = dev.ohs.fhir.model.r4.Bundle.BundleType.Collection),
+                type = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.BundleType.Collection),
                 entry =
                     listOf(
                         dev.ohs.fhir.model.r4.Bundle.Entry(
@@ -1063,13 +1063,13 @@ class FhirVersionConverterExhaustiveTest {
         val encArrived =
             dev.ohs.fhir.model.r4.Encounter(
                 id = "enc-arr",
-                status = R4Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Arrived),
+                status = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Arrived),
                 `class` =
                     dev.ohs.fhir.model.r4
                         .Coding(code = R4Code(value = "AMB")),
             )
         assertEquals(
-            dev.ohs.fhir.model.r5.Encounter.EncounterStatus.In_Progress,
+            dev.ohs.fhir.model.r5.terminologies.EncounterStatus.In_Progress,
             FhirVersionConverter
                 .convertEncounterR4ToR5(encArrived)
                 .getOrThrow()
@@ -1079,13 +1079,13 @@ class FhirVersionConverterExhaustiveTest {
         val encTriaged =
             dev.ohs.fhir.model.r4.Encounter(
                 id = "enc-tri",
-                status = R4Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Triaged),
+                status = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Triaged),
                 `class` =
                     dev.ohs.fhir.model.r4
                         .Coding(code = R4Code(value = "AMB")),
             )
         assertEquals(
-            dev.ohs.fhir.model.r5.Encounter.EncounterStatus.In_Progress,
+            dev.ohs.fhir.model.r5.terminologies.EncounterStatus.In_Progress,
             FhirVersionConverter
                 .convertEncounterR4ToR5(encTriaged)
                 .getOrThrow()
@@ -1156,7 +1156,7 @@ class FhirVersionConverterExhaustiveTest {
                         .CodeableConcept(),
             )
         assertEquals(
-            dev.ohs.fhir.model.r5.Observation.ObservationStatus.Final,
+            dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Final,
             FhirVersionConverter
                 .convertObservationR4ToR5(obsNullStatR4)
                 .getOrThrow()
@@ -1171,7 +1171,7 @@ class FhirVersionConverterExhaustiveTest {
                         .CodeableConcept(),
             )
         assertEquals(
-            dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final,
+            dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final,
             FhirVersionConverter
                 .convertObservationR5ToR4(obsNullStatR5)
                 .getOrThrow()
@@ -1203,7 +1203,7 @@ class FhirVersionConverterExhaustiveTest {
             dev.ohs.fhir.model.r4
                 .QuestionnaireResponse(id = "qr-ns4", status = R4Enumeration(value = null))
         assertEquals(
-            dev.ohs.fhir.model.r5.QuestionnaireResponse.QuestionnaireResponseStatus.Completed,
+            dev.ohs.fhir.model.r5.terminologies.QuestionnaireResponseStatus.Completed,
             FhirVersionConverter
                 .convertQuestionnaireResponseR4ToR5(qrNullStatR4)
                 .getOrThrow()
@@ -1216,7 +1216,7 @@ class FhirVersionConverterExhaustiveTest {
                 questionnaire = R5Canonical(value = ""),
             )
         assertEquals(
-            dev.ohs.fhir.model.r4.QuestionnaireResponse.QuestionnaireResponseStatus.Completed,
+            dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus.Completed,
             FhirVersionConverter
                 .convertQuestionnaireResponseR5ToR4(qrNullStatR5)
                 .getOrThrow()
@@ -1254,7 +1254,7 @@ class FhirVersionConverterExhaustiveTest {
             dev.ohs.fhir.model.r4
                 .Bundle(id = "b-nt4", type = R4Enumeration(value = null))
         assertEquals(
-            dev.ohs.fhir.model.r5.Bundle.BundleType.Collection,
+            dev.ohs.fhir.model.r5.terminologies.BundleType.Collection,
             FhirVersionConverter
                 .convertBundleR4ToR5(bNullTypeR4)
                 .getOrThrow()
@@ -1264,7 +1264,7 @@ class FhirVersionConverterExhaustiveTest {
             dev.ohs.fhir.model.r5
                 .Bundle(id = "b-nt5", type = R5Enumeration(value = null))
         assertEquals(
-            dev.ohs.fhir.model.r4.Bundle.BundleType.Collection,
+            dev.ohs.fhir.model.r4.terminologies.BundleType.Collection,
             FhirVersionConverter
                 .convertBundleR5ToR4(bNullTypeR5)
                 .getOrThrow()
@@ -1275,7 +1275,7 @@ class FhirVersionConverterExhaustiveTest {
         val bSubNotif =
             dev.ohs.fhir.model.r5.Bundle(
                 id = "b-sub",
-                type = R5Enumeration(value = dev.ohs.fhir.model.r5.Bundle.BundleType.Subscription_Notification),
+                type = R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.BundleType.Subscription_Notification),
                 entry =
                     listOf(
                         dev.ohs.fhir.model.r5.Bundle
@@ -1287,7 +1287,7 @@ class FhirVersionConverterExhaustiveTest {
                     ),
             )
         val r4FromSub = FhirVersionConverter.convertBundleR5ToR4(bSubNotif).getOrThrow()
-        assertEquals(dev.ohs.fhir.model.r4.Bundle.BundleType.Collection, r4FromSub.type.value)
+        assertEquals(dev.ohs.fhir.model.r4.terminologies.BundleType.Collection, r4FromSub.type.value)
         assertNull(r4FromSub.entry.first().resource)
 
         // 14. Provenance with blank who reference
@@ -1340,7 +1340,7 @@ class FhirVersionConverterExhaustiveTest {
         val qItemIntOptR4 =
             dev.ohs.fhir.model.r4.Questionnaire.Item(
                 linkId = R4String(value = "i-io"),
-                type = R4Enumeration(value = dev.ohs.fhir.model.r4.Questionnaire.QuestionnaireItemType.Choice),
+                type = R4Enumeration(value = dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType.Choice),
                 answerOption =
                     listOf(
                         dev.ohs.fhir.model.r4.Questionnaire.Item.AnswerOption(
@@ -1361,7 +1361,7 @@ class FhirVersionConverterExhaustiveTest {
         val qItemIntOptR5 =
             dev.ohs.fhir.model.r5.Questionnaire.Item(
                 linkId = R5String(value = "i-io5"),
-                type = R5Enumeration(value = dev.ohs.fhir.model.r5.Questionnaire.QuestionnaireItemType.String),
+                type = R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.QuestionnaireItemType.String),
                 answerOption =
                     listOf(
                         dev.ohs.fhir.model.r5.Questionnaire.Item.AnswerOption(
@@ -1435,7 +1435,7 @@ class FhirVersionConverterExhaustiveTest {
         val encR5EmptyCoding =
             dev.ohs.fhir.model.r5.Encounter(
                 id = "e5-ec",
-                status = R5Enumeration(value = dev.ohs.fhir.model.r5.Encounter.EncounterStatus.In_Progress),
+                status = R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.EncounterStatus.In_Progress),
                 `class` = listOf(R5CodeableConcept(coding = emptyList())),
             )
         val encR4FromEc = FhirVersionConverter.convertEncounterR5ToR4(encR5EmptyCoding).getOrThrow()
@@ -1445,10 +1445,10 @@ class FhirVersionConverterExhaustiveTest {
         val qItemR5CodingType =
             dev.ohs.fhir.model.r5.Questionnaire.Item(
                 linkId = R5String(value = null),
-                type = R5Enumeration(value = dev.ohs.fhir.model.r5.Questionnaire.QuestionnaireItemType.Coding),
+                type = R5Enumeration(value = dev.ohs.fhir.model.r5.terminologies.QuestionnaireItemType.Coding),
             )
         val qItemR4FromCoding = FhirVersionConverter.convertQuestionnaireItemR5ToR4(qItemR5CodingType).getOrThrow()
-        assertEquals(dev.ohs.fhir.model.r4.Questionnaire.QuestionnaireItemType.String, qItemR4FromCoding.type.value)
+        assertEquals(dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType.String, qItemR4FromCoding.type.value)
         assertEquals("", qItemR4FromCoding.linkId.value)
     }
 }

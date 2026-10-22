@@ -12,6 +12,8 @@ import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.HumanName
 import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.BundleType
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -67,7 +69,7 @@ class FhirJsonParserTest {
         val encounter =
             Encounter(
                 id = "enc-456",
-                status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                status = Enumeration(value = EncounterStatus.Finished),
                 `class` =
                     dev.ohs.fhir.model.r4.Coding(
                         code =
@@ -84,7 +86,7 @@ class FhirJsonParserTest {
         val decoded = FhirJsonParser.decodeTypedResource(Encounter.serializer(), json).getOrNull()
         assertNotNull(decoded)
         assertEquals("enc-456", decoded.id)
-        assertEquals(Encounter.EncounterStatus.Finished, decoded.status.value)
+        assertEquals(EncounterStatus.Finished, decoded.status.value)
     }
 
     /**
@@ -136,7 +138,7 @@ class FhirJsonParserTest {
         val encounter =
             Encounter(
                 id = "b-e1",
-                status = Enumeration(value = Encounter.EncounterStatus.Planned),
+                status = Enumeration(value = EncounterStatus.Planned),
                 `class` =
                     dev.ohs.fhir.model.r4
                         .Coding(
@@ -148,7 +150,7 @@ class FhirJsonParserTest {
         val bundle =
             Bundle(
                 id = "bundle-01",
-                type = Enumeration(value = Bundle.BundleType.Collection),
+                type = Enumeration(value = BundleType.Collection),
                 entry =
                     listOf(
                         Bundle.Entry(resource = patient),
@@ -287,7 +289,7 @@ class FhirJsonParserTest {
         val enc =
             Encounter(
                 id = "enc-inst",
-                status = Enumeration(value = Encounter.EncounterStatus.In_Progress),
+                status = Enumeration(value = EncounterStatus.In_Progress),
                 `class` =
                     dev.ohs.fhir.model.r4
                         .Coding(

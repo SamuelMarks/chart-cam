@@ -4,7 +4,8 @@
  */
 package io.healthplatform.chartcam.viewmodel
 
-import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.EnableWhenBehavior
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemOperator
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,7 +31,7 @@ class QuestionnaireBuilderEnableWhenTest {
             listOf(
                 BuilderEnableWhen(
                     question = "item_1",
-                    operator = Questionnaire.QuestionnaireItemOperator.EqualTo,
+                    operator = QuestionnaireItemOperator.EqualTo,
                     answerBoolean = true,
                 ),
             )
@@ -38,7 +39,7 @@ class QuestionnaireBuilderEnableWhenTest {
         viewModel.updateItemEnableWhen(
             linkId = "item_2",
             enableWhen = conditions,
-            enableBehavior = Questionnaire.EnableWhenBehavior.All,
+            enableBehavior = EnableWhenBehavior.All,
         )
 
         val state = viewModel.state.value
@@ -46,14 +47,14 @@ class QuestionnaireBuilderEnableWhenTest {
         assertEquals(1, item2.enableWhen.size)
         assertEquals("item_1", item2.enableWhen[0].question)
         assertEquals(true, item2.enableWhen[0].answerBoolean)
-        assertEquals(Questionnaire.EnableWhenBehavior.All, item2.enableBehavior)
+        assertEquals(EnableWhenBehavior.All, item2.enableBehavior)
 
         // Generate FHIR Questionnaire
         val fhir = viewModel.buildQuestionnaire().getOrThrow()
         val fhirItem2 = fhir.item.first { it.linkId.value == "item_2" }
         assertEquals(1, fhirItem2.enableWhen.size)
         assertEquals("item_1", fhirItem2.enableWhen[0].question.value)
-        assertEquals(Questionnaire.QuestionnaireItemOperator.EqualTo, fhirItem2.enableWhen[0].operator.value)
+        assertEquals(QuestionnaireItemOperator.EqualTo, fhirItem2.enableWhen[0].operator.value)
         assertEquals(
             true,
             fhirItem2.enableWhen[0]
@@ -62,7 +63,7 @@ class QuestionnaireBuilderEnableWhenTest {
                 ?.value
                 ?.value,
         )
-        assertEquals(Questionnaire.EnableWhenBehavior.All, fhirItem2.enableBehavior?.value)
+        assertEquals(EnableWhenBehavior.All, fhirItem2.enableBehavior?.value)
     }
 
     /**
@@ -83,17 +84,17 @@ class QuestionnaireBuilderEnableWhenTest {
             listOf(
                 BuilderEnableWhen(
                     question = "item_1",
-                    operator = Questionnaire.QuestionnaireItemOperator.GreaterThan,
+                    operator = QuestionnaireItemOperator.GreaterThan,
                     answerDecimal = 37.5,
                 ),
                 BuilderEnableWhen(
                     question = "item_2",
-                    operator = Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo,
+                    operator = QuestionnaireItemOperator.GreaterThanOrEqualTo,
                     answerInteger = 18,
                 ),
                 BuilderEnableWhen(
                     question = "item_3",
-                    operator = Questionnaire.QuestionnaireItemOperator.EqualTo,
+                    operator = QuestionnaireItemOperator.EqualTo,
                     answerString = "fever",
                 ),
             )
@@ -101,13 +102,13 @@ class QuestionnaireBuilderEnableWhenTest {
         viewModel.updateItemEnableWhen(
             linkId = "item_4",
             enableWhen = conditions,
-            enableBehavior = Questionnaire.EnableWhenBehavior.Any,
+            enableBehavior = EnableWhenBehavior.Any,
         )
 
         val fhir = viewModel.buildQuestionnaire().getOrThrow()
         val fhirItem4 = fhir.item.first { it.linkId.value == "item_4" }
         assertEquals(3, fhirItem4.enableWhen.size)
-        assertEquals(Questionnaire.EnableWhenBehavior.Any, fhirItem4.enableBehavior?.value)
+        assertEquals(EnableWhenBehavior.Any, fhirItem4.enableBehavior?.value)
 
         // Verify Decimal
         assertNotNull(fhirItem4.enableWhen[0].answer.asDecimal())
@@ -163,11 +164,11 @@ class QuestionnaireBuilderEnableWhenTest {
                 listOf(
                     BuilderEnableWhen(
                         question = "item_1",
-                        operator = Questionnaire.QuestionnaireItemOperator.EqualTo,
+                        operator = QuestionnaireItemOperator.EqualTo,
                         answerBoolean = true,
                     ),
                 ),
-            enableBehavior = Questionnaire.EnableWhenBehavior.All,
+            enableBehavior = EnableWhenBehavior.All,
         )
 
         val originalFhir = originalVm.buildQuestionnaire().getOrThrow()
@@ -185,6 +186,6 @@ class QuestionnaireBuilderEnableWhenTest {
         assertEquals(1, dupItem2.enableWhen.size)
         assertEquals("item_1", dupItem2.enableWhen[0].question)
         assertEquals(true, dupItem2.enableWhen[0].answerBoolean)
-        assertEquals(Questionnaire.EnableWhenBehavior.All, dupItem2.enableBehavior)
+        assertEquals(EnableWhenBehavior.All, dupItem2.enableBehavior)
     }
 }

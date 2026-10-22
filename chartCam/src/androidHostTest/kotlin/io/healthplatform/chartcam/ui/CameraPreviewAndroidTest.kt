@@ -18,7 +18,7 @@ import org.robolectric.RobolectricTestRunner
  * Android host tests for CameraPreview.
  */
 @OptIn(ExperimentalTestApi::class)
-@org.robolectric.annotation.Config(manifest = "src/androidHostTest/AndroidManifest.xml", packageName = "io.healthplatform.chartcam")
+@org.robolectric.annotation.Config(manifest = org.robolectric.annotation.Config.NONE, sdk = [33])
 @RunWith(RobolectricTestRunner::class)
 class CameraPreviewAndroidTest {
     /**

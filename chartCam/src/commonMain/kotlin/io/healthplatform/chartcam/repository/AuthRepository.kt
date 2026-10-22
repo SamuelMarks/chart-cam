@@ -101,12 +101,12 @@ open class AuthRepository(
 
         if (storedPayload == null) {
             // First time login for this user, establish their credential validation payload
-            val encryptedResult = cryptoService.encryptCatching(AUTH_VALIDATION_PAYLOAD, password)
-            if (encryptedResult.isFailure) {
-                return Result.failure(AuthError.CryptoError("Failed to derive key or encrypt payload", encryptedResult.exceptionOrNull()))
-            }
+            val encryptedPayload =
+                cryptoService.encryptCatching(AUTH_VALIDATION_PAYLOAD, password).getOrElse { e ->
+                    return Result.failure(AuthError.CryptoError("Failed to derive key or encrypt payload", e))
+                }
             runCatching {
-                storage.save(authKey, encryptedResult.getOrThrow())
+                storage.save(authKey, encryptedPayload)
             }.onFailure { e ->
                 return Result.failure(AuthError.StorageError("Failed to save credentials to storage", e))
             }

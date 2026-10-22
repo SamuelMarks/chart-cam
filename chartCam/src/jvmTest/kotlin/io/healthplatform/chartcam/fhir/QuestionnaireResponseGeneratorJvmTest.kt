@@ -8,6 +8,7 @@ import dev.ohs.fhir.model.r4.Boolean
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -25,7 +26,7 @@ class QuestionnaireResponseGeneratorJvmTest {
             Questionnaire.Item
                 .Builder(
                     linkId = String.Builder().apply { value = "nested_1" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     required = Boolean.Builder().apply { value = true }
                 }.build()
@@ -34,7 +35,7 @@ class QuestionnaireResponseGeneratorJvmTest {
             Questionnaire.Item
                 .Builder(
                     linkId = String.Builder().apply { value = "group_1" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    type = Enumeration(value = QuestionnaireItemType.Group),
                 ).apply {
                     item.add(nestedItem.toBuilder())
                 }.build()

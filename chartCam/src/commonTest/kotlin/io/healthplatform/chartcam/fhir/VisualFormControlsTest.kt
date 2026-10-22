@@ -13,6 +13,7 @@ import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Extension
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.models.BodyMapLocation
 import io.healthplatform.chartcam.models.FitzpatrickScaleDefaults
 import io.healthplatform.chartcam.models.FitzpatrickSkinType
@@ -52,7 +53,7 @@ class VisualFormControlsTest {
      */
     private fun createItemBuilderWithControl(
         linkId: String,
-        type: Questionnaire.QuestionnaireItemType,
+        type: QuestionnaireItemType,
         itemControlCode: String,
     ): Questionnaire.Item.Builder {
         val ext =
@@ -205,21 +206,21 @@ class VisualFormControlsTest {
      */
     @Test
     fun testItemControlExtensionHelpers() {
-        val painItem = createItemBuilderWithControl("p1", Questionnaire.QuestionnaireItemType.Integer, "pain-vas").build()
+        val painItem = createItemBuilderWithControl("p1", QuestionnaireItemType.Integer, "pain-vas").build()
         assertTrue(painItem.isVisualPainControl())
         assertFalse(painItem.isFitzpatrickPalette())
         assertFalse(painItem.isBodyMap())
         assertFalse(painItem.isSegmentedControl())
 
-        val paletteItem = createItemBuilderWithControl("f1", Questionnaire.QuestionnaireItemType.Choice, "palette").build()
+        val paletteItem = createItemBuilderWithControl("f1", QuestionnaireItemType.Choice, "palette").build()
         assertTrue(paletteItem.isFitzpatrickPalette())
         assertFalse(paletteItem.isVisualPainControl())
 
-        val bodyMapItem = createItemBuilderWithControl("b1", Questionnaire.QuestionnaireItemType.String, "body-map").build()
+        val bodyMapItem = createItemBuilderWithControl("b1", QuestionnaireItemType.String, "body-map").build()
         assertTrue(bodyMapItem.isBodyMap())
         assertFalse(bodyMapItem.isSegmentedControl())
 
-        val segmentedItem = createItemBuilderWithControl("s1", Questionnaire.QuestionnaireItemType.Choice, "segmented-control").build()
+        val segmentedItem = createItemBuilderWithControl("s1", QuestionnaireItemType.Choice, "segmented-control").build()
         assertTrue(segmentedItem.isSegmentedControl())
         assertFalse(segmentedItem.isBodyMap())
     }
@@ -229,9 +230,9 @@ class VisualFormControlsTest {
      */
     @Test
     fun testQuestionnaireResponseGeneratorWithVisualControls() {
-        val painItemBuilder = createItemBuilderWithControl("pain1", Questionnaire.QuestionnaireItemType.Integer, "pain-vas")
-        val fitzItemBuilder = createItemBuilderWithControl("fitz1", Questionnaire.QuestionnaireItemType.Choice, "palette")
-        val bodyItemBuilder = createItemBuilderWithControl("body1", Questionnaire.QuestionnaireItemType.String, "body-map")
+        val painItemBuilder = createItemBuilderWithControl("pain1", QuestionnaireItemType.Integer, "pain-vas")
+        val fitzItemBuilder = createItemBuilderWithControl("fitz1", QuestionnaireItemType.Choice, "palette")
+        val bodyItemBuilder = createItemBuilderWithControl("body1", QuestionnaireItemType.String, "body-map")
 
         val questionnaire =
             Questionnaire

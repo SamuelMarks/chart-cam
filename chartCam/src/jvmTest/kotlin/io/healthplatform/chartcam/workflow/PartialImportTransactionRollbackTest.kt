@@ -8,6 +8,7 @@ import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import dev.ohs.fhir.model.r4.Bundle
 import dev.ohs.fhir.model.r4.Enumeration
+import dev.ohs.fhir.model.r4.terminologies.BundleType
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.fhir.FhirJsonParser
 import io.healthplatform.chartcam.files.FileStorage
@@ -99,7 +100,7 @@ class PartialImportTransactionRollbackTest {
             val binary2 = createFhirBinary("img-rollback-2", "image/jpeg", "BQYHCA==")
 
             val bundleBuilder =
-                Bundle.Builder(type = Enumeration(value = Bundle.BundleType.Collection)).apply {
+                Bundle.Builder(type = Enumeration(value = BundleType.Collection)).apply {
                     entry.add(Bundle.Entry.Builder().apply { resource = binary1.toBuilder() })
                     entry.add(Bundle.Entry.Builder().apply { resource = binary2.toBuilder() })
                 }

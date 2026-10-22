@@ -10,6 +10,7 @@ import dev.ohs.fhir.model.r4.Encounter
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.Practitioner
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -104,7 +105,7 @@ class FhirRepositoryJvmTest {
             val encounter =
                 Encounter
                     .Builder(
-                        status = Enumeration(value = Encounter.EncounterStatus.In_Progress),
+                        status = Enumeration(value = EncounterStatus.In_Progress),
                         `class` =
                             dev.ohs.fhir.model.r4.Coding
                                 .Builder(),
@@ -120,7 +121,7 @@ class FhirRepositoryJvmTest {
 
             repository.updateEncounterStatus("enc_1", "finished", "all good")
             val updated = repository.getEncounter("enc_1")
-            assertEquals(Encounter.EncounterStatus.Finished, updated?.status?.value)
+            assertEquals(EncounterStatus.Finished, updated?.status?.value)
             assertNotNull(updated?.text?.div?.value)
 
             repository.deleteEncounter("enc_1")
@@ -152,7 +153,7 @@ class FhirRepositoryJvmTest {
             val obs1 =
                 dev.ohs.fhir.model.r4.Observation(
                     id = "obs-high",
-                    status = Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                    status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                     code =
                         dev.ohs.fhir.model.r4.CodeableConcept(
                             coding =
@@ -191,7 +192,7 @@ class FhirRepositoryJvmTest {
             val obs2 =
                 dev.ohs.fhir.model.r4.Observation(
                     id = "obs-normal",
-                    status = Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                    status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                     code =
                         dev.ohs.fhir.model.r4.CodeableConcept(
                             coding =
@@ -275,7 +276,7 @@ class FhirRepositoryJvmTest {
             val encounter =
                 Encounter(
                     id = "enc-chain-1",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` =
                         dev.ohs.fhir.model.r4
                             .Coding(
@@ -328,7 +329,7 @@ class FhirRepositoryJvmTest {
             val obs =
                 dev.ohs.fhir.model.r4.Observation(
                     id = "obs-rev-1",
-                    status = Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                    status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                     code =
                         dev.ohs.fhir.model.r4.CodeableConcept(
                             coding =

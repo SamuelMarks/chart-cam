@@ -22,6 +22,7 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.repository.AuthRepository
@@ -141,7 +142,7 @@ class CaptureDestinationsJvmTest {
                 Questionnaire.Item(
                     linkId = FhirString(value = "photo1"),
                     text = FhirString(value = "Facial Photo"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                    type = Enumeration(value = QuestionnaireItemType.Attachment),
                 )
             val mockRepo = Mockito.mock(QuestionnaireRepository::class.java)
             Mockito.`when`(mockRepo.getQuestionnaire("std-form")).thenReturn(
@@ -188,7 +189,7 @@ class CaptureDestinationsJvmTest {
                 Questionnaire.Item(
                     linkId = FhirString(value = "step1"),
                     text = FhirString(value = "Wound Photo"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                    type = Enumeration(value = QuestionnaireItemType.Attachment),
                 )
             val mockRepo = Mockito.mock(QuestionnaireRepository::class.java)
             Mockito.`when`(mockRepo.getQuestionnaire("std-form")).thenReturn(

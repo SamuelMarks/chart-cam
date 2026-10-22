@@ -17,6 +17,7 @@ import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.Practitioner
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import io.healthplatform.chartcam.repository.AuthRepository
 import io.healthplatform.chartcam.repository.FhirRepository
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
@@ -44,7 +45,7 @@ class EncounterDetailCoverageTest {
 
         val qr =
             QuestionnaireResponse
-                .Builder(Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
+                .Builder(Enumeration(value = QuestionnaireResponseStatus.Completed))
                 .apply {
                     questionnaire = Canonical.Builder().apply { value = "non-existent-q" }
 

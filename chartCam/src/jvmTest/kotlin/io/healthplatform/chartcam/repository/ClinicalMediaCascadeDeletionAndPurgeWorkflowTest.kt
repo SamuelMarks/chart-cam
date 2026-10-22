@@ -14,6 +14,7 @@ import dev.ohs.fhir.model.r4.HumanName
 import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.terminologies.AdministrativeGender
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.FileStorage
 import io.healthplatform.chartcam.models.DocumentReferenceCreationParams
@@ -158,7 +159,7 @@ class ClinicalMediaCascadeDeletionAndPurgeWorkflowTest {
 
             val qr =
                 QuestionnaireResponse
-                    .Builder(Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
+                    .Builder(Enumeration(value = QuestionnaireResponseStatus.Completed))
                     .apply {
                         id = "qr-del"
                         encounter =

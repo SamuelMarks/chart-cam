@@ -5,6 +5,7 @@
 package io.healthplatform.chartcam.repository
 
 import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.camera.SilhouetteType
 import io.healthplatform.chartcam.fhir.getSilhouetteType
 import kotlinx.coroutines.test.runTest
@@ -35,17 +36,17 @@ class FacialCorneaProfileTemplateTest {
 
             val leftItem = form.item.find { it.linkId.value == "profile_left" }
             assertNotNull(leftItem)
-            assertEquals(Questionnaire.QuestionnaireItemType.Attachment, leftItem.type.value)
+            assertEquals(QuestionnaireItemType.Attachment, leftItem.type.value)
             assertEquals(SilhouetteType.PROFILE_CORNEA_NOSE_LEFT, leftItem.getSilhouetteType().getOrNull())
 
             val frontItem = form.item.find { it.linkId.value == "front_view" }
             assertNotNull(frontItem)
-            assertEquals(Questionnaire.QuestionnaireItemType.Attachment, frontItem.type.value)
+            assertEquals(QuestionnaireItemType.Attachment, frontItem.type.value)
             assertEquals(SilhouetteType.FRONTAL_FACE, frontItem.getSilhouetteType().getOrNull())
 
             val rightItem = form.item.find { it.linkId.value == "profile_right" }
             assertNotNull(rightItem)
-            assertEquals(Questionnaire.QuestionnaireItemType.Attachment, rightItem.type.value)
+            assertEquals(QuestionnaireItemType.Attachment, rightItem.type.value)
             assertEquals(SilhouetteType.PROFILE_CORNEA_NOSE_RIGHT, rightItem.getSilhouetteType().getOrNull())
         }
 
@@ -126,7 +127,7 @@ class FacialCorneaProfileTemplateTest {
                                         .toBuilder(),
                                 type =
                                     dev.ohs.fhir.model.r4.Enumeration(
-                                        value = Questionnaire.QuestionnaireItemType.String,
+                                        value = QuestionnaireItemType.String,
                                     ),
                             ),
                         )

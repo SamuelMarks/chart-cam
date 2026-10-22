@@ -4,7 +4,7 @@
  */
 package io.healthplatform.chartcam.viewmodel
 
-import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.camera.SilhouetteType
 import io.healthplatform.chartcam.fhir.getItemControl
 import io.healthplatform.chartcam.fhir.getSilhouetteType
@@ -40,7 +40,7 @@ class FacialSeriesBuilderTest {
 
             assertEquals(1, questionnaire.item.size)
             val groupItem = questionnaire.item.first()
-            assertEquals(Questionnaire.QuestionnaireItemType.Group, groupItem.type.value)
+            assertEquals(QuestionnaireItemType.Group, groupItem.type.value)
             assertEquals("facial-profile-series", groupItem.getItemControl())
             assertTrue(groupItem.isFacialProfileSeries())
 
@@ -48,17 +48,17 @@ class FacialSeriesBuilderTest {
             assertEquals(3, groupItem.item.size)
 
             val leftItem = groupItem.item[0]
-            assertEquals(Questionnaire.QuestionnaireItemType.Attachment, leftItem.type.value)
+            assertEquals(QuestionnaireItemType.Attachment, leftItem.type.value)
             assertEquals(SilhouetteType.PROFILE_CORNEA_NOSE_LEFT, leftItem.getSilhouetteType().getOrNull())
             assertTrue(leftItem.code.any { it.code?.value == "272480006" })
 
             val frontItem = groupItem.item[1]
-            assertEquals(Questionnaire.QuestionnaireItemType.Attachment, frontItem.type.value)
+            assertEquals(QuestionnaireItemType.Attachment, frontItem.type.value)
             assertEquals(SilhouetteType.FRONTAL_FACE, frontItem.getSilhouetteType().getOrNull())
             assertTrue(frontItem.code.any { it.code?.value == "272483008" })
 
             val rightItem = groupItem.item[2]
-            assertEquals(Questionnaire.QuestionnaireItemType.Attachment, rightItem.type.value)
+            assertEquals(QuestionnaireItemType.Attachment, rightItem.type.value)
             assertEquals(SilhouetteType.PROFILE_CORNEA_NOSE_RIGHT, rightItem.getSilhouetteType().getOrNull())
             assertTrue(rightItem.code.any { it.code?.value == "272481005" })
         }

@@ -15,7 +15,10 @@ import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.Reference
+import dev.ohs.fhir.model.r4.terminologies.BundleType
+import dev.ohs.fhir.model.r4.terminologies.LinkType
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.fhir.FhirJsonParser
 import io.healthplatform.chartcam.files.FileStorage
@@ -91,7 +94,7 @@ class FhirBundleImportExpansionTest {
     @Test
     fun testLargeBundleMemoryPressure() =
         runTest {
-            val bundleBuilder = Bundle.Builder(Enumeration(value = Bundle.BundleType.Collection))
+            val bundleBuilder = Bundle.Builder(Enumeration(value = BundleType.Collection))
 
             // Build 1000 total resources: 500 Patients + 500 Encounters
             val resourceCount = 500
@@ -154,7 +157,7 @@ class FhirBundleImportExpansionTest {
     @Test
     fun testMalformedResourceRecovery() =
         runTest {
-            val bundleBuilder = Bundle.Builder(Enumeration(value = Bundle.BundleType.Collection))
+            val bundleBuilder = Bundle.Builder(Enumeration(value = BundleType.Collection))
 
             // 1. Valid Patient 1
             val validPatient1 =
@@ -220,7 +223,7 @@ class FhirBundleImportExpansionTest {
                                             reference =
                                                 FhirString.Builder().apply { value = "Patient/patient_cyclic_2" }
                                         },
-                                    type = Enumeration(value = Patient.LinkType.Seealso),
+                                    type = Enumeration(value = LinkType.Seealso),
                                 ),
                         )
                     }.build()
@@ -238,7 +241,7 @@ class FhirBundleImportExpansionTest {
                                             reference =
                                                 FhirString.Builder().apply { value = "Patient/patient_cyclic_1" }
                                         },
-                                    type = Enumeration(value = Patient.LinkType.Seealso),
+                                    type = Enumeration(value = LinkType.Seealso),
                                 ),
                         )
                     }.build()
@@ -260,7 +263,7 @@ class FhirBundleImportExpansionTest {
 
             val qr =
                 QuestionnaireResponse
-                    .Builder(status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
+                    .Builder(status = Enumeration(value = QuestionnaireResponseStatus.Completed))
                     .apply {
                         this.id = "qr_cyclic_1"
                         this.subject =
@@ -322,7 +325,7 @@ class FhirBundleImportExpansionTest {
     @Test
     fun testSchemaVersionDiscrepanciesAndExtensions() =
         runTest {
-            val bundleBuilder = Bundle.Builder(Enumeration(value = Bundle.BundleType.Collection))
+            val bundleBuilder = Bundle.Builder(Enumeration(value = BundleType.Collection))
 
             val futureExtensionBuilder =
                 Extension

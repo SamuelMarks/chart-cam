@@ -14,6 +14,7 @@ import chartcam.chartcam.generated.resources.conflict_type_orphan
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.models.ConflictType
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
@@ -137,7 +138,7 @@ class LocalizedFormatUtilsTest {
         val item =
             Questionnaire.Item(
                 linkId = FhirString(value = "item_cornea_left"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 text = FhirString(value = "Cornea Profile Left"),
             )
         val q =
@@ -170,25 +171,25 @@ class LocalizedFormatUtilsTest {
         val validItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "item_valid"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 text = FhirString(value = "Valid Label"),
             )
         val itemNoText =
             Questionnaire.Item(
                 linkId = FhirString(value = "item_no_text"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 text = null,
             )
         val itemNullValue =
             Questionnaire.Item(
                 linkId = FhirString(value = "item_null_value"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 text = FhirString(value = null),
             )
         val blankItem =
             Questionnaire.Item(
                 linkId = FhirString(value = "blank_key"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
                 text = FhirString(value = "   "),
             )
         val multiQ =

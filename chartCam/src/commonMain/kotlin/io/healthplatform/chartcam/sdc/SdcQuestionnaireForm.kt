@@ -82,6 +82,7 @@ import chartcam.chartcam.generated.resources.take_photo
 import chartcam.chartcam.generated.resources.yes
 import dev.ohs.fhir.model.r4.DocumentReference
 import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.fhir.getItemControl
 import io.healthplatform.chartcam.fhir.getLocalizedText
 import io.healthplatform.chartcam.fhir.getMaxValue
@@ -147,7 +148,7 @@ data class SdcFormState(
  */
 private data class RenderContext(
     val item: Questionnaire.Item,
-    val type: Questionnaire.QuestionnaireItemType,
+    val type: QuestionnaireItemType,
     val linkId: String,
     val displayLabel: String,
     val isRequired: Boolean,
@@ -270,7 +271,7 @@ fun RenderQuestionnaireItem(
  *
  * @param item The questionnaire item being rendered.
  * @param linkId The non-null linkId of the item.
- * @param type The non-null [Questionnaire.QuestionnaireItemType] of the item.
+ * @param type The non-null [QuestionnaireItemType] of the item.
  * @param state Current form state including answers, touched fields, and configuration.
  * @param onAnswerChanged Callback invoked when the user updates an answer.
  * @param focusManager Compose focus manager to handle keyboard navigation.
@@ -281,7 +282,7 @@ fun RenderQuestionnaireItem(
 private fun RenderQuestionnaireItemImpl(
     item: Questionnaire.Item,
     linkId: String,
-    type: Questionnaire.QuestionnaireItemType,
+    type: QuestionnaireItemType,
     state: SdcFormState,
     onAnswerChanged: (String, Any?) -> Unit,
     focusManager: FocusManager,
@@ -294,7 +295,7 @@ private fun RenderQuestionnaireItemImpl(
     val displayLabel =
         if (localizedText.isNotBlank()) {
             localizedText
-        } else if (type == Questionnaire.QuestionnaireItemType.Group) {
+        } else if (type == QuestionnaireItemType.Group) {
             stringResource(Res.string.cd_unnamed_group)
         } else {
             stringResource(Res.string.cd_unnamed_item)
@@ -350,7 +351,7 @@ private fun RenderQuestionnaireItemImpl(
 
         val alpha = if (isEnabled) ALPHA_ENABLED else ALPHA_DISABLED
         Box(modifier = Modifier.alpha(alpha).fillMaxWidth()) {
-            if (type == Questionnaire.QuestionnaireItemType.Group) {
+            if (type == QuestionnaireItemType.Group) {
                 RenderGroupItem(ctx)
             } else {
                 RenderInputItem(ctx, effectiveReadOnly)
@@ -770,7 +771,7 @@ private fun RenderSegmentedChoiceField(
 private fun RenderReadOnlyField(ctx: RenderContext) {
     val answerDisplay = getAnswerDisplayText(ctx.type, ctx.item, ctx.linkId, ctx.state.answers)
 
-    if (ctx.type == Questionnaire.QuestionnaireItemType.Attachment) {
+    if (ctx.type == QuestionnaireItemType.Attachment) {
         RenderReadOnlyAttachment(ctx)
     } else {
         val notAnsweredString = stringResource(Res.string.not_answered)
@@ -826,7 +827,7 @@ private fun RenderReadOnlyField(ctx: RenderContext) {
  */
 @Composable
 private fun getAnswerDisplayText(
-    type: Questionnaire.QuestionnaireItemType,
+    type: QuestionnaireItemType,
     item: Questionnaire.Item,
     linkId: String,
     answers: Map<String, Any>,
@@ -834,13 +835,13 @@ private fun getAnswerDisplayText(
     val currentLang by io.healthplatform.chartcam.ui.currentLanguageState
         .collectAsState()
     return when (type) {
-        Questionnaire.QuestionnaireItemType.Boolean -> getBooleanAnswerText(answers[linkId] as? Boolean)
-        Questionnaire.QuestionnaireItemType.Choice -> getChoiceAnswerText(item, answers[linkId], currentLang)
-        Questionnaire.QuestionnaireItemType.Integer -> getIntegerAnswerText(answers[linkId], currentLang)
-        Questionnaire.QuestionnaireItemType.Decimal -> getIntegerAnswerText(answers[linkId], currentLang)
-        Questionnaire.QuestionnaireItemType.Date -> getDateAnswerText(answers[linkId], currentLang)
-        Questionnaire.QuestionnaireItemType.DateTime -> getDateTimeAnswerText(answers[linkId], currentLang)
-        Questionnaire.QuestionnaireItemType.Attachment -> ""
+        QuestionnaireItemType.Boolean -> getBooleanAnswerText(answers[linkId] as? Boolean)
+        QuestionnaireItemType.Choice -> getChoiceAnswerText(item, answers[linkId], currentLang)
+        QuestionnaireItemType.Integer -> getIntegerAnswerText(answers[linkId], currentLang)
+        QuestionnaireItemType.Decimal -> getIntegerAnswerText(answers[linkId], currentLang)
+        QuestionnaireItemType.Date -> getDateAnswerText(answers[linkId], currentLang)
+        QuestionnaireItemType.DateTime -> getDateTimeAnswerText(answers[linkId], currentLang)
+        QuestionnaireItemType.Attachment -> ""
         else -> answers[linkId]?.toString() ?: ""
     }
 }
@@ -1040,15 +1041,15 @@ private fun RenderReadOnlyAttachment(ctx: RenderContext) {
 @Composable
 private fun RenderEditableField(ctx: RenderContext) {
     when (ctx.type) {
-        Questionnaire.QuestionnaireItemType.String -> RenderStringField(ctx)
-        Questionnaire.QuestionnaireItemType.Boolean -> RenderBooleanField(ctx)
-        Questionnaire.QuestionnaireItemType.Choice -> RenderChoiceField(ctx)
-        Questionnaire.QuestionnaireItemType.Attachment -> RenderAttachmentField(ctx)
-        Questionnaire.QuestionnaireItemType.Text -> RenderTextField(ctx)
-        Questionnaire.QuestionnaireItemType.Date -> RenderDateField(ctx)
-        Questionnaire.QuestionnaireItemType.DateTime -> RenderDateTimeField(ctx)
-        Questionnaire.QuestionnaireItemType.Decimal -> RenderDecimalField(ctx)
-        Questionnaire.QuestionnaireItemType.Integer -> RenderIntegerField(ctx)
+        QuestionnaireItemType.String -> RenderStringField(ctx)
+        QuestionnaireItemType.Boolean -> RenderBooleanField(ctx)
+        QuestionnaireItemType.Choice -> RenderChoiceField(ctx)
+        QuestionnaireItemType.Attachment -> RenderAttachmentField(ctx)
+        QuestionnaireItemType.Text -> RenderTextField(ctx)
+        QuestionnaireItemType.Date -> RenderDateField(ctx)
+        QuestionnaireItemType.DateTime -> RenderDateTimeField(ctx)
+        QuestionnaireItemType.Decimal -> RenderDecimalField(ctx)
+        QuestionnaireItemType.Integer -> RenderIntegerField(ctx)
         else -> {}
     }
 }

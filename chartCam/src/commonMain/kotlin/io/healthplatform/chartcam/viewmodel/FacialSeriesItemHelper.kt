@@ -12,6 +12,7 @@ import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Extension
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.Uri
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import dev.ohs.fhir.model.r4.Boolean as FhirBoolean
 import dev.ohs.fhir.model.r4.String as FhirString
 
@@ -90,7 +91,7 @@ internal fun createFacialSeriesChildItem(
             Questionnaire.Item
                 .Builder(
                     FhirString(value = linkId).toBuilder(),
-                    Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                    Enumeration(value = QuestionnaireItemType.Attachment),
                 ).apply {
                     this.text = FhirString(value = text).toBuilder()
                     this.required = FhirBoolean(value = true).toBuilder()

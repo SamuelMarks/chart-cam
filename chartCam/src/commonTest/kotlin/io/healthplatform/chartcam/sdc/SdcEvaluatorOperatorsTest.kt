@@ -16,6 +16,9 @@ import dev.ohs.fhir.model.r4.Integer
 import dev.ohs.fhir.model.r4.Quantity
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.terminologies.EnableWhenBehavior
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemOperator
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -35,7 +38,7 @@ class SdcEvaluatorOperatorsTest {
      */
     private fun createCondition(
         targetQuestion: kotlin.String,
-        operator: Questionnaire.QuestionnaireItemOperator,
+        operator: QuestionnaireItemOperator,
         answer: Questionnaire.Item.EnableWhen.Answer,
     ): Questionnaire.Item.EnableWhen =
         Questionnaire.Item.EnableWhen
@@ -66,8 +69,8 @@ class SdcEvaluatorOperatorsTest {
             Questionnaire.Item.EnableWhen.Answer.String(
                 String.Builder().apply { value = "hypertension" }.build(),
             )
-        val eqCond = createCondition("diagnosis", Questionnaire.QuestionnaireItemOperator.EqualTo, ewString)
-        val neCond = createCondition("diagnosis", Questionnaire.QuestionnaireItemOperator.NotEqualTo, ewString)
+        val eqCond = createCondition("diagnosis", QuestionnaireItemOperator.EqualTo, ewString)
+        val neCond = createCondition("diagnosis", QuestionnaireItemOperator.NotEqualTo, ewString)
 
         assertTrue(eval(eqCond, mapOf("diagnosis" to "hypertension")))
         assertFalse(eval(eqCond, mapOf("diagnosis" to "asthma")))
@@ -86,8 +89,8 @@ class SdcEvaluatorOperatorsTest {
             Questionnaire.Item.EnableWhen.Answer.Boolean(
                 Boolean.Builder().apply { value = true }.build(),
             )
-        val eqCond = createCondition("has_allergy", Questionnaire.QuestionnaireItemOperator.EqualTo, ewBool)
-        val neCond = createCondition("has_allergy", Questionnaire.QuestionnaireItemOperator.NotEqualTo, ewBool)
+        val eqCond = createCondition("has_allergy", QuestionnaireItemOperator.EqualTo, ewBool)
+        val neCond = createCondition("has_allergy", QuestionnaireItemOperator.NotEqualTo, ewBool)
 
         assertTrue(eval(eqCond, mapOf("has_allergy" to true)))
         assertTrue(eval(eqCond, mapOf("has_allergy" to "true")))
@@ -106,11 +109,11 @@ class SdcEvaluatorOperatorsTest {
             Questionnaire.Item.EnableWhen.Answer.Integer(
                 Integer.Builder().apply { value = 18 }.build(),
             )
-        val gtCond = createCondition("age", Questionnaire.QuestionnaireItemOperator.GreaterThan, ewInt)
-        val gteCond = createCondition("age", Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo, ewInt)
-        val ltCond = createCondition("age", Questionnaire.QuestionnaireItemOperator.LessThan, ewInt)
-        val lteCond = createCondition("age", Questionnaire.QuestionnaireItemOperator.LessThanOrEqualTo, ewInt)
-        val eqCond = createCondition("age", Questionnaire.QuestionnaireItemOperator.EqualTo, ewInt)
+        val gtCond = createCondition("age", QuestionnaireItemOperator.GreaterThan, ewInt)
+        val gteCond = createCondition("age", QuestionnaireItemOperator.GreaterThanOrEqualTo, ewInt)
+        val ltCond = createCondition("age", QuestionnaireItemOperator.LessThan, ewInt)
+        val lteCond = createCondition("age", QuestionnaireItemOperator.LessThanOrEqualTo, ewInt)
+        val eqCond = createCondition("age", QuestionnaireItemOperator.EqualTo, ewInt)
 
         assertTrue(eval(gtCond, mapOf("age" to 21)))
         assertFalse(eval(gtCond, mapOf("age" to 18)))
@@ -142,7 +145,7 @@ class SdcEvaluatorOperatorsTest {
                                 .fromString("38.5")
                     }.build(),
             )
-        val feverCond = createCondition("temp", Questionnaire.QuestionnaireItemOperator.GreaterThan, ewDec)
+        val feverCond = createCondition("temp", QuestionnaireItemOperator.GreaterThan, ewDec)
         assertTrue(eval(feverCond, mapOf("temp" to 39.0)))
         assertFalse(eval(feverCond, mapOf("temp" to 37.2)))
     }
@@ -156,9 +159,9 @@ class SdcEvaluatorOperatorsTest {
             Questionnaire.Item.EnableWhen.Answer.Date(
                 Date.Builder().apply { value = FhirDate.fromString("2026-06-01") }.build(),
             )
-        val gtCond = createCondition("onset_date", Questionnaire.QuestionnaireItemOperator.GreaterThan, ewDate)
-        val ltCond = createCondition("onset_date", Questionnaire.QuestionnaireItemOperator.LessThan, ewDate)
-        val eqCond = createCondition("onset_date", Questionnaire.QuestionnaireItemOperator.EqualTo, ewDate)
+        val gtCond = createCondition("onset_date", QuestionnaireItemOperator.GreaterThan, ewDate)
+        val ltCond = createCondition("onset_date", QuestionnaireItemOperator.LessThan, ewDate)
+        val eqCond = createCondition("onset_date", QuestionnaireItemOperator.EqualTo, ewDate)
 
         assertTrue(eval(gtCond, mapOf("onset_date" to "2026-07-01")))
         assertFalse(eval(gtCond, mapOf("onset_date" to "2026-05-01")))
@@ -174,7 +177,7 @@ class SdcEvaluatorOperatorsTest {
             Questionnaire.Item.EnableWhen.Answer.DateTime(
                 DateTime.Builder().apply { value = FhirDateTime.fromString("2026-06-01T12:00:00Z") }.build(),
             )
-        val dtCond = createCondition("checkin_time", Questionnaire.QuestionnaireItemOperator.GreaterThan, ewDateTime)
+        val dtCond = createCondition("checkin_time", QuestionnaireItemOperator.GreaterThan, ewDateTime)
         assertTrue(eval(dtCond, mapOf("checkin_time" to "2026-06-01T15:00:00Z")))
     }
 
@@ -195,7 +198,7 @@ class SdcEvaluatorOperatorsTest {
                         display = String.Builder().apply { value = "Persistent Cough" }
                     }.build(),
             )
-        val eqCond = createCondition("symptom", Questionnaire.QuestionnaireItemOperator.EqualTo, ewCoding)
+        val eqCond = createCondition("symptom", QuestionnaireItemOperator.EqualTo, ewCoding)
 
         assertTrue(eval(eqCond, mapOf("symptom" to "opt_cough")))
         assertTrue(eval(eqCond, mapOf("symptom" to "Persistent Cough")))
@@ -221,8 +224,8 @@ class SdcEvaluatorOperatorsTest {
                         unit = String.Builder().apply { value = "mg" }
                     }.build(),
             )
-        val eqCond = createCondition("dosage", Questionnaire.QuestionnaireItemOperator.EqualTo, ewQuantity)
-        val gtCond = createCondition("dosage", Questionnaire.QuestionnaireItemOperator.GreaterThan, ewQuantity)
+        val eqCond = createCondition("dosage", QuestionnaireItemOperator.EqualTo, ewQuantity)
+        val gtCond = createCondition("dosage", QuestionnaireItemOperator.GreaterThan, ewQuantity)
 
         assertTrue(eval(eqCond, mapOf("dosage" to 100)))
         assertTrue(eval(gtCond, mapOf("dosage" to 150)))
@@ -243,8 +246,8 @@ class SdcEvaluatorOperatorsTest {
                 Boolean.Builder().apply { value = false }.build(),
             )
 
-        val condExists = createCondition("notes", Questionnaire.QuestionnaireItemOperator.Exists, ewExistsTrue)
-        val condNotExists = createCondition("notes", Questionnaire.QuestionnaireItemOperator.Exists, ewExistsFalse)
+        val condExists = createCondition("notes", QuestionnaireItemOperator.Exists, ewExistsTrue)
+        val condNotExists = createCondition("notes", QuestionnaireItemOperator.Exists, ewExistsFalse)
 
         assertTrue(eval(condExists, mapOf("notes" to "Patient reports fatigue")))
         assertTrue(eval(condExists, mapOf("notes" to 42)))
@@ -275,18 +278,18 @@ class SdcEvaluatorOperatorsTest {
             Questionnaire.Item
                 .Builder(
                     linkId = String.Builder().apply { value = "high_risk_protocol" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
-                    enableBehavior = Enumeration(value = Questionnaire.EnableWhenBehavior.All)
-                    enableWhen.add(createCondition("is_smoker", Questionnaire.QuestionnaireItemOperator.EqualTo, ew1).toBuilder())
-                    enableWhen.add(createCondition("age", Questionnaire.QuestionnaireItemOperator.GreaterThanOrEqualTo, ew2).toBuilder())
+                    enableBehavior = Enumeration(value = EnableWhenBehavior.All)
+                    enableWhen.add(createCondition("is_smoker", QuestionnaireItemOperator.EqualTo, ew1).toBuilder())
+                    enableWhen.add(createCondition("age", QuestionnaireItemOperator.GreaterThanOrEqualTo, ew2).toBuilder())
                 }.build()
 
         val itemAny =
             itemAll
                 .toBuilder()
                 .apply {
-                    enableBehavior = Enumeration(value = Questionnaire.EnableWhenBehavior.Any)
+                    enableBehavior = Enumeration(value = EnableWhenBehavior.Any)
                 }.build()
 
         // Both true
@@ -314,7 +317,7 @@ class SdcEvaluatorOperatorsTest {
             Questionnaire.Item.EnableWhen.Answer.String(
                 String.Builder().apply { value = "hypertension" }.build(),
             )
-        val neCond = createCondition("diagnosis", Questionnaire.QuestionnaireItemOperator.NotEqualTo, ewString)
+        val neCond = createCondition("diagnosis", QuestionnaireItemOperator.NotEqualTo, ewString)
 
         // Missing key in context answers map
         assertFalse(eval(neCond, emptyMap()))

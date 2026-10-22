@@ -80,7 +80,7 @@ class ExistingVisitE2EJvmTest {
                     .apply {
                         status =
                             dev.ohs.fhir.model.r4
-                                .Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished)
+                                .Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished)
                     }.build()
             fhirRepository.saveEncounter(enc)
 
@@ -89,7 +89,7 @@ class ExistingVisitE2EJvmTest {
                 dev.ohs.fhir.model.r4.QuestionnaireResponse
                     .Builder(
                         dev.ohs.fhir.model.r4.Enumeration(
-                            value = dev.ohs.fhir.model.r4.QuestionnaireResponse.QuestionnaireResponseStatus.Completed,
+                            value = dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus.Completed,
                         ),
                     ).apply {
                         id = "qr-1"

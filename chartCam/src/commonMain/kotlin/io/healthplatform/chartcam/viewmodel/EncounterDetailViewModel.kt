@@ -21,6 +21,8 @@ import dev.ohs.fhir.model.r4.Practitioner
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.Reference
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import io.healthplatform.chartcam.models.DocumentReferenceCreationParams
 import io.healthplatform.chartcam.models.createFhirDocumentReference
 import io.healthplatform.chartcam.models.createFhirEncounter
@@ -430,11 +432,11 @@ class EncounterDetailViewModel(
         return currentAnswers.filter { (linkId, value) ->
             val targetItem = targetItems[linkId] ?: return@filter true
             val itemType = targetItem.type.value
-            if (itemType == Questionnaire.QuestionnaireItemType.Integer) {
+            if (itemType == QuestionnaireItemType.Integer) {
                 value is Int || value is Long || value.toString().toIntOrNull() != null
-            } else if (itemType == Questionnaire.QuestionnaireItemType.Decimal) {
+            } else if (itemType == QuestionnaireItemType.Decimal) {
                 value is Number || value.toString().toDoubleOrNull() != null
-            } else if (itemType == Questionnaire.QuestionnaireItemType.Boolean) {
+            } else if (itemType == QuestionnaireItemType.Boolean) {
                 value is Boolean || value.toString().toBooleanStrictOrNull() != null
             } else {
                 true
@@ -712,7 +714,7 @@ class EncounterDetailViewModel(
         val qr =
             QuestionnaireResponse
                 .Builder(
-                    Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    Enumeration(value = QuestionnaireResponseStatus.Completed),
                 ).apply {
                     this.id = qrId
                     this.subject = buildSubjectReference(enc)

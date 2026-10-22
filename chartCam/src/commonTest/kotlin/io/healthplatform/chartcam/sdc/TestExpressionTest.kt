@@ -8,6 +8,7 @@ import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Extension
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import dev.ohs.fhir.model.r4.String as FhirString
@@ -26,7 +27,7 @@ class TestExpressionTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "sum" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                    type = Enumeration(value = QuestionnaireItemType.Integer),
                 ).apply {
                     extension.add(
                         Extension

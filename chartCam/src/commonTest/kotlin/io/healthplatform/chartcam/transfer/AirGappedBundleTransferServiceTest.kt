@@ -10,6 +10,7 @@ import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.HumanName
 import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.Uri
+import dev.ohs.fhir.model.r4.terminologies.BundleType
 import io.healthplatform.chartcam.fhir.FhirJsonParser
 import io.healthplatform.chartcam.fhir.FhirProtobufParser
 import kotlin.test.Test
@@ -60,7 +61,7 @@ class AirGappedBundleTransferServiceTest {
         val bundle =
             Bundle(
                 id = "bundle-proto-qr",
-                type = Enumeration(value = Bundle.BundleType.Collection),
+                type = Enumeration(value = BundleType.Collection),
                 entry =
                     listOf(
                         Bundle.Entry(
@@ -105,7 +106,7 @@ class AirGappedBundleTransferServiceTest {
         val encounter =
             dev.ohs.fhir.model.r4.Encounter(
                 id = "enc-proto",
-                status = Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished),
                 `class` =
                     dev.ohs.fhir.model.r4.Coding(
                         code =
@@ -130,7 +131,7 @@ class AirGappedBundleTransferServiceTest {
         val qr =
             dev.ohs.fhir.model.r4.QuestionnaireResponse(
                 id = "qr-proto",
-                status = Enumeration(value = dev.ohs.fhir.model.r4.QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus.Completed),
             )
         val qrBytes = FhirProtobufParser.encodeToProtobuf(qr).getOrThrow()
         val decodedQr = FhirProtobufParser.decodeFromProtobuf<dev.ohs.fhir.model.r4.QuestionnaireResponse>(qrBytes).getOrThrow()
@@ -143,7 +144,7 @@ class AirGappedBundleTransferServiceTest {
         assertEquals("enc-proto", decodedFallback.id)
 
         // Typed Bundle helper verification
-        val bundle = Bundle(id = "b-proto", type = Enumeration(value = Bundle.BundleType.Collection))
+        val bundle = Bundle(id = "b-proto", type = Enumeration(value = BundleType.Collection))
         val bBytes = FhirProtobufParser.encodeBundleToProtobuf(bundle).getOrThrow()
         val decodedB = FhirProtobufParser.decodeBundleFromProtobuf(bBytes).getOrThrow()
         assertEquals("b-proto", decodedB.id)
@@ -228,7 +229,7 @@ class AirGappedBundleTransferServiceTest {
             }
         val bundle =
             Bundle(
-                type = Enumeration(value = Bundle.BundleType.Collection),
+                type = Enumeration(value = BundleType.Collection),
                 entry = listOf(Bundle.Entry(resource = failingResource)),
             )
         val result = AirGappedBundleTransferService.chunkProtobufBundleForQr(bundle)

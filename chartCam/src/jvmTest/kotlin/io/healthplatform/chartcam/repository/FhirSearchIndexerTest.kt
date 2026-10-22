@@ -25,7 +25,9 @@ import dev.ohs.fhir.model.r4.Uri
 import dev.ohs.fhir.model.r4.search.PatientSearchParams
 import dev.ohs.fhir.model.r4.terminologies.AdministrativeGender
 import dev.ohs.fhir.model.r4.terminologies.DocumentReferenceStatus
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -111,7 +113,7 @@ class FhirSearchIndexerTest {
             val bundle =
                 dev.ohs.fhir.model.r4.Bundle(
                     id = "b-1",
-                    type = Enumeration(value = dev.ohs.fhir.model.r4.Bundle.BundleType.Collection),
+                    type = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.BundleType.Collection),
                     meta =
                         dev.ohs.fhir.model.r4.Meta(
                             lastUpdated =
@@ -157,7 +159,7 @@ class FhirSearchIndexerTest {
             val media =
                 dev.ohs.fhir.model.r4.Media(
                     id = "m-1",
-                    status = Enumeration(value = dev.ohs.fhir.model.r4.Media.EventStatus.Completed),
+                    status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EventStatus.Completed),
                     content =
                         dev.ohs.fhir.model.r4.Attachment(
                             url =
@@ -183,7 +185,7 @@ class FhirSearchIndexerTest {
             val encounter =
                 Encounter(
                     id = "enc-100",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     subject = Reference(reference = FhirString(value = "Patient/p-100")),
                     participant =
                         listOf(
@@ -255,7 +257,7 @@ class FhirSearchIndexerTest {
             val qr =
                 QuestionnaireResponse(
                     id = "qr-100",
-                    status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                     subject = Reference(reference = FhirString(value = "Patient/p-100")),
                     encounter = Reference(reference = FhirString(value = "Encounter/enc-100")),
                     questionnaire = Canonical(value = "Questionnaire/q-100"),
@@ -358,7 +360,7 @@ class FhirSearchIndexerTest {
             val observation =
                 dev.ohs.fhir.model.r4.Observation(
                     id = "obs-weight-1",
-                    status = Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                    status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                     code =
                         dev.ohs.fhir.model.r4.CodeableConcept(
                             coding =
@@ -540,7 +542,7 @@ class FhirSearchIndexerTest {
             val enc1 =
                 Encounter(
                     id = "enc-rev-1",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     subject = Reference(reference = FhirString(value = "Patient/p-rev")),
                     `class` =
                         dev.ohs.fhir.model.r4
@@ -553,7 +555,7 @@ class FhirSearchIndexerTest {
             val enc2 =
                 Encounter(
                     id = "enc-rev-2",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     subject = Reference(reference = FhirString(value = "Patient/p-rev")),
                     `class` =
                         dev.ohs.fhir.model.r4
@@ -566,7 +568,7 @@ class FhirSearchIndexerTest {
             val obs1 =
                 dev.ohs.fhir.model.r4.Observation(
                     id = "obs-rev-1",
-                    status = Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                    status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                     subject = Reference(reference = FhirString(value = "Patient/p-rev")),
                     encounter = Reference(reference = FhirString(value = "Encounter/enc-rev-1")),
                     code =
@@ -596,7 +598,7 @@ class FhirSearchIndexerTest {
             val device =
                 dev.ohs.fhir.model.r4.Device(
                     id = "dev-100",
-                    status = Enumeration(value = dev.ohs.fhir.model.r4.Device.FHIRDeviceStatus.Active),
+                    status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.FHIRDeviceStatus.Active),
                     manufacturer = FhirString(value = "HealthCorp"),
                     modelNumber = FhirString(value = "HC-9000"),
                 )
@@ -654,7 +656,7 @@ class FhirSearchIndexerTest {
             val encounter =
                 Encounter(
                     id = "enc-unprefixed",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     participant =
                         listOf(
                             Encounter.Participant(

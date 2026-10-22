@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
  * Robolectric host tests for [AndroidCameraManager] verifying initialization, flash control,
  * lens toggling, video recording guard states, and image capture behavior.
  */
-@Config(manifest = "src/androidHostTest/AndroidManifest.xml", packageName = "io.healthplatform.chartcam")
+@Config(manifest = Config.NONE, sdk = [33])
 @RunWith(RobolectricTestRunner::class)
 class CameraManagerAndroidTest {
     /**

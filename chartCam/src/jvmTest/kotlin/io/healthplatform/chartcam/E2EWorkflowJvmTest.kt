@@ -8,7 +8,7 @@ package io.healthplatform.chartcam
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import dev.ohs.fhir.model.r4.Encounter
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.files.createFileStorage
 import io.healthplatform.chartcam.repository.AuthRepository
@@ -191,7 +191,7 @@ class E2EWorkflowJvmTest {
                     ?.value
                     ?.value ?: ""
             assertEquals(testNotes, notes, "Encounter notes should match")
-            assertEquals(Encounter.EncounterStatus.Finished, encounters[0].status.value, "Encounter should be marked as finished")
+            assertEquals(EncounterStatus.Finished, encounters[0].status.value, "Encounter should be marked as finished")
 
             // 7. Return to list of patients
             patientListViewModel.loadPatients()

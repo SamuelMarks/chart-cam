@@ -15,6 +15,7 @@ import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.terminologies.AdministrativeGender
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import io.healthplatform.chartcam.models.createFhirPractitioner
 import io.healthplatform.chartcam.repository.AuthRepository
@@ -82,7 +83,7 @@ class DynamicQuestionnaireSwitchingStateIntegrityWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "findings" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Describe corneal observations" }
                 }
@@ -91,7 +92,7 @@ class DynamicQuestionnaireSwitchingStateIntegrityWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "severity" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                    type = Enumeration(value = QuestionnaireItemType.Choice),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Severity" }
                     answerOption.add(
@@ -124,7 +125,7 @@ class DynamicQuestionnaireSwitchingStateIntegrityWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "findings" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Text),
+                    type = Enumeration(value = QuestionnaireItemType.Text),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Detailed lesion description" }
                 }
@@ -133,7 +134,7 @@ class DynamicQuestionnaireSwitchingStateIntegrityWorkflowTest {
             Questionnaire.Item
                 .Builder(
                     linkId = FhirString.Builder().apply { value = "severity" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                    type = Enumeration(value = QuestionnaireItemType.Integer),
                 ).apply {
                     text = FhirString.Builder().apply { value = "Numeric severity score (1-10)" }
                 }

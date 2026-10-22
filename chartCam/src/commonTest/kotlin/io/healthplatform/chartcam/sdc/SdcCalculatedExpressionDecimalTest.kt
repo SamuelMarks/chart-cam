@@ -12,6 +12,7 @@ import dev.ohs.fhir.model.r4.Extension
 import dev.ohs.fhir.model.r4.FhirDecimal
 import dev.ohs.fhir.model.r4.Integer
 import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.fhir.SdcExtensions
 import io.healthplatform.chartcam.fhir.safeInitialExpression
 import io.healthplatform.chartcam.fhir.safeItemControl
@@ -79,7 +80,7 @@ class SdcCalculatedExpressionDecimalTest {
                 linkId = FhirString(value = "item-1"),
                 type =
                     dev.ohs.fhir.model.r4
-                        .Enumeration(value = Questionnaire.QuestionnaireItemType.Decimal),
+                        .Enumeration(value = QuestionnaireItemType.Decimal),
                 extension =
                     listOf(
                         Extension(

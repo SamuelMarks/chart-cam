@@ -10,7 +10,10 @@ import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Integer
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.Uri
+import dev.ohs.fhir.model.r4.terminologies.EnableWhenBehavior
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemOperator
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.fhir.getItemControl
 import io.healthplatform.chartcam.repository.QuestionnaireRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,7 +50,7 @@ data class QuestionnaireBuilderState(
  */
 data class BuilderEnableWhen(
     val question: kotlin.String,
-    val operator: Questionnaire.QuestionnaireItemOperator = Questionnaire.QuestionnaireItemOperator.EqualTo,
+    val operator: QuestionnaireItemOperator = QuestionnaireItemOperator.EqualTo,
     val answerString: kotlin.String? = null,
     val answerBoolean: kotlin.Boolean? = null,
     val answerDecimal: Double? = null,
@@ -73,7 +76,7 @@ data class BuilderItem(
     val options: List<kotlin.String> = emptyList(),
     val isError: kotlin.Boolean = false,
     val enableWhen: List<BuilderEnableWhen> = emptyList(),
-    val enableBehavior: Questionnaire.EnableWhenBehavior? = null,
+    val enableBehavior: EnableWhenBehavior? = null,
     val repeats: kotlin.Boolean = false,
 )
 
@@ -204,7 +207,7 @@ class QuestionnaireBuilderViewModel(
         val control = fhirItem.getItemControl()
         val specialized = resolveSpecializedControl(control)
         val typeVal = fhirItem.type.value
-        val fhirType = if (typeVal != null) typeVal else Questionnaire.QuestionnaireItemType.String
+        val fhirType = if (typeVal != null) typeVal else QuestionnaireItemType.String
 
         return when {
             specialized != null -> specialized
@@ -241,21 +244,21 @@ class QuestionnaireBuilderViewModel(
      * @return The corresponding [WidgetType].
      */
     private fun resolveWidgetTypeFallback(
-        type: Questionnaire.QuestionnaireItemType,
+        type: QuestionnaireItemType,
         isRepeats: Boolean,
     ): WidgetType =
         when (type) {
-            Questionnaire.QuestionnaireItemType.Attachment -> WidgetType.PHOTO_CAMERA
-            Questionnaire.QuestionnaireItemType.Boolean -> WidgetType.SWITCH
-            Questionnaire.QuestionnaireItemType.Choice ->
+            QuestionnaireItemType.Attachment -> WidgetType.PHOTO_CAMERA
+            QuestionnaireItemType.Boolean -> WidgetType.SWITCH
+            QuestionnaireItemType.Choice ->
                 if (isRepeats) WidgetType.MULTI_SELECT else WidgetType.SINGLE_SELECT
-            Questionnaire.QuestionnaireItemType.String -> WidgetType.SINGLE_LINE_TEXT
-            Questionnaire.QuestionnaireItemType.Text -> WidgetType.MULTI_LINE_TEXT
-            Questionnaire.QuestionnaireItemType.Date -> WidgetType.DATE
-            Questionnaire.QuestionnaireItemType.DateTime -> WidgetType.DATETIME
-            Questionnaire.QuestionnaireItemType.Decimal -> WidgetType.NUMERIC
-            Questionnaire.QuestionnaireItemType.Integer -> WidgetType.RANGE
-            Questionnaire.QuestionnaireItemType.Group -> WidgetType.GROUP
+            QuestionnaireItemType.String -> WidgetType.SINGLE_LINE_TEXT
+            QuestionnaireItemType.Text -> WidgetType.MULTI_LINE_TEXT
+            QuestionnaireItemType.Date -> WidgetType.DATE
+            QuestionnaireItemType.DateTime -> WidgetType.DATETIME
+            QuestionnaireItemType.Decimal -> WidgetType.NUMERIC
+            QuestionnaireItemType.Integer -> WidgetType.RANGE
+            QuestionnaireItemType.Group -> WidgetType.GROUP
             else -> WidgetType.SINGLE_LINE_TEXT
         }
 
@@ -271,7 +274,7 @@ class QuestionnaireBuilderViewModel(
         enableWhen.mapNotNull { ew ->
             val q = ew.question.value
             if (q == null) return@mapNotNull null
-            val op = ew.operator.value ?: Questionnaire.QuestionnaireItemOperator.EqualTo
+            val op = ew.operator.value ?: QuestionnaireItemOperator.EqualTo
             val ans = ew.answer
             val strAns = ans.asString()
             val strVal = if (strAns != null) strAns.value.value else null
@@ -424,7 +427,7 @@ class QuestionnaireBuilderViewModel(
     fun updateItemEnableWhen(
         linkId: kotlin.String,
         enableWhen: List<BuilderEnableWhen>,
-        enableBehavior: Questionnaire.EnableWhenBehavior? = null,
+        enableBehavior: EnableWhenBehavior? = null,
     ) {
         _state.update { currentState ->
             currentState.copy(
@@ -665,9 +668,9 @@ class QuestionnaireBuilderViewModel(
     private fun applyChoiceOptions(
         itemBuilder: Questionnaire.Item.Builder,
         builderItem: BuilderItem,
-        fhirType: Questionnaire.QuestionnaireItemType,
+        fhirType: QuestionnaireItemType,
     ) {
-        if (fhirType == Questionnaire.QuestionnaireItemType.Choice) {
+        if (fhirType == QuestionnaireItemType.Choice) {
             /** MULTI_SELECT */
             if (builderItem.widgetType == WidgetType.MULTI_SELECT) {
                 itemBuilder.repeats = FhirBoolean(value = true).toBuilder()
@@ -782,31 +785,31 @@ class QuestionnaireBuilderViewModel(
      * @param widgetType The widgetType.
      * @return The result.
      */
-    private fun getFhirItemType(widgetType: WidgetType): Questionnaire.QuestionnaireItemType =
+    private fun getFhirItemType(widgetType: WidgetType): QuestionnaireItemType =
         when (widgetType) {
             /** PHOTO_CAMERA */
-            WidgetType.PHOTO_CAMERA, WidgetType.VIDEO_CAMERA -> Questionnaire.QuestionnaireItemType.Attachment
+            WidgetType.PHOTO_CAMERA, WidgetType.VIDEO_CAMERA -> QuestionnaireItemType.Attachment
             /** SWITCH */
-            WidgetType.SWITCH, WidgetType.CHECKBOX -> Questionnaire.QuestionnaireItemType.Boolean
+            WidgetType.SWITCH, WidgetType.CHECKBOX -> QuestionnaireItemType.Boolean
             /** SINGLE_SELECT */
             WidgetType.SINGLE_SELECT,
             WidgetType.MULTI_SELECT,
             WidgetType.FITZPATRICK_PALETTE,
             WidgetType.SEGMENTED_TILES,
-            -> Questionnaire.QuestionnaireItemType.Choice
+            -> QuestionnaireItemType.Choice
             WidgetType.SINGLE_LINE_TEXT,
             WidgetType.BODY_MAP,
-            -> Questionnaire.QuestionnaireItemType.String
-            WidgetType.MULTI_LINE_TEXT -> Questionnaire.QuestionnaireItemType.Text
-            WidgetType.DATE -> Questionnaire.QuestionnaireItemType.Date
-            WidgetType.DATETIME -> Questionnaire.QuestionnaireItemType.DateTime
-            WidgetType.NUMERIC -> Questionnaire.QuestionnaireItemType.Decimal
+            -> QuestionnaireItemType.String
+            WidgetType.MULTI_LINE_TEXT -> QuestionnaireItemType.Text
+            WidgetType.DATE -> QuestionnaireItemType.Date
+            WidgetType.DATETIME -> QuestionnaireItemType.DateTime
+            WidgetType.NUMERIC -> QuestionnaireItemType.Decimal
             WidgetType.RANGE,
             WidgetType.PAIN_SCALE,
-            -> Questionnaire.QuestionnaireItemType.Integer
+            -> QuestionnaireItemType.Integer
             WidgetType.GROUP,
             WidgetType.FACIAL_PROFILE_SERIES,
-            -> Questionnaire.QuestionnaireItemType.Group
+            -> QuestionnaireItemType.Group
         }
 
     /**

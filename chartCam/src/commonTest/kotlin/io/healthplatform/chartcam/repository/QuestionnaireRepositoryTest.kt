@@ -7,6 +7,7 @@ package io.healthplatform.chartcam.repository
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -111,7 +112,7 @@ class QuestionnaireRepositoryTest {
             Questionnaire.Item
                 .Builder(
                     linkId = String.Builder().apply { value = "notes" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                 ).apply {
                     text = String.Builder().apply { value = "Clinical Notes" }
                 }.build()
@@ -180,7 +181,7 @@ class QuestionnaireRepositoryTest {
             Questionnaire.Item
                 .Builder(
                     linkId = String.Builder().apply { value = "followup_type" },
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                    type = Enumeration(value = QuestionnaireItemType.Choice),
                 ).apply {
                     text = String.Builder().apply { value = "Follow-up Type" }
                     answerOption.add(

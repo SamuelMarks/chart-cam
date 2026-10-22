@@ -16,6 +16,7 @@ import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.Reference
 import dev.ohs.fhir.model.r4.Uri
+import dev.ohs.fhir.model.r4.terminologies.ObservationStatus
 import io.healthplatform.chartcam.utils.UUID
 import dev.ohs.fhir.model.r4.String as FhirString
 
@@ -144,7 +145,7 @@ object SdcObservationExtractor {
             val obs =
                 Observation(
                     id = UUID.randomUUID(),
-                    status = Enumeration(value = Observation.ObservationStatus.Final),
+                    status = Enumeration(value = ObservationStatus.Final),
                     code = obsCode,
                     subject = Reference(reference = FhirString(value = "Patient/${ctx.cleanPatientId}")),
                     encounter = encRef,

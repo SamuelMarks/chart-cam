@@ -7,12 +7,15 @@ package io.healthplatform.chartcam.validation
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.HumanName
 import dev.ohs.fhir.model.r4.Identifier
-import dev.ohs.fhir.model.r4.OperationOutcome
 import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.terminologies.IssueType
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemOperator
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -89,7 +92,7 @@ class FhirValidatorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = String.Builder().apply { value = "item-1" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                                type = Enumeration(value = QuestionnaireItemType.Integer),
                             ).apply {
                                 text = String.Builder().apply { value = "What is your age?" }
                             },
@@ -106,7 +109,7 @@ class FhirValidatorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = String.Builder().apply { value = "item-1" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                                type = Enumeration(value = QuestionnaireItemType.Integer),
                             ).apply {
                                 text = String.Builder().apply { value = "What is your age?" }
                             },
@@ -123,7 +126,7 @@ class FhirValidatorTest {
                     item.add(
                         Questionnaire.Item.Builder(
                             linkId = String.Builder().apply { value = "item-1" },
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                            type = Enumeration(value = QuestionnaireItemType.Integer),
                         ),
                     )
                 }.build()
@@ -139,7 +142,7 @@ class FhirValidatorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = String.Builder().apply { value = "item-1" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                                type = Enumeration(value = QuestionnaireItemType.Integer),
                             ).apply {
                                 text = String.Builder().apply { value = "First item?" }
                             },
@@ -148,7 +151,7 @@ class FhirValidatorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = String.Builder().apply { value = "item-1" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Integer),
+                                type = Enumeration(value = QuestionnaireItemType.Integer),
                             ).apply {
                                 text = String.Builder().apply { value = "Second item?" }
                             },
@@ -179,13 +182,13 @@ class FhirValidatorTest {
                         Questionnaire.Item
                             .Builder(
                                 linkId = String.Builder().apply { value = "item-1" },
-                                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                                type = Enumeration(value = QuestionnaireItemType.Boolean),
                             ).apply {
                                 text = String.Builder().apply { value = "Do you have symptoms?" }
                                 enableWhen.add(
                                     Questionnaire.Item.EnableWhen.Builder(
                                         answer = ewAnswer,
-                                        operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.Exists),
+                                        operator = Enumeration(value = QuestionnaireItemOperator.Exists),
                                         question = String.Builder().apply { value = "non-existent-item" },
                                     ),
                                 )
@@ -255,7 +258,7 @@ class FhirValidatorTest {
         assertTrue(outcomeInvalid.isSuccess)
         val outcome = outcomeInvalid.getOrNull()
         kotlin.test.assertNotNull(outcome)
-        assertTrue(outcome.issue.any { it.code.value == OperationOutcome.IssueType.Code_Invalid })
+        assertTrue(outcome.issue.any { it.code.value == IssueType.Code_Invalid })
     }
 
     /**
@@ -276,7 +279,7 @@ class FhirValidatorTest {
                             linkId =
                                 dev.ohs.fhir.model.r4
                                     .String(value = "severity"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            type = Enumeration(value = QuestionnaireItemType.Choice),
                             text =
                                 dev.ohs.fhir.model.r4
                                     .String(value = "Severity"),
@@ -304,7 +307,7 @@ class FhirValidatorTest {
         val validResp =
             QuestionnaireResponse(
                 id = "qr-valid-choice",
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                 item =
                     listOf(
                         QuestionnaireResponse.Item(
@@ -331,7 +334,7 @@ class FhirValidatorTest {
         val invalidResp =
             QuestionnaireResponse(
                 id = "qr-invalid-choice",
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                 item =
                     listOf(
                         QuestionnaireResponse.Item(
@@ -366,7 +369,7 @@ class FhirValidatorTest {
         val observation =
             dev.ohs.fhir.model.r4.Observation(
                 id = "obs-1",
-                status = Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                 code =
                     dev.ohs.fhir.model.r4
                         .CodeableConcept(),
@@ -422,7 +425,7 @@ class FhirValidatorTest {
         assertTrue(resNull.exceptionOrNull() is FhirValidationException.MissingRequiredFieldException)
 
         val validResp =
-            QuestionnaireResponse(status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
+            QuestionnaireResponse(status = Enumeration(value = QuestionnaireResponseStatus.Completed))
         val resValid = FhirValidator.validateQuestionnaireResponse(validResp)
         assertTrue(resValid.isSuccess)
 
@@ -455,7 +458,7 @@ class FhirValidatorTest {
                     listOf(
                         Questionnaire.Item(
                             linkId = String(value = null),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                             text = String(value = "Text"),
                         ),
                     ),
@@ -472,7 +475,7 @@ class FhirValidatorTest {
                     listOf(
                         Questionnaire.Item(
                             linkId = String(value = "choice-1"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                            type = Enumeration(value = QuestionnaireItemType.Choice),
                             text = String(value = "Select one"),
                             answerOption = emptyList(),
                         ),
@@ -491,13 +494,13 @@ class FhirValidatorTest {
                     listOf(
                         Questionnaire.Item(
                             linkId = String(),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                            type = Enumeration(value = QuestionnaireItemType.Boolean),
                             text = String(value = "Q1"),
                             enableWhen =
                                 listOf(
                                     Questionnaire.Item.EnableWhen(
                                         question = String(value = null),
-                                        operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.Exists),
+                                        operator = Enumeration(value = QuestionnaireItemOperator.Exists),
                                         answer =
                                             Questionnaire.Item.EnableWhen.Answer
                                                 .Boolean(
@@ -522,18 +525,18 @@ class FhirValidatorTest {
                     listOf(
                         Questionnaire.Item(
                             linkId = String(value = "q1"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Boolean),
+                            type = Enumeration(value = QuestionnaireItemType.Boolean),
                             text = String(value = "Q1"),
                         ),
                         Questionnaire.Item(
                             linkId = String(value = "q2"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                             text = String(value = "Q2"),
                             enableWhen =
                                 listOf(
                                     Questionnaire.Item.EnableWhen(
                                         question = String(value = "q1"),
-                                        operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.Exists),
+                                        operator = Enumeration(value = QuestionnaireItemOperator.Exists),
                                         answer =
                                             Questionnaire.Item.EnableWhen.Answer
                                                 .Boolean(
@@ -543,7 +546,7 @@ class FhirValidatorTest {
                                     ),
                                     Questionnaire.Item.EnableWhen(
                                         question = String(value = null),
-                                        operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.Exists),
+                                        operator = Enumeration(value = QuestionnaireItemOperator.Exists),
                                         answer =
                                             Questionnaire.Item.EnableWhen.Answer
                                                 .Boolean(
@@ -578,12 +581,12 @@ class FhirValidatorTest {
             listOf(
                 Questionnaire.Item(
                     linkId = String(value = null),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                    type = Enumeration(value = QuestionnaireItemType.String),
                     enableWhen =
                         listOf(
                             Questionnaire.Item.EnableWhen(
                                 question = String(value = "missing-target"),
-                                operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.Exists),
+                                operator = Enumeration(value = QuestionnaireItemOperator.Exists),
                                 answer =
                                     Questionnaire.Item.EnableWhen.Answer
                                         .Boolean(
@@ -630,23 +633,23 @@ class FhirValidatorTest {
                     listOf(
                         Questionnaire.Item(
                             linkId = String(value = null),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                         Questionnaire.Item(
                             linkId = String(id = "id-only"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                         Questionnaire.Item(
                             linkId = String(value = "   "),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                         Questionnaire.Item(
                             linkId = String(value = "item-dup"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                         Questionnaire.Item(
                             linkId = String(value = "item-dup"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                     ),
             )
@@ -666,7 +669,7 @@ class FhirValidatorTest {
                     listOf(
                         Questionnaire.Item(
                             linkId = String(value = "q1"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                     ),
             )
@@ -681,7 +684,7 @@ class FhirValidatorTest {
                     listOf(
                         Questionnaire.Item(
                             linkId = String(value = "q1"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                     ),
             )
@@ -696,7 +699,7 @@ class FhirValidatorTest {
                     listOf(
                         Questionnaire.Item(
                             linkId = String(value = "q1"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                     ),
             )
@@ -711,7 +714,7 @@ class FhirValidatorTest {
                     listOf(
                         Questionnaire.Item(
                             linkId = String(value = "q1"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                            type = Enumeration(value = QuestionnaireItemType.String),
                         ),
                     ),
             )
@@ -726,7 +729,7 @@ class FhirValidatorTest {
 
         // Valid QuestionnaireResponse outcome is null
         val qrValid =
-            QuestionnaireResponse(status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed))
+            QuestionnaireResponse(status = Enumeration(value = QuestionnaireResponseStatus.Completed))
         val qrValidOutcome = FhirValidator.validateToOutcome(qrValid).getOrNull()
         kotlin.test.assertNull(qrValidOutcome)
     }

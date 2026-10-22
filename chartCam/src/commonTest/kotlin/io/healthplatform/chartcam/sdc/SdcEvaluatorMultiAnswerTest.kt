@@ -8,6 +8,7 @@ import dev.ohs.fhir.model.r4.Boolean
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.String
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemOperator
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -41,7 +42,7 @@ class SdcEvaluatorMultiAnswerTest {
             Questionnaire.Item.EnableWhen
                 .Builder(
                     answer = ewAnswer,
-                    operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.EqualTo),
+                    operator = Enumeration(value = QuestionnaireItemOperator.EqualTo),
                     question = String.Builder().apply { value = "symptoms" },
                 ).build()
 
@@ -65,7 +66,7 @@ class SdcEvaluatorMultiAnswerTest {
             Questionnaire.Item.EnableWhen
                 .Builder(
                     answer = ewAnswer,
-                    operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.NotEqualTo),
+                    operator = Enumeration(value = QuestionnaireItemOperator.NotEqualTo),
                     question = String.Builder().apply { value = "symptoms" },
                 ).build()
 
@@ -89,7 +90,7 @@ class SdcEvaluatorMultiAnswerTest {
             Questionnaire.Item.EnableWhen
                 .Builder(
                     answer = ewExists,
-                    operator = Enumeration(value = Questionnaire.QuestionnaireItemOperator.Exists),
+                    operator = Enumeration(value = QuestionnaireItemOperator.Exists),
                     question = String.Builder().apply { value = "symptoms" },
                 ).build()
 

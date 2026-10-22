@@ -9,6 +9,7 @@ import dev.ohs.fhir.model.r4.Bundle
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.Resource
+import dev.ohs.fhir.model.r4.terminologies.BundleType
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,7 +31,7 @@ class FhirProtobufParserTest {
         val bundle =
             Bundle(
                 id = "b-test-proto",
-                type = Enumeration(value = Bundle.BundleType.Collection),
+                type = Enumeration(value = BundleType.Collection),
             )
         val bundleBytes = FhirProtobufParser.encodeBundleToProtobuf(bundle).getOrThrow()
         assertTrue(bundleBytes.isNotEmpty())

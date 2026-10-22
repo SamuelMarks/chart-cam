@@ -8,7 +8,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.Clipboard
 import kotlinx.coroutines.test.runTest
-import platform.UIKit.UIPasteboard
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -40,10 +39,6 @@ class ClipboardUtilsIosTest {
                     override suspend fun setClipEntry(clipEntry: ClipEntry?) {
                         currentEntry = clipEntry
                     }
-
-                    /** Provide fake native clipboard. */
-                    override val nativeClipboard: UIPasteboard
-                        get() = UIPasteboard.generalPasteboard
                 }
 
             // 1. Initial state with null clipEntry returns null

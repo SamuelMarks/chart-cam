@@ -14,6 +14,7 @@ import dev.ohs.fhir.model.r4.Patient
 import dev.ohs.fhir.model.r4.Practitioner
 import dev.ohs.fhir.model.r4.String
 import dev.ohs.fhir.model.r4.terminologies.AdministrativeGender
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
 import io.healthplatform.chartcam.models.createFhirEncounter
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -149,7 +150,7 @@ class FhirToDicomMapperTest {
 
         val encWithPeriod =
             Encounter(
-                status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                status = Enumeration(value = EncounterStatus.Finished),
                 `class` =
                     dev.ohs.fhir.model.r4
                         .Coding(),
@@ -168,7 +169,7 @@ class FhirToDicomMapperTest {
 
         val encWithoutPeriod =
             Encounter(
-                status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                status = Enumeration(value = EncounterStatus.Finished),
                 `class` =
                     dev.ohs.fhir.model.r4
                         .Coding(),
@@ -307,7 +308,7 @@ class FhirToDicomMapperTest {
         val encNoPeriod =
             Encounter
                 .Builder(
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` =
                         dev.ohs.fhir.model.r4.Coding
                             .Builder()
@@ -325,7 +326,7 @@ class FhirToDicomMapperTest {
         val encNullStart =
             Encounter
                 .Builder(
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` =
                         dev.ohs.fhir.model.r4.Coding
                             .Builder()
@@ -615,7 +616,7 @@ class FhirToDicomMapperTest {
         val encNullPeriod =
             Encounter
                 .Builder(
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` =
                         dev.ohs.fhir.model.r4.Coding
                             .Builder()

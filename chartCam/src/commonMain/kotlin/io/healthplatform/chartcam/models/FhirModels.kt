@@ -31,13 +31,23 @@ import dev.ohs.fhir.model.r4.Reference
 import dev.ohs.fhir.model.r4.Uri
 import dev.ohs.fhir.model.r4.Url
 import dev.ohs.fhir.model.r4.terminologies.AdministrativeGender
+import dev.ohs.fhir.model.r4.terminologies.DeviceNameType
 import dev.ohs.fhir.model.r4.terminologies.DocumentReferenceStatus
-import dev.ohs.fhir.model.r4.terminologies.IdentifierTypeCodes
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
 import io.healthplatform.chartcam.terminology.TerminologyService
 import io.healthplatform.chartcam.ui.currentLanguageState
 import kotlinx.datetime.LocalDate
 import dev.ohs.fhir.model.r4.Boolean as FhirBoolean
 import dev.ohs.fhir.model.r4.String as FhirString
+
+/** Standard HL7 v2-0203 code system URI for identifier types. */
+const val IDENTIFIER_TYPE_SYSTEM = "http://terminology.hl7.org/CodeSystem/v2-0203"
+
+/** Standard HL7 v2-0203 code for Medical Record Number. */
+const val MRN_TYPE_CODE = "MR"
+
+/** Standard HL7 v2-0203 display text for Medical Record Number. */
+const val MRN_TYPE_DISPLAY = "Medical record number"
 
 /**
  * Safely parses a string gender descriptor into a typed FHIR [Enumeration] of [AdministrativeGender].
@@ -69,9 +79,9 @@ private fun mapAdministrativeGender(gender: String): AdministrativeGender =
     }.getOrDefault(AdministrativeGender.Unknown)
 
 /**
- * Resolves the typed [Encounter.EncounterStatus] wrapped in a [Result].
+ * Resolves the typed [EncounterStatus] wrapped in a [Result].
  */
-val Encounter.typedStatus: Result<Encounter.EncounterStatus>
+val Encounter.typedStatus: Result<EncounterStatus>
     get() {
         val s = status.value
         return if (s != null) {
@@ -123,9 +133,9 @@ internal fun buildMrnIdentifierDirect(mrnValue: String): Identifier =
                 coding =
                     listOf(
                         Coding(
-                            system = Uri(value = IdentifierTypeCodes.Mr.system),
-                            code = Code(value = IdentifierTypeCodes.Mr.code),
-                            display = FhirString(value = IdentifierTypeCodes.Mr.display),
+                            system = Uri(value = IDENTIFIER_TYPE_SYSTEM),
+                            code = Code(value = MRN_TYPE_CODE),
+                            display = FhirString(value = MRN_TYPE_DISPLAY),
                         ),
                     ),
             ),
@@ -242,7 +252,7 @@ val Patient.mrn: String
             if (codings != null) {
                 for (coding in codings) {
                     val code = coding.code?.value
-                    if (code != null && code.equals(IdentifierTypeCodes.Mr.code, ignoreCase = true)) {
+                    if (code != null && code.equals(MRN_TYPE_CODE, ignoreCase = true)) {
                         val v = id.value?.value
                         if (v != null) return v
                     }
@@ -426,7 +436,7 @@ fun createFhirEncounter(
 ): Encounter =
     Encounter(
         id = id,
-        status = Enumeration(value = Encounter.EncounterStatus.In_Progress),
+        status = Enumeration(value = EncounterStatus.In_Progress),
         `class` =
             Coding(
                 system = Uri(value = "http://terminology.hl7.org/CodeSystem/v3-ActCode"),
@@ -584,7 +594,7 @@ fun createFhirDevice(
             listOf(
                 Device.DeviceName(
                     name = FhirString(value = modelName),
-                    type = Enumeration(value = Device.DeviceNameType.Model_Name),
+                    type = Enumeration(value = DeviceNameType.Model_Name),
                 ),
             ),
         manufacturer = FhirString(value = manufacturerName),

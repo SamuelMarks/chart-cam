@@ -20,7 +20,10 @@ import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.Reference
 import dev.ohs.fhir.model.r4.Uri
 import dev.ohs.fhir.model.r4.Url
+import dev.ohs.fhir.model.r4.terminologies.BundleType
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -39,7 +42,7 @@ class FhirVersionExpansionTest {
             Questionnaire.Item(
                 linkId = FhirString(value = "sub-q1"),
                 text = FhirString(value = "Sub Question"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.String),
+                type = Enumeration(value = QuestionnaireItemType.String),
             )
         val r4Q =
             Questionnaire(
@@ -52,7 +55,7 @@ class FhirVersionExpansionTest {
                         Questionnaire.Item(
                             linkId = FhirString(value = "group-1"),
                             text = FhirString(value = "General Group"),
-                            type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                            type = Enumeration(value = QuestionnaireItemType.Group),
                             item = listOf(subItem),
                         ),
                     ),
@@ -107,7 +110,7 @@ class FhirVersionExpansionTest {
             QuestionnaireResponse(
                 id = "qr-ver-1",
                 questionnaire = Canonical(value = "Questionnaire/q-1"),
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                 subject = Reference(reference = FhirString(value = "Patient/p-1")),
             )
         val r5Result = FhirVersionConverter.convertQuestionnaireResponseR4ToR5(r4Qr)
@@ -240,7 +243,7 @@ class FhirVersionExpansionTest {
         val r4Bundle =
             Bundle(
                 id = "b-ver-1",
-                type = Enumeration(value = Bundle.BundleType.Collection),
+                type = Enumeration(value = BundleType.Collection),
                 entry =
                     listOf(
                         Bundle.Entry(
@@ -281,7 +284,7 @@ class FhirVersionExpansionTest {
         val r4Enc =
             dev.ohs.fhir.model.r4.Encounter(
                 id = "enc-ver-1",
-                status = Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.In_Progress),
+                status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.In_Progress),
                 `class` =
                     dev.ohs.fhir.model.r4.Coding(
                         system = Uri(value = "http://terminology.hl7.org/CodeSystem/v3-ActCode"),
@@ -404,7 +407,7 @@ class FhirVersionExpansionTest {
         val r4Enc =
             dev.ohs.fhir.model.r4.Encounter(
                 id = "enc-poly",
-                status = Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Planned),
+                status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Planned),
                 `class` =
                     dev.ohs.fhir.model.r4
                         .Coding(code = Code(value = "AMB")),
@@ -418,7 +421,7 @@ class FhirVersionExpansionTest {
         val r4Obs =
             dev.ohs.fhir.model.r4.Observation(
                 id = "obs-poly",
-                status = Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                 code =
                     dev.ohs.fhir.model.r4
                         .CodeableConcept(
@@ -449,7 +452,7 @@ class FhirVersionExpansionTest {
         val r4Qr =
             QuestionnaireResponse(
                 id = "qr-poly",
-                status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                status = Enumeration(value = QuestionnaireResponseStatus.Completed),
             )
         val r5QrRes = FhirVersionConverter.convertResourceR4ToR5(r4Qr)
         assertTrue(r5QrRes.isSuccess)
@@ -488,7 +491,7 @@ class FhirVersionExpansionTest {
         assertTrue(r4ProvBack.isSuccess)
 
         // Unsupported resource conversions
-        val r4Bundle = Bundle(type = Enumeration(value = Bundle.BundleType.Collection))
+        val r4Bundle = Bundle(type = Enumeration(value = BundleType.Collection))
         val unsuppR4Res = FhirVersionConverter.convertResourceR4ToR5(r4Bundle)
         assertTrue(unsuppR4Res.isFailure)
 
@@ -496,7 +499,7 @@ class FhirVersionExpansionTest {
             dev.ohs.fhir.model.r5.Bundle(
                 type =
                     dev.ohs.fhir.model.r5
-                        .Enumeration(value = dev.ohs.fhir.model.r5.Bundle.BundleType.Collection),
+                        .Enumeration(value = dev.ohs.fhir.model.r5.terminologies.BundleType.Collection),
             )
         val unsuppR5Res = FhirVersionConverter.convertResourceR5ToR4(r5Bundle)
         assertTrue(unsuppR5Res.isFailure)
@@ -582,7 +585,7 @@ class FhirVersionExpansionTest {
         val obsStr =
             dev.ohs.fhir.model.r4.Observation(
                 id = "obs-str",
-                status = Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                 code = codeableConcept,
                 value =
                     dev.ohs.fhir.model.r4.Observation.Value
@@ -597,7 +600,7 @@ class FhirVersionExpansionTest {
         val obsInt =
             dev.ohs.fhir.model.r4.Observation(
                 id = "obs-int",
-                status = Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                 code = codeableConcept,
                 value =
                     dev.ohs.fhir.model.r4.Observation.Value
@@ -615,7 +618,7 @@ class FhirVersionExpansionTest {
         val obsQty =
             dev.ohs.fhir.model.r4.Observation(
                 id = "obs-qty",
-                status = Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final),
+                status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final),
                 code = codeableConcept,
                 value =
                     dev.ohs.fhir.model.r4.Observation.Value.Quantity(
@@ -639,7 +642,7 @@ class FhirVersionExpansionTest {
         val obsNull =
             dev.ohs.fhir.model.r4.Observation(
                 id = "obs-null",
-                status = Enumeration(value = dev.ohs.fhir.model.r4.Observation.ObservationStatus.Preliminary),
+                status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Preliminary),
                 code = codeableConcept,
             )
         val r5Null = FhirVersionConverter.convertObservationR4ToR5(obsNull).getOrThrow()
@@ -656,7 +659,7 @@ class FhirVersionExpansionTest {
         val itemWithOptions =
             Questionnaire.Item(
                 linkId = FhirString(value = "item-opts"),
-                type = Enumeration(value = Questionnaire.QuestionnaireItemType.Choice),
+                type = Enumeration(value = QuestionnaireItemType.Choice),
                 answerOption =
                     listOf(
                         Questionnaire.Item.AnswerOption(
@@ -712,7 +715,7 @@ class FhirVersionExpansionTest {
         val encStartOnly =
             dev.ohs.fhir.model.r4.Encounter(
                 id = "enc-start",
-                status = Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.In_Progress),
+                status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.In_Progress),
                 `class` =
                     dev.ohs.fhir.model.r4
                         .Coding(code = Code(value = "IMP")),
@@ -750,7 +753,7 @@ class FhirVersionExpansionTest {
         val encEndOnly =
             dev.ohs.fhir.model.r4.Encounter(
                 id = "enc-end",
-                status = Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished),
                 `class` =
                     dev.ohs.fhir.model.r4
                         .Coding(code = Code(value = "IMP")),
@@ -788,7 +791,7 @@ class FhirVersionExpansionTest {
         val encNoPeriod =
             dev.ohs.fhir.model.r4.Encounter(
                 id = "enc-none",
-                status = Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                status = Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished),
                 `class` =
                     dev.ohs.fhir.model.r4
                         .Coding(code = Code(value = "IMP")),
@@ -818,7 +821,7 @@ class FhirVersionExpansionTest {
         val r5EncRes = FhirVersionConverter.convertEncounterR4ToR5(r4EncNullStatus)
         assertTrue(r5EncRes.isSuccess)
         val r5Enc = r5EncRes.getOrThrow()
-        assertEquals(dev.ohs.fhir.model.r5.Encounter.EncounterStatus.In_Progress, r5Enc.status.value)
+        assertEquals(dev.ohs.fhir.model.r5.terminologies.EncounterStatus.In_Progress, r5Enc.status.value)
 
         // R5 Encounter with null status and empty class
         val r5EncNull =
@@ -830,7 +833,7 @@ class FhirVersionExpansionTest {
                 `class` = emptyList(),
             )
         val r4EncBack = FhirVersionConverter.convertEncounterR5ToR4(r5EncNull).getOrThrow()
-        assertEquals(dev.ohs.fhir.model.r4.Encounter.EncounterStatus.In_Progress, r4EncBack.status.value)
+        assertEquals(dev.ohs.fhir.model.r4.terminologies.EncounterStatus.In_Progress, r4EncBack.status.value)
         assertEquals("AMB", r4EncBack.`class`.code?.value)
 
         // R5 Encounter with class coding having null code
@@ -839,7 +842,7 @@ class FhirVersionExpansionTest {
                 id = "r5-enc-null-code",
                 status =
                     dev.ohs.fhir.model.r5
-                        .Enumeration(value = dev.ohs.fhir.model.r5.Encounter.EncounterStatus.In_Progress),
+                        .Enumeration(value = dev.ohs.fhir.model.r5.terminologies.EncounterStatus.In_Progress),
                 `class` =
                     listOf(
                         dev.ohs.fhir.model.r5.CodeableConcept(
@@ -878,7 +881,7 @@ class FhirVersionExpansionTest {
                     ),
             )
         val r5Obs = FhirVersionConverter.convertObservationR4ToR5(r4ObsNullStatus).getOrThrow()
-        assertEquals(dev.ohs.fhir.model.r5.Observation.ObservationStatus.Final, r5Obs.status.value)
+        assertEquals(dev.ohs.fhir.model.r5.terminologies.ObservationStatus.Final, r5Obs.status.value)
         assertEquals("Patient/subj-1", r5Obs.subject?.reference?.value)
 
         val r5ObsNullStatus =
@@ -899,7 +902,7 @@ class FhirVersionExpansionTest {
                         ),
             )
         val r4ObsBack = FhirVersionConverter.convertObservationR5ToR4(r5ObsNullStatus).getOrThrow()
-        assertEquals(dev.ohs.fhir.model.r4.Observation.ObservationStatus.Final, r4ObsBack.status.value)
+        assertEquals(dev.ohs.fhir.model.r4.terminologies.ObservationStatus.Final, r4ObsBack.status.value)
         assertEquals("Patient/subj-r5", r4ObsBack.subject?.reference?.value)
 
         // 3. Questionnaire with null status, item with null type, required = true, repeats = true
@@ -928,7 +931,7 @@ class FhirVersionExpansionTest {
         val r5Q = FhirVersionConverter.convertQuestionnaireR4ToR5(r4QNullStatus).getOrThrow()
         assertEquals(dev.ohs.fhir.model.r5.terminologies.PublicationStatus.Active, r5Q.status.value)
         val r5Item = r5Q.item.first()
-        assertEquals(dev.ohs.fhir.model.r5.Questionnaire.QuestionnaireItemType.String, r5Item.type.value)
+        assertEquals(dev.ohs.fhir.model.r5.terminologies.QuestionnaireItemType.String, r5Item.type.value)
         assertEquals(true, r5Item.required?.value)
         assertEquals(true, r5Item.repeats?.value)
 
@@ -969,7 +972,7 @@ class FhirVersionExpansionTest {
         val r4QBack = FhirVersionConverter.convertQuestionnaireR5ToR4(r5QNullStatus).getOrThrow()
         assertEquals(PublicationStatus.Active, r4QBack.status.value)
         val r4Item = r4QBack.item.first()
-        assertEquals(Questionnaire.QuestionnaireItemType.String, r4Item.type.value)
+        assertEquals(QuestionnaireItemType.String, r4Item.type.value)
         assertEquals(true, r4Item.required?.value)
         assertEquals(true, r4Item.repeats?.value)
         assertTrue(r4Item.answerOption.isEmpty()) // Integer option returns null
@@ -983,7 +986,7 @@ class FhirVersionExpansionTest {
                         .Enumeration(value = null),
             )
         val r5Qr = FhirVersionConverter.convertQuestionnaireResponseR4ToR5(r4QrNull).getOrThrow()
-        assertEquals(dev.ohs.fhir.model.r5.QuestionnaireResponse.QuestionnaireResponseStatus.Completed, r5Qr.status.value)
+        assertEquals(dev.ohs.fhir.model.r5.terminologies.QuestionnaireResponseStatus.Completed, r5Qr.status.value)
         assertEquals("", r5Qr.questionnaire.value)
 
         val r5QrNull =
@@ -997,7 +1000,7 @@ class FhirVersionExpansionTest {
                         .Canonical(value = null),
             )
         val r4QrBack = FhirVersionConverter.convertQuestionnaireResponseR5ToR4(r5QrNull).getOrThrow()
-        assertEquals(QuestionnaireResponse.QuestionnaireResponseStatus.Completed, r4QrBack.status.value)
+        assertEquals(QuestionnaireResponseStatus.Completed, r4QrBack.status.value)
         assertEquals("", r4QrBack.questionnaire?.value)
 
         // 5. DocumentReference with null status
@@ -1114,7 +1117,7 @@ class FhirVersionExpansionTest {
                         .Enumeration(value = null),
             )
         val r5Bundle = FhirVersionConverter.convertBundleR4ToR5(r4BundleNull).getOrThrow()
-        assertEquals(dev.ohs.fhir.model.r5.Bundle.BundleType.Collection, r5Bundle.type.value)
+        assertEquals(dev.ohs.fhir.model.r5.terminologies.BundleType.Collection, r5Bundle.type.value)
 
         val r5BundleNull =
             dev.ohs.fhir.model.r5.Bundle(
@@ -1124,7 +1127,7 @@ class FhirVersionExpansionTest {
                         .Enumeration(value = null),
             )
         val r4BundleBack = FhirVersionConverter.convertBundleR5ToR4(r5BundleNull).getOrThrow()
-        assertEquals(Bundle.BundleType.Collection, r4BundleBack.type.value)
+        assertEquals(BundleType.Collection, r4BundleBack.type.value)
 
         // 8. Patient R4 <-> R4B with gender and given names
         val r4PatGender =

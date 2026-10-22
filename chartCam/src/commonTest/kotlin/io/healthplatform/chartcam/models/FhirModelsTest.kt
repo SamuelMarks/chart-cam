@@ -57,7 +57,7 @@ class FhirModelsTest {
                 ?.value,
         )
         assertEquals(
-            dev.ohs.fhir.model.r4.terminologies.IdentifierTypeCodes.Mr.display,
+            MRN_TYPE_DISPLAY,
             mrnIdentifier.type
                 ?.coding
                 ?.first()
@@ -346,7 +346,7 @@ class FhirModelsTest {
                 dateStr = "2023-10-27T10:00:00Z",
             )
         assertTrue(encounter.typedStatus.isSuccess)
-        assertEquals(dev.ohs.fhir.model.r4.Encounter.EncounterStatus.In_Progress, encounter.typedStatus.getOrNull())
+        assertEquals(dev.ohs.fhir.model.r4.terminologies.EncounterStatus.In_Progress, encounter.typedStatus.getOrNull())
 
         val docRef =
             createFhirDocumentReference(
@@ -846,7 +846,7 @@ class FhirModelsTest {
                 id = "enc-np",
                 status =
                     dev.ohs.fhir.model.r4
-                        .Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                        .Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished),
                 `class` =
                     dev.ohs.fhir.model.r4
                         .Coding(
@@ -1041,7 +1041,7 @@ class FhirModelsTest {
                 id = "enc-sn",
                 status =
                     dev.ohs.fhir.model.r4
-                        .Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                        .Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished),
                 `class` =
                     dev.ohs.fhir.model.r4
                         .Coding(
@@ -1060,7 +1060,7 @@ class FhirModelsTest {
                 id = "enc-svn",
                 status =
                     dev.ohs.fhir.model.r4
-                        .Enumeration(value = dev.ohs.fhir.model.r4.Encounter.EncounterStatus.Finished),
+                        .Enumeration(value = dev.ohs.fhir.model.r4.terminologies.EncounterStatus.Finished),
                 `class` =
                     dev.ohs.fhir.model.r4
                         .Coding(

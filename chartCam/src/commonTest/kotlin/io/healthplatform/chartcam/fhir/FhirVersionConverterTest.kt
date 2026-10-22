@@ -17,6 +17,7 @@ import dev.ohs.fhir.model.r4.FhirDecimal as R4FhirDecimal
 import dev.ohs.fhir.model.r4.Observation as R4Observation
 import dev.ohs.fhir.model.r4.Quantity as R4Quantity
 import dev.ohs.fhir.model.r4.String as R4String
+import dev.ohs.fhir.model.r4.terminologies.ObservationStatus as R4ObservationStatus
 
 /**
  * Unit tests for [FhirVersionConverter].
@@ -113,7 +114,7 @@ class FhirVersionConverterTest {
         val r4Obs =
             R4Observation(
                 id = "obs-r4",
-                status = R4Enumeration(value = R4Observation.ObservationStatus.Final),
+                status = R4Enumeration(value = R4ObservationStatus.Final),
                 code =
                     dev.ohs.fhir.model.r4.CodeableConcept(
                         coding =

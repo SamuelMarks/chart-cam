@@ -9,6 +9,7 @@ import dev.ohs.fhir.model.r4.CodeSystem
 import dev.ohs.fhir.model.r4.Coding
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Uri
+import dev.ohs.fhir.model.r4.terminologies.CodeSystemContentMode
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
 import dev.ohs.fhir.model.r4.String as FhirString
 
@@ -31,7 +32,7 @@ object TerminologyService {
     fun getLoincCodeSystem(): CodeSystem =
         CodeSystem(
             status = Enumeration(value = PublicationStatus.Active),
-            content = Enumeration(value = CodeSystem.CodeSystemContentMode.Complete),
+            content = Enumeration(value = CodeSystemContentMode.Complete),
             url = Uri(value = LOINC_URI),
             name = FhirString(value = "LOINC"),
             title = FhirString(value = "Logical Observation Identifiers Names and Codes"),
@@ -45,7 +46,7 @@ object TerminologyService {
     fun getSnomedCodeSystem(): CodeSystem =
         CodeSystem(
             status = Enumeration(value = PublicationStatus.Active),
-            content = Enumeration(value = CodeSystem.CodeSystemContentMode.Complete),
+            content = Enumeration(value = CodeSystemContentMode.Complete),
             url = Uri(value = SNOMED_URI),
             name = FhirString(value = "SNOMED CT"),
             title = FhirString(value = "Systematized Nomenclature of Medicine Clinical Terms"),

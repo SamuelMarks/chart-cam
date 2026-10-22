@@ -10,6 +10,7 @@ import dev.ohs.fhir.model.r4.Coding
 import dev.ohs.fhir.model.r4.Enumeration
 import dev.ohs.fhir.model.r4.Extension
 import dev.ohs.fhir.model.r4.Questionnaire
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireItemType
 import io.healthplatform.chartcam.camera.SilhouetteType
 import io.healthplatform.chartcam.fhir.SdcExtensions
 import io.healthplatform.chartcam.fhir.getSilhouetteType
@@ -81,7 +82,7 @@ class FacialSeriesCardControlTest {
             Questionnaire.Item
                 .Builder(
                     linkId = str("facial_group"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    type = Enumeration(value = QuestionnaireItemType.Group),
                 ).apply {
                     extension.add(
                         Extension
@@ -112,7 +113,7 @@ class FacialSeriesCardControlTest {
             Questionnaire.Item
                 .Builder(
                     linkId = str("regular_group"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Group),
+                    type = Enumeration(value = QuestionnaireItemType.Group),
                 ).build()
         assertFalse(regularItem.isFacialProfileSeries())
     }
@@ -123,7 +124,7 @@ class FacialSeriesCardControlTest {
             Questionnaire.Item
                 .Builder(
                     linkId = str("left_photo"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                    type = Enumeration(value = QuestionnaireItemType.Attachment),
                 ).apply {
                     extension.add(
                         Extension
@@ -141,7 +142,7 @@ class FacialSeriesCardControlTest {
             Questionnaire.Item
                 .Builder(
                     linkId = str("plain_photo"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                    type = Enumeration(value = QuestionnaireItemType.Attachment),
                 ).build()
         assertEquals(SilhouetteType.NONE, plainItem.getSilhouetteType().getOrNull())
 
@@ -149,7 +150,7 @@ class FacialSeriesCardControlTest {
             Questionnaire.Item
                 .Builder(
                     linkId = str("str_photo"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                    type = Enumeration(value = QuestionnaireItemType.Attachment),
                 ).apply {
                     extension.add(
                         Extension
@@ -167,7 +168,7 @@ class FacialSeriesCardControlTest {
             Questionnaire.Item
                 .Builder(
                     linkId = str("inv_photo"),
-                    type = Enumeration(value = Questionnaire.QuestionnaireItemType.Attachment),
+                    type = Enumeration(value = QuestionnaireItemType.Attachment),
                 ).apply {
                     extension.add(
                         Extension

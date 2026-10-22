@@ -19,7 +19,10 @@ import dev.ohs.fhir.model.r4.Provenance
 import dev.ohs.fhir.model.r4.Questionnaire
 import dev.ohs.fhir.model.r4.QuestionnaireResponse
 import dev.ohs.fhir.model.r4.search.PatientSearchParams
+import dev.ohs.fhir.model.r4.terminologies.EncounterStatus
+import dev.ohs.fhir.model.r4.terminologies.ObservationStatus
 import dev.ohs.fhir.model.r4.terminologies.PublicationStatus
+import dev.ohs.fhir.model.r4.terminologies.QuestionnaireResponseStatus
 import io.healthplatform.chartcam.database.ChartCamDatabase
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -84,7 +87,7 @@ class FhirRepositoryPerformanceTest {
             val encounter =
                 Encounter(
                     id = "e-1",
-                    status = Enumeration(value = Encounter.EncounterStatus.Finished),
+                    status = Enumeration(value = EncounterStatus.Finished),
                     `class` =
                         dev.ohs.fhir.model.r4
                             .Coding(
@@ -144,7 +147,7 @@ class FhirRepositoryPerformanceTest {
             val qr =
                 QuestionnaireResponse(
                     id = "qr-1",
-                    status = Enumeration(value = QuestionnaireResponse.QuestionnaireResponseStatus.Completed),
+                    status = Enumeration(value = QuestionnaireResponseStatus.Completed),
                 )
             assertTrue(repository.saveQuestionnaireResponse(qr).isSuccess)
             val fetchedQr = repository.getQuestionnaireResponseCatching("qr-1").getOrThrow()
@@ -162,7 +165,7 @@ class FhirRepositoryPerformanceTest {
             val observation =
                 Observation(
                     id = "obs-1",
-                    status = Enumeration(value = Observation.ObservationStatus.Final),
+                    status = Enumeration(value = ObservationStatus.Final),
                     code =
                         dev.ohs.fhir.model.r4
                             .CodeableConcept(),
